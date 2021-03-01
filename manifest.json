@@ -1,0 +1,10 @@
+{	
+	"id": "obsidian-leaflet-plugin",
+	"name": "Leaflet for Obsidian",
+	"description": "Leaflet integration for Obsidian.md",
+	"version": "0.0.1",
+	"minAppVersion": "0.11.0",
+	"author": "Obsidian",
+	"authorUrl": "https://obsidian.md/about",
+	"isDesktopOnly": false
+}
