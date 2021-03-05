@@ -1,11 +1,11 @@
 {
   "name": "obsidian-leaflet-plugin",
-  "version": "0.0.1",
+"version": "0.0.2",
   "description": "Leaflet integration for Obsidian.md",
   "main": "main.js",
   "scripts": {
     "dev": "rollup --config rollup.config.js -w",
-    "build": "rollup --config rollup.config.js"
+    "build": "rollup --config rollup.config-build.js"
   },
   "keywords": [],
   "author": "",
@@ -18,11 +18,14 @@
     "@rollup/plugin-node-resolve": "^9.0.0",
     "@rollup/plugin-typescript": "^6.0.0",
     "@types/leaflet": "^1.5.23",
-    "@types/node": "^14.14.2",
+    "@types/node": "^14.14.31",
+    "@types/uuid": "^8.3.0",
     "leaflet": "^1.7.1",
     "obsidian": "https://github.com/obsidianmd/obsidian-api/tarball/master",
     "rollup": "^2.32.1",
+    "rollup-plugin-copy": "^3.4.0",
     "tslib": "^2.0.3",
-    "typescript": "^4.0.3"
+    "typescript": "^4.0.3",
+    "uuid": "^8.3.2"
   }
 }

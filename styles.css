@@ -1,3 +1,64 @@
+/* Settings */
+.additional-markers-container > .setting-item:not(.setting-item-heading) {
+	border: 0px;
+}
+/* .additional-markers-container > .setting-item-heading:first-of-type {
+	border-bottom: 1px solid var(--background-modifier-border);
+} */
+.additional-markers-container {
+	border-bottom: 1px solid var(--background-modifier-border);
+	border-top: 1px solid var(--background-modifier-border);
+	padding: 18px 0 0 0;
+}
+.additional-markers-control > input:first-of-type {
+	margin-right: auto !important;
+}
+.setting-item-control.marker-icon-display,
+.setting-item-control > .marker-icon-display {
+	margin-left: 0.5rem;
+	margin-right: 12px;
+	position: relative;
+	/* 	width: 12px;
+	display: flex;
+	justify-content: center; */
+}
+
+.markers {
+	display: none;
+}
+
+.marker-icon-display * {
+	margin-right: 0px !important;
+}
+
+.marker-icon-display input[type="color"] {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	opacity: 0;
+	width: 100%;
+	height: 100%;
+	margin-right: 12px;
+}
+
+/* div icon */
+
+.leaflet-div-icon {
+	/* 	background: #fff;
+	border: 1px solid #666; */
+	width: 25px !important;
+	height: 25px !important;
+	margin-left: -12.5px !important;
+	margin-top: -25px !important;
+}
+
+.full-width-height,
+.full-width-height > * {
+	height: 100% !important;
+	width: 100% !important;
+}
+
 /* Leaflet.js CSS */
 /* required styles */
 
@@ -6,8 +67,8 @@
 .leaflet-marker-icon,
 .leaflet-marker-shadow,
 .leaflet-tile-container,
-.leaflet-pane>svg,
-.leaflet-pane>canvas,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
 .leaflet-zoom-box,
 .leaflet-image-layer,
 .leaflet-layer {
@@ -112,7 +173,6 @@
 	user-select: none;
 }
 
-
 .leaflet-pane {
 	z-index: 400;
 }
@@ -159,7 +219,6 @@
 	display: inline-block;
 	position: absolute;
 }
-
 
 /* control positioning */
 
@@ -219,7 +278,6 @@
 	margin-right: 10px;
 }
 
-
 /* zoom and fade animations */
 
 .leaflet-fade-anim .leaflet-tile {
@@ -264,7 +322,6 @@
 	visibility: hidden;
 }
 
-
 /* cursors */
 
 .leaflet-interactive {
@@ -300,14 +357,14 @@
 .leaflet-marker-icon,
 .leaflet-marker-shadow,
 .leaflet-image-layer,
-.leaflet-pane>svg path,
+.leaflet-pane > svg path,
 .leaflet-tile-container {
 	pointer-events: none;
 }
 
 .leaflet-marker-icon.leaflet-interactive,
 .leaflet-image-layer.leaflet-interactive,
-.leaflet-pane>svg path.leaflet-interactive,
+.leaflet-pane > svg path.leaflet-interactive,
 svg.leaflet-image-layer.leaflet-interactive path {
 	pointer-events: visiblePainted;
 	/* IE 9-10 doesn't have auto */
@@ -322,7 +379,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 }
 
 .leaflet-container a {
-	color: #0078A8;
+	color: #0078a8;
 }
 
 .leaflet-container a.leaflet-active {
@@ -334,12 +391,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
 	background: rgba(255, 255, 255, 0.5);
 }
 
-
 /* general typography */
 .leaflet-container {
 	font: 12px/1.5 "Helvetica Neue", Arial, Helvetica, sans-serif;
 }
-
 
 /* general toolbar styles */
 
@@ -409,7 +464,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
 .leaflet-control-zoom-in,
 .leaflet-control-zoom-out {
-	font: bold 18px 'Lucida Console', Monaco, monospace;
+	font: bold 18px "Lucida Console", Monaco, monospace;
 	text-indent: 1px;
 }
 
@@ -417,7 +472,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
 .leaflet-touch .leaflet-control-zoom-out {
 	font-size: 22px;
 }
-
 
 /* layers control */
 
@@ -485,7 +539,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
 .leaflet-default-icon-path {
 	background-image: url(images/marker-icon.png);
 }
-
 
 /* attribution and scale controls */
 
@@ -558,7 +611,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
 	border: 2px solid rgba(0, 0, 0, 0.2);
 	background-clip: padding-box;
 }
-
 
 /* popup */
 
@@ -661,23 +713,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
 .leaflet-oldie .leaflet-popup-content-wrapper,
 .leaflet-oldie .leaflet-popup-tip {
 	border: 1px solid #999;
-}
-
-
-/* div icon */
-
-.leaflet-div-icon {
-/* 	background: #fff;
-	border: 1px solid #666; */
-	width: 25px !important;
-	height: 25px !important;
-	margin-left: -12.5px !important;
-	margin-top: -25px !important;
-}
-
-.full-width-height {
-	height: 100% !important;
-	width: 100% !important;
 }
 
 /* Tooltip */

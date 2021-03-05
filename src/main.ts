@@ -1,150 +1,317 @@
 import {
-	App,
-	MarkdownPostProcessorContext,
 	Plugin,
-	PluginSettingTab,
-	Setting
-} from 'obsidian';
-import * as L from 'leaflet';
-import { library, icon } from '@fortawesome/fontawesome-svg-core';
+	MarkdownPostProcessorContext,
+	addIcon,
+	Notice,
+	MarkdownView,
+	FileSystemAdapter,
+	Modal,
+	Setting,
+	TFile,
+} from "obsidian";
+import { point, latLng } from "leaflet";
 
-/* interface MyPluginSettings {
-	mySetting: string;
+//Local Imports
+import { ObsidianLeafletSettingTab, DEFAULT_SETTINGS } from "./settings";
+import { IconDefinition, AbstractElement, icon, toHtml } from "./icons";
+import LeafletMap from "./leaflet";
+declare global {
+	interface MapsInterface {
+		[key: string]: MapInterface;
+	}
+	interface MapInterface {
+		[key: string]: LeafletMap;
+	}
+	interface Marker {
+		type: string;
+		icon: IconDefinition;
+		color?: string;
+		link?: string;
+	}
+	interface LeafletMarker {
+		marker: MarkerIcon;
+		loc: L.LatLng;
+		id: string;
+		link?: string;
+		leafletInstance: L.Marker;
+	}
+	interface ObsidianAppData {
+		markers: Marker[];
+		defaultMarker: Marker;
+	}
+	type MarkerIcon = {
+		readonly type: string;
+		readonly html: string;
+	};
+}
+interface MarkdownPostProcessorContextActual
+	extends MarkdownPostProcessorContext {
+	sourcePath: string;
+	containerEl: HTMLElement;
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
-} */
+export default class ObsidianLeaflet extends Plugin {
+	AppData: ObsidianAppData;
+	markerIcons: MarkerIcon[];
+	maps: LeafletMap[] = [];
+	async onload(): Promise<void> {
+		console.log("loading leaflet plugin");
 
-import icons from './icons';
+		await this.loadSettings();
 
-console.log(icons, icon(icons[0]));
-library.add(...icons);
+		this.markerIcons = this.generateMarkerMarkup(this.AppData.markers);
 
-export default class MyPlugin extends Plugin {
-	/* settings: MyPluginSettings; */
+		this.registerMarkdownCodeBlockProcessor(
+			"leaflet",
+			this.postprocessor.bind(this)
+		);
 
-	async onload() {
-		console.log('loading leaflet plugin');
-		/* await this.loadSettings(); */
-/* 
-		this.addSettingTab(new SampleSettingTab(this.app, this)); */
-
-		this.registerMarkdownCodeBlockProcessor('leaflet', LeafletPostprocessor.postprocessor);
-
+		this.addSettingTab(new ObsidianLeafletSettingTab(this.app, this));
 	}
 
-	onunload() {
-		console.log('unloading plugin');
+	async onunload(): Promise<void> {
+		console.log("unloading plugin");
 	}
 
-	/* async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-	} */
+	async postprocessor(
+		source: string,
+		el: HTMLElement,
+		ctx: MarkdownPostProcessorContextActual
+	): Promise<void> {
+		let { image, height = "500px" } = Object.fromEntries(
+			source.split("\n").map(l => l.split(": "))
+		);
 
-	/* async saveSettings() {
-		await this.saveData(this.settings);
-	}*/
-} 
-
-class LeafletPostprocessor {
-	static async postprocessor(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) {
-
-		let { image, height = '500px' } = Object.fromEntries(source.split('\n').map(l => l.split(': ')));
-
-		const mapEl = el.appendChild(document.createElement('div') as HTMLElement);
-		if (!image) { console.error('An image source url must be provided.'); mapEl.appendText('An image source url must be provided.'); mapEl.setAttribute('style', 'color: red;'); return; }
-
-
-		mapEl.setAttribute('style', `height: ${height}; width: 100%;`)
-
-		const uri = await LeafletPostprocessor.toDataURL(image);
-		let { h, w } = await LeafletPostprocessor.getImageDimensions(uri);
-
-		var map = L.map(mapEl, {
-			minZoom: 1,
-			maxZoom: 10,
-			zoom: 1,
-			crs: L.CRS.Simple
-		});
-
-		var southWest = map.unproject([0, h], map.getMaxZoom() - 1);
-		var northEast = map.unproject([w, 0], map.getMaxZoom() - 1);
-		var bounds = new L.LatLngBounds(southWest, northEast);
-
-
-		// add the image overlay, 
-		// so that it covers the entire map
-		L.imageOverlay(uri, bounds).addTo(map);
-		map.fitBounds(bounds);
-		map.panTo(bounds.getCenter());
-		// tell leaflet that the map is exactly as big as the image
-		map.setMaxBounds(bounds);
-
-		function onMapClick(e: L.LeafletMouseEvent) {
-			const mapIcon = L.divIcon({ html: icon(icons[0], { classes: ['full-width-height']}).node[0] as HTMLElement });
-			const marker = L.marker(e.latlng, { icon: mapIcon, draggable: true })
-			marker.addTo(map);
+		if (!image) {
+			console.error("An image source url must be provided.");
+			el.appendText("An image source url must be provided.");
+			el.setAttribute("style", "color: red;");
+			return;
 		}
 
-		map.on('contextmenu', onMapClick);
+		let map = new LeafletMap(
+			el,
+			image,
+			height,
+			ctx.sourcePath,
+			this.markerIcons
+		);
 
-	}
+		const file = this.app.vault.getAbstractFileByPath(
+			ctx.sourcePath
+		) as TFile;
+		const content = await this.app.vault.read(file);
+		const sourceLocationInFile = [
+			content.indexOf(source),
+			content.indexOf(source) +
+				`${content}`.slice(content.indexOf(source)).indexOf("```") +
+				3,
+		];
 
-	static async getImageDimensions(url: string): Promise<any> {
-		return new Promise(function (resolved, rejected) {
-			var i = new Image()
-			i.onload = function () {
-				resolved({ w: i.width, h: i.height })
-			};
-			i.src = url
-		})
-	}
+		let markers = source
+			.split("\n")
+			.map(l => l.split(": "))
+			.filter(([type]) => type == "marker");
 
-	static async toDataURL(url: string): Promise<string> {
-		const response = await fetch(url);
+		//await this.app.vault.modify(file, content + `\nTest`)
 
-		const blob = await response.blob();
-		return new Promise((resolve, reject) => {
-			const reader = new FileReader()
-			reader.onloadend = () => {
-				resolve(reader.result as string)
-			}
-			reader.onerror = reject
-			reader.readAsDataURL(blob)
-		})
-	}
-}
+		if (markers.length) {
+			markers.forEach(marker => {
+				let [latlng, type, link, id] = marker[1].split("|");
+				console.log(
+					"🚀 ~ file: main.ts ~ line 113 ~ ObsidianLeaflet ~ id, latlng, link, type",
+					id,
+					latLng(JSON.parse(latlng)),
+					link,
+					type
+				);
+				let loc = latLng(JSON.parse(latlng));
 
-/* class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+				map.createMarker(
+					this.markerIcons.find(m => m.type == type),
+					loc,
+					link,
+					id
+				);
+			});
+		}
 
-	constructor(app: App, plugin: MyPlugin) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
+		el.addEventListener("dragover", evt => {
+			evt.preventDefault();
+		});
+		el.addEventListener("drop", evt => {
+			evt.stopPropagation();
 
-	display(): void {
-		let {
-			containerEl
-		} = this;
+			let file = decodeURIComponent(
+				evt.dataTransfer.getData("text/plain")
+			)
+				.split("file=")
+				.pop();
 
-		containerEl.empty();
-
-		containerEl.createEl('h2', {
-			text: 'Settings for my awesome plugin.'
+			map.createMarker(
+				map.markerIcons[0],
+				map.map.layerPointToLatLng(point(evt.offsetX, evt.offsetY)),
+				file + ".md"
+			);
 		});
 
-		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue('')
-				.onChange(async (value) => {
-					console.log('Secret: ' + value);
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
+		map.on("marker-added", async (marker: LeafletMarker) => {
+			//build marker entry string
+			const markerEntry = [
+				`[${marker.loc.lat},${marker.loc.lng}]`,
+				marker.marker.type,
+				marker.link,
+				marker.id,
+			].join("|");
+
+			/** Read current file content */
+			const file = this.app.vault.getAbstractFileByPath(
+				ctx.sourcePath
+			) as TFile;
+			let content = await this.app.vault.read(file);
+
+			/** Find location of current map source block */
+			const sourceLocationInFile = [
+				content.indexOf(source),
+				content.indexOf(source) +
+					`${content}`.slice(content.indexOf(source)).indexOf("```"),
+			];
+			let newSource: string[] | string = source
+				.split("\n")
+				.filter(line => line.length);
+
+			/** Test for modified marker */
+
+			if (newSource.find(line => line.includes(marker.id))) {
+				//existing marker, need to update
+				newSource[
+					newSource.indexOf(
+						newSource.find(line => line.includes(marker.id))
+					)
+				] = `marker: ${markerEntry}`;
+			} else {
+				newSource.push(`marker: ${markerEntry}`);
+			}
+			source = newSource.join("\n");
+
+			content =
+				content.slice(0, sourceLocationInFile[0]) +
+				source +
+				"\n" +
+				content.slice(sourceLocationInFile[1]);
+
+			await this.app.vault.modify(file, content);
+		});
+
+		map.on("marker-click", (link: string, newWindow: boolean) => {
+			this.app.workspace.openLinkText("", link, newWindow).then(() => {
+				var cmEditor = this.getEditor();
+				cmEditor.focus();
+			});
+		});
+
+		map.on("marker-context", async (marker: LeafletMarker) => {
+			let markerSettingsModal = new Modal(this.app);
+
+			new Setting(markerSettingsModal.contentEl)
+				.setName("Note to Open")
+				.setDesc("Path of note to open, e.g. Folder1/Folder2/Note.md")
+				.addText(text => {
+					text.setPlaceholder("Path")
+						.setValue(marker.link)
+						.onChange(async value => {
+							marker.link = value;
+							await this.saveSettings();
+						});
+				});
+
+			new Setting(markerSettingsModal.contentEl).addButton(b => {
+				b.setIcon("trash")
+					.setWarning()
+					.setTooltip("Delete Marker")
+					.onClick(async () => {
+						marker.leafletInstance.remove();
+						map.markers = map.markers.filter(
+							m => m.id != marker.id
+						);
+						markerSettingsModal.close();
+						await this.saveSettings();
+					});
+				return b;
+			});
+
+			markerSettingsModal.open();
+		});
+
+		this.maps.push(map);
+
+		await this.saveSettings();
 	}
-} */
+	async loadSettings() {
+		this.AppData = Object.assign(
+			{},
+			DEFAULT_SETTINGS,
+			await this.loadData()
+		);
+	}
+	async saveSettings() {
+		await this.saveData(this.AppData);
+
+		try {
+			this.AppData.markers.forEach(marker => {
+				addIcon(marker.type, icon(marker.icon).html[0]);
+			});
+
+			this.markerIcons = this.generateMarkerMarkup(this.AppData.markers);
+
+			this.maps.forEach(map => map.setMarkerIcons(this.markerIcons));
+		} catch (e) {}
+	}
+	getEditor() {
+		var view = this.app.workspace.activeLeaf.view;
+		if (view.getViewType() == "markdown") {
+			var markdownView = view as MarkdownView;
+			var cmEditor = markdownView.sourceMode.cmEditor;
+			return cmEditor;
+		}
+		return null;
+	}
+
+	generateMarkerMarkup(
+		markers: Marker[] = this.AppData.markers
+	): MarkerIcon[] {
+		let ret = markers.map(marker => {
+			let html: string,
+				iconNode: AbstractElement = icon(marker.icon, {
+					transform: { size: 6, x: 0, y: -2 },
+					mask: this.AppData.defaultMarker?.icon,
+					classes: ["full-width-height"],
+				}).abstract[0];
+
+			iconNode.attributes = {
+				...iconNode.attributes,
+				style: `color: ${
+					marker.color
+						? marker.color
+						: this.AppData.defaultMarker?.color
+				}`,
+			};
+
+			html = toHtml(iconNode);
+
+			return { type: marker.type, html: html, link: marker.link };
+		});
+		ret.unshift({
+			type: "Default",
+			html: icon(this.AppData.defaultMarker.icon, {
+				classes: ["full-width-height"],
+				styles: {
+					color: this.AppData.defaultMarker.color,
+				},
+			}).html[0],
+			link: undefined,
+		});
+
+		return ret;
+	}
+}
