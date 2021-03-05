@@ -4,29 +4,48 @@ import {
 	App,
 	Notice,
 	ButtonComponent,
+	Modal,
+	setIcon,
+	TextComponent,
 } from "obsidian";
 
-import { findIconDefinition, IconLookup, icon, toHtml } from "./icons";
+import {
+	findIconDefinition,
+	IconLookup,
+	icon,
+	toHtml,
+	AbstractElement,
+} from "./icons";
 
 export const DEFAULT_SETTINGS: ObsidianAppData = {
+	maps: {},
 	defaultMarker: {
 		type: "default",
 		icon: findIconDefinition({
 			iconName: "map-marker",
 		} as IconLookup),
-		color: "rgb(221, 221, 221)",
+		color: "#dddddd",
 	},
 	markers: [],
+	color: "#dddddd",
 };
 
 import ObsidianLeaflet from "./main";
 
 export class ObsidianLeafletSettingTab extends PluginSettingTab {
 	plugin: ObsidianLeaflet;
-
+	newMarker: Marker;
 	constructor(app: App, plugin: ObsidianLeaflet) {
 		super(app, plugin);
 		this.plugin = plugin;
+		this.newMarker = {
+			type: "",
+			icon: null,
+			color: this.plugin.AppData.defaultMarker.icon
+				? this.plugin.AppData.defaultMarker.color
+				: this.plugin.AppData.color,
+			layer: true,
+		};
 	}
 
 	async display(): Promise<void> {
@@ -98,9 +117,6 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 				this.plugin.AppData.defaultMarker
 			);
 		}
-
-		/** Build additional markers setting block */
-
 		let additionalMarkers = containerEl.createDiv();
 		additionalMarkers.addClass("additional-markers-container");
 
@@ -108,127 +124,135 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 			.setHeading()
 			.setName("Additional Map Markers")
 			.setDesc(
-				"These markers will be available in the right-click menu on the map. If the base layer marker is set, they will be layered on top of it."
-			);
+				"These markers will be available in the right-click menu on the map."
+			)
+			.addButton(
+				(button: ButtonComponent): ButtonComponent => {
+					let b = button
+						.setTooltip("Add Additional")
+						.onClick(async () => {
+							let newMarkerModal = new MarkerModal(
+								this.app,
+								this.plugin,
+								this.newMarker
+							);
+							newMarkerModal.open();
+							newMarkerModal.onClose = async () => {
 
-		this.plugin.AppData.markers.forEach(marker => {
-			let setting = new Setting(additionalMarkers);
-			setting
-				.addText(text => {
-					let t = text
-						.setPlaceholder("Marker Name")
-						.setValue(marker.type)
-						.onChange(
-							async (new_value): Promise<void> => {
 								if (
-									this.plugin.AppData.markers.find(
-										marker => marker.type == new_value
-									)
+									!this.newMarker.type ||
+									!this.newMarker.icon
 								) {
-									new Notice("This marker already exists.");
 									return;
 								}
-
-								let index = this.plugin.AppData.markers.indexOf(
-									marker
+								this.plugin.AppData.markers.push(
+									this.newMarker
 								);
-								this.plugin.AppData.markers[
-									index
-								].type = new_value;
-
+								this.newMarker = {
+									type: "",
+									icon: null,
+									color: this.plugin.AppData.defaultMarker
+										.icon
+										? this.plugin.AppData.defaultMarker
+												.color
+										: this.plugin.AppData.color,
+									layer: true,
+								};
+								this.display();
 								await this.plugin.saveSettings();
-							}
-						);
-					t.inputEl.setAttribute("style", "margin-right: auto;");
-					return t;
-				})
-				.addText(text => {
-					let t = text
-						.setPlaceholder("Icon Name")
-						.setValue(marker.icon ? marker.icon.iconName : "")
-						.onChange(
-							async (new_value): Promise<void> => {
-								let index = this.plugin.AppData.markers.indexOf(
-									marker
-								);
-								let icon = findIconDefinition({
-									iconName: new_value,
-								} as IconLookup);
-								if (icon) {
-									this.plugin.AppData.markers[
-										index
-									].icon = findIconDefinition({
-										iconName: new_value,
-									} as IconLookup);
-									await this.plugin.saveSettings();
-
-									this.createColorPicker(setting, marker);
-								}
-							}
-						);
-					t.inputEl.onblur = evt => {
-						if (
-							!findIconDefinition({
-								iconName: (evt.target as HTMLInputElement)
-									.value,
+							};
+						});
+					b.buttonEl.appendChild(
+						icon(
+							findIconDefinition({
+								iconName: "plus",
 							} as IconLookup)
-						) {
-							new Notice(
-								`No icon named ${
-									(evt.target as HTMLInputElement).value
-								} exists in Font Awesome Free.`
-							);
-							evt.target;
-						}
+						).node[0]
+					);
+					return b;
+				}
+			);
+		this.plugin.AppData.markers.forEach(marker => {
+			let setting = new Setting(additionalMarkers)
+				.setName(marker.type)
+				.addExtraButton(b =>
+					b.onClick(() => {
+						let newMarkerModal = new MarkerModal(
+							this.app,
+							this.plugin,
+							marker
+						);
+						newMarkerModal.open();
+						newMarkerModal.onClose = async () => {
+							this.display();
+							await this.plugin.saveSettings();
+							if (!this.newMarker.type || !this.newMarker.icon) {
+								return;
+							}
+						};
+					})
+				)
+				.addExtraButton(b =>
+					b.setIcon("trash").onClick(() => {
+						this.plugin.AppData.markers = this.plugin.AppData.markers.filter(
+							m => m != marker
+						);
 						this.display();
-					};
-					return t;
-				});
-			setting.controlEl.addClass("additional-markers-control");
-			setting.infoEl.detach();
+					})
+				);
+			let iconNode: AbstractElement = icon(marker.icon, {
+				transform: marker.layer ? { size: 6, x: 0, y: -2 } : null,
+				mask: marker.layer
+					? this.plugin.AppData.defaultMarker?.icon
+					: null,
+				classes: ["full-width"],
+			}).abstract[0];
 
-			setting.controlEl.addClass("marker-icon-display");
-
-			if (marker.icon) {
-				this.createColorPicker(setting, marker);
-			}
+			iconNode.attributes = {
+				...iconNode.attributes,
+				style: `color: ${marker.color}`,
+			};
+			let markerIconDiv = createDiv();
+			markerIconDiv.setAttribute("style", "width: 16px;");
+			markerIconDiv.innerHTML = toHtml(iconNode);
+			setting.controlEl.insertBefore(
+				markerIconDiv,
+				setting.controlEl.children[0]
+			);
 		});
 
-		new Setting(additionalMarkers).addButton(
-			(button: ButtonComponent): ButtonComponent => {
-				let b = button.setTooltip("Add Additional").onClick(() => {
-					this.plugin.AppData.markers.push({
-						type: "",
-						icon: null,
-						/* color: this.plugin.AppData.color, */
-					});
-					// Force refresh
-					this.display();
-				});
-				b.buttonEl.appendChild(
-					icon(
-						findIconDefinition({
-							iconName: "plus",
-						} as IconLookup)
-					).node[0]
-				);
-
-				return b;
-			}
-		);
+		await this.plugin.saveSettings();
 	}
-	createColorPicker(setting: Setting, marker: Marker) {
+
+	createColorPicker(
+		setting: Setting,
+		marker: Marker,
+		insertAfter?: HTMLInputElement
+	) {
 		if (setting.controlEl.querySelector(".color-picker")) {
 			setting.controlEl.removeChild(
 				setting.controlEl.querySelector(".color-picker")
 			);
 		}
 
-		let colorContainer = setting.controlEl.createDiv({
+		let colorContainer = document.createElement("div");
+		/* setting.controlEl.createDiv({
 			cls: "marker-icon-display color-picker",
-		});
+		}); */
+
+		colorContainer.addClasses(["marker-icon-display", "color-picker"]);
+
+		if (insertAfter) {
+			setting.controlEl.insertBefore(
+				colorContainer,
+				insertAfter.nextSibling
+			);
+		} else {
+			setting.controlEl.appendChild(colorContainer);
+		}
 
 		let buttonEl: HTMLButtonElement;
+
 		colorContainer.appendChild(
 			colorContainer.createEl(
 				"button",
@@ -319,20 +343,262 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 	}
 }
 
-/* .onChange(async new_value => {
-					let fuzzy = fuzzySearch(prepareQuery(new_value), iconNames);
-					console.log(
-						fuzzy.matches,
-						fuzzy.matches.map(match => {
-							let prev = iconNames
-								.slice(0, match[0])
-								.split("|")
-								.pop();
-							let next = iconNames
-								.slice(match[0])
-								.split("|")
-								.shift();
-							return prev + next;
-						})
+class MarkerModal extends Modal {
+	marker: Marker;
+	tempMarker: Marker;
+	plugin: ObsidianLeaflet;
+	constructor(app: App, plugin: ObsidianLeaflet, marker: Marker) {
+		super(app);
+		this.marker = marker;
+		this.plugin = plugin;
+
+		this.tempMarker = { ...this.marker };
+		console.log(
+			"🚀 ~ file: settings.ts ~ line 347 ~ MarkerModal ~ constructor ~ this.tempMarker",
+			this.tempMarker
+		);
+	}
+	onOpen() {
+		let containerEl = this.contentEl;
+		let createNewMarker = containerEl.createDiv();
+		createNewMarker.addClass("additional-markers-container");
+		new Setting(createNewMarker).setHeading().setName("Create New Marker");
+
+		let typeTextInput: TextComponent;
+		new Setting(createNewMarker).setName("Marker Name").addText(text => {
+			typeTextInput = text
+				.setPlaceholder("Marker Name")
+				.setValue(this.tempMarker.type);
+			typeTextInput.onChange(new_value => {
+				if (
+					this.plugin.AppData.markers.find(
+						marker => marker.type == new_value
+					) &&
+					this.tempMarker.type != this.marker.type
+				) {
+					MarkerModal.setValidationError(
+						typeTextInput,
+						"Marker type already exists."
 					);
-				}); */
+					return;
+				}
+
+				if (new_value.length == 0) {
+					MarkerModal.setValidationError(
+						typeTextInput,
+						"Marker name cannot be empty."
+					);
+					return;
+				}
+
+				MarkerModal.removeValidationError(typeTextInput);
+
+				this.tempMarker.type = new_value;
+			});
+		});
+
+		let iconTextInput: TextComponent;
+		new Setting(createNewMarker)
+			.setName("Marker Icon")
+			.setDesc("Font Awesome icon name (e.g. map-marker).")
+			.addText(text => {
+				iconTextInput = text
+					.setPlaceholder("Icon Name")
+					.setValue(
+						this.tempMarker.icon
+							? this.tempMarker.icon.iconName
+							: ""
+					)
+					.onChange(
+						async (new_value): Promise<void> => {
+							let icon = findIconDefinition({
+								iconName: new_value,
+							} as IconLookup);
+
+							if (!icon) {
+								MarkerModal.setValidationError(
+									iconTextInput,
+									"Invalid icon name."
+								);
+								return;
+							}
+
+							if (new_value.length == 0) {
+								MarkerModal.setValidationError(
+									iconTextInput,
+									"Icon cannot be empty."
+								);
+								return;
+							}
+
+							MarkerModal.removeValidationError(iconTextInput);
+							this.tempMarker.icon = icon;
+						}
+					);
+
+				return iconTextInput;
+			});
+		new Setting(createNewMarker)
+			.setName("Layer Icon")
+			.setDesc("The icon will be layered on the base icon, if any.")
+			.addToggle(toggle =>
+				toggle.setValue(this.tempMarker.layer).onChange(v => {
+					this.tempMarker.layer = v;
+				})
+			);
+		let colorInput = new Setting(createNewMarker)
+			.setName("Icon Color")
+			.setDesc("Override default icon color.");
+		let colorInputNode = document.createElement("input");
+		colorInputNode.setAttribute("type", "color");
+		colorInputNode.setAttribute("value", this.tempMarker.color);
+		colorInputNode.oninput = evt => {
+			this.tempMarker.color = (evt.target as HTMLInputElement).value;
+		};
+		colorInputNode.onchange = async evt => {
+			this.tempMarker.color = (evt.target as HTMLInputElement).value;
+		};
+		colorInput.controlEl.appendChild(colorInputNode);
+
+		let add = new Setting(createNewMarker);
+		if (this.tempMarker.icon) {
+			let iconNode: AbstractElement = icon(this.tempMarker.icon, {
+				transform: this.tempMarker.layer
+					? { size: 6, x: 0, y: -2 }
+					: null,
+				mask: this.tempMarker.layer
+					? this.plugin.AppData.defaultMarker?.icon
+					: null,
+				classes: ["full-width"],
+			}).abstract[0];
+
+			iconNode.attributes = {
+				...iconNode.attributes,
+				style: `color: ${this.tempMarker.color}`,
+			};
+			let marker = add.infoEl.createDiv();
+			marker.setAttribute("style", "height: 12px;");
+			marker.innerHTML = toHtml(iconNode);
+		}
+		add.addButton(
+			(button: ButtonComponent): ButtonComponent => {
+				let b = button.setTooltip("Save").onClick(async () => {
+					// Force refresh
+					let error = false;
+					if (
+						this.plugin.AppData.markers.find(
+							marker => marker.type == this.tempMarker.type
+						) &&
+						this.tempMarker.type != this.marker.type
+					) {
+						MarkerModal.setValidationError(
+							typeTextInput,
+							"Marker type already exists."
+						);
+						error = true;
+					}
+
+					if (this.tempMarker.type.length == 0) {
+						MarkerModal.setValidationError(
+							typeTextInput,
+							"Marker name cannot be empty."
+						);
+						error = true;
+					}
+					if (
+						!findIconDefinition({
+							iconName: iconTextInput.inputEl.value,
+						} as IconLookup)
+					) {
+						MarkerModal.setValidationError(
+							iconTextInput,
+							"Invalid icon name."
+						);
+						error = true;
+					}
+
+					if (!this.tempMarker.icon) {
+						MarkerModal.setValidationError(
+							iconTextInput,
+							"Icon cannot be empty."
+						);
+						error = true;
+					}
+
+					if (error) {
+						return;
+					}
+
+					this.marker.type = this.tempMarker.type;
+					this.marker.icon = this.tempMarker.icon;
+					this.marker.color = this.tempMarker.color;
+					this.marker.layer = this.tempMarker.layer;
+
+					this.close();
+				});
+				b.buttonEl.appendChild(
+					icon(
+						findIconDefinition({
+							iconName: "save",
+						} as IconLookup)
+					).node[0]
+				);
+				return b;
+			}
+		);
+		//console.log(setIcon)
+		add.addExtraButton(b => {
+			b.setIcon("cross")
+				.setTooltip("Cancel")
+				.onClick(() => {
+					/* this.tempMarker = {
+						type: "",
+						icon: null,
+						color: this.plugin.AppData.defaultMarker.icon
+							? this.plugin.AppData.defaultMarker.color
+							: this.plugin.AppData.color,
+						layer: true,
+					}; */
+					this.close();
+				});
+		});
+	}
+
+	static setValidationError(textInput: TextComponent, message?: string) {
+		textInput.inputEl.addClass("is-invalid");
+		if (message) {
+			textInput.inputEl.parentElement.addClasses([
+				"has-invalid-message",
+				"unset-align-items",
+			]);
+			textInput.inputEl.parentElement.parentElement.addClass(
+				".unset-align-items"
+			);
+			let mDiv = textInput.inputEl.parentElement.querySelector(
+				".invalid-feedback"
+			) as HTMLDivElement;
+
+			if (!mDiv) {
+				mDiv = createDiv({ cls: "invalid-feedback" });
+			}
+			mDiv.innerText = message;
+			mDiv.insertAfter(textInput.inputEl);
+		}
+	}
+	static removeValidationError(textInput: TextComponent) {
+		textInput.inputEl.removeClass("is-invalid");
+		textInput.inputEl.parentElement.removeClasses([
+			"has-invalid-message",
+			"unset-align-items",
+		]);
+		textInput.inputEl.parentElement.parentElement.removeClass(
+			".unset-align-items"
+		);
+
+		if (textInput.inputEl.parentElement.children[1]) {
+			textInput.inputEl.parentElement.removeChild(
+				textInput.inputEl.parentElement.children[1]
+			);
+		}
+	}
+}
