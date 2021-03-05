@@ -26,7 +26,7 @@ declare global {
 		type: string;
 		icon: IconDefinition;
 		color?: string;
-		link?: string;
+		layer?: boolean;
 	}
 	interface LeafletMarker {
 		marker: MarkerIcon;
@@ -36,8 +36,10 @@ declare global {
 		leafletInstance: L.Marker;
 	}
 	interface ObsidianAppData {
+		maps: MapsInterface;
 		markers: Marker[];
 		defaultMarker: Marker;
+		color: string;
 	}
 	type MarkerIcon = {
 		readonly type: string;
@@ -53,7 +55,6 @@ interface MarkdownPostProcessorContextActual
 export default class ObsidianLeaflet extends Plugin {
 	AppData: ObsidianAppData;
 	markerIcons: MarkerIcon[];
-	maps: LeafletMap[] = [];
 	async onload(): Promise<void> {
 		console.log("loading leaflet plugin");
 
@@ -156,51 +157,7 @@ export default class ObsidianLeaflet extends Plugin {
 		});
 
 		map.on("marker-added", async (marker: LeafletMarker) => {
-			//build marker entry string
-			const markerEntry = [
-				`[${marker.loc.lat},${marker.loc.lng}]`,
-				marker.marker.type,
-				marker.link,
-				marker.id,
-			].join("|");
-
-			/** Read current file content */
-			const file = this.app.vault.getAbstractFileByPath(
-				ctx.sourcePath
-			) as TFile;
-			let content = await this.app.vault.read(file);
-
-			/** Find location of current map source block */
-			const sourceLocationInFile = [
-				content.indexOf(source),
-				content.indexOf(source) +
-					`${content}`.slice(content.indexOf(source)).indexOf("```"),
-			];
-			let newSource: string[] | string = source
-				.split("\n")
-				.filter(line => line.length);
-
-			/** Test for modified marker */
-
-			if (newSource.find(line => line.includes(marker.id))) {
-				//existing marker, need to update
-				newSource[
-					newSource.indexOf(
-						newSource.find(line => line.includes(marker.id))
-					)
-				] = `marker: ${markerEntry}`;
-			} else {
-				newSource.push(`marker: ${markerEntry}`);
-			}
-			source = newSource.join("\n");
-
-			content =
-				content.slice(0, sourceLocationInFile[0]) +
-				source +
-				"\n" +
-				content.slice(sourceLocationInFile[1]);
-
-			await this.app.vault.modify(file, content);
+			await this.saveSettings();
 		});
 
 		map.on("marker-click", (link: string, newWindow: boolean) => {
@@ -243,9 +200,22 @@ export default class ObsidianLeaflet extends Plugin {
 			markerSettingsModal.open();
 		});
 
-		this.maps.push(map);
+		if (!this.maps[ctx.sourcePath]) {
+			this.maps[ctx.sourcePath] = {};
+		}
+
+		if (this.maps[ctx.sourcePath][image]) {
+			map.loadData(this.maps[ctx.sourcePath][image]);
+		}
+
+		this.maps[ctx.sourcePath][image] = map;
 
 		await this.saveSettings();
+
+		await this.saveSettings();
+	}
+	get maps() {
+		return this.AppData.maps;
 	}
 	async loadSettings() {
 		this.AppData = Object.assign(
@@ -264,7 +234,11 @@ export default class ObsidianLeaflet extends Plugin {
 
 			this.markerIcons = this.generateMarkerMarkup(this.AppData.markers);
 
-			this.maps.forEach(map => map.setMarkerIcons(this.markerIcons));
+			Object.values(this.maps).forEach(maps =>
+				Object.values(maps).forEach(map =>
+					map.setMarkerIcons(this.markerIcons)
+				)
+			);
 		} catch (e) {}
 	}
 	getEditor() {
@@ -281,25 +255,27 @@ export default class ObsidianLeaflet extends Plugin {
 		markers: Marker[] = this.AppData.markers
 	): MarkerIcon[] {
 		let ret = markers.map(marker => {
-			let html: string,
-				iconNode: AbstractElement = icon(marker.icon, {
-					transform: { size: 6, x: 0, y: -2 },
-					mask: this.AppData.defaultMarker?.icon,
-					classes: ["full-width-height"],
-				}).abstract[0];
+			try {
+				let html: string,
+					iconNode: AbstractElement = icon(marker.icon, {
+						transform: { size: 6, x: 0, y: -2 },
+						mask: this.AppData.defaultMarker?.icon,
+						classes: ["full-width-height"],
+					}).abstract[0];
 
-			iconNode.attributes = {
-				...iconNode.attributes,
-				style: `color: ${
-					marker.color
-						? marker.color
-						: this.AppData.defaultMarker?.color
-				}`,
-			};
+				iconNode.attributes = {
+					...iconNode.attributes,
+					style: `color: ${
+						marker.color
+							? marker.color
+							: this.AppData.defaultMarker?.color
+					}`,
+				};
 
-			html = toHtml(iconNode);
+				html = toHtml(iconNode);
 
-			return { type: marker.type, html: html, link: marker.link };
+				return { type: marker.type, html: html };
+			} catch (e) {}
 		});
 		ret.unshift({
 			type: "Default",
@@ -309,7 +285,6 @@ export default class ObsidianLeaflet extends Plugin {
 					color: this.AppData.defaultMarker.color,
 				},
 			}).html[0],
-			link: undefined,
 		});
 
 		return ret;
