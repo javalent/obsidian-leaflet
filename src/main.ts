@@ -4,10 +4,8 @@ import {
 	addIcon,
 	Notice,
 	MarkdownView,
-	FileSystemAdapter,
 	Modal,
 	Setting,
-	TFile,
 } from "obsidian";
 import { point, latLng } from "leaflet";
 
@@ -85,6 +83,7 @@ export default class ObsidianLeaflet extends Plugin {
 
 		if (!image) {
 			console.error("An image source url must be provided.");
+			new Notice("An image source url must be provided.");
 			el.appendText("An image source url must be provided.");
 			el.setAttribute("style", "color: red;");
 			return;
@@ -97,45 +96,6 @@ export default class ObsidianLeaflet extends Plugin {
 			ctx.sourcePath,
 			this.markerIcons
 		);
-
-		const file = this.app.vault.getAbstractFileByPath(
-			ctx.sourcePath
-		) as TFile;
-		const content = await this.app.vault.read(file);
-		const sourceLocationInFile = [
-			content.indexOf(source),
-			content.indexOf(source) +
-				`${content}`.slice(content.indexOf(source)).indexOf("```") +
-				3,
-		];
-
-		let markers = source
-			.split("\n")
-			.map(l => l.split(": "))
-			.filter(([type]) => type == "marker");
-
-		//await this.app.vault.modify(file, content + `\nTest`)
-
-		if (markers.length) {
-			markers.forEach(marker => {
-				let [latlng, type, link, id] = marker[1].split("|");
-				console.log(
-					"🚀 ~ file: main.ts ~ line 113 ~ ObsidianLeaflet ~ id, latlng, link, type",
-					id,
-					latLng(JSON.parse(latlng)),
-					link,
-					type
-				);
-				let loc = latLng(JSON.parse(latlng));
-
-				map.createMarker(
-					this.markerIcons.find(m => m.type == type),
-					loc,
-					link,
-					id
-				);
-			});
-		}
 
 		el.addEventListener("dragover", evt => {
 			evt.preventDefault();
@@ -211,8 +171,7 @@ export default class ObsidianLeaflet extends Plugin {
 		this.maps[ctx.sourcePath][image] = map;
 
 		await this.saveSettings();
-
-		await this.saveSettings();
+		
 	}
 	get maps() {
 		return this.AppData.maps;

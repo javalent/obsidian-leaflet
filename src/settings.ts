@@ -5,7 +5,6 @@ import {
 	Notice,
 	ButtonComponent,
 	Modal,
-	setIcon,
 	TextComponent,
 } from "obsidian";
 
@@ -353,10 +352,6 @@ class MarkerModal extends Modal {
 		this.plugin = plugin;
 
 		this.tempMarker = { ...this.marker };
-		console.log(
-			"🚀 ~ file: settings.ts ~ line 347 ~ MarkerModal ~ constructor ~ this.tempMarker",
-			this.tempMarker
-		);
 	}
 	onOpen() {
 		let containerEl = this.contentEl;
@@ -546,19 +541,10 @@ class MarkerModal extends Modal {
 				return b;
 			}
 		);
-		//console.log(setIcon)
 		add.addExtraButton(b => {
 			b.setIcon("cross")
 				.setTooltip("Cancel")
 				.onClick(() => {
-					/* this.tempMarker = {
-						type: "",
-						icon: null,
-						color: this.plugin.AppData.defaultMarker.icon
-							? this.plugin.AppData.defaultMarker.color
-							: this.plugin.AppData.color,
-						layer: true,
-					}; */
 					this.close();
 				});
 		});
