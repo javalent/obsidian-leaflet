@@ -14,18 +14,19 @@ import {
 	icon,
 	toHtml,
 	AbstractElement,
+	getIcon,
 } from "./icons";
 
 export const DEFAULT_SETTINGS: ObsidianAppData = {
-	maps: {},
+	mapMarkers: [],
 	defaultMarker: {
 		type: "default",
-		icon: findIconDefinition({
+		iconName: "map-marker",/* findIconDefinition({
 			iconName: "map-marker",
-		} as IconLookup),
+		} as IconLookup), */
 		color: "#dddddd",
 	},
-	markers: [],
+	markerIcons: [],
 	color: "#dddddd",
 };
 
@@ -39,8 +40,8 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 		this.newMarker = {
 			type: "",
-			icon: null,
-			color: this.plugin.AppData.defaultMarker.icon
+			iconName: null,
+			color: this.plugin.AppData.defaultMarker.iconName
 				? this.plugin.AppData.defaultMarker.color
 				: this.plugin.AppData.color,
 			layer: true,
@@ -59,10 +60,8 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 			.setDesc("Leave blank to have full-sized marker symbols instead.")
 			.addText(text => {
 				text.setPlaceholder("Icon Name").setValue(
-					this.plugin.AppData.defaultMarker.icon
-						? findIconDefinition(
-								this.plugin.AppData.defaultMarker.icon
-						  ).iconName
+					this.plugin.AppData.defaultMarker.iconName
+						? this.plugin.AppData.defaultMarker.iconName
 						: ""
 				);
 				text.inputEl.addEventListener("blur", async evt => {
@@ -70,17 +69,15 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 					let new_value: string = target.value;
 
 					if (!new_value.length) {
-						if (this.plugin.AppData.markers.length == 0) {
+						if (this.plugin.AppData.markerIcons.length == 0) {
 							new Notice(
 								"Add additional markers to remove the default."
 							);
-							target.value = findIconDefinition(
-								this.plugin.AppData.defaultMarker.icon
-							).iconName;
+							target.value = this.plugin.AppData.defaultMarker.iconName;
 							return;
 						}
 
-						this.plugin.AppData.defaultMarker.icon = null;
+						this.plugin.AppData.defaultMarker.iconName = null;
 
 						await this.plugin.saveSettings();
 
@@ -98,11 +95,11 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 						return;
 					}
 
-					this.plugin.AppData.defaultMarker.icon = findIconDefinition(
+					this.plugin.AppData.defaultMarker.iconName = new_value/* findIconDefinition(
 						{
 							iconName: new_value,
 						} as IconLookup
-					);
+					); */
 
 					await this.plugin.saveSettings();
 
@@ -110,7 +107,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 				});
 			});
 
-		if (this.plugin.AppData.defaultMarker.icon) {
+		if (this.plugin.AppData.defaultMarker.iconName) {
 			this.createColorPicker(
 				baseSetting,
 				this.plugin.AppData.defaultMarker
@@ -140,18 +137,18 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 
 								if (
 									!this.newMarker.type ||
-									!this.newMarker.icon
+									!this.newMarker.iconName
 								) {
 									return;
 								}
-								this.plugin.AppData.markers.push(
+								this.plugin.AppData.markerIcons.push(
 									this.newMarker
 								);
 								this.newMarker = {
 									type: "",
-									icon: null,
+									iconName: null,
 									color: this.plugin.AppData.defaultMarker
-										.icon
+										.iconName
 										? this.plugin.AppData.defaultMarker
 												.color
 										: this.plugin.AppData.color,
@@ -171,7 +168,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 					return b;
 				}
 			);
-		this.plugin.AppData.markers.forEach(marker => {
+		this.plugin.AppData.markerIcons.forEach(marker => {
 			let setting = new Setting(additionalMarkers)
 				.setName(marker.type)
 				.addExtraButton(b =>
@@ -185,7 +182,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 						newMarkerModal.onClose = async () => {
 							this.display();
 							await this.plugin.saveSettings();
-							if (!this.newMarker.type || !this.newMarker.icon) {
+							if (!this.newMarker.type || !this.newMarker.iconName) {
 								return;
 							}
 						};
@@ -193,16 +190,16 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 				)
 				.addExtraButton(b =>
 					b.setIcon("trash").onClick(() => {
-						this.plugin.AppData.markers = this.plugin.AppData.markers.filter(
+						this.plugin.AppData.markerIcons = this.plugin.AppData.markerIcons.filter(
 							m => m != marker
 						);
 						this.display();
 					})
 				);
-			let iconNode: AbstractElement = icon(marker.icon, {
+			let iconNode: AbstractElement = icon( getIcon( marker.iconName ), {
 				transform: marker.layer ? { size: 6, x: 0, y: -2 } : null,
 				mask: marker.layer
-					? this.plugin.AppData.defaultMarker?.icon
+					? getIcon( this.plugin.AppData.defaultMarker?.iconName )
 					: null,
 				classes: ["full-width"],
 			}).abstract[0];
@@ -262,10 +259,10 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 					buttonEl = el;
 					if (
 						marker.type == "default" ||
-						!this.plugin.AppData.defaultMarker.icon
+						!this.plugin.AppData.defaultMarker.iconName
 					) {
 						el.appendChild(
-							icon(marker.icon, {
+							icon(getIcon(marker.iconName), {
 								styles: {
 									color: marker.color
 										? marker.color
@@ -275,9 +272,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 							}).node[0]
 						);
 					} else {
-						let i = icon(marker.icon, {
+						let i = icon(getIcon(marker.iconName), {
 							transform: { size: 6, x: 0, y: -2 },
-							mask: this.plugin.AppData.defaultMarker.icon,
+							mask: getIcon(this.plugin.AppData.defaultMarker.iconName),
 							styles: {
 								color: marker.color
 									? marker.color
@@ -299,7 +296,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 						el.appendChild(temp.children[0]);
 					}
 					el.addClass(`${marker.type}-map-marker`);
-					if (this.plugin.AppData.defaultMarker.icon && !marker.color)
+					if (this.plugin.AppData.defaultMarker.iconName && !marker.color)
 						el.addClass("default-map-marker");
 				}
 			)
@@ -353,20 +350,29 @@ class MarkerModal extends Modal {
 
 		this.tempMarker = { ...this.marker };
 	}
-	onOpen() {
+
+	async display() {
+
 		let containerEl = this.contentEl;
+		containerEl.empty();
+
 		let createNewMarker = containerEl.createDiv();
 		createNewMarker.addClass("additional-markers-container");
-		new Setting(createNewMarker).setHeading().setName("Create New Marker");
+		//new Setting(createNewMarker).setHeading().setName("Create New Marker");
+
+		let iconDisplayAndSettings = createNewMarker.createDiv();
+		iconDisplayAndSettings.addClass('marker-creation-modal')
+		let iconSettings = iconDisplayAndSettings.createDiv();
+		let iconDisplay = iconDisplayAndSettings.createDiv();
 
 		let typeTextInput: TextComponent;
-		new Setting(createNewMarker).setName("Marker Name").addText(text => {
+		let markerName = new Setting(iconSettings).setName("Marker Name").addText(text => {
 			typeTextInput = text
 				.setPlaceholder("Marker Name")
 				.setValue(this.tempMarker.type);
 			typeTextInput.onChange(new_value => {
 				if (
-					this.plugin.AppData.markers.find(
+					this.plugin.AppData.markerIcons.find(
 						marker => marker.type == new_value
 					) &&
 					this.tempMarker.type != this.marker.type
@@ -389,19 +395,20 @@ class MarkerModal extends Modal {
 				MarkerModal.removeValidationError(typeTextInput);
 
 				this.tempMarker.type = new_value;
+				this.display();
 			});
 		});
 
 		let iconTextInput: TextComponent;
-		new Setting(createNewMarker)
+		let iconName = new Setting(iconSettings)
 			.setName("Marker Icon")
 			.setDesc("Font Awesome icon name (e.g. map-marker).")
 			.addText(text => {
 				iconTextInput = text
 					.setPlaceholder("Icon Name")
 					.setValue(
-						this.tempMarker.icon
-							? this.tempMarker.icon.iconName
+						this.tempMarker.iconName
+							? this.tempMarker.iconName
 							: ""
 					)
 					.onChange(
@@ -427,18 +434,46 @@ class MarkerModal extends Modal {
 							}
 
 							MarkerModal.removeValidationError(iconTextInput);
-							this.tempMarker.icon = icon;
+							this.tempMarker.iconName = icon.iconName;
+
+				this.display();
 						}
 					);
 
 				return iconTextInput;
 			});
+
+
+		if (this.tempMarker.iconName) {
+			let iconNode: AbstractElement = icon(getIcon( this.tempMarker.iconName ), {
+				transform: this.tempMarker.layer
+					? { size: 6, x: 0, y: -2 }
+					: null,
+				mask: this.tempMarker.layer
+					? getIcon(this.plugin.AppData.defaultMarker?.iconName)
+					: null,
+				classes: ["full-width-height"],
+			}).abstract[0];
+
+			iconNode.attributes = {
+				...iconNode.attributes,
+				style: `color: ${this.tempMarker.color}`,
+			};
+			//let marker = iconDisplay;
+			let iconDisplayHeight = markerName.settingEl.getBoundingClientRect().height + iconName.settingEl.getBoundingClientRect().height;
+			iconDisplay.setAttribute("style", `height: ${iconDisplayHeight}px; padding: 1rem;`);
+			iconDisplay.innerHTML = toHtml(iconNode);
+		}
+
+
 		new Setting(createNewMarker)
 			.setName("Layer Icon")
 			.setDesc("The icon will be layered on the base icon, if any.")
 			.addToggle(toggle =>
 				toggle.setValue(this.tempMarker.layer).onChange(v => {
 					this.tempMarker.layer = v;
+
+				this.display();
 				})
 			);
 		let colorInput = new Setting(createNewMarker)
@@ -449,14 +484,19 @@ class MarkerModal extends Modal {
 		colorInputNode.setAttribute("value", this.tempMarker.color);
 		colorInputNode.oninput = evt => {
 			this.tempMarker.color = (evt.target as HTMLInputElement).value;
+
+			iconDisplay.children[0].setAttribute('style', `color: ${this.tempMarker.color}`)
+
 		};
 		colorInputNode.onchange = async evt => {
 			this.tempMarker.color = (evt.target as HTMLInputElement).value;
+
+			this.display();
 		};
 		colorInput.controlEl.appendChild(colorInputNode);
 
 		let add = new Setting(createNewMarker);
-		if (this.tempMarker.icon) {
+		/* if (this.tempMarker.icon) {
 			let iconNode: AbstractElement = icon(this.tempMarker.icon, {
 				transform: this.tempMarker.layer
 					? { size: 6, x: 0, y: -2 }
@@ -474,14 +514,14 @@ class MarkerModal extends Modal {
 			let marker = add.infoEl.createDiv();
 			marker.setAttribute("style", "height: 12px;");
 			marker.innerHTML = toHtml(iconNode);
-		}
+		} */
 		add.addButton(
 			(button: ButtonComponent): ButtonComponent => {
 				let b = button.setTooltip("Save").onClick(async () => {
 					// Force refresh
 					let error = false;
 					if (
-						this.plugin.AppData.markers.find(
+						this.plugin.AppData.markerIcons.find(
 							marker => marker.type == this.tempMarker.type
 						) &&
 						this.tempMarker.type != this.marker.type
@@ -512,7 +552,7 @@ class MarkerModal extends Modal {
 						error = true;
 					}
 
-					if (!this.tempMarker.icon) {
+					if (!this.tempMarker.iconName) {
 						MarkerModal.setValidationError(
 							iconTextInput,
 							"Icon cannot be empty."
@@ -525,7 +565,7 @@ class MarkerModal extends Modal {
 					}
 
 					this.marker.type = this.tempMarker.type;
-					this.marker.icon = this.tempMarker.icon;
+					this.marker.iconName = this.tempMarker.iconName;
 					this.marker.color = this.tempMarker.color;
 					this.marker.layer = this.tempMarker.layer;
 
@@ -548,6 +588,13 @@ class MarkerModal extends Modal {
 					this.close();
 				});
 		});
+
+	}
+
+	onOpen() {
+		
+		this.display();
+
 	}
 
 	static setValidationError(textInput: TextComponent, message?: string) {

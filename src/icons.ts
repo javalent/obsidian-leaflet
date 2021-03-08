@@ -16,6 +16,13 @@ const iconNames = Object.values(fas)
 	.map(i => i.iconName)
 	.join("|");
 
+export function getIcon(iconName: string): IconDefinition {
+	if (!iconName) return null;
+	return findIconDefinition({
+		iconName: iconName,
+	} as IconLookup)
+}
+
 export {
 	far,
 	fas,

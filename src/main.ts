@@ -6,23 +6,29 @@ import {
 	MarkdownView,
 	Modal,
 	Setting,
+	Workspace,
+	TFile,
 } from "obsidian";
 import { point, latLng } from "leaflet";
 
 //Local Imports
 import { ObsidianLeafletSettingTab, DEFAULT_SETTINGS } from "./settings";
-import { IconDefinition, AbstractElement, icon, toHtml } from "./icons";
+import {
+	IconDefinition,
+	AbstractElement,
+	icon,
+	toHtml,
+	getIcon,
+} from "./icons";
 import LeafletMap from "./leaflet";
 declare global {
-	interface MapsInterface {
-		[key: string]: MapInterface;
-	}
-	interface MapInterface {
-		[key: string]: LeafletMap;
-	}
+	/* interface MapsInterface {
+		[sourcePath: string]: MapInterface;
+	} */
 	interface Marker {
 		type: string;
-		icon: IconDefinition;
+		iconName: string;
+		/* icon: IconDefinition; */
 		color?: string;
 		layer?: boolean;
 	}
@@ -33,9 +39,20 @@ declare global {
 		link?: string;
 		leafletInstance: L.Marker;
 	}
+
+	interface MarkerData {
+		type: string;
+		loc: [number, number];
+		id: string;
+		link: string;
+	}
+	interface MapMarkerData {
+		path: string;
+		markers: MarkerData[];
+	}
 	interface ObsidianAppData {
-		maps: MapsInterface;
-		markers: Marker[];
+		mapMarkers: MapMarkerData[];
+		markerIcons: Marker[];
 		defaultMarker: Marker;
 		color: string;
 	}
@@ -53,16 +70,37 @@ interface MarkdownPostProcessorContextActual
 export default class ObsidianLeaflet extends Plugin {
 	AppData: ObsidianAppData;
 	markerIcons: MarkerIcon[];
+	maps: LeafletMap[] = [];
 	async onload(): Promise<void> {
 		console.log("loading leaflet plugin");
 
 		await this.loadSettings();
 
-		this.markerIcons = this.generateMarkerMarkup(this.AppData.markers);
+		this.markerIcons = this.generateMarkerMarkup(this.AppData.markerIcons);
 
 		this.registerMarkdownCodeBlockProcessor(
 			"leaflet",
 			this.postprocessor.bind(this)
+		);
+
+		this.registerEvent(
+			this.app.vault.on("delete", async (file) => {
+				if (
+					this.AppData.mapMarkers.find((marker) =>
+						marker.path.includes(file.path)
+					)
+				) {
+					this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
+						(marker) =>
+							marker !=
+							this.AppData.mapMarkers.find((marker) =>
+								marker.path.includes(file.path)
+							)
+					);
+
+					await this.saveSettings();
+				}
+			})
 		);
 
 		this.addSettingTab(new ObsidianLeafletSettingTab(this.app, this));
@@ -78,7 +116,7 @@ export default class ObsidianLeaflet extends Plugin {
 		ctx: MarkdownPostProcessorContextActual
 	): Promise<void> {
 		let { image, height = "500px" } = Object.fromEntries(
-			source.split("\n").map(l => l.split(": "))
+			source.split("\n").map((l) => l.split(": "))
 		);
 
 		if (!image) {
@@ -97,10 +135,22 @@ export default class ObsidianLeaflet extends Plugin {
 			this.markerIcons
 		);
 
-		el.addEventListener("dragover", evt => {
+		if (this.maps.find((map) => map.path == `${ctx.sourcePath}/${image}`)) {
+			map.loadData(
+				this.maps.find(
+					(map) => map.path == `${ctx.sourcePath}/${image}`
+				).markers
+			);
+			this.maps = this.maps.filter(
+				(map) => map.path != `${ctx.sourcePath}/${image}`
+			);
+		}
+		this.maps.push(map);
+
+		this.registerDomEvent(el, "dragover", (evt) => {
 			evt.preventDefault();
 		});
-		el.addEventListener("drop", evt => {
+		this.registerDomEvent(el, "drop", (evt) => {
 			evt.stopPropagation();
 
 			let file = decodeURIComponent(
@@ -116,66 +166,112 @@ export default class ObsidianLeaflet extends Plugin {
 			);
 		});
 
-		map.on("marker-added", async (marker: LeafletMarker) => {
-			await this.saveSettings();
-		});
+		this.registerEvent(
+			map.on("marker-added", async (marker: LeafletMarker) => {
+				await this.saveSettings();
+			})
+		);
 
-		map.on("marker-click", (link: string, newWindow: boolean) => {
-			this.app.workspace.openLinkText("", link, newWindow).then(() => {
-				var cmEditor = this.getEditor();
-				cmEditor.focus();
-			});
-		});
+		this.registerEvent(
+			map.on("marker-click", (link: string, newWindow: boolean) => {
+				this.app.workspace
+					.openLinkText("", link, newWindow)
+					.then(() => {
+						var cmEditor = this.getEditor();
+						cmEditor.focus();
+					});
+			})
+		);
 
-		map.on("marker-context", async (marker: LeafletMarker) => {
-			let markerSettingsModal = new Modal(this.app);
+		this.registerEvent(
+			map.on("marker-context", async (marker: LeafletMarker) => {
+				let markerSettingsModal = new Modal(this.app);
 
-			new Setting(markerSettingsModal.contentEl)
-				.setName("Note to Open")
-				.setDesc("Path of note to open, e.g. Folder1/Folder2/Note.md")
-				.addText(text => {
-					text.setPlaceholder("Path")
-						.setValue(marker.link)
-						.onChange(async value => {
-							marker.link = value;
+				new Setting(markerSettingsModal.contentEl)
+					.setName("Note to Open")
+					.setDesc(
+						"Path of note to open, e.g. Folder1/Folder2/Note.md"
+					)
+					.addText((text) => {
+						text.setPlaceholder("Path")
+							.setValue(marker.link)
+							.onChange(async (value) => {
+								marker.link = value;
+								await this.saveSettings();
+							});
+					});
+
+				new Setting(markerSettingsModal.contentEl)
+					.setName("Marker Type")
+					.addDropdown((drop) => {
+						drop.addOption("default", "Base Marker");
+						this.AppData.markerIcons.forEach((marker) => {
+							drop.addOption(marker.type, marker.type);
+						});
+						drop.setValue(marker.marker.type).onChange(
+							async (value) => {
+								let newMarker =
+									value == "default"
+										? this.AppData.defaultMarker
+										: this.AppData.markerIcons.find(
+												(m) => m.type == value
+										  );
+								let html: string,
+									iconNode: AbstractElement = icon(
+										getIcon(newMarker.iconName),
+										{
+											transform: { size: 6, x: 0, y: -2 },
+											mask: getIcon(
+												this.AppData.defaultMarker
+													?.iconName
+											),
+											classes: ["full-width-height"],
+										}
+									).abstract[0];
+
+								iconNode.attributes = {
+									...iconNode.attributes,
+									style: `color: ${
+										newMarker.color
+											? newMarker.color
+											: this.AppData.defaultMarker?.color
+									}`,
+								};
+
+								html = toHtml(iconNode);
+
+								marker.marker = {
+									type: newMarker.type,
+									html: html,
+								};
+
+								await this.saveSettings();
+							}
+						);
+					});
+
+				new Setting(markerSettingsModal.contentEl).addButton((b) => {
+					b.setIcon("trash")
+						.setWarning()
+						.setTooltip("Delete Marker")
+						.onClick(async () => {
+							marker.leafletInstance.remove();
+							map.markers = map.markers.filter(
+								(m) => m.id != marker.id
+							);
+							markerSettingsModal.close();
 							await this.saveSettings();
 						});
+					return b;
 				});
 
-			new Setting(markerSettingsModal.contentEl).addButton(b => {
-				b.setIcon("trash")
-					.setWarning()
-					.setTooltip("Delete Marker")
-					.onClick(async () => {
-						marker.leafletInstance.remove();
-						map.markers = map.markers.filter(
-							m => m.id != marker.id
-						);
-						markerSettingsModal.close();
-						await this.saveSettings();
-					});
-				return b;
-			});
-
-			markerSettingsModal.open();
-		});
-
-		if (!this.maps[ctx.sourcePath]) {
-			this.maps[ctx.sourcePath] = {};
-		}
-
-		if (this.maps[ctx.sourcePath][image]) {
-			map.loadData(this.maps[ctx.sourcePath][image]);
-		}
-
-		this.maps[ctx.sourcePath][image] = map;
+				markerSettingsModal.open();
+			})
+		);
 
 		await this.saveSettings();
-		
 	}
-	get maps() {
-		return this.AppData.maps;
-	}
+
 	async loadSettings() {
 		this.AppData = Object.assign(
 			{},
@@ -184,41 +280,53 @@ export default class ObsidianLeaflet extends Plugin {
 		);
 	}
 	async saveSettings() {
+		//build map marker data
+
+		let markers = this.maps.map(
+			(map): MapMarkerData => {
+				return {
+					path: map.path,
+					markers: map.markers.map(
+						(marker): MarkerData => {
+							return {
+								type: marker.marker.type,
+								id: marker.id,
+								loc: [marker.loc.lat, marker.loc.lng],
+								link: marker.link,
+							};
+						}
+					),
+				};
+			}
+		);
+		this.AppData.mapMarkers = markers;
 		await this.saveData(this.AppData);
 
-		try {
-			this.AppData.markers.forEach(marker => {
-				addIcon(marker.type, icon(marker.icon).html[0]);
-			});
+		this.AppData.markerIcons.forEach((marker) => {
+			addIcon(marker.type, icon(getIcon(marker.iconName)).html[0]);
+		});
 
-			this.markerIcons = this.generateMarkerMarkup(this.AppData.markers);
+		this.markerIcons = this.generateMarkerMarkup(this.AppData.markerIcons);
 
-			Object.values(this.maps).forEach(maps =>
-				Object.values(maps).forEach(map =>
-					map.setMarkerIcons(this.markerIcons)
-				)
-			);
-		} catch (e) {}
+		this.maps.forEach((map) => map.setMarkerIcons(this.markerIcons));
 	}
 	getEditor() {
-		var view = this.app.workspace.activeLeaf.view;
-		if (view.getViewType() == "markdown") {
-			var markdownView = view as MarkdownView;
-			var cmEditor = markdownView.sourceMode.cmEditor;
-			return cmEditor;
+		let view = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (view) {
+			return view.sourceMode.cmEditor;
 		}
 		return null;
 	}
 
 	generateMarkerMarkup(
-		markers: Marker[] = this.AppData.markers
+		markers: Marker[] = this.AppData.markerIcons
 	): MarkerIcon[] {
-		let ret = markers.map(marker => {
+		let ret = markers.map((marker) => {
 			try {
 				let html: string,
-					iconNode: AbstractElement = icon(marker.icon, {
+					iconNode: AbstractElement = icon(getIcon(marker.iconName), {
 						transform: { size: 6, x: 0, y: -2 },
-						mask: this.AppData.defaultMarker?.icon,
+						mask: getIcon(this.AppData.defaultMarker?.iconName),
 						classes: ["full-width-height"],
 					}).abstract[0];
 
@@ -237,8 +345,8 @@ export default class ObsidianLeaflet extends Plugin {
 			} catch (e) {}
 		});
 		ret.unshift({
-			type: "Default",
-			html: icon(this.AppData.defaultMarker.icon, {
+			type: "default",
+			html: icon(getIcon(this.AppData.defaultMarker.iconName), {
 				classes: ["full-width-height"],
 				styles: {
 					color: this.AppData.defaultMarker.color,

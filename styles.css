@@ -28,6 +28,17 @@
 	justify-content: center; */
 }
 
+.marker-creation-modal {
+	display: grid;
+	grid-template-columns: 75% 1fr;
+	grid-template-rows: 1fr;
+	gap: 1rem;
+}
+
+.marker-creation-modal .setting-item {
+	border-top: none;
+}
+
 .markers {
 	display: none;
 }

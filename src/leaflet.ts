@@ -32,7 +32,7 @@ export default class LeafletMap extends Events {
 		super();
 
 		this.parent = el;
-		this.path = sourcePath;
+		this.path = `${sourcePath}/${image}`;
 		this.source = image;
 		this.markerIcons = markerIcons;
 
@@ -72,12 +72,12 @@ export default class LeafletMap extends Events {
 	}
 
 	loadData(data: any): void {
-		data.markers.map((marker: LeafletMarker) => {
+		data.map((marker: LeafletMarker) => {
 			this.createMarker(
 				marker.marker,
 				marker.loc,
+				marker.link,
 				marker.id,
-				marker.link
 			);
 		});
 	}
@@ -96,7 +96,7 @@ export default class LeafletMap extends Events {
 		this.markerIcons.forEach((marker: MarkerIcon) => {
 			if (!marker.type || !marker.html) return;
 			contextMenu.addItem(item => {
-				item.setTitle(marker.type);
+				item.setTitle(marker.type == 'default' ? 'Default' : marker.type);
 				item.setActive(true);
 				item.onClick(() => this.createMarker(marker, evt.latlng));
 			});
@@ -156,7 +156,7 @@ export default class LeafletMap extends Events {
 		this.trigger("marker-added", marker);
 	}
 	setMarkerIcons(markerIcons: MarkerIcon[]) {
-		this.map.eachLayer(layer => {
+		/* this.map.eachLayer(layer => {
 			if (layer instanceof L.Marker) {
 				const oldIcon = this.markerIcons.find(
 					marker =>
@@ -171,8 +171,19 @@ export default class LeafletMap extends Events {
 					})
 				);
 			}
-		});
+		}); */
 
 		this.markerIcons = markerIcons;
+		this.markers.forEach(marker => {
+
+			marker.leafletInstance.setIcon(
+				L.divIcon({
+					html: markerIcons.find(icon => icon.type == marker.marker.type)
+						.html,
+				})
+			)
+
+		})
+
 	}
 }
