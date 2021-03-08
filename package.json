@@ -1,11 +1,11 @@
 {
   "name": "obsidian-leaflet-plugin",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Leaflet integration for Obsidian.md",
   "main": "main.js",
   "scripts": {
     "dev": "rollup --config rollup.config.js -w",
-    "build": "rollup --config rollup.config.js"
+    "build": "rollup --config rollup.config-build.js"
   },
   "keywords": [],
   "author": "",

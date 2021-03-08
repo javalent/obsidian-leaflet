@@ -1,3 +1,4 @@
+import { parse } from "@fortawesome/fontawesome-svg-core";
 import {
 	PluginSettingTab,
 	Setting,
@@ -21,10 +22,9 @@ export const DEFAULT_SETTINGS: ObsidianAppData = {
 	mapMarkers: [],
 	defaultMarker: {
 		type: "default",
-		iconName: "map-marker",/* findIconDefinition({
-			iconName: "map-marker",
-		} as IconLookup), */
+		iconName: "map-marker",
 		color: "#dddddd",
+		transform: { size: 6, x: 0, y: -2 },
 	},
 	markerIcons: [],
 	color: "#dddddd",
@@ -40,11 +40,12 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 		this.newMarker = {
 			type: "",
-			iconName: null,
+			iconName: this.plugin.AppData.defaultMarker.iconName,
 			color: this.plugin.AppData.defaultMarker.iconName
 				? this.plugin.AppData.defaultMarker.color
 				: this.plugin.AppData.color,
-			layer: true,
+			layer: false,
+			transform: this.plugin.AppData.defaultMarker.transform,
 		};
 	}
 
@@ -95,11 +96,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 						return;
 					}
 
-					this.plugin.AppData.defaultMarker.iconName = new_value/* findIconDefinition(
-						{
-							iconName: new_value,
-						} as IconLookup
-					); */
+					this.plugin.AppData.defaultMarker.iconName = new_value;
 
 					await this.plugin.saveSettings();
 
@@ -134,7 +131,6 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 							);
 							newMarkerModal.open();
 							newMarkerModal.onClose = async () => {
-
 								if (
 									!this.newMarker.type ||
 									!this.newMarker.iconName
@@ -154,8 +150,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 										: this.plugin.AppData.color,
 									layer: true,
 								};
-								this.display();
 								await this.plugin.saveSettings();
+
+								this.display();
 							};
 						});
 					b.buttonEl.appendChild(
@@ -180,9 +177,12 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 						);
 						newMarkerModal.open();
 						newMarkerModal.onClose = async () => {
-							this.display();
 							await this.plugin.saveSettings();
-							if (!this.newMarker.type || !this.newMarker.iconName) {
+							this.display();
+							if (
+								!this.newMarker.type ||
+								!this.newMarker.iconName
+							) {
 								return;
 							}
 						};
@@ -196,10 +196,10 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 						this.display();
 					})
 				);
-			let iconNode: AbstractElement = icon( getIcon( marker.iconName ), {
-				transform: marker.layer ? { size: 6, x: 0, y: -2 } : null,
+			let iconNode: AbstractElement = icon(getIcon(marker.iconName), {
+				transform: marker.layer ? marker.transform : null,
 				mask: marker.layer
-					? getIcon( this.plugin.AppData.defaultMarker?.iconName )
+					? getIcon(this.plugin.AppData.defaultMarker?.iconName)
 					: null,
 				classes: ["full-width"],
 			}).abstract[0];
@@ -274,7 +274,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 					} else {
 						let i = icon(getIcon(marker.iconName), {
 							transform: { size: 6, x: 0, y: -2 },
-							mask: getIcon(this.plugin.AppData.defaultMarker.iconName),
+							mask: getIcon(
+								this.plugin.AppData.defaultMarker.iconName
+							),
 							styles: {
 								color: marker.color
 									? marker.color
@@ -296,7 +298,10 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 						el.appendChild(temp.children[0]);
 					}
 					el.addClass(`${marker.type}-map-marker`);
-					if (this.plugin.AppData.defaultMarker.iconName && !marker.color)
+					if (
+						this.plugin.AppData.defaultMarker.iconName &&
+						!marker.color
+					)
 						el.addClass("default-map-marker");
 				}
 			)
@@ -351,8 +356,7 @@ class MarkerModal extends Modal {
 		this.tempMarker = { ...this.marker };
 	}
 
-	async display() {
-
+	async display(focusEl?: string): Promise<void> {
 		let containerEl = this.contentEl;
 		containerEl.empty();
 
@@ -361,43 +365,44 @@ class MarkerModal extends Modal {
 		//new Setting(createNewMarker).setHeading().setName("Create New Marker");
 
 		let iconDisplayAndSettings = createNewMarker.createDiv();
-		iconDisplayAndSettings.addClass('marker-creation-modal')
+		iconDisplayAndSettings.addClass("marker-creation-modal");
 		let iconSettings = iconDisplayAndSettings.createDiv();
 		let iconDisplay = iconDisplayAndSettings.createDiv();
 
 		let typeTextInput: TextComponent;
-		let markerName = new Setting(iconSettings).setName("Marker Name").addText(text => {
-			typeTextInput = text
-				.setPlaceholder("Marker Name")
-				.setValue(this.tempMarker.type);
-			typeTextInput.onChange(new_value => {
-				if (
-					this.plugin.AppData.markerIcons.find(
-						marker => marker.type == new_value
-					) &&
-					this.tempMarker.type != this.marker.type
-				) {
-					MarkerModal.setValidationError(
-						typeTextInput,
-						"Marker type already exists."
-					);
-					return;
-				}
+		let markerName = new Setting(iconSettings)
+			.setName("Marker Name")
+			.addText(text => {
+				typeTextInput = text
+					.setPlaceholder("Marker Name")
+					.setValue(this.tempMarker.type);
+				typeTextInput.onChange(new_value => {
+					if (
+						this.plugin.AppData.markerIcons.find(
+							marker => marker.type == new_value
+						) &&
+						this.tempMarker.type != this.marker.type
+					) {
+						MarkerModal.setValidationError(
+							typeTextInput,
+							"Marker type already exists."
+						);
+						return;
+					}
 
-				if (new_value.length == 0) {
-					MarkerModal.setValidationError(
-						typeTextInput,
-						"Marker name cannot be empty."
-					);
-					return;
-				}
+					if (new_value.length == 0) {
+						MarkerModal.setValidationError(
+							typeTextInput,
+							"Marker name cannot be empty."
+						);
+						return;
+					}
 
-				MarkerModal.removeValidationError(typeTextInput);
+					MarkerModal.removeValidationError(typeTextInput);
 
-				this.tempMarker.type = new_value;
-				this.display();
+					this.tempMarker.type = new_value;
+				});
 			});
-		});
 
 		let iconTextInput: TextComponent;
 		let iconName = new Setting(iconSettings)
@@ -407,9 +412,7 @@ class MarkerModal extends Modal {
 				iconTextInput = text
 					.setPlaceholder("Icon Name")
 					.setValue(
-						this.tempMarker.iconName
-							? this.tempMarker.iconName
-							: ""
+						this.tempMarker.iconName ? this.tempMarker.iconName : ""
 					)
 					.onChange(
 						async (new_value): Promise<void> => {
@@ -436,35 +439,207 @@ class MarkerModal extends Modal {
 							MarkerModal.removeValidationError(iconTextInput);
 							this.tempMarker.iconName = icon.iconName;
 
-				this.display();
+							this.display("icon_name");
 						}
 					);
-
+				iconTextInput.inputEl.id = "icon_name";
 				return iconTextInput;
 			});
 
-
 		if (this.tempMarker.iconName) {
-			let iconNode: AbstractElement = icon(getIcon( this.tempMarker.iconName ), {
-				transform: this.tempMarker.layer
-					? { size: 6, x: 0, y: -2 }
-					: null,
-				mask: this.tempMarker.layer
-					? getIcon(this.plugin.AppData.defaultMarker?.iconName)
-					: null,
-				classes: ["full-width-height"],
-			}).abstract[0];
+			let iconNode: AbstractElement = icon(
+				getIcon(
+					this.tempMarker.layer
+						? this.plugin.AppData.defaultMarker.iconName
+						: this.tempMarker.iconName
+				),
+				{
+					/* transform: this.tempMarker.layer
+						? this.tempMarker.transform
+						: null,
+					mask: this.tempMarker.layer
+						? getIcon(this.plugin.AppData.defaultMarker?.iconName)
+						: null, */
+					classes: ["full-width-height"],
+				}
+			).abstract[0];
 
 			iconNode.attributes = {
 				...iconNode.attributes,
 				style: `color: ${this.tempMarker.color}`,
 			};
 			//let marker = iconDisplay;
-			let iconDisplayHeight = markerName.settingEl.getBoundingClientRect().height + iconName.settingEl.getBoundingClientRect().height;
-			iconDisplay.setAttribute("style", `height: ${iconDisplayHeight}px; padding: 1rem;`);
+			let iconDisplayHeight =
+				markerName.settingEl.getBoundingClientRect().height +
+				iconName.settingEl.getBoundingClientRect().height;
+			iconDisplay.setAttribute(
+				"style",
+				`height: ${iconDisplayHeight}px; padding: 1rem; position: relative;`
+			);
 			iconDisplay.innerHTML = toHtml(iconNode);
-		}
 
+			if (this.tempMarker.layer) {
+				let iconOverlay = icon(getIcon(this.tempMarker.iconName), {
+					transform: this.tempMarker.transform,
+				}).node[0].children[0] as SVGGraphicsElement;
+				let iconPath = iconOverlay.getElementsByTagName("path")[0];
+
+				function getFillColor(el: HTMLElement): string[] {
+					let fill = getComputedStyle(el).getPropertyValue(
+						"background-color"
+					);
+
+					if (fill.includes("rgb")) {
+						// Choose correct separator
+						let sep = fill.indexOf(",") > -1 ? "," : " ";
+						// Turn "rgb(r,g,b)" into [r,g,b]
+						let rgbArr = fill
+							.split("(")[1]
+							.split(")")[0]
+							.split(sep);
+						let r = (+rgbArr[0]).toString(16),
+							g = (+rgbArr[1]).toString(16),
+							b = (+rgbArr[2]).toString(16);
+
+						if (r.length == 1) r = "0" + r;
+						if (g.length == 1) g = "0" + g;
+						if (b.length == 1) b = "0" + b;
+
+						return [
+							"#" + r + g + b,
+							rgbArr[3] ? `${+rgbArr[3]}` : "1",
+						];
+					}
+					if (fill.includes("#")) {
+						return [fill, "1"];
+					}
+				}
+
+				let fill = getFillColor(this.modalEl);
+
+				iconPath.setAttribute("fill", fill[0]);
+				iconPath.setAttribute("fill-opacity", `1`);
+				iconPath.setAttribute("stroke-width", "1px");
+				iconPath.setAttribute("stroke", "black");
+				iconPath.setAttribute("stroke-dasharray", "50,50");
+
+				let transformSource = iconOverlay
+					.children[0] as SVGGraphicsElement;
+				let svgElement = iconDisplay.getElementsByTagName("svg")[0],
+					xPath = document.createElementNS(
+						"http://www.w3.org/2000/svg",
+						"path"
+					),
+					yPath = document.createElementNS(
+						"http://www.w3.org/2000/svg",
+						"path"
+					);
+
+				xPath.setAttribute("stroke", "red");
+				xPath.setAttribute("stroke-width", "0");
+				xPath.setAttribute("d", "M192,0 L192,512");
+
+				yPath.setAttribute("stroke", "red");
+				yPath.setAttribute("stroke-width", "0");
+				yPath.setAttribute("d", "M0,256 L384,256");
+
+				svgElement.appendChild(xPath);
+				svgElement.appendChild(yPath);
+				let units = {
+					width: 512 / 16,
+					height: 512 / 16,
+				};
+
+				svgElement.appendChild(iconOverlay);
+
+				/** Fix x/y positioning due to different icon sizes */
+				iconOverlay.transform.baseVal.getItem(0).setTranslate(192, 256);
+
+				let clickedOn: boolean = false,
+					offset: { x: number; y: number } = { x: 0, y: 0 },
+					transform: SVGTransform;
+
+				this.plugin.registerDomEvent(
+					(iconOverlay as unknown) as HTMLElement,
+					"mousedown",
+					evt => {
+						let CTM = svgElement.getScreenCTM();
+						offset = {
+							x: (evt.clientX - CTM.e) / CTM.a,
+							y: (evt.clientY - CTM.f) / CTM.d,
+						};
+
+						let transforms = transformSource.transform.baseVal;
+						if (
+							transforms.numberOfItems === 0 ||
+							transforms.getItem(0).type !=
+								SVGTransform.SVG_TRANSFORM_TRANSLATE
+						) {
+							let translate = svgElement.createSVGTransform();
+							translate.setTranslate(0, 0);
+							// Add the translation to the front of the transforms list
+							transformSource.transform.baseVal.insertItemBefore(
+								translate,
+								0
+							);
+						}
+
+						transform = transforms.getItem(0);
+						offset.x -= transform.matrix.e;
+						offset.y -= transform.matrix.f;
+
+						clickedOn = true;
+					}
+				);
+				this.plugin.registerDomEvent(
+					this.containerEl,
+					"mouseup",
+					evt => {
+						offset = { x: 0, y: 0 };
+						xPath.setAttribute("stroke-width", "0");
+						yPath.setAttribute("stroke-width", "0");
+						clickedOn = false;
+					}
+				);
+				this.plugin.registerDomEvent(
+					(iconOverlay as unknown) as HTMLElement,
+					"mousemove",
+					evt => {
+						if (clickedOn) {
+							evt.preventDefault();
+							let CTM = svgElement.getScreenCTM();
+							let coords = {
+								x: (evt.clientX - CTM.e) / CTM.a,
+								y: (evt.clientY - CTM.f) / CTM.d,
+							};
+
+							//snap to x/y
+							let x = coords.x - offset.x,
+								y = coords.y - offset.y;
+							if (Math.abs(x) <= 32 && evt.shiftKey) {
+								xPath.setAttribute("stroke-width", "8");
+								x = 0;
+							} else {
+								xPath.setAttribute("stroke-width", "0");
+							}
+							if (Math.abs(y) <= 32 && evt.shiftKey) {
+								yPath.setAttribute("stroke-width", "8");
+								y = 0;
+							} else {
+								yPath.setAttribute("stroke-width", "0");
+							}
+
+							transform.setTranslate(x, y);
+
+							this.tempMarker.transform.x =
+								transform.matrix.e / units.width;
+							this.tempMarker.transform.y =
+								transform.matrix.f / units.height;
+						}
+					}
+				);
+			}
+		}
 
 		new Setting(createNewMarker)
 			.setName("Layer Icon")
@@ -473,7 +648,7 @@ class MarkerModal extends Modal {
 				toggle.setValue(this.tempMarker.layer).onChange(v => {
 					this.tempMarker.layer = v;
 
-				this.display();
+					this.display();
 				})
 			);
 		let colorInput = new Setting(createNewMarker)
@@ -485,8 +660,10 @@ class MarkerModal extends Modal {
 		colorInputNode.oninput = evt => {
 			this.tempMarker.color = (evt.target as HTMLInputElement).value;
 
-			iconDisplay.children[0].setAttribute('style', `color: ${this.tempMarker.color}`)
-
+			iconDisplay.children[0].setAttribute(
+				"style",
+				`color: ${this.tempMarker.color}`
+			);
 		};
 		colorInputNode.onchange = async evt => {
 			this.tempMarker.color = (evt.target as HTMLInputElement).value;
@@ -496,25 +673,7 @@ class MarkerModal extends Modal {
 		colorInput.controlEl.appendChild(colorInputNode);
 
 		let add = new Setting(createNewMarker);
-		/* if (this.tempMarker.icon) {
-			let iconNode: AbstractElement = icon(this.tempMarker.icon, {
-				transform: this.tempMarker.layer
-					? { size: 6, x: 0, y: -2 }
-					: null,
-				mask: this.tempMarker.layer
-					? this.plugin.AppData.defaultMarker?.icon
-					: null,
-				classes: ["full-width"],
-			}).abstract[0];
 
-			iconNode.attributes = {
-				...iconNode.attributes,
-				style: `color: ${this.tempMarker.color}`,
-			};
-			let marker = add.infoEl.createDiv();
-			marker.setAttribute("style", "height: 12px;");
-			marker.innerHTML = toHtml(iconNode);
-		} */
 		add.addButton(
 			(button: ButtonComponent): ButtonComponent => {
 				let b = button.setTooltip("Save").onClick(async () => {
@@ -568,6 +727,7 @@ class MarkerModal extends Modal {
 					this.marker.iconName = this.tempMarker.iconName;
 					this.marker.color = this.tempMarker.color;
 					this.marker.layer = this.tempMarker.layer;
+					this.marker.transform = this.tempMarker.transform;
 
 					this.close();
 				});
@@ -589,12 +749,15 @@ class MarkerModal extends Modal {
 				});
 		});
 
+		if (focusEl) {
+			(this.contentEl.querySelector(
+				`#${focusEl}`
+			) as HTMLInputElement).focus();
+		}
 	}
 
 	onOpen() {
-		
 		this.display();
-
 	}
 
 	static setValidationError(textInput: TextComponent, message?: string) {

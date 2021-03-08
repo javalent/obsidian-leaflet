@@ -28,9 +28,9 @@ declare global {
 	interface Marker {
 		type: string;
 		iconName: string;
-		/* icon: IconDefinition; */
 		color?: string;
 		layer?: boolean;
+		transform?: { size: number; x: number; y: number };
 	}
 	interface LeafletMarker {
 		marker: MarkerIcon;
@@ -84,16 +84,16 @@ export default class ObsidianLeaflet extends Plugin {
 		);
 
 		this.registerEvent(
-			this.app.vault.on("delete", async (file) => {
+			this.app.vault.on("delete", async file => {
 				if (
-					this.AppData.mapMarkers.find((marker) =>
+					this.AppData.mapMarkers.find(marker =>
 						marker.path.includes(file.path)
 					)
 				) {
 					this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
-						(marker) =>
+						marker =>
 							marker !=
-							this.AppData.mapMarkers.find((marker) =>
+							this.AppData.mapMarkers.find(marker =>
 								marker.path.includes(file.path)
 							)
 					);
@@ -116,7 +116,7 @@ export default class ObsidianLeaflet extends Plugin {
 		ctx: MarkdownPostProcessorContextActual
 	): Promise<void> {
 		let { image, height = "500px" } = Object.fromEntries(
-			source.split("\n").map((l) => l.split(": "))
+			source.split("\n").map(l => l.split(": "))
 		);
 
 		if (!image) {
@@ -135,22 +135,29 @@ export default class ObsidianLeaflet extends Plugin {
 			this.markerIcons
 		);
 
-		if (this.maps.find((map) => map.path == `${ctx.sourcePath}/${image}`)) {
-			map.loadData(
-				this.maps.find(
-					(map) => map.path == `${ctx.sourcePath}/${image}`
+		if (
+			this.AppData.mapMarkers.find(
+				map => map.path == `${ctx.sourcePath}/${image}`
+			)
+		) {
+			await map.loadData(
+				this.AppData.mapMarkers.find(
+					map => map.path == `${ctx.sourcePath}/${image}`
 				).markers
 			);
+		}
+
+		if (this.maps.find(map => map.path == `${ctx.sourcePath}/${image}`)) {
 			this.maps = this.maps.filter(
-				(map) => map.path != `${ctx.sourcePath}/${image}`
+				map => map.path != `${ctx.sourcePath}/${image}`
 			);
 		}
 		this.maps.push(map);
 
-		this.registerDomEvent(el, "dragover", (evt) => {
+		this.registerDomEvent(el, "dragover", evt => {
 			evt.preventDefault();
 		});
-		this.registerDomEvent(el, "drop", (evt) => {
+		this.registerDomEvent(el, "drop", evt => {
 			evt.stopPropagation();
 
 			let file = decodeURIComponent(
@@ -192,10 +199,10 @@ export default class ObsidianLeaflet extends Plugin {
 					.setDesc(
 						"Path of note to open, e.g. Folder1/Folder2/Note.md"
 					)
-					.addText((text) => {
+					.addText(text => {
 						text.setPlaceholder("Path")
 							.setValue(marker.link)
-							.onChange(async (value) => {
+							.onChange(async value => {
 								marker.link = value;
 								await this.saveSettings();
 							});
@@ -203,18 +210,18 @@ export default class ObsidianLeaflet extends Plugin {
 
 				new Setting(markerSettingsModal.contentEl)
 					.setName("Marker Type")
-					.addDropdown((drop) => {
+					.addDropdown(drop => {
 						drop.addOption("default", "Base Marker");
-						this.AppData.markerIcons.forEach((marker) => {
+						this.AppData.markerIcons.forEach(marker => {
 							drop.addOption(marker.type, marker.type);
 						});
 						drop.setValue(marker.marker.type).onChange(
-							async (value) => {
+							async value => {
 								let newMarker =
 									value == "default"
 										? this.AppData.defaultMarker
 										: this.AppData.markerIcons.find(
-												(m) => m.type == value
+												m => m.type == value
 										  );
 								let html: string,
 									iconNode: AbstractElement = icon(
@@ -250,14 +257,14 @@ export default class ObsidianLeaflet extends Plugin {
 						);
 					});
 
-				new Setting(markerSettingsModal.contentEl).addButton((b) => {
+				new Setting(markerSettingsModal.contentEl).addButton(b => {
 					b.setIcon("trash")
 						.setWarning()
 						.setTooltip("Delete Marker")
 						.onClick(async () => {
 							marker.leafletInstance.remove();
 							map.markers = map.markers.filter(
-								(m) => m.id != marker.id
+								m => m.id != marker.id
 							);
 							markerSettingsModal.close();
 							await this.saveSettings();
@@ -302,13 +309,13 @@ export default class ObsidianLeaflet extends Plugin {
 		this.AppData.mapMarkers = markers;
 		await this.saveData(this.AppData);
 
-		this.AppData.markerIcons.forEach((marker) => {
+		this.AppData.markerIcons.forEach(marker => {
 			addIcon(marker.type, icon(getIcon(marker.iconName)).html[0]);
 		});
 
 		this.markerIcons = this.generateMarkerMarkup(this.AppData.markerIcons);
 
-		this.maps.forEach((map) => map.setMarkerIcons(this.markerIcons));
+		this.maps.forEach(map => map.setMarkerIcons(this.markerIcons));
 	}
 	getEditor() {
 		let view = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -321,28 +328,32 @@ export default class ObsidianLeaflet extends Plugin {
 	generateMarkerMarkup(
 		markers: Marker[] = this.AppData.markerIcons
 	): MarkerIcon[] {
-		let ret = markers.map((marker) => {
-			try {
-				let html: string,
-					iconNode: AbstractElement = icon(getIcon(marker.iconName), {
-						transform: { size: 6, x: 0, y: -2 },
-						mask: getIcon(this.AppData.defaultMarker?.iconName),
-						classes: ["full-width-height"],
-					}).abstract[0];
+		let ret = markers.map(marker => {
+			if (!marker.transform) {
+				marker.transform = this.AppData.defaultMarker.transform;
+			}
+			if (!marker.iconName) {
+				marker.iconName = this.AppData.defaultMarker.iconName;
+			}
+			let html: string,
+				iconNode: AbstractElement = icon(getIcon(marker.iconName), {
+					transform: marker.transform,
+					mask: getIcon(this.AppData.defaultMarker?.iconName),
+					classes: ["full-width-height"],
+				}).abstract[0];
 
-				iconNode.attributes = {
-					...iconNode.attributes,
-					style: `color: ${
-						marker.color
-							? marker.color
-							: this.AppData.defaultMarker?.color
-					}`,
-				};
+			iconNode.attributes = {
+				...iconNode.attributes,
+				style: `color: ${
+					marker.color
+						? marker.color
+						: this.AppData.defaultMarker?.color
+				}`,
+			};
 
-				html = toHtml(iconNode);
+			html = toHtml(iconNode);
 
-				return { type: marker.type, html: html };
-			} catch (e) {}
+			return { type: marker.type, html: html };
 		});
 		ret.unshift({
 			type: "default",
