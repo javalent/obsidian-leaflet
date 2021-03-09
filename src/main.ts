@@ -12,6 +12,8 @@ import {
 import { point, latLng } from "leaflet";
 
 //Local Imports
+import './main.css';
+
 import { ObsidianLeafletSettingTab, DEFAULT_SETTINGS } from "./settings";
 import {
 	IconDefinition,
@@ -355,15 +357,18 @@ export default class ObsidianLeaflet extends Plugin {
 
 			return { type: marker.type, html: html };
 		});
-		ret.unshift({
-			type: "default",
-			html: icon(getIcon(this.AppData.defaultMarker.iconName), {
-				classes: ["full-width-height"],
-				styles: {
-					color: this.AppData.defaultMarker.color,
-				},
-			}).html[0],
-		});
+		if (this.AppData.defaultMarker.iconName) {
+
+			ret.unshift({
+				type: "default",
+				html: icon(getIcon(this.AppData.defaultMarker.iconName), {
+					classes: ["full-width-height"],
+					styles: {
+						color: this.AppData.defaultMarker.color,
+					},
+				}).html[0],
+			});
+		}
 
 		return ret;
 	}

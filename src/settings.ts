@@ -79,6 +79,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 						}
 
 						this.plugin.AppData.defaultMarker.iconName = null;
+						this.plugin.AppData.markerIcons.forEach(
+							marker => (marker.layer = false)
+						);
 
 						await this.plugin.saveSettings();
 
@@ -454,12 +457,6 @@ class MarkerModal extends Modal {
 						: this.tempMarker.iconName
 				),
 				{
-					/* transform: this.tempMarker.layer
-						? this.tempMarker.transform
-						: null,
-					mask: this.tempMarker.layer
-						? getIcon(this.plugin.AppData.defaultMarker?.iconName)
-						: null, */
 					classes: ["full-width-height"],
 				}
 			).abstract[0];
@@ -644,13 +641,17 @@ class MarkerModal extends Modal {
 		new Setting(createNewMarker)
 			.setName("Layer Icon")
 			.setDesc("The icon will be layered on the base icon, if any.")
-			.addToggle(toggle =>
+			.addToggle(toggle => {
 				toggle.setValue(this.tempMarker.layer).onChange(v => {
 					this.tempMarker.layer = v;
-
 					this.display();
-				})
-			);
+				});
+				if (this.plugin.AppData.defaultMarker.iconName == null) {
+					toggle
+						.setDisabled(true)
+						.setTooltip("Add a base marker to layer this icon.");
+				}
+			});
 		let colorInput = new Setting(createNewMarker)
 			.setName("Icon Color")
 			.setDesc("Override default icon color.");

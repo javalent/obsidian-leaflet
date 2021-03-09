@@ -1,5 +1,7 @@
 //module imports
 import * as L from "leaflet";
+import 'leaflet/dist/leaflet.css';
+
 import { Events, Menu, Point } from "obsidian";
 /* import { EventEmitter } from "events"; */
 import { v4 as uuidv4 } from "uuid";
