@@ -12,7 +12,7 @@ import {
 import { point, latLng } from "leaflet";
 
 //Local Imports
-import './main.css';
+import "./main.css";
 
 import { ObsidianLeafletSettingTab, DEFAULT_SETTINGS } from "./settings";
 import {
@@ -86,16 +86,16 @@ export default class ObsidianLeaflet extends Plugin {
 		);
 
 		this.registerEvent(
-			this.app.vault.on("delete", async file => {
+			this.app.vault.on("delete", async (file) => {
 				if (
-					this.AppData.mapMarkers.find(marker =>
+					this.AppData.mapMarkers.find((marker) =>
 						marker.path.includes(file.path)
 					)
 				) {
 					this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
-						marker =>
+						(marker) =>
 							marker !=
-							this.AppData.mapMarkers.find(marker =>
+							this.AppData.mapMarkers.find((marker) =>
 								marker.path.includes(file.path)
 							)
 					);
@@ -118,7 +118,7 @@ export default class ObsidianLeaflet extends Plugin {
 		ctx: MarkdownPostProcessorContextActual
 	): Promise<void> {
 		let { image, height = "500px" } = Object.fromEntries(
-			source.split("\n").map(l => l.split(": "))
+			source.split("\n").map((l) => l.split(": "))
 		);
 
 		if (!image) {
@@ -129,37 +129,38 @@ export default class ObsidianLeaflet extends Plugin {
 			return;
 		}
 
+		const imageData = await this.toDataURL(image);
 		let map = new LeafletMap(
 			el,
-			image,
+			imageData,
 			height,
-			ctx.sourcePath,
+			`${ctx.sourcePath}/${image}`,
 			this.markerIcons
 		);
 
 		if (
 			this.AppData.mapMarkers.find(
-				map => map.path == `${ctx.sourcePath}/${image}`
+				(map) => map.path == `${ctx.sourcePath}/${image}`
 			)
 		) {
 			await map.loadData(
 				this.AppData.mapMarkers.find(
-					map => map.path == `${ctx.sourcePath}/${image}`
+					(map) => map.path == `${ctx.sourcePath}/${image}`
 				).markers
 			);
 		}
 
-		if (this.maps.find(map => map.path == `${ctx.sourcePath}/${image}`)) {
+		if (this.maps.find((map) => map.path == `${ctx.sourcePath}/${image}`)) {
 			this.maps = this.maps.filter(
-				map => map.path != `${ctx.sourcePath}/${image}`
+				(map) => map.path != `${ctx.sourcePath}/${image}`
 			);
 		}
 		this.maps.push(map);
 
-		this.registerDomEvent(el, "dragover", evt => {
+		this.registerDomEvent(el, "dragover", (evt) => {
 			evt.preventDefault();
 		});
-		this.registerDomEvent(el, "drop", evt => {
+		this.registerDomEvent(el, "drop", (evt) => {
 			evt.stopPropagation();
 
 			let file = decodeURIComponent(
@@ -201,10 +202,10 @@ export default class ObsidianLeaflet extends Plugin {
 					.setDesc(
 						"Path of note to open, e.g. Folder1/Folder2/Note.md"
 					)
-					.addText(text => {
+					.addText((text) => {
 						text.setPlaceholder("Path")
 							.setValue(marker.link)
-							.onChange(async value => {
+							.onChange(async (value) => {
 								marker.link = value;
 								await this.saveSettings();
 							});
@@ -212,18 +213,18 @@ export default class ObsidianLeaflet extends Plugin {
 
 				new Setting(markerSettingsModal.contentEl)
 					.setName("Marker Type")
-					.addDropdown(drop => {
+					.addDropdown((drop) => {
 						drop.addOption("default", "Base Marker");
-						this.AppData.markerIcons.forEach(marker => {
+						this.AppData.markerIcons.forEach((marker) => {
 							drop.addOption(marker.type, marker.type);
 						});
 						drop.setValue(marker.marker.type).onChange(
-							async value => {
+							async (value) => {
 								let newMarker =
 									value == "default"
 										? this.AppData.defaultMarker
 										: this.AppData.markerIcons.find(
-												m => m.type == value
+												(m) => m.type == value
 										  );
 								let html: string,
 									iconNode: AbstractElement = icon(
@@ -259,14 +260,14 @@ export default class ObsidianLeaflet extends Plugin {
 						);
 					});
 
-				new Setting(markerSettingsModal.contentEl).addButton(b => {
+				new Setting(markerSettingsModal.contentEl).addButton((b) => {
 					b.setIcon("trash")
 						.setWarning()
 						.setTooltip("Delete Marker")
 						.onClick(async () => {
 							marker.leafletInstance.remove();
 							map.markers = map.markers.filter(
-								m => m.id != marker.id
+								(m) => m.id != marker.id
 							);
 							markerSettingsModal.close();
 							await this.saveSettings();
@@ -311,13 +312,13 @@ export default class ObsidianLeaflet extends Plugin {
 		this.AppData.mapMarkers = markers;
 		await this.saveData(this.AppData);
 
-		this.AppData.markerIcons.forEach(marker => {
+		this.AppData.markerIcons.forEach((marker) => {
 			addIcon(marker.type, icon(getIcon(marker.iconName)).html[0]);
 		});
 
 		this.markerIcons = this.generateMarkerMarkup(this.AppData.markerIcons);
 
-		this.maps.forEach(map => map.setMarkerIcons(this.markerIcons));
+		this.maps.forEach((map) => map.setMarkerIcons(this.markerIcons));
 	}
 	getEditor() {
 		let view = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -330,7 +331,7 @@ export default class ObsidianLeaflet extends Plugin {
 	generateMarkerMarkup(
 		markers: Marker[] = this.AppData.markerIcons
 	): MarkerIcon[] {
-		let ret = markers.map(marker => {
+		let ret = markers.map((marker) => {
 			if (!marker.transform) {
 				marker.transform = this.AppData.defaultMarker.transform;
 			}
@@ -358,7 +359,6 @@ export default class ObsidianLeaflet extends Plugin {
 			return { type: marker.type, html: html };
 		});
 		if (this.AppData.defaultMarker.iconName) {
-
 			ret.unshift({
 				type: "default",
 				html: icon(getIcon(this.AppData.defaultMarker.iconName), {
@@ -371,5 +371,42 @@ export default class ObsidianLeaflet extends Plugin {
 		}
 
 		return ret;
+	}
+
+	async toDataURL(url: string): Promise<string> {
+		//determine link type
+		let response, blob: Blob;
+		if (/http[s]*:/.test(url)) {
+			//url
+			response = await fetch(url);
+			blob = await response.blob();
+		} else if (/obsidian:\/\/open/.test(url)) {
+			//obsidian link
+			let [, vault, file] = url.match(
+				/\?vault=([\w\s\d]+)&file=([\s\S]+)/
+			);
+			file = decodeURIComponent(file);
+			if (await this.app.vault.adapter.exists(file)) {
+				let buffer = await this.app.vault.readBinary(
+					this.app.vault.getAbstractFileByPath(file) as TFile
+				);
+				blob = new Blob([new Uint8Array(buffer)]);
+			}
+		} else if (await this.app.vault.adapter.exists(url)) {
+			//file exists on disk
+			let buffer = await this.app.vault.readBinary(
+				this.app.vault.getAbstractFileByPath(url) as TFile
+			);
+			blob = new Blob([new Uint8Array(buffer)]);
+		}
+
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onloadend = () => {
+				resolve(reader.result as string);
+			};
+			reader.onerror = reject;
+			reader.readAsDataURL(blob);
+		});
 	}
 }
