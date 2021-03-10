@@ -1,5 +1,7 @@
 //module imports
 import * as L from "leaflet";
+import 'leaflet/dist/leaflet.css';
+
 import { Events, Menu, Point } from "obsidian";
 /* import { EventEmitter } from "events"; */
 import { v4 as uuidv4 } from "uuid";
@@ -32,8 +34,7 @@ export default class LeafletMap extends Events {
 		super();
 
 		this.parent = el;
-		this.path = `${sourcePath}/${image}`;
-		this.source = image;
+		this.path = sourcePath;
 		this.markerIcons = markerIcons;
 
 		this.init(image, height);
@@ -52,8 +53,8 @@ export default class LeafletMap extends Events {
 			crs: L.CRS.Simple,
 		});
 
-		const uri = await Utils.toDataURL(image);
-		let { h, w } = await Utils.getImageDimensions(uri);
+		//const uri = await Utils.toDataURL(image);
+		let { h, w } = await Utils.getImageDimensions(image);
 
 		var southWest = this.map.unproject([0, h], this.map.getMaxZoom() - 1);
 		var northEast = this.map.unproject([w, 0], this.map.getMaxZoom() - 1);
@@ -61,24 +62,26 @@ export default class LeafletMap extends Events {
 
 		// add the image overlay,
 		// so that it covers the entire map
-		L.imageOverlay(uri, this.bounds).addTo(this.map);
+		L.imageOverlay(image, this.bounds).addTo(this.map);
 		this.map.fitBounds(this.bounds);
 		this.map.panTo(this.bounds.getCenter());
 		// tell leaflet that the map is exactly as big as the image
 		this.map.setMaxBounds(this.bounds);
 
 		this.map.on("contextmenu", this.contextMenu.bind(this));
-
 	}
 
-	loadData(data: any): void {
-		data.map((marker: LeafletMarker) => {
-			this.createMarker(
-				marker.marker,
-				marker.loc,
-				marker.link,
-				marker.id,
-			);
+	loadData(data: MarkerData[]): Promise<void> {
+		return new Promise(resolve => {
+			data.forEach((marker: MarkerData) => {
+				this.createMarker(
+					this.markerIcons.find(icon => icon.type == marker.type),
+					L.latLng(marker.loc),
+					marker.link,
+					marker.id
+				);
+			});
+			resolve();
 		});
 	}
 
@@ -86,17 +89,17 @@ export default class LeafletMap extends Events {
 		/** Create Context Menu */
 
 		if (this.markerIcons.length <= 1) {
-
 			this.createMarker(this.markerIcons[0], evt.latlng);
 			return;
-			
 		}
 
 		let contextMenu = new Menu().setNoIcon();
 		this.markerIcons.forEach((marker: MarkerIcon) => {
 			if (!marker.type || !marker.html) return;
 			contextMenu.addItem(item => {
-				item.setTitle(marker.type == 'default' ? 'Default' : marker.type);
+				item.setTitle(
+					marker.type == "default" ? "Default" : marker.type
+				);
 				item.setActive(true);
 				item.onClick(() => this.createMarker(marker, evt.latlng));
 			});
@@ -175,15 +178,13 @@ export default class LeafletMap extends Events {
 
 		this.markerIcons = markerIcons;
 		this.markers.forEach(marker => {
-
 			marker.leafletInstance.setIcon(
 				L.divIcon({
-					html: markerIcons.find(icon => icon.type == marker.marker.type)
-						.html,
+					html: markerIcons.find(
+						icon => icon.type == marker.marker.type
+					).html,
 				})
-			)
-
-		})
-
+			);
+		});
 	}
 }

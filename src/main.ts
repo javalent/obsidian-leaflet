@@ -12,6 +12,8 @@ import {
 import { point, latLng } from "leaflet";
 
 //Local Imports
+import "./main.css";
+
 import { ObsidianLeafletSettingTab, DEFAULT_SETTINGS } from "./settings";
 import {
 	IconDefinition,
@@ -28,9 +30,9 @@ declare global {
 	interface Marker {
 		type: string;
 		iconName: string;
-		/* icon: IconDefinition; */
 		color?: string;
 		layer?: boolean;
+		transform?: { size: number; x: number; y: number };
 	}
 	interface LeafletMarker {
 		marker: MarkerIcon;
@@ -127,20 +129,28 @@ export default class ObsidianLeaflet extends Plugin {
 			return;
 		}
 
+		const imageData = await this.toDataURL(image);
 		let map = new LeafletMap(
 			el,
-			image,
+			imageData,
 			height,
-			ctx.sourcePath,
+			`${ctx.sourcePath}/${image}`,
 			this.markerIcons
 		);
 
-		if (this.maps.find((map) => map.path == `${ctx.sourcePath}/${image}`)) {
-			map.loadData(
-				this.maps.find(
+		if (
+			this.AppData.mapMarkers.find(
+				(map) => map.path == `${ctx.sourcePath}/${image}`
+			)
+		) {
+			await map.loadData(
+				this.AppData.mapMarkers.find(
 					(map) => map.path == `${ctx.sourcePath}/${image}`
 				).markers
 			);
+		}
+
+		if (this.maps.find((map) => map.path == `${ctx.sourcePath}/${image}`)) {
 			this.maps = this.maps.filter(
 				(map) => map.path != `${ctx.sourcePath}/${image}`
 			);
@@ -322,38 +332,81 @@ export default class ObsidianLeaflet extends Plugin {
 		markers: Marker[] = this.AppData.markerIcons
 	): MarkerIcon[] {
 		let ret = markers.map((marker) => {
-			try {
-				let html: string,
-					iconNode: AbstractElement = icon(getIcon(marker.iconName), {
-						transform: { size: 6, x: 0, y: -2 },
-						mask: getIcon(this.AppData.defaultMarker?.iconName),
-						classes: ["full-width-height"],
-					}).abstract[0];
+			if (!marker.transform) {
+				marker.transform = this.AppData.defaultMarker.transform;
+			}
+			if (!marker.iconName) {
+				marker.iconName = this.AppData.defaultMarker.iconName;
+			}
+			let html: string,
+				iconNode: AbstractElement = icon(getIcon(marker.iconName), {
+					transform: marker.transform,
+					mask: getIcon(this.AppData.defaultMarker?.iconName),
+					classes: ["full-width-height"],
+				}).abstract[0];
 
-				iconNode.attributes = {
-					...iconNode.attributes,
-					style: `color: ${
-						marker.color
-							? marker.color
-							: this.AppData.defaultMarker?.color
-					}`,
-				};
+			iconNode.attributes = {
+				...iconNode.attributes,
+				style: `color: ${
+					marker.color
+						? marker.color
+						: this.AppData.defaultMarker?.color
+				}`,
+			};
 
-				html = toHtml(iconNode);
+			html = toHtml(iconNode);
 
-				return { type: marker.type, html: html };
-			} catch (e) {}
+			return { type: marker.type, html: html };
 		});
-		ret.unshift({
-			type: "default",
-			html: icon(getIcon(this.AppData.defaultMarker.iconName), {
-				classes: ["full-width-height"],
-				styles: {
-					color: this.AppData.defaultMarker.color,
-				},
-			}).html[0],
-		});
+		if (this.AppData.defaultMarker.iconName) {
+			ret.unshift({
+				type: "default",
+				html: icon(getIcon(this.AppData.defaultMarker.iconName), {
+					classes: ["full-width-height"],
+					styles: {
+						color: this.AppData.defaultMarker.color,
+					},
+				}).html[0],
+			});
+		}
 
 		return ret;
+	}
+
+	async toDataURL(url: string): Promise<string> {
+		//determine link type
+		let response, blob: Blob;
+		if (/http[s]*:/.test(url)) {
+			//url
+			response = await fetch(url);
+			blob = await response.blob();
+		} else if (/obsidian:\/\/open/.test(url)) {
+			//obsidian link
+			let [, vault, file] = url.match(
+				/\?vault=([\w\s\d]+)&file=([\s\S]+)/
+			);
+			file = decodeURIComponent(file);
+			if (await this.app.vault.adapter.exists(file)) {
+				let buffer = await this.app.vault.readBinary(
+					this.app.vault.getAbstractFileByPath(file) as TFile
+				);
+				blob = new Blob([new Uint8Array(buffer)]);
+			}
+		} else if (await this.app.vault.adapter.exists(url)) {
+			//file exists on disk
+			let buffer = await this.app.vault.readBinary(
+				this.app.vault.getAbstractFileByPath(url) as TFile
+			);
+			blob = new Blob([new Uint8Array(buffer)]);
+		}
+
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onloadend = () => {
+				resolve(reader.result as string);
+			};
+			reader.onerror = reject;
+			reader.readAsDataURL(blob);
+		});
 	}
 }
