@@ -95,8 +95,8 @@ input.is-invalid {
 
 .leaflet-div-icon {
 	
-	background: transparent !important;
-	border: none !important;
+	background: transparent;
+	border: none;
 	width: 25px !important;
 	height: 25px !important;
 	margin-left: -12.5px !important;
