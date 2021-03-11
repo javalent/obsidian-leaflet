@@ -17,11 +17,12 @@ height: 500px
 
 ### API
 
-Currently only two parameters exist.
-
 ```
 image: Direct URL to an image file to be used as the map layer. **Required**
 height: Height in pixels of the map element. Defaults to 500px.
+minZoom: Minimum allowable zoom level (optional, default = 1).
+maxZoom: Maximum allowable zoom level (optional, default = 10).
+defaultZoom: Map will load zoomed to this level (optional, default = 5).
 ```
 
 ### Markers

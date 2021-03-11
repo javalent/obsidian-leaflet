@@ -8,8 +8,9 @@ import {
 	Setting,
 	Workspace,
 	TFile,
+	MarkdownRenderChild,
 } from "obsidian";
-import { point, latLng } from "leaflet";
+import { point } from "leaflet";
 
 //Local Imports
 import "./main.css";
@@ -50,6 +51,7 @@ declare global {
 	}
 	interface MapMarkerData {
 		path: string;
+		file: string;
 		markers: MarkerData[];
 	}
 	interface ObsidianAppData {
@@ -110,6 +112,8 @@ export default class ObsidianLeaflet extends Plugin {
 
 	async onunload(): Promise<void> {
 		console.log("unloading plugin");
+		this.maps.forEach(map => map.map.remove())
+		this.maps = [];
 	}
 
 	async postprocessor(
@@ -117,7 +121,8 @@ export default class ObsidianLeaflet extends Plugin {
 		el: HTMLElement,
 		ctx: MarkdownPostProcessorContextActual
 	): Promise<void> {
-		let { image, height = "500px" } = Object.fromEntries(
+
+		let { image, height = "500px", minZoom = 1, maxZoom = 10, defaultZoom = 5, zoomDelta = 1 } = Object.fromEntries(
 			source.split("\n").map((l) => l.split(": "))
 		);
 
@@ -129,38 +134,234 @@ export default class ObsidianLeaflet extends Plugin {
 			return;
 		}
 
-		const imageData = await this.toDataURL(image);
+		const imageData = await this.toDataURL(encodeURIComponent(image));
+		if (!imageData) {
+			let newPre = createEl('pre');
+			newPre.createEl('code', {}, (code) => {
+				code.innerText = `\`\`\`leaflet\n${source}\`\`\``;
+				el.parentElement.replaceChild(newPre, el);
+			});
+			return;
+
+		};
+		let path = `${ctx.sourcePath}/${image}`;
 		let map = new LeafletMap(
 			el,
-			imageData,
 			height,
-			`${ctx.sourcePath}/${image}`,
-			this.markerIcons
+			ctx.sourcePath,
+			path,
+			this.markerIcons,
+			+minZoom,
+			+maxZoom,
+			+defaultZoom,
+			+zoomDelta
 		);
 
-		if (
+
+		let markdownRenderChild = new MarkdownRenderChild();
+		markdownRenderChild.register(async () => {
+
+			let file = this.app.vault.getAbstractFileByPath(ctx.sourcePath);
+			if (!file || !(file instanceof TFile)) {
+				//file was deleted, remove maps associated
+				this.maps = this.maps.filter(
+					(map) => map.file != ctx.sourcePath
+				);
+				this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
+					(map) => map.file != ctx.sourcePath
+				);
+
+				await this.saveSettings();
+				return;
+			}
+			let fileContent = await this.app.vault.read(file);
+
+			let containsThisMap: boolean = false;
+			containsThisMap = fileContent.match(/```leaflet[\s\S]+?```/g)?.some(match => match.includes(image));
+
+			if (!containsThisMap) {
+				//Block was deleted or image path was changed
+				this.maps = this.maps.filter(
+					(map) => map.path != path
+				);
+				this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
+					(map) => map.path != path
+				);
+
+				await this.saveSettings();
+
+			}
+
+		});
+		markdownRenderChild.containerEl = el;
+		ctx.addChild(markdownRenderChild);
+
+		await map.loadData(
 			this.AppData.mapMarkers.find(
-				(map) => map.path == `${ctx.sourcePath}/${image}`
+				(map) => map.path == path
 			)
-		) {
-			await map.loadData(
-				this.AppData.mapMarkers.find(
-					(map) => map.path == `${ctx.sourcePath}/${image}`
-				).markers
-			);
-		}
+		)
 
-		if (this.maps.find((map) => map.path == `${ctx.sourcePath}/${image}`)) {
-			this.maps = this.maps.filter(
-				(map) => map.path != `${ctx.sourcePath}/${image}`
-			);
-		}
+		this.maps = this.maps.filter(
+			(map) => map.path != path
+		);
+		map.render(imageData);
+
+		this.registerMapEvents(map);
+
 		this.maps.push(map);
+		await this.saveSettings();
+	}
 
-		this.registerDomEvent(el, "dragover", (evt) => {
+	async loadSettings() {
+		let data: ObsidianAppData = await this.loadData();
+
+		if (!data.mapMarkers.every(map => map.file)) {
+			data.mapMarkers = data.mapMarkers.map(map => {
+				if (!map.file) map.file = map.path.slice(0, map.path.indexOf('.md') + 3);
+				return map;
+			})
+		}
+
+		this.AppData = Object.assign(
+			{},
+			DEFAULT_SETTINGS,
+			data
+		);
+	}
+	async saveSettings() {
+
+		this.maps.forEach(map => {
+
+			this.AppData.mapMarkers = this.AppData.mapMarkers.filter(m => m.path != map.path);
+
+			this.AppData.mapMarkers.push({
+				path: map.path,
+				file: map.file,
+				markers: map.markers.map(
+					(marker): MarkerData => {
+						return {
+							type: marker.marker.type,
+							id: marker.id,
+							loc: [marker.loc.lat, marker.loc.lng],
+							link: marker.link,
+						};
+					}
+				),
+			});
+		})
+
+		await this.saveData(this.AppData);
+
+		this.AppData.markerIcons.forEach((marker) => {
+			addIcon(marker.type, icon(getIcon(marker.iconName)).html[0]);
+		});
+
+		this.markerIcons = this.generateMarkerMarkup(this.AppData.markerIcons);
+
+		this.maps.forEach((map) => map.setMarkerIcons(this.markerIcons));
+	}
+	getEditor(): CodeMirror.Editor {
+		let view = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (view) {
+			return view.sourceMode.cmEditor;
+		}
+		return null;
+	}
+
+	generateMarkerMarkup(
+		markers: Marker[] = this.AppData.markerIcons
+	): MarkerIcon[] {
+		let ret = markers.map((marker) => {
+			if (!marker.transform) {
+				marker.transform = this.AppData.defaultMarker.transform;
+			}
+			if (!marker.iconName) {
+				marker.iconName = this.AppData.defaultMarker.iconName;
+			}
+			let html: string,
+				iconNode: AbstractElement = icon(getIcon(marker.iconName), {
+					transform: marker.transform,
+					mask: getIcon(this.AppData.defaultMarker?.iconName),
+					classes: ["full-width-height"],
+				}).abstract[0];
+
+			iconNode.attributes = {
+				...iconNode.attributes,
+				style: `color: ${marker.color
+					? marker.color
+					: this.AppData.defaultMarker?.color
+					}`,
+			};
+
+			html = toHtml(iconNode);
+
+			return { type: marker.type, html: html };
+		});
+		if (this.AppData.defaultMarker.iconName) {
+			ret.unshift({
+				type: "default",
+				html: icon(getIcon(this.AppData.defaultMarker.iconName), {
+					classes: ["full-width-height"],
+					styles: {
+						color: this.AppData.defaultMarker.color,
+					},
+				}).html[0],
+			});
+		}
+
+		return ret;
+	}
+
+	async toDataURL(url: string): Promise<string> {
+		//determine link type
+		try {
+			let response, blob: Blob;
+			url = decodeURIComponent(url);
+			if (/http[s]*:/.test(url)) {
+				//url
+				response = await fetch(url);
+				blob = await response.blob();
+			} else if (/obsidian:\/\/open/.test(url)) {
+				//obsidian link
+				let [, filePath] = url.match(
+					/\?vault=[\s\S]+?&file=([\s\S]+)/
+				);
+
+				filePath = decodeURIComponent(filePath);
+				let file = this.app.vault.getAbstractFileByPath(filePath);
+				if (!file || !(file instanceof TFile)) throw new Error();
+
+				let buffer = await this.app.vault.readBinary(file);
+				blob = new Blob([new Uint8Array(buffer)]);
+
+			} else {
+				//file exists on disk
+				let file = this.app.vault.getAbstractFileByPath(url);
+				if (!file || !(file instanceof TFile)) throw new Error();
+
+				let buffer = await this.app.vault.readBinary(file);
+				blob = new Blob([new Uint8Array(buffer)]);
+			}
+
+			return new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				reader.onloadend = () => {
+					resolve(reader.result as string);
+				};
+				reader.onerror = reject;
+				reader.readAsDataURL(blob);
+			});
+		} catch (e) {
+			new Notice(`There was an error reading the image file: ${url}`)
+		}
+	}
+
+	registerMapEvents(map: LeafletMap) {
+		this.registerDomEvent(map.contentEl, "dragover", (evt) => {
 			evt.preventDefault();
 		});
-		this.registerDomEvent(el, "drop", (evt) => {
+		this.registerDomEvent(map.contentEl, "drop", (evt) => {
 			evt.stopPropagation();
 
 			let file = decodeURIComponent(
@@ -178,6 +379,7 @@ export default class ObsidianLeaflet extends Plugin {
 
 		this.registerEvent(
 			map.on("marker-added", async (marker: LeafletMarker) => {
+
 				await this.saveSettings();
 			})
 		);
@@ -224,8 +426,8 @@ export default class ObsidianLeaflet extends Plugin {
 									value == "default"
 										? this.AppData.defaultMarker
 										: this.AppData.markerIcons.find(
-												(m) => m.type == value
-										  );
+											(m) => m.type == value
+										);
 								let html: string,
 									iconNode: AbstractElement = icon(
 										getIcon(newMarker.iconName),
@@ -241,11 +443,10 @@ export default class ObsidianLeaflet extends Plugin {
 
 								iconNode.attributes = {
 									...iconNode.attributes,
-									style: `color: ${
-										newMarker.color
-											? newMarker.color
-											: this.AppData.defaultMarker?.color
-									}`,
+									style: `color: ${newMarker.color
+										? newMarker.color
+										: this.AppData.defaultMarker?.color
+										}`,
 								};
 
 								html = toHtml(iconNode);
@@ -278,135 +479,5 @@ export default class ObsidianLeaflet extends Plugin {
 				markerSettingsModal.open();
 			})
 		);
-
-		await this.saveSettings();
-	}
-
-	async loadSettings() {
-		this.AppData = Object.assign(
-			{},
-			DEFAULT_SETTINGS,
-			await this.loadData()
-		);
-	}
-	async saveSettings() {
-		//build map marker data
-
-		let markers = this.maps.map(
-			(map): MapMarkerData => {
-				return {
-					path: map.path,
-					markers: map.markers.map(
-						(marker): MarkerData => {
-							return {
-								type: marker.marker.type,
-								id: marker.id,
-								loc: [marker.loc.lat, marker.loc.lng],
-								link: marker.link,
-							};
-						}
-					),
-				};
-			}
-		);
-		this.AppData.mapMarkers = markers;
-		await this.saveData(this.AppData);
-
-		this.AppData.markerIcons.forEach((marker) => {
-			addIcon(marker.type, icon(getIcon(marker.iconName)).html[0]);
-		});
-
-		this.markerIcons = this.generateMarkerMarkup(this.AppData.markerIcons);
-
-		this.maps.forEach((map) => map.setMarkerIcons(this.markerIcons));
-	}
-	getEditor() {
-		let view = this.app.workspace.getActiveViewOfType(MarkdownView);
-		if (view) {
-			return view.sourceMode.cmEditor;
-		}
-		return null;
-	}
-
-	generateMarkerMarkup(
-		markers: Marker[] = this.AppData.markerIcons
-	): MarkerIcon[] {
-		let ret = markers.map((marker) => {
-			if (!marker.transform) {
-				marker.transform = this.AppData.defaultMarker.transform;
-			}
-			if (!marker.iconName) {
-				marker.iconName = this.AppData.defaultMarker.iconName;
-			}
-			let html: string,
-				iconNode: AbstractElement = icon(getIcon(marker.iconName), {
-					transform: marker.transform,
-					mask: getIcon(this.AppData.defaultMarker?.iconName),
-					classes: ["full-width-height"],
-				}).abstract[0];
-
-			iconNode.attributes = {
-				...iconNode.attributes,
-				style: `color: ${
-					marker.color
-						? marker.color
-						: this.AppData.defaultMarker?.color
-				}`,
-			};
-
-			html = toHtml(iconNode);
-
-			return { type: marker.type, html: html };
-		});
-		if (this.AppData.defaultMarker.iconName) {
-			ret.unshift({
-				type: "default",
-				html: icon(getIcon(this.AppData.defaultMarker.iconName), {
-					classes: ["full-width-height"],
-					styles: {
-						color: this.AppData.defaultMarker.color,
-					},
-				}).html[0],
-			});
-		}
-
-		return ret;
-	}
-
-	async toDataURL(url: string): Promise<string> {
-		//determine link type
-		let response, blob: Blob;
-		if (/http[s]*:/.test(url)) {
-			//url
-			response = await fetch(url);
-			blob = await response.blob();
-		} else if (/obsidian:\/\/open/.test(url)) {
-			//obsidian link
-			let [, vault, file] = url.match(
-				/\?vault=([\w\s\d]+)&file=([\s\S]+)/
-			);
-			file = decodeURIComponent(file);
-			if (await this.app.vault.adapter.exists(file)) {
-				let buffer = await this.app.vault.readBinary(
-					this.app.vault.getAbstractFileByPath(file) as TFile
-				);
-				blob = new Blob([new Uint8Array(buffer)]);
-			}
-		} else if (await this.app.vault.adapter.exists(url)) {
-			//file exists on disk
-			let buffer = await this.app.vault.readBinary(
-				this.app.vault.getAbstractFileByPath(url) as TFile
-			);
-			blob = new Blob([new Uint8Array(buffer)]);
-		}
-
-		return new Promise((resolve, reject) => {
-			const reader = new FileReader();
-			reader.onloadend = () => {
-				resolve(reader.result as string);
-			};
-			reader.onerror = reject;
-			reader.readAsDataURL(blob);
-		});
 	}
 }

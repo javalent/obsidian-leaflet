@@ -6,9 +6,6 @@ import { Events, Menu, Point } from "obsidian";
 /* import { EventEmitter } from "events"; */
 import { v4 as uuidv4 } from "uuid";
 
-//local imports
-import Utils from "./utils";
-
 /**
  * LeafletMap Class
  *
@@ -16,45 +13,73 @@ import Utils from "./utils";
  *
  */
 export default class LeafletMap extends Events {
-	parent: HTMLElement;
-	element: HTMLElement;
+	parentEl: HTMLElement;
+	contentEl: HTMLElement;
 	map: L.Map;
 	bounds: L.LatLngBounds;
 	markers: Array<LeafletMarker> = [];
+	file: string;
 	path: string;
-	source: string;
 	markerIcons: MarkerIcon[] = [];
+	rendered: boolean = false;
+	zoom: { min: number, max: number, default: number, delta: number };
 	constructor(
 		el: HTMLElement,
-		image: string,
 		height: string = "500px",
-		sourcePath: string,
-		markerIcons: MarkerIcon[]
+		file: string,
+		path: string,
+		markerIcons: MarkerIcon[],
+		minZoom: number = 1,
+		maxZoom: number = 10,
+		defaultZoom: number = 1,
+		zoomDelta: number = 1
 	) {
 		super();
 
-		this.parent = el;
-		this.path = sourcePath;
+		this.parentEl = el;
+		this.file = file;
+		this.path = path;
 		this.markerIcons = markerIcons;
-
-		this.init(image, height);
-	}
-
-	async init(image: string, height: string): Promise<void> {
-		this.element = this.parent.appendChild(
+		this.zoom = {
+			min: minZoom,
+			max: maxZoom,
+			default: defaultZoom,
+			delta: zoomDelta
+		}
+		this.contentEl = el.appendChild(
 			document.createElement("div") as HTMLElement
 		);
-		this.element.setAttribute("style", `height: ${height}; width: 100%;`);
+		this.contentEl.setAttribute("style", `height: ${height}; width: 100%;`);
 
-		this.map = L.map(this.element, {
-			minZoom: 1,
-			maxZoom: 10,
-			zoom: 1,
-			crs: L.CRS.Simple,
+	}
+
+
+	loadData(data: any/* : MarkerData[] */): Promise<void> {
+		return new Promise(resolve => {
+			data?.markers.forEach((marker: MarkerData) => {
+				this.createMarker(
+					this.markerIcons.find(icon => icon.type == marker.type),
+					L.latLng(marker.loc),
+					marker.link,
+					marker.id
+				);
+			});
+			resolve();
 		});
+	}
+
+	async render(image: string) {
+		this.map = L.map(this.contentEl, {
+			crs: L.CRS.Simple,
+			maxZoom: this.zoom.max,
+			minZoom: this.zoom.min
+		});
+		this.markers.forEach(marker => {
+			marker.leafletInstance.addTo(this.map);
+		})
 
 		//const uri = await Utils.toDataURL(image);
-		let { h, w } = await Utils.getImageDimensions(image);
+		let { h, w } = await LeafletMap.getImageDimensions(image);
 
 		var southWest = this.map.unproject([0, h], this.map.getMaxZoom() - 1);
 		var northEast = this.map.unproject([w, 0], this.map.getMaxZoom() - 1);
@@ -67,22 +92,15 @@ export default class LeafletMap extends Events {
 		this.map.panTo(this.bounds.getCenter());
 		// tell leaflet that the map is exactly as big as the image
 		this.map.setMaxBounds(this.bounds);
+		this.map.invalidateSize();
+		this.map.setZoom(this.zoom.default, { animate: false })
+/* 		this.map.setMaxZoom(this.zoom.max);
+		this.map.setMinZoom(this.zoom.min); */
 
 		this.map.on("contextmenu", this.contextMenu.bind(this));
-	}
+		
+		this.rendered = true;
 
-	loadData(data: MarkerData[]): Promise<void> {
-		return new Promise(resolve => {
-			data.forEach((marker: MarkerData) => {
-				this.createMarker(
-					this.markerIcons.find(icon => icon.type == marker.type),
-					L.latLng(marker.loc),
-					marker.link,
-					marker.id
-				);
-			});
-			resolve();
-		});
 	}
 
 	contextMenu(evt: L.LeafletMouseEvent): void {
@@ -152,29 +170,18 @@ export default class LeafletMap extends Events {
 				this.trigger("marker-added", marker);
 			});
 
-		marker.leafletInstance.addTo(this.map);
+		if (this.rendered) {
+
+			marker.leafletInstance.addTo(this.map);
+
+		}
+
 
 		this.markers.push(marker);
 
 		this.trigger("marker-added", marker);
 	}
 	setMarkerIcons(markerIcons: MarkerIcon[]) {
-		/* this.map.eachLayer(layer => {
-			if (layer instanceof L.Marker) {
-				const oldIcon = this.markerIcons.find(
-					marker =>
-						marker.html ==
-						(layer.getIcon() as L.DivIcon).options.html
-				).type;
-
-				layer.setIcon(
-					L.divIcon({
-						html: markerIcons.find(marker => marker.type == oldIcon)
-							.html,
-					})
-				);
-			}
-		}); */
 
 		this.markerIcons = markerIcons;
 		this.markers.forEach(marker => {
@@ -185,6 +192,16 @@ export default class LeafletMap extends Events {
 					).html,
 				})
 			);
+		});
+	}
+
+	static async getImageDimensions(url: string): Promise<any> {
+		return new Promise(function (resolved, rejected) {
+			var i = new Image();
+			i.onload = function () {
+				resolved({ w: i.width, h: i.height });
+			};
+			i.src = url;
 		});
 	}
 }
