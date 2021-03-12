@@ -40,7 +40,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 		this.newMarker = {
 			type: "",
-			iconName: this.plugin.AppData.defaultMarker.iconName,
+			iconName: null,
 			color: this.plugin.AppData.defaultMarker.iconName
 				? this.plugin.AppData.defaultMarker.color
 				: this.plugin.AppData.color,
@@ -149,9 +149,10 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 									color: this.plugin.AppData.defaultMarker
 										.iconName
 										? this.plugin.AppData.defaultMarker
-												.color
+											.color
 										: this.plugin.AppData.color,
 									layer: true,
+									transform: this.plugin.AppData.defaultMarker.transform,
 								};
 								await this.plugin.saveSettings();
 
@@ -270,7 +271,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 									color: marker.color
 										? marker.color
 										: this.plugin.AppData.defaultMarker
-												.color,
+											.color,
 								},
 							}).node[0]
 						);
@@ -288,11 +289,10 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 						}).abstract[0];
 						i.attributes = {
 							...i.attributes,
-							style: `color: ${
-								marker.color
-									? marker.color
-									: this.plugin.AppData.defaultMarker.color
-							}`,
+							style: `color: ${marker.color
+								? marker.color
+								: this.plugin.AppData.defaultMarker.color
+								}`,
 						};
 
 						let html = toHtml(i);
@@ -328,8 +328,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 						iconNodes.forEach(node =>
 							node.setAttribute(
 								"style",
-								`color: ${
-									(evt.target as HTMLInputElement).value
+								`color: ${(evt.target as HTMLInputElement).value
 								}`
 							)
 						);
@@ -481,38 +480,7 @@ class MarkerModal extends Modal {
 				}).node[0].children[0] as SVGGraphicsElement;
 				let iconPath = iconOverlay.getElementsByTagName("path")[0];
 
-				function getFillColor(el: HTMLElement): string[] {
-					let fill = getComputedStyle(el).getPropertyValue(
-						"background-color"
-					);
-
-					if (fill.includes("rgb")) {
-						// Choose correct separator
-						let sep = fill.indexOf(",") > -1 ? "," : " ";
-						// Turn "rgb(r,g,b)" into [r,g,b]
-						let rgbArr = fill
-							.split("(")[1]
-							.split(")")[0]
-							.split(sep);
-						let r = (+rgbArr[0]).toString(16),
-							g = (+rgbArr[1]).toString(16),
-							b = (+rgbArr[2]).toString(16);
-
-						if (r.length == 1) r = "0" + r;
-						if (g.length == 1) g = "0" + g;
-						if (b.length == 1) b = "0" + b;
-
-						return [
-							"#" + r + g + b,
-							rgbArr[3] ? `${+rgbArr[3]}` : "1",
-						];
-					}
-					if (fill.includes("#")) {
-						return [fill, "1"];
-					}
-				}
-
-				let fill = getFillColor(this.modalEl);
+				let fill = this.getFillColor(this.modalEl);
 
 				iconPath.setAttribute("fill", fill[0]);
 				iconPath.setAttribute("fill-opacity", `1`);
@@ -570,7 +538,7 @@ class MarkerModal extends Modal {
 						if (
 							transforms.numberOfItems === 0 ||
 							transforms.getItem(0).type !=
-								SVGTransform.SVG_TRANSFORM_TRANSLATE
+							SVGTransform.SVG_TRANSFORM_TRANSLATE
 						) {
 							let translate = svgElement.createSVGTransform();
 							translate.setTranslate(0, 0);
@@ -796,6 +764,36 @@ class MarkerModal extends Modal {
 			textInput.inputEl.parentElement.removeChild(
 				textInput.inputEl.parentElement.children[1]
 			);
+		}
+	}
+	getFillColor(el: HTMLElement): string[] {
+		let fill = getComputedStyle(el).getPropertyValue(
+			"background-color"
+		);
+
+		if (fill.includes("rgb")) {
+			// Choose correct separator
+			let sep = fill.indexOf(",") > -1 ? "," : " ";
+			// Turn "rgb(r,g,b)" into [r,g,b]
+			let rgbArr = fill
+				.split("(")[1]
+				.split(")")[0]
+				.split(sep);
+			let r = (+rgbArr[0]).toString(16),
+				g = (+rgbArr[1]).toString(16),
+				b = (+rgbArr[2]).toString(16);
+
+			if (r.length == 1) r = "0" + r;
+			if (g.length == 1) g = "0" + g;
+			if (b.length == 1) b = "0" + b;
+
+			return [
+				"#" + r + g + b,
+				rgbArr[3] ? `${+rgbArr[3]}` : "1",
+			];
+		}
+		if (fill.includes("#")) {
+			return [fill, "1"];
 		}
 	}
 }

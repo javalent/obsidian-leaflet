@@ -9,6 +9,7 @@ import {
 	Workspace,
 	TFile,
 	MarkdownRenderChild,
+	HoverPopover,
 } from "obsidian";
 import { point } from "leaflet";
 
@@ -25,9 +26,6 @@ import {
 } from "./icons";
 import LeafletMap from "./leaflet";
 declare global {
-	/* interface MapsInterface {
-		[sourcePath: string]: MapInterface;
-	} */
 	interface Marker {
 		type: string;
 		iconName: string;
@@ -70,7 +68,6 @@ interface MarkdownPostProcessorContextActual
 	sourcePath: string;
 	containerEl: HTMLElement;
 }
-
 export default class ObsidianLeaflet extends Plugin {
 	AppData: ObsidianAppData;
 	markerIcons: MarkerIcon[];
@@ -126,96 +123,126 @@ export default class ObsidianLeaflet extends Plugin {
 		el: HTMLElement,
 		ctx: MarkdownPostProcessorContextActual
 	): Promise<void> {
+		try {
+			let { image = 'real', height = "500px", minZoom = 1, maxZoom = 10, defaultZoom = 5, zoomDelta = 1, lat, long } = Object.fromEntries(
+				source.split("\n").map((l) => l.split(": "))
+			);
 
-		let { image, height = "500px", minZoom = 1, maxZoom = 10, defaultZoom = 5, zoomDelta = 1 } = Object.fromEntries(
-			source.split("\n").map((l) => l.split(": "))
-		);
 
-		if (!image) {
-			console.error("An image source url must be provided.");
-			new Notice("An image source url must be provided.");
-			el.appendText("An image source url must be provided.");
-			el.setAttribute("style", "color: red;");
-			return;
+
+			let path = `${ctx.sourcePath}/${image}`;
+			let map = new LeafletMap(
+				el,
+				height,
+				ctx.sourcePath,
+				path,
+				this.markerIcons,
+				+minZoom,
+				+maxZoom,
+				+defaultZoom,
+				+zoomDelta,
+			);
+
+
+			let markdownRenderChild = new MarkdownRenderChild();
+			markdownRenderChild.register(async () => {
+
+				let file = this.app.vault.getAbstractFileByPath(ctx.sourcePath);
+				if (!file || !(file instanceof TFile)) {
+					//file was deleted, remove maps associated
+					this.maps = this.maps.filter(
+						(map) => map.file != ctx.sourcePath
+					);
+					this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
+						(map) => map.file != ctx.sourcePath
+					);
+
+					await this.saveSettings();
+					return;
+				}
+				let fileContent = await this.app.vault.read(file);
+
+				let containsThisMap: boolean = false;
+				containsThisMap = fileContent.match(/```leaflet[\s\S]+?```/g)?.some(match => match.includes(image));
+
+				if (!containsThisMap) {
+					//Block was deleted or image path was changed
+					this.maps = this.maps.filter(
+						(map) => map.path != path
+					);
+					this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
+						(map) => map.path != path
+					);
+
+					await this.saveSettings();
+
+				}
+
+			});
+			markdownRenderChild.containerEl = el;
+			ctx.addChild(markdownRenderChild);
+
+			await map.loadData(
+				this.AppData.mapMarkers.find(
+					(map) => map.path == path
+				)
+			)
+
+			this.maps = this.maps.filter(
+				(map) => map.path != path
+			);
+
+			let imageData: string;
+			let coords: [number, number];
+
+			lat = parseInt(lat?.match(/(\d+)%*/)[1]);
+			long = +parseInt(long?.match(/(\d+)%*/)[1]);
+			if (image != 'real') {
+
+
+				if (!lat || isNaN(lat)) {
+					lat = 50;
+				}
+				if (!long || isNaN(lat)) {
+					long = 50;
+				}
+				coords = [+lat, +long];
+				imageData = await this.toDataURL(encodeURIComponent(image));
+				if (!imageData) {
+					let newPre = createEl('pre');
+					newPre.createEl('code', {}, (code) => {
+						code.innerText = `\`\`\`leaflet\n${source}\`\`\``;
+						el.parentElement.replaceChild(newPre, el);
+					});
+					return;
+
+				};
+
+				map.renderImage(imageData, coords);
+
+			} else {
+
+				if (!lat || isNaN(lat)) {
+					lat = 0;
+				}
+				if (!long || isNaN(lat)) {
+					long = 0;
+				}
+				coords = [+lat, +long];
+				map.renderReal(coords);
+
+			}
+
+			this.registerMapEvents(map);
+
+			this.maps.push(map);
+			await this.saveSettings();
+		} catch (e) {
+
+			new Notice('There was an error loading the map.')
+
 		}
 
-		const imageData = await this.toDataURL(encodeURIComponent(image));
-		if (!imageData) {
-			let newPre = createEl('pre');
-			newPre.createEl('code', {}, (code) => {
-				code.innerText = `\`\`\`leaflet\n${source}\`\`\``;
-				el.parentElement.replaceChild(newPre, el);
-			});
-			return;
-
-		};
-		let path = `${ctx.sourcePath}/${image}`;
-		let map = new LeafletMap(
-			el,
-			height,
-			ctx.sourcePath,
-			path,
-			this.markerIcons,
-			+minZoom,
-			+maxZoom,
-			+defaultZoom,
-			+zoomDelta
-		);
-
-
-		let markdownRenderChild = new MarkdownRenderChild();
-		markdownRenderChild.register(async () => {
-
-			let file = this.app.vault.getAbstractFileByPath(ctx.sourcePath);
-			if (!file || !(file instanceof TFile)) {
-				//file was deleted, remove maps associated
-				this.maps = this.maps.filter(
-					(map) => map.file != ctx.sourcePath
-				);
-				this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
-					(map) => map.file != ctx.sourcePath
-				);
-
-				await this.saveSettings();
-				return;
-			}
-			let fileContent = await this.app.vault.read(file);
-
-			let containsThisMap: boolean = false;
-			containsThisMap = fileContent.match(/```leaflet[\s\S]+?```/g)?.some(match => match.includes(image));
-
-			if (!containsThisMap) {
-				//Block was deleted or image path was changed
-				this.maps = this.maps.filter(
-					(map) => map.path != path
-				);
-				this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
-					(map) => map.path != path
-				);
-
-				await this.saveSettings();
-
-			}
-
-		});
-		markdownRenderChild.containerEl = el;
-		ctx.addChild(markdownRenderChild);
-
-		await map.loadData(
-			this.AppData.mapMarkers.find(
-				(map) => map.path == path
-			)
-		)
-
-		this.maps = this.maps.filter(
-			(map) => map.path != path
-		);
-		map.render(imageData);
-
-		this.registerMapEvents(map);
-
-		this.maps.push(map);
-		await this.saveSettings();
 	}
 
 	async loadSettings() {

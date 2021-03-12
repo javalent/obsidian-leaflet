@@ -11,3 +11,4 @@ main.js
 *.js.map
 .DS_Store
 *build.js
+rollup.config-dev.js

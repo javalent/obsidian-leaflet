@@ -3,7 +3,6 @@ import * as L from "leaflet";
 import 'leaflet/dist/leaflet.css';
 
 import { Events, Menu, Point } from "obsidian";
-/* import { EventEmitter } from "events"; */
 import { v4 as uuidv4 } from "uuid";
 
 /**
@@ -54,7 +53,7 @@ export default class LeafletMap extends Events {
 	}
 
 
-	loadData(data: any/* : MarkerData[] */): Promise<void> {
+	loadData(data: any): Promise<void> {
 		return new Promise(resolve => {
 			data?.markers.forEach((marker: MarkerData) => {
 				this.createMarker(
@@ -68,11 +67,13 @@ export default class LeafletMap extends Events {
 		});
 	}
 
-	async render(image: string) {
+	async renderImage(image: string, coords?: [number, number]) {
 		this.map = L.map(this.contentEl, {
 			crs: L.CRS.Simple,
 			maxZoom: this.zoom.max,
-			minZoom: this.zoom.min
+			minZoom: this.zoom.min,
+			zoomDelta: this.zoom.delta,
+			zoomSnap: this.zoom.delta
 		});
 		this.markers.forEach(marker => {
 			marker.leafletInstance.addTo(this.map);
@@ -90,22 +91,46 @@ export default class LeafletMap extends Events {
 		L.imageOverlay(image, this.bounds).addTo(this.map);
 		this.map.fitBounds(this.bounds);
 		this.map.panTo(this.bounds.getCenter());
+
 		// tell leaflet that the map is exactly as big as the image
 		this.map.setMaxBounds(this.bounds);
-		this.map.invalidateSize();
-		this.map.setZoom(this.zoom.default, { animate: false })
-/* 		this.map.setMaxZoom(this.zoom.max);
-		this.map.setMinZoom(this.zoom.min); */
+		this.map.setZoom(this.zoom.default, { animate: false });
+
+		if (coords) {
+			this.map.panTo([coords[0] * this.bounds.getSouthEast().lat / 100, coords[1] * this.bounds.getSouthEast().lng / 100]);
+		}
 
 		this.map.on("contextmenu", this.contextMenu.bind(this));
-		
+
+		this.rendered = true;
+
+	}
+
+	async renderReal(coords: [number, number] = [0, 0]) {
+
+		this.map = L.map(this.contentEl, {
+			maxZoom: this.zoom.max,
+			minZoom: this.zoom.min,
+			worldCopyJump: true,
+			zoomDelta: this.zoom.delta,
+			zoomSnap: this.zoom.delta
+		}).setView(coords, this.zoom.default);
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+		}).addTo(this.map);
+
+		this.markers.forEach(marker => {
+			marker.leafletInstance.addTo(this.map);
+		})
+		this.map.setZoom(this.zoom.default, { animate: false });
+
+		this.map.on("contextmenu", this.contextMenu.bind(this));
+
 		this.rendered = true;
 
 	}
 
 	contextMenu(evt: L.LeafletMouseEvent): void {
-		/** Create Context Menu */
-
 		if (this.markerIcons.length <= 1) {
 			this.createMarker(this.markerIcons[0], evt.latlng);
 			return;
@@ -168,7 +193,22 @@ export default class LeafletMap extends Events {
 			.on("dragend", evt => {
 				marker.loc = marker.leafletInstance.getLatLng();
 				this.trigger("marker-added", marker);
-			});
+			})
+			.on('mouseover', (evt: L.LeafletMouseEvent) => {
+
+				if (marker.link) {
+					let el = evt.originalEvent.target as SVGElement;
+					marker.leafletInstance.bindTooltip(
+						marker.link.split('/').pop(),
+						{
+							className: 'leaflet-marker-link-tooltip',
+							direction: 'top',
+							offset: new L.Point(0, -1 * el.getBoundingClientRect().height)
+						}
+					).openTooltip();
+				}
+
+			})
 
 		if (this.rendered) {
 
@@ -176,10 +216,10 @@ export default class LeafletMap extends Events {
 
 		}
 
-
 		this.markers.push(marker);
 
 		this.trigger("marker-added", marker);
+
 	}
 	setMarkerIcons(markerIcons: MarkerIcon[]) {
 
