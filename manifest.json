@@ -2,7 +2,7 @@
 	"id": "obsidian-leaflet-plugin",
 	"name": "Obsidian Leaflet",
 	"description": "Leaflet integration for Obsidian.md",
-	"version": "0.2.2",
+	"version": "0.2.3",
 	"minAppVersion": "0.11.0",
 	"author": "Jeremy Valentine",
 	"repo": "valentine195/obsidian-leaflet-plugin",
