@@ -223,10 +223,10 @@ export default class ObsidianLeaflet extends Plugin {
 			} else {
 
 				if (!lat || isNaN(lat)) {
-					lat = 0;
+					lat = 32.9612;
 				}
 				if (!long || isNaN(lat)) {
-					long = 0;
+					long = -82.9988;
 				}
 				coords = [lat, long];
 				map.renderReal(coords);
