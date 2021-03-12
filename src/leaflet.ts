@@ -22,6 +22,10 @@ export default class LeafletMap extends Events {
 	markerIcons: MarkerIcon[] = [];
 	rendered: boolean = false;
 	zoom: { min: number, max: number, default: number, delta: number };
+	tooltip: L.Tooltip = L.tooltip({
+		className: 'leaflet-marker-link-tooltip',
+		direction: 'top',
+	});
 	constructor(
 		el: HTMLElement,
 		height: string = "500px",
@@ -159,7 +163,7 @@ export default class LeafletMap extends Events {
 		loc: L.LatLng,
 		link: string | undefined = undefined,
 		id: string = uuidv4()
-	): void {
+	): LeafletMarker {
 		const mapIcon = L.divIcon({
 			html: markerIcon.html,
 		});
@@ -182,7 +186,7 @@ export default class LeafletMap extends Events {
 			})
 			.on("click", async (evt: L.LeafletMouseEvent) => {
 				L.DomEvent.stopPropagation(evt);
-				marker.leafletInstance.unbindTooltip();
+				marker.leafletInstance.closeTooltip();
 				if (marker.link) {
 					this.trigger(
 						"marker-click",
@@ -192,22 +196,21 @@ export default class LeafletMap extends Events {
 				}
 			})
 			.on('drag', () => {
-				marker.leafletInstance.unbindTooltip();
+				marker.leafletInstance.closeTooltip();
 			})
 			.on("dragend", (evt: L.LeafletMouseEvent) => {
 				marker.loc = marker.leafletInstance.getLatLng();
 				this.trigger("marker-added", marker);
-				marker.leafletInstance.unbindTooltip();
+				marker.leafletInstance.closeTooltip();
 			})
 			.on('mouseover', (evt: L.LeafletMouseEvent) => {
 
 				if (marker.link) {
 					let el = evt.originalEvent.target as SVGElement;
+					this.tooltip.setContent(marker.link.split('/').pop());
 					marker.leafletInstance.bindTooltip(
-						marker.link.split('/').pop(),
+						this.tooltip,
 						{
-							className: 'leaflet-marker-link-tooltip',
-							direction: 'top',
 							offset: new L.Point(0, -1 * el.getBoundingClientRect().height)
 						}
 					).openTooltip();
@@ -216,20 +219,23 @@ export default class LeafletMap extends Events {
 			})
 			.on('mouseout', (evt: L.LeafletMouseEvent) => {
 
-				marker.leafletInstance.unbindTooltip();
-				//console.log(marker.leafletInstance.isTooltipOpen())
+
+				marker.leafletInstance.closeTooltip();
 
 			})
 
 		if (this.rendered) {
 
 			marker.leafletInstance.addTo(this.map);
+			marker.leafletInstance.closeTooltip();
 
 		}
 
 		this.markers.push(marker);
 
 		this.trigger("marker-added", marker);
+
+		return marker;
 
 	}
 	setMarkerIcons(markerIcons: MarkerIcon[]) {

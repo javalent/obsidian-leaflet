@@ -393,16 +393,18 @@ export default class ObsidianLeaflet extends Plugin {
 				.split("file=")
 				.pop();
 
-			map.createMarker(
+			let marker = map.createMarker(
 				map.markerIcons[0],
-				map.map.layerPointToLatLng(point(evt.offsetX, evt.offsetY)),
+				map.map.mouseEventToLatLng(evt),
 				file + ".md"
 			);
+			marker.leafletInstance.closeTooltip();
 		});
 
 		this.registerEvent(
 			map.on("marker-added", async (marker: LeafletMarker) => {
-
+				marker.leafletInstance.closeTooltip();
+				marker.leafletInstance.unbindTooltip();
 				await this.saveSettings();
 			})
 		);

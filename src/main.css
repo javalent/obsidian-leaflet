@@ -118,14 +118,9 @@ input.is-invalid {
 	left: 50% !important;
 	line-height: 20px !important;
 	width: auto !important;
-	/* max-width: 300px !important; */
 	padding: 5px 14px !important;
-	/* 	position: fixed !important;
-	text-align: center !important;
-	transform: translateX(-50%) !important;
-	z-index: var(--layer-tooltip) !important; */
 	pointer-events: none !important;
-	/* white-space: pre-wrap !important; */
+	opacity: unset !important;
 }
 
 .leaflet-marker-link-tooltip::before {
