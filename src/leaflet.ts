@@ -182,6 +182,7 @@ export default class LeafletMap extends Events {
 			})
 			.on("click", async (evt: L.LeafletMouseEvent) => {
 				L.DomEvent.stopPropagation(evt);
+				marker.leafletInstance.unbindTooltip();
 				if (marker.link) {
 					this.trigger(
 						"marker-click",
@@ -190,11 +191,15 @@ export default class LeafletMap extends Events {
 					);
 				}
 			})
-			.on("dragend", evt => {
+			.on('drag', () => {
+				marker.leafletInstance.unbindTooltip();
+			})
+			.on("dragend", (evt: L.LeafletMouseEvent) => {
 				marker.loc = marker.leafletInstance.getLatLng();
 				this.trigger("marker-added", marker);
+				marker.leafletInstance.unbindTooltip();
 			})
-			/* .on('mouseover', (evt: L.LeafletMouseEvent) => {
+			.on('mouseover', (evt: L.LeafletMouseEvent) => {
 
 				if (marker.link) {
 					let el = evt.originalEvent.target as SVGElement;
@@ -214,7 +219,7 @@ export default class LeafletMap extends Events {
 				marker.leafletInstance.unbindTooltip();
 				//console.log(marker.leafletInstance.isTooltipOpen())
 
-			}) */
+			})
 
 		if (this.rendered) {
 
