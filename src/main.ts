@@ -195,8 +195,8 @@ export default class ObsidianLeaflet extends Plugin {
 			let imageData: string;
 			let coords: [number, number];
 
-			lat = parseInt(lat?.match(/(\d+)%*/)[1]);
-			long = +parseInt(long?.match(/(\d+)%*/)[1]);
+			lat = parseFloat(lat?.match(/(-*\d+)%*/)[1]);
+			long = parseFloat(long?.match(/(-*\d+)%*/)[1]);
 			if (image != 'real') {
 
 
@@ -228,7 +228,7 @@ export default class ObsidianLeaflet extends Plugin {
 				if (!long || isNaN(lat)) {
 					long = 0;
 				}
-				coords = [+lat, +long];
+				coords = [lat, long];
 				map.renderReal(coords);
 
 			}
