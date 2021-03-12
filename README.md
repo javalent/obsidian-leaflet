@@ -42,6 +42,8 @@ Image maps can be loaded one of three ways:
 2. Obsidian URL (e.g., obsidian://open?vault=VaultName&file=Path/To/Image.jpg)
 3. Direct path to image (e.g., Path/To/Image.jpg)
 
+**Note: Currently, two maps in the same file with the same link will share data.**
+
 #### Latitude and Longtitude of Image Maps
 
 Because an image map does not have a true coordinate system, the latitude and longitude provided must be given as a percentage from the **top left corner of the image**.

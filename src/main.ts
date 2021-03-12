@@ -163,7 +163,7 @@ export default class ObsidianLeaflet extends Plugin {
 				let fileContent = await this.app.vault.read(file);
 
 				let containsThisMap: boolean = false;
-				containsThisMap = fileContent.match(/```leaflet[\s\S]+?```/g)?.some(match => match.includes(image));
+				containsThisMap = fileContent.match(/```leaflet[\s\S]+?```/g)?.some(match => { return match.includes(image) || !match.includes('image:') && image === 'real' });
 
 				if (!containsThisMap) {
 					//Block was deleted or image path was changed
