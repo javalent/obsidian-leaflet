@@ -79,7 +79,12 @@ export default class ObsidianLeaflet extends Plugin {
 		console.log("loading leaflet plugin");
 
 		await this.loadSettings();
-
+		if (!this.AppData.mapMarkers?.every(map => map.file)) {
+			this.AppData.mapMarkers = this.AppData.mapMarkers.map(map => {
+				if (!map.file) map.file = map.path.slice(0, map.path.indexOf('.md') + 3);
+				return map;
+			})
+		}
 		this.markerIcons = this.generateMarkerMarkup(this.AppData.markerIcons);
 
 		this.registerMarkdownCodeBlockProcessor(
@@ -214,19 +219,10 @@ export default class ObsidianLeaflet extends Plugin {
 	}
 
 	async loadSettings() {
-		let data: ObsidianAppData = await this.loadData();
-
-		if (!data.mapMarkers.every(map => map.file)) {
-			data.mapMarkers = data.mapMarkers.map(map => {
-				if (!map.file) map.file = map.path.slice(0, map.path.indexOf('.md') + 3);
-				return map;
-			})
-		}
-
 		this.AppData = Object.assign(
 			{},
 			DEFAULT_SETTINGS,
-			data
+			await this.loadData()
 		);
 	}
 	async saveSettings() {
