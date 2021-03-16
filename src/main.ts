@@ -16,7 +16,6 @@ import "./main.css";
 
 import { ObsidianLeafletSettingTab, DEFAULT_SETTINGS } from "./settings";
 import {
-    IconDefinition,
     AbstractElement,
     icon,
     toHtml,

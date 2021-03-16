@@ -2,10 +2,6 @@
 
 Adds interactable mapping functionality to Obsidian.md, using [Leaflet.js](https://leafletjs.com/)
 
-<img src="images/example.gif" width="750px">
-<img src="images/markers.PNG" width="750px">
-
-
 Proof of concept currently. May not work as expected. Currently only tested on Windows & Mac.
 
 ## Working with the plugin & example
@@ -102,14 +98,14 @@ Additional marker types can be added, selectable from a context menu on the map.
 
 Adding a new marker displays a new window, where the new marker parameters can be added.
 
-| Paramter    | Description                                                                        |
+| Parameter    | Description                                                                        |
 | ----------- | ---------------------------------------------------------------------------------- |
 | Marker Name | Displayed in the context menu when adding a marker (e.g., Location, Event, Person) |
 | Marker Icon | Name of the Font Awesome icon to use                                               |
 | Layer Icon  | Layer this icon on top of the base marker. If off, the icon itself will be used.   |
 | Icon Color  | Override the default icon color                                                    |
 
-If layer icon is on, the icon be moved around the base icon by clicking and dragging, to customize where the icon is layered. If the <kbd>Shift</kbd> is held while moving the icon, it will snap to the midlines.
+If layer icon is on, the icon be moved around the base icon by clicking and dragging, to customize where the icon is layered. If <kbd>Shift</kbd> is held while moving the icon, it will snap to the midlines.
 
 ## Warning
 
