@@ -87,7 +87,6 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     }
                     ObsidianLeafletSettingTab.removeValidationError(text);
                     this.plugin.AppData.long = Number(v);
-                    console.log("🚀 ~ file: settings.ts ~ line 90 ~ ObsidianLeafletSettingTab ~ display ~ Number(v);", Number(v))
                 });
 
                 text.inputEl.addEventListener('blur', async () => {
