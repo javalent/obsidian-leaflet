@@ -66,15 +66,13 @@ interface MarkdownPostProcessorContextActual
     sourcePath: string;
     containerEl: HTMLElement;
 }
+
 export default class ObsidianLeaflet extends Plugin {
     AppData: ObsidianAppData;
     markerIcons: MarkerIcon[];
     maps: LeafletMap[] = [];
-    locale: string = "en-US";
     async onload(): Promise<void> {
         console.log("Loading Obsidian Leaflet");
-
-        //if (navigator.language) { this.locale = navigator.language; }
 
         await this.loadSettings();
         if (!this.AppData.mapMarkers?.every(map => map.file)) {
@@ -194,10 +192,10 @@ export default class ObsidianLeaflet extends Plugin {
             let imageData: string;
             let coords: [number, number];
             let err: boolean = false;
-            
+
             try {
-                lat = Number(new Intl.NumberFormat(this.locale, { minimumSignificantDigits: 4 }).format(lat?.split('%').shift()))
-                long = Number(new Intl.NumberFormat(this.locale, { minimumSignificantDigits: 4 }).format(long?.split('%').shift()))
+                lat = Number(lat?.split('%').shift());
+                long = Number(long?.split('%').shift());
             } catch (e) {
                 err = true;
             }
