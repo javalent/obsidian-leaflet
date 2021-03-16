@@ -2,6 +2,10 @@
 
 Adds interactable mapping functionality to Obsidian.md, using [Leaflet.js](https://leafletjs.com/)
 
+<img src="images/example.gif" width="750px">
+<img src="images/markers.PNG" width="750px">
+
+
 Proof of concept currently. May not work as expected. Currently only tested on Windows & Mac.
 
 ## Working with the plugin & example
@@ -23,16 +27,16 @@ defaultZoom: 5
 
 ### Options
 
-| Option      | Description                                                       | Default                           |
-| ----------- | ----------------------------------------------------------------- | --------------------------------- |
-| image*      | Direct URL/file path to an image file to be used as the map layer | OpenStreetMap map                 |
-| lat*        | Default latitude to display when rendering                        | 50% (image) / 0 (open street map) |
-| long*       | Default longitude to display when rendering                       | 50% (image) / 0 (open street map) |
-| height      | Height in pixels of the map element                               | 500px                             |
-| minZoom     | Minimum allowable zoom level of the map                           | 1                                 |
-| maxZoom     | Maximum allowable zoom level of the map                           | 10                                |
-| defaultZoom | Map will load zoomed to this level                                | 5                                 |
-| zoomDelta   | Zoom level will change by this amount when zooming                | 1                                 |
+| Option      | Description                                                       | Default                                    |
+| ----------- | ----------------------------------------------------------------- | ------------------------------------------ |
+| image*      | Direct URL/file path to an image file to be used as the map layer | OpenStreetMap map                          |
+| lat*        | Default latitude to display when rendering                        | 50% (image) / 39.983334 (open street map)  |
+| long*       | Default longitude to display when rendering                       | 50% (image) / -82.983330 (open street map) |
+| height      | Height in pixels of the map element                               | 500px                                      |
+| minZoom     | Minimum allowable zoom level of the map                           | 1                                          |
+| maxZoom     | Maximum allowable zoom level of the map                           | 10                                         |
+| defaultZoom | Map will load zoomed to this level                                | 5                                          |
+| zoomDelta   | Zoom level will change by this amount when zooming                | 1                                          |
 
 #### Image Map URL / file path
 
@@ -42,11 +46,13 @@ Image maps can be loaded one of three ways:
 2. Obsidian URL (e.g., obsidian://open?vault=VaultName&file=Path/To/Image.jpg)
 3. Direct path to image (e.g., Path/To/Image.jpg)
 
-**Note: Currently, two maps in the same file with the same link will share data.**
+**Note: Currently, two maps in the same file with the same link could exhibit odd behavior.**
 
 #### Latitude and Longtitude of Image Maps
 
 Because an image map does not have a true coordinate system, the latitude and longitude provided must be given as a percentage from the **top left corner of the image**.
+
+This setting may seem to not do anything without changing the default zoom level of the map. 
 
 
 ### Markers
