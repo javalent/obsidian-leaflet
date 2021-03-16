@@ -6,10 +6,8 @@ import {
     MarkdownView,
     Modal,
     Setting,
-    Workspace,
     TFile,
     MarkdownRenderChild,
-    HoverPopover,
 } from "obsidian";
 //Local Imports
 import "./main.css";
@@ -55,6 +53,8 @@ declare global {
         markerIcons: Marker[];
         defaultMarker: Marker;
         color: string;
+        lat: number,
+        long: number
     }
     type MarkerIcon = {
         readonly type: string;
@@ -70,11 +70,11 @@ export default class ObsidianLeaflet extends Plugin {
     AppData: ObsidianAppData;
     markerIcons: MarkerIcon[];
     maps: LeafletMap[] = [];
-    locale: string = 'en-US';
+    locale: string = "en-US";
     async onload(): Promise<void> {
         console.log("Loading Obsidian Leaflet");
 
-        if (navigator.language) { this.locale = navigator.language; }
+        //if (navigator.language) { this.locale = navigator.language; }
 
         await this.loadSettings();
         if (!this.AppData.mapMarkers?.every(map => map.file)) {
@@ -128,8 +128,6 @@ export default class ObsidianLeaflet extends Plugin {
             let { image = 'real', height = "500px", minZoom = 1, maxZoom = 10, defaultZoom = 5, zoomDelta = 1, lat, long } = Object.fromEntries(
                 source.split("\n").map((l) => l.split(": "))
             );
-
-
 
             let path = `${ctx.sourcePath}/${image}`;
             let map = new LeafletMap(
@@ -195,13 +193,15 @@ export default class ObsidianLeaflet extends Plugin {
 
             let imageData: string;
             let coords: [number, number];
-
+            let err: boolean = false;
+            
             try {
                 lat = Number(new Intl.NumberFormat(this.locale, { minimumSignificantDigits: 4 }).format(lat?.split('%').shift()))
                 long = Number(new Intl.NumberFormat(this.locale, { minimumSignificantDigits: 4 }).format(long?.split('%').shift()))
             } catch (e) {
-
+                err = true;
             }
+            if (err || isNaN(lat) || isNaN(long)) { new Notice('There was an error with the provided latitude and longitude.') }
 
             if (image != 'real') {
                 if (!lat || isNaN(lat)) {
@@ -226,10 +226,10 @@ export default class ObsidianLeaflet extends Plugin {
 
             } else {
                 if (!lat || isNaN(lat)) {
-                    lat = 39.983334;
+                    lat = this.AppData.lat;
                 }
                 if (!long || isNaN(lat)) {
-                    long = -82.983330;
+                    long = this.AppData.long;
                 }
                 coords = [lat, long];
                 map.renderReal(coords);
