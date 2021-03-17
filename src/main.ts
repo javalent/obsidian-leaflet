@@ -123,7 +123,7 @@ export default class ObsidianLeaflet extends Plugin {
         ctx: MarkdownPostProcessorContextActual
     ): Promise<void> {
         try {
-            let { image = 'real', height = "500px", minZoom = 1, maxZoom = 10, defaultZoom = 5, zoomDelta = 1, lat, long } = Object.fromEntries(
+            let { image = 'real', height = "500px", minZoom = 1, maxZoom = 10, defaultZoom = 5, zoomDelta = 1, lat = `${this.AppData.lat}`, long = `${this.AppData.long}` } = Object.fromEntries(
                 source.split("\n").map((l) => l.split(": "))
             );
 
@@ -192,7 +192,6 @@ export default class ObsidianLeaflet extends Plugin {
             let imageData: string;
             let coords: [number, number];
             let err: boolean = false;
-
             try {
                 lat = Number(lat?.split('%').shift());
                 long = Number(long?.split('%').shift());

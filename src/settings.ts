@@ -62,7 +62,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             .setName('Default Latitude')
             .setDesc('Real-world maps will open to this latitude if not specified.')
             .addText(text => {
-                text.setPlaceholder(`${this.plugin.AppData.lat}`);
+                text.setValue(`${this.plugin.AppData.lat}`);
                 text.onChange(v => {
                     if (isNaN(Number(v))) {
                         ObsidianLeafletSettingTab.setValidationError(text, 'Latitude must be a number.');
@@ -79,7 +79,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             .setName('Default Longitude')
             .setDesc('Real-world maps will open to this longitude if not specified.')
             .addText(text => {
-                text.setPlaceholder(`${this.plugin.AppData.long}`);
+                text.setValue(`${this.plugin.AppData.long}`);
                 text.onChange(v => {
                     if (isNaN(Number(v))) {
                         ObsidianLeafletSettingTab.setValidationError(text, 'Longitude must be a number.');
