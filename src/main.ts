@@ -7,18 +7,13 @@ import {
     Modal,
     Setting,
     TFile,
-    MarkdownRenderChild,
+    MarkdownRenderChild
 } from "obsidian";
 //Local Imports
 import "./main.css";
 
 import { ObsidianLeafletSettingTab, DEFAULT_SETTINGS } from "./settings";
-import {
-    AbstractElement,
-    icon,
-    toHtml,
-    getIcon,
-} from "./icons";
+import { AbstractElement, icon, toHtml, getIcon } from "./icons";
 import LeafletMap from "./leaflet";
 
 declare global {
@@ -35,6 +30,7 @@ declare global {
         id: string;
         link?: string;
         leafletInstance: L.Marker;
+        layer: string;
     }
 
     interface MarkerData {
@@ -42,6 +38,7 @@ declare global {
         loc: [number, number];
         id: string;
         link: string;
+        layer: string;
     }
     interface MapMarkerData {
         path: string;
@@ -53,8 +50,8 @@ declare global {
         markerIcons: Marker[];
         defaultMarker: Marker;
         color: string;
-        lat: number,
-        long: number
+        lat: number;
+        long: number;
     }
     type MarkerIcon = {
         readonly type: string;
@@ -75,11 +72,12 @@ export default class ObsidianLeaflet extends Plugin {
         console.log("Loading Obsidian Leaflet");
 
         await this.loadSettings();
-        if (!this.AppData.mapMarkers?.every(map => map.file)) {
-            this.AppData.mapMarkers = this.AppData.mapMarkers.map(map => {
-                if (!map.file) map.file = map.path.slice(0, map.path.indexOf('.md') + 3);
+        if (!this.AppData.mapMarkers?.every((map) => map.file)) {
+            this.AppData.mapMarkers = this.AppData.mapMarkers.map((map) => {
+                if (!map.file)
+                    map.file = map.path.slice(0, map.path.indexOf(".md") + 3);
                 return map;
-            })
+            });
         }
         this.markerIcons = this.generateMarkerMarkup(this.AppData.markerIcons);
 
@@ -113,7 +111,7 @@ export default class ObsidianLeaflet extends Plugin {
 
     async onunload(): Promise<void> {
         console.log("Unloading Obsidian Leaflet");
-        this.maps.forEach(map => map?.map?.remove())
+        this.maps.forEach((map) => map?.map?.remove());
         this.maps = [];
     }
 
@@ -123,13 +121,40 @@ export default class ObsidianLeaflet extends Plugin {
         ctx: MarkdownPostProcessorContextActual
     ): Promise<void> {
         try {
-            let { image = 'real', height = "500px", minZoom = 1, maxZoom = 10, defaultZoom = 5, zoomDelta = 1, lat = `${this.AppData.lat}`, long = `${this.AppData.long}` } = Object.fromEntries(
+            let layers: string[];
+            let {
+                image = "real",
+                height = "500px",
+                minZoom = 1,
+                maxZoom = 10,
+                defaultZoom = 5,
+                zoomDelta = 1,
+                lat = `${this.AppData.lat}`,
+                long = `${this.AppData.long}`,
+                id = undefined
+            } = Object.fromEntries(
                 source.split("\n").map((l) => l.split(": "))
             );
+            if (
+                source
+                    .split("\n")
+                    .map((l) => l.split(": "))
+                    .filter(([param]) => param == "image").length &&
+                id
+            ) {
+                layers = source
+                    .split("\n")
+                    .map((l) => l.split(": "))
+                    .filter(([param]) => param == "image")
+                    .map(([, path]) => path);
+            } else {
+                layers = [image];
+            }
 
-            let path = `${ctx.sourcePath}/${image}`;
+            let path = `${ctx.sourcePath}/${id ? id : image}`;
             let map = new LeafletMap(
                 el,
+                id,
                 height,
                 ctx.sourcePath,
                 path,
@@ -137,13 +162,11 @@ export default class ObsidianLeaflet extends Plugin {
                 +minZoom,
                 +maxZoom,
                 +defaultZoom,
-                +zoomDelta,
+                +zoomDelta
             );
-
 
             let markdownRenderChild = new MarkdownRenderChild();
             markdownRenderChild.register(async () => {
-
                 let file = this.app.vault.getAbstractFileByPath(ctx.sourcePath);
                 if (!file || !(file instanceof TFile)) {
                     //file was deleted, remove maps associated
@@ -160,47 +183,49 @@ export default class ObsidianLeaflet extends Plugin {
                 let fileContent = await this.app.vault.read(file);
 
                 let containsThisMap: boolean = false;
-                containsThisMap = fileContent.match(/```leaflet[\s\S]+?```/g)?.some(match => { return match.includes(image) || !match.includes('image:') && image === 'real' });
+                containsThisMap = fileContent
+                    .match(/```leaflet[\s\S]+?```/g)
+                    ?.some((match) => {
+                        return (
+                            match.includes(image) ||
+                            (!match.includes("image:") && image === "real") ||
+                            match.includes(id)
+                        );
+                    });
 
                 if (!containsThisMap) {
                     //Block was deleted or image path was changed
-                    this.maps = this.maps.filter(
-                        (map) => map.path != path
-                    );
+                    this.maps = this.maps.filter((map) => map.path != path);
                     this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
                         (map) => map.path != path
                     );
 
                     await this.saveSettings();
-
                 }
-
             });
             markdownRenderChild.containerEl = el;
             ctx.addChild(markdownRenderChild);
-
             await map.loadData(
-                this.AppData.mapMarkers.find(
-                    (map) => map.path == path
-                )
-            )
-
-            this.maps = this.maps.filter(
-                (map) => map.path != path
+                this.AppData.mapMarkers.find((map) => map.path == path)
             );
 
-            let imageData: string;
+            this.maps = this.maps.filter((map) => map.path != path);
+
             let coords: [number, number];
             let err: boolean = false;
             try {
-                lat = Number(lat?.split('%').shift());
-                long = Number(long?.split('%').shift());
+                lat = Number(lat?.split("%").shift());
+                long = Number(long?.split("%").shift());
             } catch (e) {
                 err = true;
             }
-            if (err || isNaN(lat) || isNaN(long)) { new Notice('There was an error with the provided latitude and longitude.') }
+            if (err || isNaN(lat) || isNaN(long)) {
+                new Notice(
+                    "There was an error with the provided latitude and longitude."
+                );
+            }
 
-            if (image != 'real') {
+            if (image != "real") {
                 if (!lat || isNaN(lat)) {
                     lat = 50;
                 }
@@ -208,19 +233,29 @@ export default class ObsidianLeaflet extends Plugin {
                     long = 50;
                 }
                 coords = [+lat, +long];
-                imageData = await this.toDataURL(encodeURIComponent(image));
-                if (!imageData) {
-                    let newPre = createEl('pre');
-                    newPre.createEl('code', {}, (code) => {
+                let layerData: {
+                    data: string;
+                    id: string;
+                }[] = await Promise.all(
+                    layers.map(async (image) => {
+                        return {
+                            id: image,
+                            data: await this.toDataURL(
+                                encodeURIComponent(image)
+                            )
+                        };
+                    })
+                );
+                if (layerData.filter((d) => !d.data).length) {
+                    let newPre = createEl("pre");
+                    newPre.createEl("code", {}, (code) => {
                         code.innerText = `\`\`\`leaflet\n${source}\`\`\``;
                         el.parentElement.replaceChild(newPre, el);
                     });
                     return;
+                }
 
-                };
-
-                map.renderImage(imageData, coords);
-
+                map.renderImage(layerData, coords);
             } else {
                 if (!lat || isNaN(lat)) {
                     lat = this.AppData.lat;
@@ -230,7 +265,6 @@ export default class ObsidianLeaflet extends Plugin {
                 }
                 coords = [lat, long];
                 map.renderReal(coords);
-
             }
 
             this.registerMapEvents(map);
@@ -238,11 +272,9 @@ export default class ObsidianLeaflet extends Plugin {
             this.maps.push(map);
             await this.saveSettings();
         } catch (e) {
-
-            new Notice('There was an error loading the map.')
-
+            console.log(e);
+            new Notice("There was an error loading the map.");
         }
-
     }
 
     async loadSettings() {
@@ -253,26 +285,28 @@ export default class ObsidianLeaflet extends Plugin {
         );
     }
     async saveSettings() {
-
-        this.maps.forEach(map => {
-
-            this.AppData.mapMarkers = this.AppData.mapMarkers.filter(m => m.path != map.path);
+        this.maps.forEach((map) => {
+            this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
+                (m) => m.path != map.path
+            );
 
             this.AppData.mapMarkers.push({
                 path: map.path,
                 file: map.file,
                 markers: map.markers.map(
                     (marker): MarkerData => {
+                        console.log(marker.layer);
                         return {
                             type: marker.marker.type,
                             id: marker.id,
                             loc: [marker.loc.lat, marker.loc.lng],
                             link: marker.link,
+                            layer: marker.layer
                         };
                     }
-                ),
+                )
             });
-        })
+        });
 
         await this.saveData(this.AppData);
 
@@ -306,15 +340,16 @@ export default class ObsidianLeaflet extends Plugin {
                 iconNode: AbstractElement = icon(getIcon(marker.iconName), {
                     transform: marker.transform,
                     mask: getIcon(this.AppData.defaultMarker?.iconName),
-                    classes: ["full-width-height"],
+                    classes: ["full-width-height"]
                 }).abstract[0];
 
             iconNode.attributes = {
                 ...iconNode.attributes,
-                style: `color: ${marker.color
-                    ? marker.color
-                    : this.AppData.defaultMarker?.color
-                    }`,
+                style: `color: ${
+                    marker.color
+                        ? marker.color
+                        : this.AppData.defaultMarker?.color
+                }`
             };
 
             html = toHtml(iconNode);
@@ -327,9 +362,9 @@ export default class ObsidianLeaflet extends Plugin {
                 html: icon(getIcon(this.AppData.defaultMarker.iconName), {
                     classes: ["full-width-height"],
                     styles: {
-                        color: this.AppData.defaultMarker.color,
-                    },
-                }).html[0],
+                        color: this.AppData.defaultMarker.color
+                    }
+                }).html[0]
             });
         }
 
@@ -347,9 +382,7 @@ export default class ObsidianLeaflet extends Plugin {
                 blob = await response.blob();
             } else if (/obsidian:\/\/open/.test(url)) {
                 //obsidian link
-                let [, filePath] = url.match(
-                    /\?vault=[\s\S]+?&file=([\s\S]+)/
-                );
+                let [, filePath] = url.match(/\?vault=[\s\S]+?&file=([\s\S]+)/);
 
                 filePath = decodeURIComponent(filePath);
                 let file = this.app.vault.getAbstractFileByPath(filePath);
@@ -357,7 +390,6 @@ export default class ObsidianLeaflet extends Plugin {
 
                 let buffer = await this.app.vault.readBinary(file);
                 blob = new Blob([new Uint8Array(buffer)]);
-
             } else {
                 //file exists on disk
                 let file = this.app.vault.getAbstractFileByPath(url);
@@ -376,7 +408,7 @@ export default class ObsidianLeaflet extends Plugin {
                 reader.readAsDataURL(blob);
             });
         } catch (e) {
-            new Notice(`There was an error reading the image file: ${url}`)
+            new Notice(`There was an error reading the image file: ${url}`);
         }
     }
 
@@ -451,8 +483,8 @@ export default class ObsidianLeaflet extends Plugin {
                                     value == "default"
                                         ? this.AppData.defaultMarker
                                         : this.AppData.markerIcons.find(
-                                            (m) => m.type == value
-                                        );
+                                              (m) => m.type == value
+                                          );
                                 let html: string,
                                     iconNode: AbstractElement = icon(
                                         getIcon(newMarker.iconName),
@@ -462,23 +494,24 @@ export default class ObsidianLeaflet extends Plugin {
                                                 this.AppData.defaultMarker
                                                     ?.iconName
                                             ),
-                                            classes: ["full-width-height"],
+                                            classes: ["full-width-height"]
                                         }
                                     ).abstract[0];
 
                                 iconNode.attributes = {
                                     ...iconNode.attributes,
-                                    style: `color: ${newMarker.color
-                                        ? newMarker.color
-                                        : this.AppData.defaultMarker?.color
-                                        }`,
+                                    style: `color: ${
+                                        newMarker.color
+                                            ? newMarker.color
+                                            : this.AppData.defaultMarker?.color
+                                    }`
                                 };
 
                                 html = toHtml(iconNode);
 
                                 marker.marker = {
                                     type: newMarker.type,
-                                    html: html,
+                                    html: html
                                 };
 
                                 await this.saveSettings();
@@ -491,6 +524,7 @@ export default class ObsidianLeaflet extends Plugin {
                         .setWarning()
                         .setTooltip("Delete Marker")
                         .onClick(async () => {
+                            map.group.group.removeLayer(marker.leafletInstance);
                             marker.leafletInstance.remove();
                             map.markers = map.markers.filter(
                                 (m) => m.id != marker.id

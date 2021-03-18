@@ -23,16 +23,17 @@ defaultZoom: 5
 
 ### Options
 
-| Option      | Description                                                       | Default                                    |
-| ----------- | ----------------------------------------------------------------- | ------------------------------------------ |
-| image*      | Direct URL/file path to an image file to be used as the map layer | OpenStreetMap map                          |
-| lat*        | Default latitude to display when rendering                        | 50% (image) / 39.983334 (open street map)  |
-| long*       | Default longitude to display when rendering                       | 50% (image) / -82.983330 (open street map) |
-| height      | Height in pixels of the map element                               | 500px                                      |
-| minZoom     | Minimum allowable zoom level of the map                           | 1                                          |
-| maxZoom     | Maximum allowable zoom level of the map                           | 10                                         |
-| defaultZoom | Map will load zoomed to this level                                | 5                                          |
-| zoomDelta   | Zoom level will change by this amount when zooming                | 1                                          |
+| Option      | Description                                                                                                                         | Default                                    |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| id          | Unique identifier (can be anything). Required on multi-image maps or if the same image is used in a different map in the same file. |                                            |
+| image       | Direct URL/file path to an image file to be used as the map layer.                                                                  | OpenStreetMap map                          |
+| lat         | Default latitude to display when rendering.                                                                                         | 50% (image) / 39.983334 (open street map)  |
+| long        | Default longitude to display when rendering.                                                                                        | 50% (image) / -82.983330 (open street map) |
+| height      | Height in pixels of the map element.                                                                                                | 500px                                      |
+| minZoom     | Minimum allowable zoom level of the map.                                                                                            | 1                                          |
+| maxZoom     | Maximum allowable zoom level of the map.                                                                                            | 10                                         |
+| defaultZoom | Map will load zoomed to this level.                                                                                                 | 5                                          |
+| zoomDelta   | Zoom level will change by this amount when zooming.                                                                                 | 1                                          |
 
 #### Image Map URL / file path
 
@@ -42,14 +43,32 @@ Image maps can be loaded one of three ways:
 2. Obsidian URL (e.g., obsidian://open?vault=VaultName&file=Path/To/Image.jpg)
 3. Direct path to image (e.g., Path/To/Image.jpg)
 
-**Note: Currently, two maps in the same file with the same link could exhibit odd behavior.**
+#### Multi-Image Maps
+
+Images can be layered on top of each other by providing multiple images to the plugin:
+
+````markdown
+```leaflet
+id: Map With Layered Images
+image: Image1.jpg
+image: Image2.jpg
+image: Image3.jpg
+```
+````
+
+This will generate a map with 3 layers. Image 1 will be on top, Image 2 in the middle, and Image 3 on bottom. The images will be aligned around their center points.
+
+The control box in the top right of the map will allow you to change layers.
+
+Markers can be created and saved on each layer separately from one another.
+
+**If multiple images are provided, an ID _must_ be given to the map, or the map will only display the first provided image.**
 
 #### Latitude and Longtitude of Image Maps
 
 Because an image map does not have a true coordinate system, the latitude and longitude provided must be given as a percentage from the **top left corner of the image**.
 
-This setting may seem to not do anything without changing the default zoom level of the map. 
-
+This setting may seem to not do anything without changing the default zoom level of the map.
 
 ### Markers
 
@@ -65,24 +84,29 @@ Additionally, markers can be created by dragging a note from the file tree and d
 ## Installation
 
 ### From within Obsidian
+
 From Obsidian v0.9.8, you can activate this plugin within Obsidian by doing the following:
-- Open Settings > Third-party plugin
-- Make sure Safe mode is **off**
-- Click Browse community plugins
-- Search for this plugin
-- Click Install
-- Once installed, close the community plugins window and activate the newly installed plugin
+
+-   Open Settings > Third-party plugin
+-   Make sure Safe mode is **off**
+-   Click Browse community plugins
+-   Search for this plugin
+-   Click Install
+-   Once installed, close the community plugins window and activate the newly installed plugin
+
 #### Updates
+
 You can follow the same procedure to update the plugin
 
 ### From GitHub
-- Download the Latest Release from the Releases section of the GitHub Repository
-- Extract the plugin folder from the zip to your vault's plugins folder: `<vault>/.obsidian/plugins/`  
-Note: On some machines the `.obsidian` folder may be hidden. On MacOS you should be able to press `Command+Shift+Dot` to show the folder in Finder.
-- Reload Obsidian
-- If prompted about Safe Mode, you can disable safe mode and enable the plugin.
-Otherwise head to Settings, third-party plugins, make sure safe mode is off and
-enable the plugin from there.
+
+-   Download the Latest Release from the Releases section of the GitHub Repository
+-   Extract the plugin folder from the zip to your vault's plugins folder: `<vault>/.obsidian/plugins/`  
+    Note: On some machines the `.obsidian` folder may be hidden. On MacOS you should be able to press `Command+Shift+Dot` to show the folder in Finder.
+-   Reload Obsidian
+-   If prompted about Safe Mode, you can disable safe mode and enable the plugin.
+    Otherwise head to Settings, third-party plugins, make sure safe mode is off and
+    enable the plugin from there.
 
 ## Configuration
 
@@ -98,7 +122,7 @@ Additional marker types can be added, selectable from a context menu on the map.
 
 Adding a new marker displays a new window, where the new marker parameters can be added.
 
-| Parameter    | Description                                                                        |
+| Parameter   | Description                                                                        |
 | ----------- | ---------------------------------------------------------------------------------- |
 | Marker Name | Displayed in the context menu when adding a marker (e.g., Location, Event, Person) |
 | Marker Icon | Name of the Font Awesome icon to use                                               |

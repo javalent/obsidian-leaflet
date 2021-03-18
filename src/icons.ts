@@ -1,7 +1,7 @@
 import { far } from "@fortawesome/free-regular-svg-icons";
-import { fas, faRedo } from "@fortawesome/free-solid-svg-icons";
+import { fas, faLayerGroup } from "@fortawesome/free-solid-svg-icons";
 import {
-	IconDefinition,
+    IconDefinition,
 	IconLookup,
 	findIconDefinition,
 	icon,

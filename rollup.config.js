@@ -2,20 +2,23 @@ import typescript from "@rollup/plugin-typescript";
 import { nodeResolve } from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import css from "rollup-plugin-css-only";
+import image from "@rollup/plugin-image";
 
 export default {
-	input: "./src/main.ts",
-	output: {
-		dir: ".",
-		sourcemap: "inline",
-		format: "cjs",
-		exports: "default",
-	},
-	external: ["obsidian"],
-	plugins: [
-		typescript(),
-		nodeResolve({ browser: true }),
-		commonjs(),
-		css({ output: "styles.css" }),
-	],
+    input: "./src/main.ts",
+    output: {
+        dir: ".",
+        sourcemap: "inline",
+        sourcemapExcludeSources: true,
+        format: "cjs",
+        exports: "default"
+    },
+    external: ["obsidian"],
+    plugins: [
+        typescript(),
+        nodeResolve({ browser: true }),
+        commonjs(),
+        css({ output: "styles.css" }),
+        image()
+    ]
 };
