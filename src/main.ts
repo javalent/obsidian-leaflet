@@ -272,7 +272,7 @@ export default class ObsidianLeaflet extends Plugin {
             this.maps.push(map);
             await this.saveSettings();
         } catch (e) {
-            console.log(e);
+            console.error(e);
             new Notice("There was an error loading the map.");
         }
     }
@@ -295,7 +295,6 @@ export default class ObsidianLeaflet extends Plugin {
                 file: map.file,
                 markers: map.markers.map(
                     (marker): MarkerData => {
-                        console.log(marker.layer);
                         return {
                             type: marker.marker.type,
                             id: marker.id,

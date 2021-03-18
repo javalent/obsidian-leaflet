@@ -70,10 +70,6 @@ export default class LeafletMap extends Events {
     loadData(data: any): Promise<void> {
         return new Promise((resolve) => {
             data?.markers.forEach((marker: MarkerData) => {
-                console.log(
-                    "🚀 ~ file: leaflet.ts ~ line 75 ~ LeafletMap ~ data?.markers.forEach ~ marker.layer",
-                    marker.layer
-                );
                 if (!marker.layer && this.group) {
                     marker.layer = this.group.id;
                 }
@@ -140,10 +136,6 @@ export default class LeafletMap extends Events {
         this.map.setMaxBounds(this.bounds);
         this.map.setZoom(this.zoom.default, { animate: false });
         this.markers.forEach((marker) => {
-            console.log(
-                "🚀 ~ file: leaflet.ts ~ line 135 ~ LeafletMap ~ this.markers.forEach ~ marker.layer",
-                marker.layer
-            );
             if (marker.layer) {
                 this.mapLayers
                     .find(({ id }) => id == marker.layer)
@@ -273,10 +265,6 @@ export default class LeafletMap extends Events {
             }),
             layer: layer ? layer : this.group?.id
         };
-        console.log(
-            "🚀 ~ file: leaflet.ts ~ line 254 ~ LeafletMap ~ layer",
-            marker.layer
-        );
         marker.leafletInstance
             .on("contextmenu", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
@@ -321,10 +309,6 @@ export default class LeafletMap extends Events {
             });
 
         if (this.rendered) {
-            console.log(
-                "🚀 ~ file: leaflet.ts ~ line 319 ~ LeafletMap ~ this.rendered",
-                this.rendered
-            );
             //marker.leafletInstance.addTo(this.map);
             this.group.group.addLayer(marker.leafletInstance);
             marker.leafletInstance.closeTooltip();
