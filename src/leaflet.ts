@@ -64,7 +64,6 @@ export default class LeafletMap extends Events {
         this.contentEl = el.appendChild(
             document.createElement("div") as HTMLElement
         );
-        this.contentEl.setAttribute("style", `height: ${height}; width: 100%;`);
     }
 
     loadData(data: any): Promise<void> {
@@ -151,7 +150,6 @@ export default class LeafletMap extends Events {
                 (coords[1] * this.bounds.getSouthEast().lng) / 100
             ]);
         }
-
         if (layers.length > 1) {
             const layerControls = Object.fromEntries(
                 this.mapLayers.reverse().map((l, i) => [`Layer ${i}`, l.group])
@@ -292,16 +290,7 @@ export default class LeafletMap extends Events {
             })
             .on("mouseover", (evt: L.LeafletMouseEvent) => {
                 if (marker.link) {
-                    let el = evt.originalEvent.target as SVGElement;
-                    this.tooltip.setContent(marker.link.split("/").pop());
-                    marker.leafletInstance
-                        .bindTooltip(this.tooltip, {
-                            offset: new L.Point(
-                                0,
-                                -1 * el.getBoundingClientRect().height
-                            )
-                        })
-                        .openTooltip();
+                    this.trigger("marker-mouseover", evt, marker);
                 }
             })
             .on("mouseout", (evt: L.LeafletMouseEvent) => {

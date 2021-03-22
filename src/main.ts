@@ -9,6 +9,7 @@ import {
     TFile,
     MarkdownRenderChild
 } from "obsidian";
+import { Point } from "leaflet";
 //Local Imports
 import "./main.css";
 
@@ -44,14 +45,6 @@ declare global {
         path: string;
         file: string;
         markers: MarkerData[];
-    }
-    interface ObsidianAppData {
-        mapMarkers: MapMarkerData[];
-        markerIcons: Marker[];
-        defaultMarker: Marker;
-        color: string;
-        lat: number;
-        long: number;
     }
     type MarkerIcon = {
         readonly type: string;
@@ -147,6 +140,15 @@ export default class ObsidianLeaflet extends Plugin {
                     .map((l) => l.split(": "))
                     .filter(([param]) => param == "image")
                     .map(([, path]) => path);
+            } else if (
+                source
+                    .split("\n")
+                    .map((l) => l.split(": "))
+                    .filter(([param]) => param == "image").length &&
+                !id
+            ) {
+                new Notice("A map with multiple images must have an id.");
+                layers = [image];
             } else {
                 layers = [image];
             }
@@ -164,6 +166,39 @@ export default class ObsidianLeaflet extends Plugin {
                 +defaultZoom,
                 +zoomDelta
             );
+
+            try {
+                if (!/\d+(px|%)/.test(height)) throw new Error();
+                if (
+                    /\d+%/.test(height) &&
+                    this.app.workspace.getActiveViewOfType(MarkdownView)
+                ) {
+                    let [, perc] = height.match(/(\d+)%/);
+                    let view = this.app.workspace.getActiveViewOfType(
+                        MarkdownView
+                    );
+
+                    let node = view.previewMode.containerEl.querySelector(
+                        ".markdown-preview-view"
+                    );
+                    let computedStyle = getComputedStyle(node);
+                    let clHeight = node.clientHeight; // height with padding
+
+                    clHeight -=
+                        parseFloat(computedStyle.paddingTop) +
+                        parseFloat(computedStyle.paddingBottom);
+
+                    height = `${(clHeight * perc) / 100}px`;
+                }
+            } catch (e) {
+                new Notice(
+                    "There was a problem with the provided height. Using 500px."
+                );
+                height = "500px";
+            } finally {
+                map.contentEl.style.height = height;
+                map.contentEl.style.width = "100%";
+            }
 
             let markdownRenderChild = new MarkdownRenderChild();
             markdownRenderChild.register(async () => {
@@ -268,7 +303,6 @@ export default class ObsidianLeaflet extends Plugin {
             }
 
             this.registerMapEvents(map);
-
             this.maps.push(map);
             await this.saveSettings();
         } catch (e) {
@@ -315,7 +349,9 @@ export default class ObsidianLeaflet extends Plugin {
 
         this.markerIcons = this.generateMarkerMarkup(this.AppData.markerIcons);
 
-        this.maps.forEach((map) => map.setMarkerIcons(this.markerIcons));
+        this.maps.forEach((map) => {
+            map.setMarkerIcons(this.markerIcons);
+        });
     }
     getEditor(): CodeMirror.Editor {
         let view = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -442,6 +478,8 @@ export default class ObsidianLeaflet extends Plugin {
 
         this.registerEvent(
             map.on("marker-click", (link: string, newWindow: boolean) => {
+                if (!/^.*\.(md)$/.test(link)) link += ".md";
+
                 this.app.workspace
                     .openLinkText("", link, newWindow)
                     .then(() => {
@@ -457,9 +495,7 @@ export default class ObsidianLeaflet extends Plugin {
 
                 new Setting(markerSettingsModal.contentEl)
                     .setName("Note to Open")
-                    .setDesc(
-                        "Path of note to open, e.g. Folder1/Folder2/Note.md"
-                    )
+                    .setDesc("Path of note to open, e.g. Folder1/Folder2/Note")
                     .addText((text) => {
                         text.setPlaceholder("Path")
                             .setValue(marker.link)
@@ -536,6 +572,38 @@ export default class ObsidianLeaflet extends Plugin {
 
                 markerSettingsModal.open();
             })
+        );
+
+        map.on(
+            "marker-mouseover",
+            async (evt: L.LeafletMouseEvent, marker: LeafletMarker) => {
+                if (this.AppData.notePreview) {
+                    let link = marker.link;
+                    if (!/^.*\.(md)$/.test(link)) link += ".md";
+                    let file = this.app.vault.getAbstractFileByPath(link);
+                    if (!file || !(file instanceof TFile)) {
+                        return;
+                    }
+                    this.app.workspace.trigger(
+                        "link-hover",
+                        this,
+                        marker.leafletInstance.getElement(),
+                        link,
+                        link
+                    );
+                } else {
+                    let el = evt.originalEvent.target as SVGElement;
+                    map.tooltip.setContent(marker.link.split("/").pop());
+                    marker.leafletInstance
+                        .bindTooltip(map.tooltip, {
+                            offset: new Point(
+                                0,
+                                -1 * el.getBoundingClientRect().height
+                            )
+                        })
+                        .openTooltip();
+                }
+            }
         );
     }
 }
