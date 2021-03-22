@@ -574,36 +574,39 @@ export default class ObsidianLeaflet extends Plugin {
             })
         );
 
-        map.on(
-            "marker-mouseover",
-            async (evt: L.LeafletMouseEvent, marker: LeafletMarker) => {
-                if (this.AppData.notePreview) {
-                    let link = marker.link;
-                    if (!/^.*\.(md)$/.test(link)) link += ".md";
-                    let file = this.app.vault.getAbstractFileByPath(link);
-                    if (!file || !(file instanceof TFile)) {
-                        return;
+        this.registerEvent(
+            map.on(
+                "marker-mouseover",
+                async (evt: L.LeafletMouseEvent, marker: LeafletMarker) => {
+                    if (this.AppData.notePreview) {
+                        marker.leafletInstance.unbindTooltip();
+                        let link = marker.link;
+                        if (!/^.*\.(md)$/.test(link)) link += ".md";
+                        let file = this.app.vault.getAbstractFileByPath(link);
+                        if (!file || !(file instanceof TFile)) {
+                            return;
+                        }
+                        this.app.workspace.trigger(
+                            "link-hover",
+                            this,
+                            marker.leafletInstance.getElement(),
+                            link,
+                            link
+                        );
+                    } else {
+                        let el = evt.originalEvent.target as SVGElement;
+                        map.tooltip.setContent(marker.link.split("/").pop());
+                        marker.leafletInstance
+                            .bindTooltip(map.tooltip, {
+                                offset: new Point(
+                                    0,
+                                    -1 * el.getBoundingClientRect().height
+                                )
+                            })
+                            .openTooltip();
                     }
-                    this.app.workspace.trigger(
-                        "link-hover",
-                        this,
-                        marker.leafletInstance.getElement(),
-                        link,
-                        link
-                    );
-                } else {
-                    let el = evt.originalEvent.target as SVGElement;
-                    map.tooltip.setContent(marker.link.split("/").pop());
-                    marker.leafletInstance
-                        .bindTooltip(map.tooltip, {
-                            offset: new Point(
-                                0,
-                                -1 * el.getBoundingClientRect().height
-                            )
-                        })
-                        .openTooltip();
                 }
-            }
+            )
         );
     }
 }
