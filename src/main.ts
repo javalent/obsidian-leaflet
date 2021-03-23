@@ -144,7 +144,7 @@ export default class ObsidianLeaflet extends Plugin {
                 source
                     .split("\n")
                     .map((l) => l.split(": "))
-                    .filter(([param]) => param == "image").length &&
+                    .filter(([param]) => param == "image").length > 1 &&
                 !id
             ) {
                 new Notice("A map with multiple images must have an id.");
