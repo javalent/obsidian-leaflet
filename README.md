@@ -83,6 +83,15 @@ Additionally, markers can be created by dragging a note from the file tree and d
 
 ## Configuration
 
+### Note Preview
+
+Use Obsidian's note preview when hovering a linked marker.
+
+**Please note, the Obsidian Page preview core plugin must be enabled to use this feature.**
+
+### Latitude and Longitude
+
+A real-world map will open to this default latitude and longitude if not provided.
 ### Base Marker
 
 The base marker setting allows you to define a marker that other markers can be layered on top of. If no additional markers have been added, right clicking on the map will place this marker.

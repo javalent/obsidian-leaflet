@@ -37,10 +37,10 @@ export default class LeafletMap extends Events {
     });
     mapLayers: LayerGroup[];
     layer: L.ImageOverlay | L.TileLayer;
+    resize: ResizeObserver;
     constructor(
         el: HTMLElement,
         id: string,
-        height: string = "500px",
         file: string,
         path: string,
         markerIcons: MarkerIcon[],
@@ -171,6 +171,13 @@ export default class LeafletMap extends Events {
         this.map.on("contextmenu", this.contextMenu.bind(this));
 
         this.rendered = true;
+        this.handleResize();
+    }
+    handleResize() {
+        this.resize = new ResizeObserver(() => {
+            this.map.invalidateSize();
+        });
+        this.resize.observe(this.contentEl);
     }
     get group() {
         return this.mapLayers?.find((group) => group.layer == this.layer);
@@ -214,6 +221,7 @@ export default class LeafletMap extends Events {
         this.map.on("contextmenu", this.contextMenu.bind(this));
 
         this.rendered = true;
+        this.handleResize();
     }
 
     contextMenu(evt: L.LeafletMouseEvent): void {
@@ -320,6 +328,11 @@ export default class LeafletMap extends Events {
                 })
             );
         });
+    }
+
+    remove(): void {
+        this.map.remove();
+        this.resize.disconnect();
     }
 
     static async getImageDimensions(url: string): Promise<any> {

@@ -104,7 +104,7 @@ export default class ObsidianLeaflet extends Plugin {
 
     async onunload(): Promise<void> {
         console.log("Unloading Obsidian Leaflet");
-        this.maps.forEach((map) => map?.map?.remove());
+        this.maps.forEach((map) => map?.remove());
         this.maps = [];
     }
 
@@ -157,7 +157,6 @@ export default class ObsidianLeaflet extends Plugin {
             let map = new LeafletMap(
                 el,
                 id,
-                height,
                 ctx.sourcePath,
                 path,
                 this.markerIcons,
@@ -201,7 +200,18 @@ export default class ObsidianLeaflet extends Plugin {
             }
 
             let markdownRenderChild = new MarkdownRenderChild();
+            /**
+             * Markdown Block has been unloaded.
+             *
+             * First, remove the map element and its associated resize handler.
+             *
+             * Then, check to see if the file was deleted. If so, remove the map from AppData.
+             *
+             * Finally, check to see if the *markdown block* was deleted. If so, remove the map from AppData.
+             */
             markdownRenderChild.register(async () => {
+                map.remove();
+
                 let file = this.app.vault.getAbstractFileByPath(ctx.sourcePath);
                 if (!file || !(file instanceof TFile)) {
                     //file was deleted, remove maps associated
