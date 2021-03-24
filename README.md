@@ -92,6 +92,7 @@ Use Obsidian's note preview when hovering a linked marker.
 ### Latitude and Longitude
 
 A real-world map will open to this default latitude and longitude if not provided.
+
 ### Base Marker
 
 The base marker setting allows you to define a marker that other markers can be layered on top of. If no additional markers have been added, right clicking on the map will place this marker.
@@ -114,6 +115,10 @@ Adding a new marker displays a new window, where the new marker parameters can b
 If layer icon is on, the icon be moved around the base icon by clicking and dragging, to customize where the icon is layered. If <kbd>Shift</kbd> is held while moving the icon, it will snap to the midlines.
 
 # Version History
+
+## 1.1.0
+
+-   Maps now recalculate their sizing when the window is resized
 
 ## 1.0.0
 
