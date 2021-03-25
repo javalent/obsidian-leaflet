@@ -10,6 +10,7 @@ import {
     MarkdownRenderChild
 } from "obsidian";
 import { Point } from "leaflet";
+import { getType as lookupMimeType } from "mime/lite";
 //Local Imports
 import "./main.css";
 
@@ -104,7 +105,9 @@ export default class ObsidianLeaflet extends Plugin {
 
     async onunload(): Promise<void> {
         console.log("Unloading Obsidian Leaflet");
-        this.maps.forEach((map) => map?.remove());
+        this.maps.forEach((map) => {
+            map?.remove();
+        });
         this.maps = [];
     }
 
@@ -210,7 +213,9 @@ export default class ObsidianLeaflet extends Plugin {
              * Finally, check to see if the *markdown block* was deleted. If so, remove the map from AppData.
              */
             markdownRenderChild.register(async () => {
-                map.remove();
+                try {
+                    map.remove();
+                } catch (e) {}
 
                 let file = this.app.vault.getAbstractFileByPath(ctx.sourcePath);
                 if (!file || !(file instanceof TFile)) {
@@ -299,7 +304,6 @@ export default class ObsidianLeaflet extends Plugin {
                     });
                     return;
                 }
-
                 map.renderImage(layerData, coords);
             } else {
                 if (!lat || isNaN(lat)) {
@@ -419,7 +423,7 @@ export default class ObsidianLeaflet extends Plugin {
     async toDataURL(url: string): Promise<string> {
         //determine link type
         try {
-            let response, blob: Blob;
+            let response, blob: Blob, mimeType: string;
             url = decodeURIComponent(url);
             if (/http[s]*:/.test(url)) {
                 //url
@@ -440,6 +444,9 @@ export default class ObsidianLeaflet extends Plugin {
                 let file = this.app.vault.getAbstractFileByPath(url);
                 if (!file || !(file instanceof TFile)) throw new Error();
 
+                mimeType =
+                    lookupMimeType(file.extension) ||
+                    "application/octet-stream";
                 let buffer = await this.app.vault.readBinary(file);
                 blob = new Blob([new Uint8Array(buffer)]);
             }
@@ -447,7 +454,20 @@ export default class ObsidianLeaflet extends Plugin {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onloadend = () => {
-                    resolve(reader.result as string);
+                    if (typeof reader.result === "string") {
+                        let base64 =
+                            "data:" +
+                            mimeType +
+                            reader.result.slice(
+                                reader.result.indexOf(";base64,")
+                            );
+                        resolve(base64);
+                    } else {
+                        new Notice(
+                            "There was an error reading the image file."
+                        );
+                        reject();
+                    }
                 };
                 reader.onerror = reject;
                 reader.readAsDataURL(blob);

@@ -2,7 +2,7 @@
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-import { Events, Menu, Point } from "obsidian";
+import { Events, Menu, Notice, Point } from "obsidian";
 import { v4 as uuidv4 } from "uuid";
 
 // @ts-expect-error
@@ -331,16 +331,21 @@ export default class LeafletMap extends Events {
     }
 
     remove(): void {
-        this.map.remove();
-        this.resize.disconnect();
+        this.map?.remove();
+        this.resize?.disconnect();
     }
 
     static async getImageDimensions(url: string): Promise<any> {
-        return new Promise(function (resolved, rejected) {
+        return new Promise(function (resolved, reject) {
             var i = new Image();
             i.onload = function () {
                 resolved({ w: i.width, h: i.height });
             };
+            i.onerror = () => {
+                new Notice("There was an issue getting the image dimensions.");
+                reject();
+            };
+
             i.src = url;
         });
     }
