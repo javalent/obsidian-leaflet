@@ -38,6 +38,9 @@ export default class LeafletMap extends Events {
     mapLayers: LayerGroup[];
     layer: L.ImageOverlay | L.TileLayer;
     resize: ResizeObserver;
+    type: string;
+    scale: number;
+    unit: string;
     constructor(
         el: HTMLElement,
         id: string,
@@ -47,7 +50,9 @@ export default class LeafletMap extends Events {
         minZoom: number = 1,
         maxZoom: number = 10,
         defaultZoom: number = 1,
-        zoomDelta: number = 1
+        zoomDelta: number = 1,
+        unit: string,
+        scale: number
     ) {
         super();
         this.id = id;
@@ -61,6 +66,8 @@ export default class LeafletMap extends Events {
             default: defaultZoom,
             delta: zoomDelta
         };
+        this.unit = unit;
+        this.scale = scale;
         this.contentEl = el.appendChild(
             document.createElement("div") as HTMLElement
         );
@@ -72,7 +79,6 @@ export default class LeafletMap extends Events {
                 if (!marker.layer && this.group) {
                     marker.layer = this.group.id;
                 }
-
                 this.createMarker(
                     this.markerIcons.find((icon) => icon.type == marker.type),
                     L.latLng(marker.loc),
@@ -89,6 +95,7 @@ export default class LeafletMap extends Events {
         layers: { data: string; id: string }[],
         coords?: [number, number]
     ) {
+        this.type = "image";
         this.map = L.map(this.contentEl, {
             crs: L.CRS.Simple,
             maxZoom: this.zoom.max,
@@ -156,8 +163,8 @@ export default class LeafletMap extends Events {
             );
             let control = L.control.layers(layerControls).addTo(this.map);
 
-            // @ts-expect-error
             // hack to get icon from layers.png
+            // @ts-expect-error
             control._container.children[0].appendChild(
                 createEl("img", {
                     attr: {
@@ -169,6 +176,28 @@ export default class LeafletMap extends Events {
         }
 
         this.map.on("contextmenu", this.contextMenu.bind(this));
+
+        let click: L.LatLng | undefined = undefined;
+        this.map.on("click", (evt: L.LeafletMouseEvent) => {
+            if (!evt.originalEvent.ctrlKey) {
+                click = undefined;
+                return;
+            }
+
+            if (click != undefined) {
+                this.trigger(
+                    "display-distance",
+                    `${(
+                        this.map.distance(click, evt.latlng) * this.scale
+                    ).toLocaleString(navigator.language, {
+                        maximumFractionDigits: 1
+                    })} ${this.unit}`
+                );
+                click = undefined;
+            } else {
+                click = evt.latlng;
+            }
+        });
 
         this.rendered = true;
         this.handleResize();
@@ -189,6 +218,8 @@ export default class LeafletMap extends Events {
         return;
     }
     async renderReal(coords: [number, number] = [0, 0]) {
+        this.type = "real";
+
         this.map = L.map(this.contentEl, {
             maxZoom: this.zoom.max,
             minZoom: this.zoom.min,
@@ -219,7 +250,27 @@ export default class LeafletMap extends Events {
         this.map.setZoom(this.zoom.default, { animate: false });
 
         this.map.on("contextmenu", this.contextMenu.bind(this));
+        let click: L.LatLng | undefined = undefined;
+        this.map.on("click", (evt: L.LeafletMouseEvent) => {
+            if (!evt.originalEvent.ctrlKey) {
+                click = undefined;
+                return;
+            }
 
+            if (click != undefined) {
+                this.trigger(
+                    "display-distance",
+                    `${this.map
+                        .distance(click, evt.latlng)
+                        .toLocaleString(navigator.language, {
+                            maximumFractionDigits: 1
+                        })}${this.unit}`
+                );
+                click = undefined;
+            } else {
+                click = evt.latlng;
+            }
+        });
         this.rendered = true;
         this.handleResize();
     }
@@ -248,6 +299,34 @@ export default class LeafletMap extends Events {
         } as Point);
     }
 
+    addMarker(markerToBeAdded: LeafletMarker) {
+        const mapIcon = L.divIcon({
+            html: markerToBeAdded.marker.html
+        });
+
+        const marker: LeafletMarker = {
+            id: markerToBeAdded.id,
+            marker: markerToBeAdded.marker,
+            loc: markerToBeAdded.loc,
+            link: markerToBeAdded.link,
+            leafletInstance: L.marker(markerToBeAdded.loc, {
+                icon: mapIcon,
+                draggable: true,
+                bubblingMouseEvents: true
+            }),
+            layer: markerToBeAdded.layer
+                ? markerToBeAdded.layer
+                : this.group?.id
+        };
+        this.bindMarkerEvents(marker);
+
+        if (this.rendered) {
+            this.group.group.addLayer(marker.leafletInstance);
+            marker.leafletInstance.closeTooltip();
+        }
+
+        this.markers.push(marker);
+    }
     createMarker(
         markerIcon: MarkerIcon,
         loc: L.LatLng,
@@ -271,6 +350,23 @@ export default class LeafletMap extends Events {
             }),
             layer: layer ? layer : this.group?.id
         };
+
+        this.bindMarkerEvents(marker);
+
+        if (this.rendered) {
+            //marker.leafletInstance.addTo(this.map);
+            this.group.group.addLayer(marker.leafletInstance);
+            marker.leafletInstance.closeTooltip();
+        }
+
+        this.markers.push(marker);
+
+        this.trigger("marker-added", marker);
+
+        return marker;
+    }
+
+    bindMarkerEvents(marker: LeafletMarker) {
         marker.leafletInstance
             .on("contextmenu", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
@@ -288,12 +384,15 @@ export default class LeafletMap extends Events {
                     );
                 }
             })
-            .on("drag", () => {
+            .on("dragstart", () => {
                 marker.leafletInstance.closeTooltip();
+            })
+            .on("drag", () => {
+                this.trigger("marker-dragging", marker);
             })
             .on("dragend", (evt: L.LeafletMouseEvent) => {
                 marker.loc = marker.leafletInstance.getLatLng();
-                this.trigger("marker-added", marker);
+                this.trigger("marker-data-updated", marker);
                 marker.leafletInstance.closeTooltip();
             })
             .on("mouseover", (evt: L.LeafletMouseEvent) => {
@@ -304,19 +403,8 @@ export default class LeafletMap extends Events {
             .on("mouseout", (evt: L.LeafletMouseEvent) => {
                 marker.leafletInstance.closeTooltip();
             });
-
-        if (this.rendered) {
-            //marker.leafletInstance.addTo(this.map);
-            this.group.group.addLayer(marker.leafletInstance);
-            marker.leafletInstance.closeTooltip();
-        }
-
-        this.markers.push(marker);
-
-        this.trigger("marker-added", marker);
-
-        return marker;
     }
+
     setMarkerIcons(markerIcons: MarkerIcon[]) {
         this.markerIcons = markerIcons;
         this.markers.forEach((marker) => {

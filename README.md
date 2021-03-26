@@ -18,6 +18,8 @@ height: 500px
 minZoom: 1
 maxZoom: 10
 defaultZoom: 5
+unit: meters
+scale: 1
 ```
 ````
 
@@ -33,8 +35,12 @@ defaultZoom: 5
 | minZoom     | Minimum allowable zoom level of the map.                                                                                            | 1                                          |
 | maxZoom     | Maximum allowable zoom level of the map.                                                                                            | 10                                         |
 | defaultZoom | Map will load zoomed to this level.                                                                                                 | 5                                          |
-| zoomDelta   | Zoom level will change by this amount when zooming.                                                                                 | 1                                          |
+| zoomDelta   | Zoom level will change by this amount when zooming.                                                                                 |
+| 1           |
+| unit        | Unit to display distances in                                                                                                        | meters                                     |
+| scale       | Scale factor for image map distance calculation.                                                                                    | 1                                          |
 
+## Image Maps
 ### Image Map URL / file path
 
 Image maps can be loaded one of three ways:
@@ -70,6 +76,10 @@ Because an image map does not have a true coordinate system, the latitude and lo
 
 This setting may seem to not do anything without changing the default zoom level of the map.
 
+### Unit and Scale
+
+If provided, the plugin will scale the calculated distance between two points by `scale` and display the result as `xxx unit`.
+
 ## Markers
 
 New markers can be added to the map by right clicking.
@@ -80,6 +90,14 @@ Once a marker has been created, it can be dragged to a different location. A mar
 `Path/To/Note` (case-sensitive). Once linked, a click will open the note (<kbd>Ctrl</kbd>/<kbd>Cmd</kbd>-click to open in new window).
 
 Additionally, markers can be created by dragging a note from the file tree and dropping it on the map.
+
+## Distances
+
+<kbd>Ctrl</kbd>/<kbd>Cmd</kbd>-clicking the map, then <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>-clicking again, will display the distance between the two points.
+
+Real-world map distances are displayed in meters.
+
+Image maps can have an optional unit and scaling factor provided to display.
 
 ## Configuration
 
