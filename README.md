@@ -191,3 +191,9 @@ You can follow the same procedure to update the plugin
 
 This plugin comes with no guarantee of stability and bugs may delete data.
 Please ensure you have automated backups.
+
+# TTRPG plugins
+
+If you're using Obsidian to run/plan a TTRPG, you may find my other plugin useful:
+
+- [Dice Roller](https://github.com/valentine195/obsidian-dice-roller) - Roll & re-roll dice in notes
