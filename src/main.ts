@@ -704,8 +704,12 @@ export default class ObsidianLeaflet extends Plugin {
                     if (this.AppData.notePreview) {
                         marker.leafletInstance.unbindTooltip();
                         let link = marker.link;
-                        if (!/^.*\.(md)$/.test(link)) link += ".md";
-                        let file = this.app.vault.getAbstractFileByPath(link);
+
+                        let files = this.app.vault.getFiles();
+                        let target = link.split("/").pop();
+                        let fileName = target.split(/(#|\^|.md)/).shift();
+
+                        let file = files.find((f) => fileName == f.basename);
                         if (!file || !(file instanceof TFile)) {
                             return;
                         }
@@ -713,8 +717,8 @@ export default class ObsidianLeaflet extends Plugin {
                             "link-hover",
                             this,
                             marker.leafletInstance.getElement(),
-                            link,
-                            link
+                            target,
+                            file.path
                         );
                     } else {
                         let el = evt.originalEvent.target as SVGElement;
