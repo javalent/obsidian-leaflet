@@ -175,7 +175,9 @@ export default class LeafletMap extends Events {
             );
         }
 
-        this.map.on("contextmenu", this.contextMenu.bind(this));
+        this.map.on("contextmenu", (evt) =>
+            this.trigger("map-contextmenu", evt)
+        );
 
         let click: L.LatLng | undefined = undefined;
         this.map.on("click", (evt: L.LeafletMouseEvent) => {
@@ -249,7 +251,9 @@ export default class LeafletMap extends Events {
         });
         this.map.setZoom(this.zoom.default, { animate: false });
 
-        this.map.on("contextmenu", this.contextMenu.bind(this));
+        this.map.on("contextmenu", (evt) =>
+            this.trigger("map-contextmenu", evt)
+        );
         let click: L.LatLng | undefined = undefined;
         this.map.on("click", (evt: L.LeafletMouseEvent) => {
             if (!evt.originalEvent.ctrlKey) {
@@ -273,30 +277,6 @@ export default class LeafletMap extends Events {
         });
         this.rendered = true;
         this.handleResize();
-    }
-
-    contextMenu(evt: L.LeafletMouseEvent): void {
-        if (this.markerIcons.length <= 1) {
-            this.createMarker(this.markerIcons[0], evt.latlng);
-            return;
-        }
-
-        let contextMenu = new Menu().setNoIcon();
-        this.markerIcons.forEach((marker: MarkerIcon) => {
-            if (!marker.type || !marker.html) return;
-            contextMenu.addItem((item) => {
-                item.setTitle(
-                    marker.type == "default" ? "Default" : marker.type
-                );
-                item.setActive(true);
-                item.onClick(() => this.createMarker(marker, evt.latlng));
-            });
-        });
-
-        contextMenu.showAtPosition({
-            x: evt.originalEvent.clientX,
-            y: evt.originalEvent.clientY
-        } as Point);
     }
 
     addMarker(markerToBeAdded: LeafletMarker) {

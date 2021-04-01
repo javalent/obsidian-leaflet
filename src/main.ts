@@ -7,9 +7,10 @@ import {
     Modal,
     Setting,
     TFile,
-    MarkdownRenderChild
+    MarkdownRenderChild,
+    Menu
 } from "obsidian";
-import { Point } from "leaflet";
+import { LeafletMouseEvent, Point } from "leaflet";
 import { getType as lookupMimeType } from "mime/lite";
 //Local Imports
 import "./main.css";
@@ -732,7 +733,37 @@ export default class ObsidianLeaflet extends Plugin {
         );
         this.registerEvent(
             map.on("display-distance", async (distance: string) => {
-                new Notice(distance)
+                new Notice(distance);
+            })
+        );
+
+        this.registerEvent(
+            map.on("map-contextmenu", (evt: LeafletMouseEvent) => {
+                if (map.markerIcons.length <= 1) {
+                    map.createMarker(map.markerIcons[0], evt.latlng);
+                    return;
+                }
+
+                let contextMenu = new Menu(this.app);
+
+                contextMenu.setNoIcon();
+                map.markerIcons.forEach((marker: MarkerIcon) => {
+                    if (!marker.type || !marker.html) return;
+                    contextMenu.addItem((item) => {
+                        item.setTitle(
+                            marker.type == "default" ? "Default" : marker.type
+                        );
+                        item.setActive(true);
+                        item.onClick(() =>
+                            map.createMarker(marker, evt.latlng)
+                        );
+                    });
+                });
+
+                contextMenu.showAtPosition({
+                    x: evt.originalEvent.clientX,
+                    y: evt.originalEvent.clientY
+                } as Point);
             })
         );
     }
