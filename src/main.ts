@@ -8,7 +8,13 @@ import {
     Setting,
     TFile,
     MarkdownRenderChild,
-    Menu
+    Menu,
+    fuzzySearch,
+    prepareQuery,
+    FuzzySuggestModal,
+    renderMatches,
+    renderResults,
+    HoverPopover
 } from "obsidian";
 import { LeafletMouseEvent, Point } from "leaflet";
 import { getType as lookupMimeType } from "mime/lite";
@@ -602,10 +608,13 @@ export default class ObsidianLeaflet extends Plugin {
                     )
                 ];
 
-                new Setting(markerSettingsModal.contentEl)
+                let path = new Setting(markerSettingsModal.contentEl)
                     .setName("Note to Open")
-                    .setDesc("Path of note to open, e.g. Folder1/Folder2/Note")
+                    .setDesc("Path of note to open, e.g. Note or Note#Header")
                     .addText((text) => {
+                        let files = this.app.vault.getFiles(),
+                            fileNames = files.map((f) => f.basename).join("|"),
+                            results: HoverPopover;
                         text.setPlaceholder("Path")
                             .setValue(marker.link)
                             .onChange(async (value) => {
@@ -613,6 +622,19 @@ export default class ObsidianLeaflet extends Plugin {
                                     marker.link = value;
                                 });
                                 await this.saveSettings();
+
+                                if (!results)
+                                    results = new HoverPopover(
+                                        path,
+                                        text.inputEl
+                                    );
+
+                                /* renderMatches(
+                                    results.hoverEl,
+                                    fileNames,
+                                    fuzzySearch(prepareQuery(value), fileNames)
+                                        .matches
+                                ); */
                             });
                     });
 
