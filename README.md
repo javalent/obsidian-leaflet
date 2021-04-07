@@ -4,6 +4,8 @@ Adds interactable mapping functionality to Obsidian.md, using [Leaflet.js](https
 
 <img src="https://raw.githubusercontent.com/valentine195/obsidian-leaflet-plugin/master/images/7d595a3db9bf0eff9f2a2150819d2bd6956ddcd8.gif">
 
+<img src="https://raw.githubusercontent.com/valentine195/obsidian-leaflet-plugin/master/images/275ff1f560bb6dec0d4fc02b267a7f63860f20c9_2_690x262.jpeg">
+
 Proof of concept currently. May not work as expected. Currently only tested on Windows & Mac.
 
 ## Working with the plugin & example
@@ -43,6 +45,7 @@ scale: 1
 | scale       | Scale factor for image map distance calculation.                                                                                    | 1                                          |
 
 ## Image Maps
+
 ### Image Map URL / file path
 
 Image maps can be loaded one of three ways:
@@ -205,4 +208,4 @@ Please ensure you have automated backups.
 
 If you're using Obsidian to run/plan a TTRPG, you may find my other plugin useful:
 
-- [Dice Roller](https://github.com/valentine195/obsidian-dice-roller) - Roll & re-roll dice in notes
+-   [Dice Roller](https://github.com/valentine195/obsidian-dice-roller) - Roll & re-roll dice in notes
