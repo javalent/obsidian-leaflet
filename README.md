@@ -2,6 +2,8 @@
 
 Adds interactable mapping functionality to Obsidian.md, using [Leaflet.js](https://leafletjs.com/)
 
+<img src="https://raw.githubusercontent.com/valentine195/obsidian-leaflet-plugin/master/images/7d595a3db9bf0eff9f2a2150819d2bd6956ddcd8.gif">
+
 Proof of concept currently. May not work as expected. Currently only tested on Windows & Mac.
 
 ## Working with the plugin & example
@@ -86,8 +88,15 @@ New markers can be added to the map by right clicking.
 
 If any additional marker types have been created in the settings, a list will appear to choose from.
 
-Once a marker has been created, it can be dragged to a different location. A marker can also point to a note; right-click on it, and a popup will appear. Enter the note as:
-`Path/To/Note` (case-sensitive). Once linked, a click will open the note (<kbd>Ctrl</kbd>/<kbd>Cmd</kbd>-click to open in new window).
+Once a marker has been created, it can be dragged to a different location. A marker can also point to a note; right-click on it, and a popup will appear. The target can be entered as the name of the note. Additionally, headers or blocks within a note can be the target of a marker:
+
+`Note`
+
+`Note#Header1`
+
+If you have multiple notes with the same name, you should specify the direct path to the note. Otherwise, the map may not open the one you expect.
+
+Once linked, a click will open the note (<kbd>Ctrl</kbd>/<kbd>Cmd</kbd>-click to open in new window).
 
 Additionally, markers can be created by dragging a note from the file tree and dropping it on the map.
 
