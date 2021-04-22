@@ -2,17 +2,12 @@
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-import { Events, Menu, Notice, Point } from "obsidian";
+import { Events, Notice } from "obsidian";
 import { v4 as uuidv4 } from "uuid";
 
 // @ts-expect-error
 import layerIcon from "../node_modules/leaflet/dist/images/layers.png";
-
-interface LayerGroup {
-    group: L.LayerGroup;
-    layer: L.TileLayer | L.ImageOverlay;
-    id: string;
-}
+import { LayerGroup, LeafletMarker, MarkerData, MarkerIcon } from "./@types";
 
 /**
  * LeafletMap Class

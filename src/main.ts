@@ -1,6 +1,5 @@
 import {
     Plugin,
-    MarkdownPostProcessorContext,
     addIcon,
     Notice,
     MarkdownView,
@@ -9,77 +8,39 @@ import {
     TFile,
     MarkdownRenderChild,
     Menu,
-    fuzzySearch,
-    prepareQuery,
-    FuzzySuggestModal,
-    renderMatches,
-    renderResults,
-    HoverPopover
+    MarkdownPostProcessorContext,
+    BlockCache,
+    HeadingCache,
 } from "obsidian";
 import { LeafletMouseEvent, Point } from "leaflet";
 import { getType as lookupMimeType } from "mime/lite";
+
 //Local Imports
 import "./main.css";
 
 import { ObsidianLeafletSettingTab, DEFAULT_SETTINGS } from "./settings";
-import { AbstractElement, icon, toHtml, getIcon } from "./icons";
+import { AbstractElement, icon, toHtml, getIcon } from "./utils/icons";
+
 import LeafletMap from "./leaflet";
-
-declare global {
-    interface Marker {
-        type: string;
-        iconName: string;
-        color?: string;
-        layer?: boolean;
-        transform?: { size: number; x: number; y: number };
-    }
-    interface LeafletMarker {
-        marker: MarkerIcon;
-        loc: L.LatLng;
-        id: string;
-        link?: string;
-        leafletInstance: L.Marker;
-        layer: string;
-    }
-
-    interface MarkerData {
-        type: string;
-        loc: [number, number];
-        id: string;
-        link: string;
-        layer: string;
-    }
-    interface MapMarkerData {
-        path: string;
-        file: string;
-        markers: MarkerData[];
-    }
-    type MarkerIcon = {
-        readonly type: string;
-        readonly html: string;
-    };
-}
-interface MarkdownPostProcessorContextActual
-    extends MarkdownPostProcessorContext {
-    sourcePath: string;
-    containerEl: HTMLElement;
-}
-
-interface Map {
-    map: LeafletMap;
-    path: string;
-    file: string;
-    view: MarkdownView;
-}
+import {
+    MapInterface,
+    LeafletMarker,
+    MarkerData,
+    MarkerIcon,
+    ObsidianAppData,
+    Marker
+} from "./@types";
+import { SuggestionModal } from "./utils/modals";
 
 export default class ObsidianLeaflet extends Plugin {
     AppData: ObsidianAppData;
     markerIcons: MarkerIcon[];
-    maps: Map[] = [];
+    maps: MapInterface[] = [];
     async onload(): Promise<void> {
         console.log("Loading Obsidian Leaflet");
 
         await this.loadSettings();
+
         if (!this.AppData.mapMarkers?.every((map) => map.file)) {
             this.AppData.mapMarkers = this.AppData.mapMarkers.map((map) => {
                 if (!map.file)
@@ -128,7 +89,7 @@ export default class ObsidianLeaflet extends Plugin {
     async postprocessor(
         source: string,
         el: HTMLElement,
-        ctx: MarkdownPostProcessorContextActual
+        ctx: MarkdownPostProcessorContext
     ): Promise<void> {
         try {
             let layers = (
@@ -268,7 +229,8 @@ export default class ObsidianLeaflet extends Plugin {
              *
              * Finally, check to see if the *markdown block* was deleted. If so, remove the map from AppData.
              */
-            let markdownRenderChild = new MarkdownRenderChild();
+            let markdownRenderChild = new MarkdownRenderChild(el);
+            markdownRenderChild.containerEl = el;
             markdownRenderChild.register(async () => {
                 try {
                     map.remove();
@@ -314,7 +276,6 @@ export default class ObsidianLeaflet extends Plugin {
                     (map) => map.path != path && map.view !== view
                 );
             });
-            markdownRenderChild.containerEl = el;
             ctx.addChild(markdownRenderChild);
         } catch (e) {
             console.error(e);
@@ -363,6 +324,9 @@ export default class ObsidianLeaflet extends Plugin {
             DEFAULT_SETTINGS,
             await this.loadData()
         );
+        if (!this.AppData.csvPath.length) {
+            this.AppData.csvPath = this.manifest.dir;
+        }
     }
     async saveSettings() {
         this.maps.forEach((map) => {
@@ -584,10 +548,19 @@ export default class ObsidianLeaflet extends Plugin {
 
         this.registerEvent(
             map.on("marker-click", (link: string, newWindow: boolean) => {
-                if (!/^.*\.(md)$/.test(link)) link += ".md";
+                /* if (!/^.*\.(md)$/.test(link)) link += ".md"; */
+
+                let file = this.app.metadataCache.getFirstLinkpathDest(
+                    link.split(/[\^#]/).shift(),
+                    ""
+                );
 
                 this.app.workspace
-                    .openLinkText("", link, newWindow)
+                    .openLinkText(
+                        (file?.basename || "") + link.split(/(?=[\^#])/).pop(),
+                        file?.path || link.split(/(?=[\^#])/).shift(),
+                        newWindow
+                    )
                     .then(() => {
                         var cmEditor = this.getEditor();
                         cmEditor.focus();
@@ -610,32 +583,248 @@ export default class ObsidianLeaflet extends Plugin {
 
                 let path = new Setting(markerSettingsModal.contentEl)
                     .setName("Note to Open")
-                    .setDesc("Path of note to open, e.g. Note or Note#Header")
+                    .setDesc("Path of note to open")
                     .addText((text) => {
-                        let files = this.app.vault.getFiles(),
-                            fileNames = files.map((f) => f.basename).join("|"),
-                            results: HoverPopover;
-                        text.setPlaceholder("Path")
-                            .setValue(marker.link)
-                            .onChange(async (value) => {
-                                markersToUpdate.forEach((marker) => {
-                                    marker.link = value;
-                                });
-                                await this.saveSettings();
+                        let files = this.app.vault.getFiles();
+                        let file: TFile,
+                            headings: HeadingCache[],
+                            blocks: Record<string, BlockCache>;
 
-                                if (!results)
-                                    results = new HoverPopover(
-                                        path,
-                                        text.inputEl
-                                    );
+                        let current: "files" | "headings" | "blocks" = "files";
 
-                                /* renderMatches(
-                                    results.hoverEl,
-                                    fileNames,
-                                    fuzzySearch(prepareQuery(value), fileNames)
-                                        .matches
-                                ); */
+                        const chooseSuggestions = (v: string) => {
+                            if (/#/.test(v)) {
+                                if (current === "headings") return;
+                                current = "headings";
+                                file = this.app.metadataCache.getFirstLinkpathDest(
+                                    v.split("#").shift(),
+                                    ""
+                                );
+
+                                ({
+                                    headings
+                                } = this.app.metadataCache.getFileCache(
+                                    file
+                                ) || { headings: [] });
+
+                                if (!headings || !headings.length)
+                                    headings = [];
+
+                                modal.modifyInput = (input) =>
+                                    input.split("#").pop();
+                                modal.setSuggestions(headings);
+                            } else if (/\^/.test(v)) {
+                                if (current === "blocks") return;
+                                current = "blocks";
+                                file = this.app.metadataCache.getFirstLinkpathDest(
+                                    v.split("^").shift(),
+                                    ""
+                                );
+                                ({
+                                    blocks
+                                } = this.app.metadataCache.getFileCache(
+                                    file
+                                ) || { blocks: {} });
+                                let blockValues = Object.values(blocks);
+                                modal.modifyInput = (input) =>
+                                    input.split("^").pop();
+                                modal.setSuggestions(blockValues);
+                            } else if (current != "files") {
+                                current = "files";
+                                modal.modifyInput = (i) => i;
+                                modal.setSuggestions(files);
+                            }
+                        };
+
+                        text.setPlaceholder("Path").setValue(marker.link);
+                        let modal = new SuggestionModal<
+                            TFile | BlockCache | HeadingCache
+                        >(this.app, text.inputEl, [...files]);
+
+                        text.inputEl.onblur = async () => {
+                            markersToUpdate.forEach((marker) => {
+                                marker.link = text.inputEl.value;
                             });
+                            await this.saveSettings();
+                        };
+
+                        chooseSuggestions(text.inputEl.value);
+
+                        modal.createPrompt([
+                            createSpan({
+                                cls: "prompt-instruction-command",
+                                text: "Type #"
+                            }),
+                            createSpan({ text: "to link heading" })
+                        ]);
+                        modal.createPrompt([
+                            createSpan({
+                                cls: "prompt-instruction-command",
+                                text: "Type ^"
+                            }),
+                            createSpan({ text: "to link blocks" })
+                        ]);
+                        modal.createPrompt([
+                            createSpan({
+                                cls: "prompt-instruction-command",
+                                text: "Note: "
+                            }),
+                            createSpan({
+                                text: "Blocks must have been created already"
+                            })
+                        ]);
+
+                        text.onChange((v) => {
+                            chooseSuggestions(v);
+                        });
+
+                        modal.getItemText = (item) => {
+                            if (item instanceof TFile) return item.path;
+                            if (
+                                Object.prototype.hasOwnProperty.call(
+                                    item,
+                                    "heading"
+                                )
+                            ) {
+                                return (<HeadingCache>item).heading;
+                            }
+                            if (
+                                Object.prototype.hasOwnProperty.call(item, "id")
+                            ) {
+                                return (<BlockCache>item).id;
+                            }
+                        };
+
+                        modal.onChooseItem = (item) => {
+                            if (item instanceof TFile) {
+                                text.setValue(item.basename);
+                                file = item;
+                                ({
+                                    headings,
+                                    blocks
+                                } = this.app.metadataCache.getFileCache(file));
+                            } else if (
+                                Object.prototype.hasOwnProperty.call(
+                                    item,
+                                    "heading"
+                                )
+                            ) {
+                                text.setValue(
+                                    file.basename +
+                                        "#" +
+                                        (<HeadingCache>item).heading
+                                );
+                            } else if (
+                                Object.prototype.hasOwnProperty.call(item, "id")
+                            ) {
+                                text.setValue(
+                                    file.basename + "^" + (<BlockCache>item).id
+                                );
+                            }
+                        };
+
+                        modal.renderSuggestion = (result, el) => {
+                            let { item, match: matches } = result || {};
+                            let content = el.createDiv({
+                                cls: "suggestion-content"
+                            });
+                            if (!item) {
+                                content.setText(modal.emptyStateText);
+                                content.parentElement.addClass("is-selected");
+                                return;
+                            }
+
+                            if (item instanceof TFile) {
+                                let pathLength =
+                                    item.path.length - item.name.length;
+                                const matchElements = matches.matches.map(
+                                    (m) => {
+                                        return createSpan(
+                                            "suggestion-highlight"
+                                        );
+                                    }
+                                );
+                                for (
+                                    let i = pathLength;
+                                    i <
+                                    item.path.length -
+                                        item.extension.length -
+                                        1;
+                                    i++
+                                ) {
+                                    let match = matches.matches.find(
+                                        (m) => m[0] === i
+                                    );
+                                    if (match) {
+                                        let element =
+                                            matchElements[
+                                                matches.matches.indexOf(match)
+                                            ];
+                                        content.appendChild(element);
+                                        element.appendText(
+                                            item.path.substring(
+                                                match[0],
+                                                match[1]
+                                            )
+                                        );
+
+                                        i += match[1] - match[0] - 1;
+                                        continue;
+                                    }
+
+                                    content.appendText(item.path[i]);
+                                }
+                                el.createDiv({
+                                    cls: "suggestion-note",
+                                    text: item.path
+                                });
+                            } else if (
+                                Object.prototype.hasOwnProperty.call(
+                                    item,
+                                    "heading"
+                                )
+                            ) {
+                                content.setText((<HeadingCache>item).heading);
+                                content.prepend(
+                                    createSpan({
+                                        cls: "suggestion-flair",
+                                        text: `H${(<HeadingCache>item).level}`
+                                    })
+                                );
+                            } else if (
+                                Object.prototype.hasOwnProperty.call(item, "id")
+                            ) {
+                                content.setText((<BlockCache>item).id);
+                            }
+                        };
+
+                        modal.selectSuggestion = async ({ item }) => {
+                            let link: string;
+                            if (item instanceof TFile) {
+                                link = item.basename;
+                            } else if (
+                                Object.prototype.hasOwnProperty.call(
+                                    item,
+                                    "heading"
+                                )
+                            ) {
+                                link =
+                                    file.basename +
+                                    "#" +
+                                    (<HeadingCache>item).heading;
+                            } else if (
+                                Object.prototype.hasOwnProperty.call(item, "id")
+                            ) {
+                                link =
+                                    file.basename + "^" + (<BlockCache>item).id;
+                            }
+                            markersToUpdate.forEach((marker) => {
+                                marker.link = link;
+                            });
+                            text.setValue(link);
+                            modal.close();
+                            await this.saveSettings();
+                        };
                     });
 
                 new Setting(markerSettingsModal.contentEl)
@@ -727,20 +916,17 @@ export default class ObsidianLeaflet extends Plugin {
                         marker.leafletInstance.unbindTooltip();
                         let link = marker.link;
 
-                        let files = this.app.vault.getFiles();
-                        let target = link.split("/").pop();
-                        let fileName = target.split(/(#|\^|.md)/).shift();
+                        let file = this.app.metadataCache.getFirstLinkpathDest(
+                            link.split(/[\^#]/).shift(),
+                            ""
+                        );
 
-                        let file = files.find((f) => fileName == f.basename);
-                        if (!file || !(file instanceof TFile)) {
-                            return;
-                        }
                         this.app.workspace.trigger(
                             "link-hover",
                             this,
                             marker.leafletInstance.getElement(),
-                            target,
-                            file.path
+                            link,
+                            file?.path || link
                         );
                     } else {
                         let el = evt.originalEvent.target as SVGElement;

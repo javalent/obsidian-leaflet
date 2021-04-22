@@ -1,13 +1,11 @@
-import { parse } from "@fortawesome/fontawesome-svg-core";
 import {
     PluginSettingTab,
     Setting,
     App,
     Notice,
-    ButtonComponent,
-    Modal,
-    TextComponent
+    ButtonComponent
 } from "obsidian";
+import { v4 as uuidv4 } from "uuid";
 
 import {
     findIconDefinition,
@@ -16,19 +14,9 @@ import {
     toHtml,
     AbstractElement,
     getIcon
-} from "./icons";
+} from "./utils/icons";
 
-declare global {
-    interface ObsidianAppData {
-        mapMarkers: MapMarkerData[];
-        markerIcons: Marker[];
-        defaultMarker: Marker;
-        color: string;
-        lat: number;
-        long: number;
-        notePreview: boolean;
-    }
-}
+import { Marker, MarkerData, ObsidianAppData } from "./@types/index";
 
 export const DEFAULT_SETTINGS: ObsidianAppData = {
     mapMarkers: [],
@@ -42,28 +30,39 @@ export const DEFAULT_SETTINGS: ObsidianAppData = {
     color: "#dddddd",
     lat: 39.983334,
     long: -82.98333,
-    notePreview: false
+    notePreview: false,
+    useCSV: false,
+    csvPath: ""
 };
 
 import ObsidianLeaflet from "./main";
+import {
+    CreateMarkerModal,
+    removeValidationError,
+    setValidationError
+} from "./utils/modals";
 
 export class ObsidianLeafletSettingTab extends PluginSettingTab {
     plugin: ObsidianLeaflet;
     newMarker: Marker;
+
     constructor(app: App, plugin: ObsidianLeaflet) {
         super(app, plugin);
         this.plugin = plugin;
+
         this.newMarker = {
             type: "",
             iconName: null,
-            color: this.plugin.AppData.defaultMarker.iconName
-                ? this.plugin.AppData.defaultMarker.color
-                : this.plugin.AppData.color,
+            color: this.data.defaultMarker.iconName
+                ? this.data.defaultMarker.color
+                : this.data.color,
             layer: false,
-            transform: this.plugin.AppData.defaultMarker.transform
+            transform: this.data.defaultMarker.transform
         };
     }
-
+    get data() {
+        return this.plugin.AppData;
+    }
     async display(): Promise<void> {
         let { containerEl } = this;
 
@@ -71,73 +70,19 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 
         containerEl.createEl("h2", { text: "Obsidian Leaflet Settings" });
 
-        new Setting(containerEl)
-            .setName("Display Note Preview")
-            .setDesc(
-                "Markers linked to notes will show a note preview when hovered."
-            )
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(this.plugin.AppData.notePreview)
-                    .onChange((v) => {
-                        this.plugin.AppData.notePreview = v;
-                        this.display();
-                    })
-            );
+        this.createCSVSetting(containerEl);
 
-        new Setting(containerEl)
-            .setName("Default Latitude")
-            .setDesc(
-                "Real-world maps will open to this latitude if not specified."
-            )
-            .addText((text) => {
-                text.setValue(`${this.plugin.AppData.lat}`);
-                text.onChange((v) => {
-                    if (isNaN(Number(v))) {
-                        ObsidianLeafletSettingTab.setValidationError(
-                            text,
-                            "Latitude must be a number."
-                        );
-                        return;
-                    }
-                    ObsidianLeafletSettingTab.removeValidationError(text);
-                    this.plugin.AppData.lat = Number(v);
-                    text.inputEl.addEventListener("blur", async () => {
-                        this.display();
-                    });
-                });
-            });
-        new Setting(containerEl)
-            .setName("Default Longitude")
-            .setDesc(
-                "Real-world maps will open to this longitude if not specified."
-            )
-            .addText((text) => {
-                text.setValue(`${this.plugin.AppData.long}`);
-                text.onChange((v) => {
-                    if (isNaN(Number(v))) {
-                        ObsidianLeafletSettingTab.setValidationError(
-                            text,
-                            "Longitude must be a number."
-                        );
-                        return;
-                    }
-                    ObsidianLeafletSettingTab.removeValidationError(text);
-                    this.plugin.AppData.long = Number(v);
-                });
+        this.createNotePreviewSetting(containerEl);
 
-                text.inputEl.addEventListener("blur", async () => {
-                    this.display();
-                });
-            });
+        this.createLatLongSetting(containerEl);
 
         let baseSetting = new Setting(containerEl)
             .setName("Base Map Marker")
             .setDesc("Leave blank to have full-sized marker symbols instead.")
             .addText((text) => {
                 text.setPlaceholder("Icon Name").setValue(
-                    this.plugin.AppData.defaultMarker.iconName
-                        ? this.plugin.AppData.defaultMarker.iconName
+                    this.data.defaultMarker.iconName
+                        ? this.data.defaultMarker.iconName
                         : ""
                 );
                 text.inputEl.addEventListener("blur", async (evt) => {
@@ -145,16 +90,16 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     let new_value: string = target.value;
 
                     if (!new_value.length) {
-                        if (this.plugin.AppData.markerIcons.length == 0) {
+                        if (this.data.markerIcons.length == 0) {
                             new Notice(
                                 "Add additional markers to remove the default."
                             );
-                            target.value = this.plugin.AppData.defaultMarker.iconName;
+                            target.value = this.data.defaultMarker.iconName;
                             return;
                         }
 
-                        this.plugin.AppData.defaultMarker.iconName = null;
-                        this.plugin.AppData.markerIcons.forEach(
+                        this.data.defaultMarker.iconName = null;
+                        this.data.markerIcons.forEach(
                             (marker) => (marker.layer = false)
                         );
 
@@ -174,7 +119,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                         return;
                     }
 
-                    this.plugin.AppData.defaultMarker.iconName = new_value;
+                    this.data.defaultMarker.iconName = new_value;
 
                     await this.plugin.saveSettings();
 
@@ -182,15 +127,17 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                 });
             });
 
-        if (this.plugin.AppData.defaultMarker.iconName) {
-            this.createColorPicker(
-                baseSetting,
-                this.plugin.AppData.defaultMarker
-            );
+        if (this.data.defaultMarker.iconName) {
+            this.createColorPicker(baseSetting, this.data.defaultMarker);
         }
         let additionalMarkers = containerEl.createDiv();
         additionalMarkers.addClass("additional-markers-container");
 
+        this.createAdditionalMarkerSettings(additionalMarkers);
+
+        await this.plugin.saveSettings();
+    }
+    createAdditionalMarkerSettings(additionalMarkers: HTMLDivElement) {
         new Setting(additionalMarkers)
             .setHeading()
             .setName("Additional Map Markers")
@@ -202,7 +149,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     let b = button
                         .setTooltip("Add Additional")
                         .onClick(async () => {
-                            let newMarkerModal = new MarkerModal(
+                            let newMarkerModal = new CreateMarkerModal(
                                 this.app,
                                 this.plugin,
                                 this.newMarker
@@ -215,20 +162,15 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                                 ) {
                                     return;
                                 }
-                                this.plugin.AppData.markerIcons.push(
-                                    this.newMarker
-                                );
+                                this.data.markerIcons.push(this.newMarker);
                                 this.newMarker = {
                                     type: "",
                                     iconName: null,
-                                    color: this.plugin.AppData.defaultMarker
-                                        .iconName
-                                        ? this.plugin.AppData.defaultMarker
-                                              .color
-                                        : this.plugin.AppData.color,
+                                    color: this.data.defaultMarker.iconName
+                                        ? this.data.defaultMarker.color
+                                        : this.data.color,
                                     layer: true,
-                                    transform: this.plugin.AppData.defaultMarker
-                                        .transform
+                                    transform: this.data.defaultMarker.transform
                                 };
                                 await this.plugin.saveSettings();
 
@@ -245,12 +187,12 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     return b;
                 }
             );
-        this.plugin.AppData.markerIcons.forEach((marker) => {
+        this.data.markerIcons.forEach((marker) => {
             let setting = new Setting(additionalMarkers)
                 .setName(marker.type)
                 .addExtraButton((b) =>
                     b.onClick(() => {
-                        let newMarkerModal = new MarkerModal(
+                        let newMarkerModal = new CreateMarkerModal(
                             this.app,
                             this.plugin,
                             marker
@@ -270,7 +212,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                 )
                 .addExtraButton((b) =>
                     b.setIcon("trash").onClick(() => {
-                        this.plugin.AppData.markerIcons = this.plugin.AppData.markerIcons.filter(
+                        this.data.markerIcons = this.data.markerIcons.filter(
                             (m) => m != marker
                         );
                         this.display();
@@ -279,7 +221,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             let iconNode: AbstractElement = icon(getIcon(marker.iconName), {
                 transform: marker.layer ? marker.transform : null,
                 mask: marker.layer
-                    ? getIcon(this.plugin.AppData.defaultMarker?.iconName)
+                    ? getIcon(this.data.defaultMarker?.iconName)
                     : null,
                 classes: ["full-width"]
             }).abstract[0];
@@ -296,10 +238,217 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                 setting.controlEl.children[0]
             );
         });
-
-        await this.plugin.saveSettings();
     }
+    createLatLongSetting(containerEl: HTMLElement) {
+        new Setting(containerEl)
+            .setName("Default Latitude")
+            .setDesc(
+                "Real-world maps will open to this latitude if not specified."
+            )
+            .addText((text) => {
+                text.setValue(`${this.data.lat}`);
+                text.onChange((v) => {
+                    if (isNaN(Number(v))) {
+                        setValidationError(text, "Latitude must be a number.");
+                        return;
+                    }
+                    removeValidationError(text);
+                    this.data.lat = Number(v);
+                    text.inputEl.addEventListener("blur", async () => {
+                        this.display();
+                    });
+                });
+            });
+        new Setting(containerEl)
+            .setName("Default Longitude")
+            .setDesc(
+                "Real-world maps will open to this longitude if not specified."
+            )
+            .addText((text) => {
+                text.setValue(`${this.data.long}`);
+                text.onChange((v) => {
+                    if (isNaN(Number(v))) {
+                        setValidationError(text, "Longitude must be a number.");
+                        return;
+                    }
+                    removeValidationError(text);
+                    this.data.long = Number(v);
+                });
 
+                text.inputEl.addEventListener("blur", async () => {
+                    this.display();
+                });
+            });
+    }
+    createNotePreviewSetting(containerEl: HTMLElement) {
+        new Setting(containerEl)
+            .setName("Display Note Preview")
+            .setDesc(
+                "Markers linked to notes will show a note preview when hovered."
+            )
+            .addToggle((toggle) =>
+                toggle.setValue(this.data.notePreview).onChange((v) => {
+                    this.data.notePreview = v;
+                    this.display();
+                })
+            );
+    }
+    createCSVSetting(containerEl: HTMLElement) {
+        let importSetting = new Setting(containerEl);
+        importSetting.setDesc(
+            "This setting is experimental and could cause marker data issues. Use at your own risk."
+        );
+        let name = importSetting.nameEl.createDiv({
+            cls: "use-csv-marker"
+        });
+        name.appendChild(
+            icon(
+                findIconDefinition({
+                    iconName: "exclamation-triangle",
+                    prefix: "fas"
+                })
+            ).node[0]
+        );
+        name.appendChild(createSpan({ text: "Import Marker CSV File" })); //.setName("Use CSV Marker File");
+
+        const label = importSetting.controlEl.createEl("label", {
+            cls: "leaflet-file-upload",
+            text: "Choose File"
+        });
+        const input = label.createEl("input", {
+            attr: {
+                type: "file",
+                name: "merge",
+                accept: ".csv"
+            }
+        });
+        input.onchange = async () => {
+            const { files } = input;
+
+            if (!files.length) return;
+            try {
+                const csv = await files[0].text(),
+                    markersToAdd: Map<string, MarkerData[]> = new Map();
+
+                for (let line of csv.split(/[\n\r]/).filter((l) => l)) {
+                    /*if (line == `Map,Type,Lat,Long,Link,Layer,ID`) continue; */
+                    let data = line.split(",");
+
+                    if (!data[0]) throw new Error("Map was not specified.");
+                    let [map, type, lat, long, link, layer, id] = data;
+                    if (!map || map === "undefined") {
+                        new Notice(
+                            "Map not specified for line " + csv.indexOf(line)
+                        );
+                        continue;
+                    }
+                    if (
+                        !type ||
+                        type === "undefined" ||
+                        (type != "default" &&
+                            !this.data.markerIcons.find(
+                                ({ type: t }) => t == type
+                            ))
+                    ) {
+                        type = "default";
+                    }
+                    if (!lat || isNaN(Number(lat))) {
+                        new Notice(
+                            "Could not parse latitude for line " +
+                                csv.indexOf(line)
+                        );
+                        continue;
+                    }
+                    if (!long || isNaN(Number(long))) {
+                        new Notice(
+                            "Could not parse longitude for line " +
+                                csv.indexOf(line)
+                        );
+                        continue;
+                    }
+
+                    if (!link || link === "undefined") link = undefined;
+                    if (!id || id === "undefined") id = uuidv4();
+
+                    if (!markersToAdd.has(map)) markersToAdd.set(map, []);
+                    const mapMap = markersToAdd.get(data[0]);
+                    mapMap.push({
+                        type: type,
+                        loc: [Number(lat), Number(long)],
+                        link: link,
+                        layer: layer,
+                        id: id
+                    });
+                    markersToAdd.set(data[0], mapMap);
+                }
+                for (let [path, markers] of [...markersToAdd]) {
+                    let map = this.data.mapMarkers.find(
+                        ({ path: p }) => p == path
+                    );
+                    if (!map) {
+                        map = {
+                            path: path,
+                            file: path.split(".md")[0] + ".md",
+                            markers: []
+                        };
+                        this.data.mapMarkers.push(map);
+                    }
+
+                    for (let marker of markers) {
+                        map.markers = map.markers.filter(
+                            ({ id }) => id != marker.id
+                        );
+                        map.markers.push(marker);
+                    }
+                }
+                await this.plugin.saveSettings();
+                new Notice("Marker file successfully imported.");
+            } catch (e) {
+                new Notice(
+                    "There was an error while importing " + files[0].name
+                );
+                console.error(e);
+            }
+
+            input.value = null;
+        };
+
+        let exportSetting = new Setting(containerEl);
+        exportSetting
+            .setName("Export Marker Data")
+            .setDesc("Export all marker data to a CSV file.")
+            .addButton((b) => {
+                b.setButtonText("Export").onClick(() => {
+                    let csv = [];
+                    for (let { path, markers } of this.data.mapMarkers) {
+                        for (let { type, loc, link, layer, id } of markers) {
+                            csv.push(
+                                [
+                                    path,
+                                    type,
+                                    loc[0],
+                                    loc[1],
+                                    link,
+                                    layer,
+                                    id
+                                ].join(",")
+                            );
+                        }
+                    }
+
+                    let csvFile = new Blob([csv.join("\n")], {
+                        type: "text/csv"
+                    });
+                    let downloadLink = document.createElement("a");
+                    downloadLink.download = "leaflet_marker_data.csv";
+                    downloadLink.href = window.URL.createObjectURL(csvFile);
+                    downloadLink.style.display = "none";
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                });
+            });
+    }
     createColorPicker(
         setting: Setting,
         marker: Marker,
@@ -339,28 +488,25 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     buttonEl = el;
                     if (
                         marker.type == "default" ||
-                        !this.plugin.AppData.defaultMarker.iconName
+                        !this.data.defaultMarker.iconName
                     ) {
                         el.appendChild(
                             icon(getIcon(marker.iconName), {
                                 styles: {
                                     color: marker.color
                                         ? marker.color
-                                        : this.plugin.AppData.defaultMarker
-                                              .color
+                                        : this.data.defaultMarker.color
                                 }
                             }).node[0]
                         );
                     } else {
                         let i = icon(getIcon(marker.iconName), {
                             transform: { size: 6, x: 0, y: -2 },
-                            mask: getIcon(
-                                this.plugin.AppData.defaultMarker.iconName
-                            ),
+                            mask: getIcon(this.data.defaultMarker.iconName),
                             styles: {
                                 color: marker.color
                                     ? marker.color
-                                    : this.plugin.AppData.defaultMarker.color
+                                    : this.data.defaultMarker.color
                             }
                         }).abstract[0];
                         i.attributes = {
@@ -368,7 +514,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                             style: `color: ${
                                 marker.color
                                     ? marker.color
-                                    : this.plugin.AppData.defaultMarker.color
+                                    : this.data.defaultMarker.color
                             }`
                         };
 
@@ -378,10 +524,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                         el.appendChild(temp.children[0]);
                     }
                     el.addClass(`${marker.type}-map-marker`);
-                    if (
-                        this.plugin.AppData.defaultMarker.iconName &&
-                        !marker.color
-                    )
+                    if (this.data.defaultMarker.iconName && !marker.color)
                         el.addClass("default-map-marker");
                 }
             )
@@ -422,453 +565,112 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             )
         );
     }
-
-    static setValidationError(textInput: TextComponent, message?: string) {
-        textInput.inputEl.addClass("is-invalid");
-        if (message) {
-            textInput.inputEl.parentElement.addClasses([
-                "has-invalid-message",
-                "unset-align-items"
-            ]);
-            textInput.inputEl.parentElement.parentElement.addClass(
-                ".unset-align-items"
-            );
-            let mDiv = textInput.inputEl.parentElement.querySelector(
-                ".invalid-feedback"
-            ) as HTMLDivElement;
-
-            if (!mDiv) {
-                mDiv = createDiv({ cls: "invalid-feedback" });
-            }
-            mDiv.innerText = message;
-            mDiv.insertAfter(textInput.inputEl);
-        }
-    }
-    static removeValidationError(textInput: TextComponent) {
-        textInput.inputEl.removeClass("is-invalid");
-        textInput.inputEl.parentElement.removeClasses([
-            "has-invalid-message",
-            "unset-align-items"
-        ]);
-        textInput.inputEl.parentElement.parentElement.removeClass(
-            ".unset-align-items"
-        );
-
-        if (textInput.inputEl.parentElement.children[1]) {
-            textInput.inputEl.parentElement.removeChild(
-                textInput.inputEl.parentElement.children[1]
-            );
-        }
-    }
 }
 
-class MarkerModal extends Modal {
-    marker: Marker;
-    tempMarker: Marker;
-    plugin: ObsidianLeaflet;
-    constructor(app: App, plugin: ObsidianLeaflet, marker: Marker) {
-        super(app);
-        this.marker = marker;
-        this.plugin = plugin;
+/*         csvMarkerSetting
+            .setDesc(
+                "Marker data will also be stored in a specified CSV file. Data will always be backed up in the plugin folder."
+            )
+            .addToggle((toggle) =>
+                toggle
+                    .setTooltip("Warning: Experimental")
+                    .setValue(this.data.useCSV)
+                    .onChange((v) => {
+                        if (v) {
+                            let confirm = new Modal(this.plugin.app),
+                                saved = false;
+                            confirm.titleEl.createEl("h3", {
+                                text: "Warning: Experimental Feature",
+                                attr: { style: "margin-bottom: 0;" }
+                            });
+                            let { contentEl } = confirm;
+                            contentEl.createEl("p", {
+                                text:
+                                    "This setting is experimental and could cause marker data corruption issues."
+                            });
+                            contentEl.createEl("p", {
+                                text:
+                                    "Marker data will continue to be saved locally in the plugin folder."
+                            });
+                            contentEl.createEl("p", {
+                                text: "Are you sure you want to turn it on?"
+                            });
 
-        this.tempMarker = { ...this.marker };
-    }
+                            let footerEl = contentEl.createDiv();
+                            let footerButtons = new Setting(footerEl);
+                            footerButtons.addButton((b) => {
+                                b.setTooltip("Confirm")
+                                    .setIcon("checkmark")
+                                    .onClick(async () => {
+                                        saved = true;
+                                        confirm.close();
+                                    });
+                                return b;
+                            });
+                            footerButtons.addExtraButton((b) => {
+                                b.setIcon("cross")
+                                    .setTooltip("Cancel")
+                                    .onClick(() => {
+                                        saved = false;
+                                        confirm.close();
+                                    });
+                                return b;
+                            });
 
-    async display(focusEl?: string): Promise<void> {
-        let containerEl = this.contentEl;
-        containerEl.empty();
-
-        let createNewMarker = containerEl.createDiv();
-        createNewMarker.addClass("additional-markers-container");
-        //new Setting(createNewMarker).setHeading().setName("Create New Marker");
-
-        let iconDisplayAndSettings = createNewMarker.createDiv();
-        iconDisplayAndSettings.addClass("marker-creation-modal");
-        let iconSettings = iconDisplayAndSettings.createDiv();
-        let iconDisplay = iconDisplayAndSettings.createDiv();
-
-        let typeTextInput: TextComponent;
-        let markerName = new Setting(iconSettings)
-            .setName("Marker Name")
-            .addText((text) => {
-                typeTextInput = text
-                    .setPlaceholder("Marker Name")
-                    .setValue(this.tempMarker.type);
-                typeTextInput.onChange((new_value) => {
-                    if (
-                        this.plugin.AppData.markerIcons.find(
-                            (marker) => marker.type == new_value
-                        ) &&
-                        this.tempMarker.type != this.marker.type
-                    ) {
-                        ObsidianLeafletSettingTab.setValidationError(
-                            typeTextInput,
-                            "Marker type already exists."
-                        );
-                        return;
-                    }
-
-                    if (new_value.length == 0) {
-                        ObsidianLeafletSettingTab.setValidationError(
-                            typeTextInput,
-                            "Marker name cannot be empty."
-                        );
-                        return;
-                    }
-
-                    ObsidianLeafletSettingTab.removeValidationError(
-                        typeTextInput
-                    );
-
-                    this.tempMarker.type = new_value;
-                });
-            });
-
-        let iconTextInput: TextComponent;
-        let iconName = new Setting(iconSettings)
-            .setName("Marker Icon")
-            .setDesc("Font Awesome icon name (e.g. map-marker).")
-            .addText((text) => {
-                iconTextInput = text
-                    .setPlaceholder("Icon Name")
-                    .setValue(
-                        this.tempMarker.iconName ? this.tempMarker.iconName : ""
-                    )
-                    .onChange(
-                        async (new_value): Promise<void> => {
-                            let icon = findIconDefinition({
-                                iconName: new_value
-                            } as IconLookup);
-
-                            if (!icon) {
-                                ObsidianLeafletSettingTab.setValidationError(
-                                    iconTextInput,
-                                    "Invalid icon name."
-                                );
-                                return;
-                            }
-
-                            if (new_value.length == 0) {
-                                ObsidianLeafletSettingTab.setValidationError(
-                                    iconTextInput,
-                                    "Icon cannot be empty."
-                                );
-                                return;
-                            }
-
-                            ObsidianLeafletSettingTab.removeValidationError(
-                                iconTextInput
-                            );
-                            this.tempMarker.iconName = icon.iconName;
-
-                            this.display("icon_name");
-                        }
-                    );
-                iconTextInput.inputEl.id = "icon_name";
-                return iconTextInput;
-            });
-
-        if (this.tempMarker.iconName) {
-            let iconNode: AbstractElement = icon(
-                getIcon(
-                    this.tempMarker.layer
-                        ? this.plugin.AppData.defaultMarker.iconName
-                        : this.tempMarker.iconName
-                ),
-                {
-                    classes: ["full-width-height"]
-                }
-            ).abstract[0];
-
-            iconNode.attributes = {
-                ...iconNode.attributes,
-                style: `color: ${this.tempMarker.color}`
-            };
-            //let marker = iconDisplay;
-            let iconDisplayHeight =
-                markerName.settingEl.getBoundingClientRect().height +
-                iconName.settingEl.getBoundingClientRect().height;
-            iconDisplay.setAttribute(
-                "style",
-                `height: ${iconDisplayHeight}px; padding: 1rem; position: relative;`
-            );
-            iconDisplay.innerHTML = toHtml(iconNode);
-
-            if (this.tempMarker.layer) {
-                let iconOverlay = icon(getIcon(this.tempMarker.iconName), {
-                    transform: this.tempMarker.transform
-                }).node[0].children[0] as SVGGraphicsElement;
-                let iconPath = iconOverlay.getElementsByTagName("path")[0];
-
-                let fill = this.getFillColor(this.modalEl);
-
-                iconPath.setAttribute("fill", fill[0]);
-                iconPath.setAttribute("fill-opacity", `1`);
-                iconPath.setAttribute("stroke-width", "1px");
-                iconPath.setAttribute("stroke", "black");
-                iconPath.setAttribute("stroke-dasharray", "50,50");
-
-                let transformSource = iconOverlay
-                    .children[0] as SVGGraphicsElement;
-                let svgElement = iconDisplay.getElementsByTagName("svg")[0],
-                    xPath = document.createElementNS(
-                        "http://www.w3.org/2000/svg",
-                        "path"
-                    ),
-                    yPath = document.createElementNS(
-                        "http://www.w3.org/2000/svg",
-                        "path"
-                    );
-
-                xPath.setAttribute("stroke", "red");
-                xPath.setAttribute("stroke-width", "0");
-                xPath.setAttribute("d", "M192,0 L192,512");
-
-                yPath.setAttribute("stroke", "red");
-                yPath.setAttribute("stroke-width", "0");
-                yPath.setAttribute("d", "M0,256 L384,256");
-
-                svgElement.appendChild(xPath);
-                svgElement.appendChild(yPath);
-                let units = {
-                    width: 512 / 16,
-                    height: 512 / 16
-                };
-
-                svgElement.appendChild(iconOverlay);
-
-                /** Fix x/y positioning due to different icon sizes */
-                iconOverlay.transform.baseVal.getItem(0).setTranslate(192, 256);
-
-                let clickedOn: boolean = false,
-                    offset: { x: number; y: number } = { x: 0, y: 0 },
-                    transform: SVGTransform;
-
-                this.plugin.registerDomEvent(
-                    (iconOverlay as unknown) as HTMLElement,
-                    "mousedown",
-                    (evt) => {
-                        let CTM = svgElement.getScreenCTM();
-                        offset = {
-                            x: (evt.clientX - CTM.e) / CTM.a,
-                            y: (evt.clientY - CTM.f) / CTM.d
-                        };
-
-                        let transforms = transformSource.transform.baseVal;
-                        if (
-                            transforms.numberOfItems === 0 ||
-                            transforms.getItem(0).type !=
-                                SVGTransform.SVG_TRANSFORM_TRANSLATE
-                        ) {
-                            let translate = svgElement.createSVGTransform();
-                            translate.setTranslate(0, 0);
-                            // Add the translation to the front of the transforms list
-                            transformSource.transform.baseVal.insertItemBefore(
-                                translate,
-                                0
-                            );
-                        }
-
-                        transform = transforms.getItem(0);
-                        offset.x -= transform.matrix.e;
-                        offset.y -= transform.matrix.f;
-
-                        clickedOn = true;
-                    }
-                );
-                this.plugin.registerDomEvent(
-                    this.containerEl,
-                    "mouseup",
-                    (evt) => {
-                        offset = { x: 0, y: 0 };
-                        xPath.setAttribute("stroke-width", "0");
-                        yPath.setAttribute("stroke-width", "0");
-                        clickedOn = false;
-                    }
-                );
-                this.plugin.registerDomEvent(
-                    (iconOverlay as unknown) as HTMLElement,
-                    "mousemove",
-                    (evt) => {
-                        if (clickedOn) {
-                            evt.preventDefault();
-                            let CTM = svgElement.getScreenCTM();
-                            let coords = {
-                                x: (evt.clientX - CTM.e) / CTM.a,
-                                y: (evt.clientY - CTM.f) / CTM.d
+                            confirm.onClose = async () => {
+                                if (saved) {
+                                    this.data.useCSV = true;
+                                    this.plugin.saveSettings();
+                                    this.display();
+                                }
                             };
 
-                            //snap to x/y
-                            let x = coords.x - offset.x,
-                                y = coords.y - offset.y;
-                            if (Math.abs(x) <= 32 && evt.shiftKey) {
-                                xPath.setAttribute("stroke-width", "8");
-                                x = 0;
-                            } else {
-                                xPath.setAttribute("stroke-width", "0");
-                            }
-                            if (Math.abs(y) <= 32 && evt.shiftKey) {
-                                yPath.setAttribute("stroke-width", "8");
-                                y = 0;
-                            } else {
-                                yPath.setAttribute("stroke-width", "0");
-                            }
-
-                            transform.setTranslate(x, y);
-
-                            this.tempMarker.transform.x =
-                                transform.matrix.e / units.width;
-                            this.tempMarker.transform.y =
-                                transform.matrix.f / units.height;
+                            confirm.open();
+                        } else {
+                            this.data.useCSV = v;
+                            this.display();
                         }
-                    }
-                );
-            }
-        }
+                    })
+            );
 
-        new Setting(createNewMarker)
-            .setName("Layer Icon")
-            .setDesc("The icon will be layered on the base icon, if any.")
-            .addToggle((toggle) => {
-                toggle.setValue(this.tempMarker.layer).onChange((v) => {
-                    this.tempMarker.layer = v;
-                    this.display();
-                });
-                if (this.plugin.AppData.defaultMarker.iconName == null) {
-                    toggle
-                        .setDisabled(true)
-                        .setTooltip("Add a base marker to layer this icon.");
+        if (this.data.useCSV) {
+            let csv = containerEl.createDiv({
+                attr: {
+                    style: "margin-left: 12px; margin-right: 12px;"
                 }
             });
-        let colorInput = new Setting(createNewMarker)
-            .setName("Icon Color")
-            .setDesc("Override default icon color.");
-        let colorInputNode = document.createElement("input");
-        colorInputNode.setAttribute("type", "color");
-        colorInputNode.setAttribute("value", this.tempMarker.color);
-        colorInputNode.oninput = (evt) => {
-            this.tempMarker.color = (evt.target as HTMLInputElement).value;
 
-            iconDisplay.children[0].setAttribute(
-                "style",
-                `color: ${this.tempMarker.color}`
-            );
-        };
-        colorInputNode.onchange = async (evt) => {
-            this.tempMarker.color = (evt.target as HTMLInputElement).value;
+            let location = new Setting(csv)
+                .setName("File Location")
+                .setDesc(`${this.data.csvPath}`)
+                .addText((t) => {
+                    t.setPlaceholder("Example: folder 1/folder 2");
+                    let folders = new Map<string, TFolder>();
+                    folders.set("/", this.app.vault.getRoot());
+                    const recursiveFolderAdd = (folder: TFolder) => {
+                        if (folder.parent) {
+                            folders.set(folder.parent.path, folder.parent);
+                        }
+                        if (folder.children) {
+                            folder.children.forEach((child) => {
+                                recursiveFolderAdd(child as TFolder);
+                            });
+                        }
+                    };
+                    recursiveFolderAdd(this.app.vault.getRoot());
+                    let modal = new SuggestionModal<TFolder>(
+                        this.app,
+                        t.inputEl,
+                        [...folders].map((f) => f[1])
+                    );
 
-            this.display();
-        };
-        colorInput.controlEl.appendChild(colorInputNode);
-
-        let add = new Setting(createNewMarker);
-
-        add.addButton(
-            (button: ButtonComponent): ButtonComponent => {
-                let b = button.setTooltip("Save").onClick(async () => {
-                    // Force refresh
-                    let error = false;
-                    if (
-                        this.plugin.AppData.markerIcons.find(
-                            (marker) => marker.type == this.tempMarker.type
-                        ) &&
-                        this.tempMarker.type != this.marker.type
-                    ) {
-                        ObsidianLeafletSettingTab.setValidationError(
-                            typeTextInput,
-                            "Marker type already exists."
-                        );
-                        error = true;
-                    }
-
-                    if (this.tempMarker.type.length == 0) {
-                        ObsidianLeafletSettingTab.setValidationError(
-                            typeTextInput,
-                            "Marker name cannot be empty."
-                        );
-                        error = true;
-                    }
-                    if (
-                        !findIconDefinition({
-                            iconName: iconTextInput.inputEl.value
-                        } as IconLookup)
-                    ) {
-                        ObsidianLeafletSettingTab.setValidationError(
-                            iconTextInput,
-                            "Invalid icon name."
-                        );
-                        error = true;
-                    }
-
-                    if (!this.tempMarker.iconName) {
-                        ObsidianLeafletSettingTab.setValidationError(
-                            iconTextInput,
-                            "Icon cannot be empty."
-                        );
-                        error = true;
-                    }
-
-                    if (error) {
-                        return;
-                    }
-
-                    this.marker.type = this.tempMarker.type;
-                    this.marker.iconName = this.tempMarker.iconName;
-                    this.marker.color = this.tempMarker.color;
-                    this.marker.layer = this.tempMarker.layer;
-                    this.marker.transform = this.tempMarker.transform;
-
-                    this.close();
+                    modal.getItemText = (folder) => folder.path;
+                    modal.selectSuggestion = async (folder, evt) => {
+                        this.data.csvPath = folder.item.path;
+                        modal.close();
+                        await this.plugin.saveSettings();
+                        this.display();
+                    };
                 });
-                b.buttonEl.appendChild(
-                    icon(
-                        findIconDefinition({
-                            iconName: "save"
-                        } as IconLookup)
-                    ).node[0]
-                );
-                return b;
-            }
-        );
-        add.addExtraButton((b) => {
-            b.setIcon("cross")
-                .setTooltip("Cancel")
-                .onClick(() => {
-                    this.close();
-                });
-        });
 
-        if (focusEl) {
-            (this.contentEl.querySelector(
-                `#${focusEl}`
-            ) as HTMLInputElement).focus();
-        }
-    }
-
-    onOpen() {
-        this.display();
-    }
-
-    getFillColor(el: HTMLElement): string[] {
-        let fill = getComputedStyle(el).getPropertyValue("background-color");
-
-        if (fill.includes("rgb")) {
-            // Choose correct separator
-            let sep = fill.indexOf(",") > -1 ? "," : " ";
-            // Turn "rgb(r,g,b)" into [r,g,b]
-            let rgbArr = fill.split("(")[1].split(")")[0].split(sep);
-            let r = (+rgbArr[0]).toString(16),
-                g = (+rgbArr[1]).toString(16),
-                b = (+rgbArr[2]).toString(16);
-
-            if (r.length == 1) r = "0" + r;
-            if (g.length == 1) g = "0" + g;
-            if (b.length == 1) b = "0" + b;
-
-            return ["#" + r + g + b, rgbArr[3] ? `${+rgbArr[3]}` : "1"];
-        }
-        if (fill.includes("#")) {
-            return [fill, "1"];
-        }
-    }
-}
+        } */
