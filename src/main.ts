@@ -10,7 +10,7 @@ import {
     Menu,
     MarkdownPostProcessorContext,
     BlockCache,
-    HeadingCache,
+    HeadingCache
 } from "obsidian";
 import { LeafletMouseEvent, Point } from "leaflet";
 import { getType as lookupMimeType } from "mime/lite";
@@ -555,9 +555,14 @@ export default class ObsidianLeaflet extends Plugin {
                     ""
                 );
 
+                let name = file?.basename || link.split(/(?=[\^#])/).shift();
+
+                if (/(?=[\^#])/.test(link)) {
+                    name += link.split(/(?=[\^#])/).pop();
+                }
                 this.app.workspace
                     .openLinkText(
-                        (file?.basename || "") + link.split(/(?=[\^#])/).pop(),
+                        name,
                         file?.path || link.split(/(?=[\^#])/).shift(),
                         newWindow
                     )
