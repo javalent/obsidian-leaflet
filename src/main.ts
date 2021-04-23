@@ -324,8 +324,13 @@ export default class ObsidianLeaflet extends Plugin {
             DEFAULT_SETTINGS,
             await this.loadData()
         );
-        if (!this.AppData.csvPath.length) {
-            this.AppData.csvPath = this.manifest.dir;
+        if (
+            !this.AppData.defaultMarker ||
+            !this.AppData.defaultMarker.iconName
+        ) {
+            this.AppData.defaultMarker = DEFAULT_SETTINGS.defaultMarker;
+            this.AppData.layerMarkers = false;
+            await this.saveSettings();
         }
     }
     async saveSettings() {
@@ -381,19 +386,26 @@ export default class ObsidianLeaflet extends Plugin {
             if (!marker.iconName) {
                 marker.iconName = this.AppData.defaultMarker.iconName;
             }
-            let html: string,
-                iconNode: AbstractElement = icon(getIcon(marker.iconName), {
+            let html: string, iconNode: AbstractElement;
+
+            if (this.AppData.layerMarkers) {
+                iconNode = icon(getIcon(marker.iconName), {
                     transform: marker.transform,
-                    mask: getIcon(this.AppData.defaultMarker?.iconName),
+                    mask: getIcon(this.AppData.defaultMarker.iconName),
                     classes: ["full-width-height"]
                 }).abstract[0];
+            } else {
+                iconNode = icon(getIcon(marker.iconName), {
+                    classes: ["full-width-height"]
+                }).abstract[0];
+            }
 
             iconNode.attributes = {
                 ...iconNode.attributes,
                 style: `color: ${
                     marker.color
                         ? marker.color
-                        : this.AppData.defaultMarker?.color
+                        : this.AppData.defaultMarker.color
                 }`
             };
 
@@ -401,17 +413,15 @@ export default class ObsidianLeaflet extends Plugin {
 
             return { type: marker.type, html: html };
         });
-        if (this.AppData.defaultMarker.iconName) {
-            ret.unshift({
-                type: "default",
-                html: icon(getIcon(this.AppData.defaultMarker.iconName), {
-                    classes: ["full-width-height"],
-                    styles: {
-                        color: this.AppData.defaultMarker.color
-                    }
-                }).html[0]
-            });
-        }
+        ret.unshift({
+            type: "default",
+            html: icon(getIcon(this.AppData.defaultMarker.iconName), {
+                classes: ["full-width-height"],
+                styles: {
+                    color: this.AppData.defaultMarker.color
+                }
+            }).html[0]
+        });
 
         return ret;
     }
@@ -854,7 +864,7 @@ export default class ObsidianLeaflet extends Plugin {
                                             transform: { size: 6, x: 0, y: -2 },
                                             mask: getIcon(
                                                 this.AppData.defaultMarker
-                                                    ?.iconName
+                                                    .iconName
                                             ),
                                             classes: ["full-width-height"]
                                         }
@@ -865,7 +875,7 @@ export default class ObsidianLeaflet extends Plugin {
                                     style: `color: ${
                                         newMarker.color
                                             ? newMarker.color
-                                            : this.AppData.defaultMarker?.color
+                                            : this.AppData.defaultMarker.color
                                     }`
                                 };
 

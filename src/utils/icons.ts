@@ -1,8 +1,7 @@
-import { far } from "@fortawesome/free-regular-svg-icons";
 import { fas } from "@fortawesome/free-solid-svg-icons";
 import {
     IconDefinition,
-    IconLookup,
+    IconName,
     findIconDefinition,
     icon,
     library,
@@ -19,17 +18,17 @@ const iconNames = Object.values(fas)
 export function getIcon(iconName: string): IconDefinition {
     if (!iconName) return null;
     return findIconDefinition({
-        iconName: iconName
-    } as IconLookup);
+        iconName: iconName as IconName,
+        prefix: "fas"
+    });
 }
 
 export {
-    far,
     fas,
     icon,
     findIconDefinition,
     IconDefinition,
-    IconLookup,
+    IconName,
     iconNames,
     AbstractElement,
     toHtml

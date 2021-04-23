@@ -9,8 +9,7 @@ export interface ObsidianAppData {
     lat: number;
     long: number;
     notePreview: boolean;
-    useCSV: boolean;
-    csvPath: string;
+    layerMarkers: boolean;
 }
 
 export interface Marker {

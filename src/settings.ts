@@ -6,17 +6,23 @@ import {
     ButtonComponent
 } from "obsidian";
 import { v4 as uuidv4 } from "uuid";
+import { parse as parseCSV, unparse as unparseCSV } from "papaparse";
 
 import {
     findIconDefinition,
-    IconLookup,
+    IconName,
     icon,
     toHtml,
     AbstractElement,
     getIcon
 } from "./utils/icons";
 
-import { Marker, MarkerData, ObsidianAppData } from "./@types/index";
+import {
+    MapMarkerData,
+    Marker,
+    MarkerData,
+    ObsidianAppData
+} from "./@types/index";
 
 export const DEFAULT_SETTINGS: ObsidianAppData = {
     mapMarkers: [],
@@ -31,8 +37,7 @@ export const DEFAULT_SETTINGS: ObsidianAppData = {
     lat: 39.983334,
     long: -82.98333,
     notePreview: false,
-    useCSV: false,
-    csvPath: ""
+    layerMarkers: true
 };
 
 import ObsidianLeaflet from "./main";
@@ -53,7 +58,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
         this.newMarker = {
             type: "",
             iconName: null,
-            color: this.data.defaultMarker.iconName
+            color: this.data.layerMarkers
                 ? this.data.defaultMarker.color
                 : this.data.color,
             layer: false,
@@ -76,66 +81,116 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 
         this.createLatLongSetting(containerEl);
 
-        let baseSetting = new Setting(containerEl)
-            .setName("Base Map Marker")
-            .setDesc("Leave blank to have full-sized marker symbols instead.")
-            .addText((text) => {
-                text.setPlaceholder("Icon Name").setValue(
-                    this.data.defaultMarker.iconName
-                        ? this.data.defaultMarker.iconName
-                        : ""
-                );
-                text.inputEl.addEventListener("blur", async (evt) => {
-                    let target = evt.target as HTMLInputElement;
-                    let new_value: string = target.value;
+        let defaultMarker = containerEl.createDiv(
+            "additional-markers-container"
+        );
+        this.createDefaultMarkerSettings(defaultMarker);
 
-                    if (!new_value.length) {
-                        if (this.data.markerIcons.length == 0) {
-                            new Notice(
-                                "Add additional markers to remove the default."
-                            );
-                            target.value = this.data.defaultMarker.iconName;
-                            return;
-                        }
-
-                        this.data.defaultMarker.iconName = null;
-                        this.data.markerIcons.forEach(
-                            (marker) => (marker.layer = false)
-                        );
-
-                        await this.plugin.saveSettings();
-
-                        this.display();
-                        return;
-                    }
-                    if (
-                        !findIconDefinition({
-                            iconName: new_value
-                        } as IconLookup)
-                    ) {
-                        new Notice(
-                            "The selected icon does not exist in Font Awesome Free."
-                        );
-                        return;
-                    }
-
-                    this.data.defaultMarker.iconName = new_value;
-
-                    await this.plugin.saveSettings();
-
-                    this.display();
-                });
-            });
-
-        if (this.data.defaultMarker.iconName) {
-            this.createColorPicker(baseSetting, this.data.defaultMarker);
-        }
-        let additionalMarkers = containerEl.createDiv();
-        additionalMarkers.addClass("additional-markers-container");
+        let additionalMarkers = containerEl.createDiv(
+            "additional-markers-container"
+        );
 
         this.createAdditionalMarkerSettings(additionalMarkers);
 
         await this.plugin.saveSettings();
+    }
+    createDefaultMarkerSettings(defaultMarker: HTMLDivElement) {
+        let defaultSetting = new Setting(defaultMarker)
+            .setHeading()
+            .setName("Default Map Marker")
+            .setDesc("This marker is always available.");
+        let iconDisplay = defaultSetting.settingEl.createDiv({
+            attr: {
+                style: `align-self: start; margin: 0 18px; font-size: 24px; color: ${this.data.defaultMarker.color};`
+            }
+        });
+        iconDisplay.appendChild(
+            icon(
+                findIconDefinition({
+                    iconName: this.data.defaultMarker.iconName as IconName,
+                    prefix: "fas"
+                })
+            ).node[0]
+        );
+        let settings = defaultMarker.createDiv({
+            cls: "additional-markers"
+        });
+        new Setting(settings).setName("Marker Icon").addText((text) => {
+            text.setPlaceholder("Icon Name").setValue(
+                this.data.defaultMarker.iconName
+                    ? this.data.defaultMarker.iconName
+                    : ""
+            );
+            text.inputEl.addEventListener("blur", async (evt) => {
+                let target = evt.target as HTMLInputElement;
+                let new_value: string = target.value;
+
+                if (!new_value.length) {
+                    setValidationError(
+                        text,
+                        "A default marker must be defined."
+                    );
+                    return;
+                }
+                if (
+                    !findIconDefinition({
+                        iconName: new_value as IconName,
+                        prefix: "fas"
+                    })
+                ) {
+                    setValidationError(
+                        text,
+                        "The selected icon does not exist in Font Awesome Free."
+                    );
+                    return;
+                }
+
+                removeValidationError(text);
+                this.data.defaultMarker.iconName = new_value;
+
+                await this.plugin.saveSettings();
+
+                this.display();
+            });
+        });
+        let colorInput = new Setting(settings).setName("Marker Color");
+
+        let colorInputNode = colorInput.controlEl.createEl("input", {
+            attr: {
+                type: "color",
+                value: this.data.defaultMarker.color
+            }
+        });
+        colorInputNode.oninput = ({ target }) => {
+            this.data.defaultMarker.color = (target as HTMLInputElement).value;
+
+            iconDisplay.children[0].setAttribute(
+                "style",
+                `color: ${this.data.defaultMarker.color}`
+            );
+        };
+        colorInputNode.onchange = async ({ target }) => {
+            this.data.defaultMarker.color = (target as HTMLInputElement).value;
+            this.display();
+        };
+
+        new Setting(settings)
+            .setName("Layer Base Marker")
+            .setDesc("Use as base layer for additional markers by default.")
+            .addToggle((t) => {
+                t.setValue(this.data.layerMarkers);
+                t.onChange(async (v) => {
+                    this.data.layerMarkers = v;
+                    this.data.markerIcons.forEach(
+                        (marker) => (marker.layer = v)
+                    );
+
+                    await this.plugin.saveSettings();
+
+                    this.display();
+                    return;
+                });
+            });
     }
     createAdditionalMarkerSettings(additionalMarkers: HTMLDivElement) {
         new Setting(additionalMarkers)
@@ -166,7 +221,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                                 this.newMarker = {
                                     type: "",
                                     iconName: null,
-                                    color: this.data.defaultMarker.iconName
+                                    color: this.data.layerMarkers
                                         ? this.data.defaultMarker.color
                                         : this.data.color,
                                     layer: true,
@@ -180,18 +235,25 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     b.buttonEl.appendChild(
                         icon(
                             findIconDefinition({
-                                iconName: "plus"
-                            } as IconLookup)
+                                iconName: "plus",
+                                prefix: "fas"
+                            })
                         ).node[0]
                     );
                     return b;
                 }
             );
+        let markers = additionalMarkers.createDiv({
+            cls: "additional-markers"
+        });
         this.data.markerIcons.forEach((marker) => {
-            let setting = new Setting(additionalMarkers)
-                .setName(marker.type)
+            let setting = new Setting(
+                markers
+            ) /* 
+                .setName(marker.type) */
                 .addExtraButton((b) =>
                     b.onClick(() => {
+                        const tempMarker = { ...marker };
                         let newMarkerModal = new CreateMarkerModal(
                             this.app,
                             this.plugin,
@@ -199,14 +261,23 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                         );
                         newMarkerModal.open();
                         newMarkerModal.onClose = async () => {
-                            await this.plugin.saveSettings();
-                            this.display();
-                            if (
-                                !this.newMarker.type ||
-                                !this.newMarker.iconName
-                            ) {
+                            if (!marker.type || !marker.iconName) {
                                 return;
                             }
+
+                            if (tempMarker.type != marker.type) {
+                                this.data.mapMarkers.forEach(({ markers }) => {
+                                    markers = markers.map((m) => {
+                                        if (m.type == tempMarker.type) {
+                                            m.type = marker.type;
+                                        }
+                                        return m;
+                                    });
+                                });
+                            }
+
+                            await this.plugin.saveSettings();
+                            this.display();
                         };
                     })
                 )
@@ -218,25 +289,27 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                         this.display();
                     })
                 );
-            let iconNode: AbstractElement = icon(getIcon(marker.iconName), {
+            let iconNode = icon(getIcon(marker.iconName), {
                 transform: marker.layer ? marker.transform : null,
                 mask: marker.layer
-                    ? getIcon(this.data.defaultMarker?.iconName)
-                    : null,
-                classes: ["full-width"]
-            }).abstract[0];
+                    ? getIcon(this.data.defaultMarker.iconName)
+                    : null
+            }).node[0];
 
-            iconNode.attributes = {
+            /* iconNode.attributes = {
                 ...iconNode.attributes,
                 style: `color: ${marker.color}`
-            };
-            let markerIconDiv = createDiv();
-            markerIconDiv.setAttribute("style", "width: 16px;");
-            markerIconDiv.innerHTML = toHtml(iconNode);
-            setting.controlEl.insertBefore(
-                markerIconDiv,
-                setting.controlEl.children[0]
-            );
+            }; */
+            let markerIconDiv = createDiv({
+                cls: "marker-icon-display",
+                attr: {
+                    style: `color: ${marker.color};`
+                }
+            });
+            markerIconDiv.appendChild(iconNode);
+            let name = setting.nameEl.createDiv("marker-type-display");
+            name.appendChild(markerIconDiv);
+            name.appendText(marker.type);
         });
     }
     createLatLongSetting(containerEl: HTMLElement) {
@@ -328,81 +401,93 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             if (!files.length) return;
             try {
                 const csv = await files[0].text(),
-                    markersToAdd: Map<string, MarkerData[]> = new Map();
+                    markersToAdd: Map<string, MarkerData[]> = new Map(),
+                    parsed = parseCSV<string[]>(csv);
 
-                for (let line of csv.split(/[\n\r]/).filter((l) => l)) {
-                    /*if (line == `Map,Type,Lat,Long,Link,Layer,ID`) continue; */
-                    let data = line.split(",");
+                if (parsed.data && parsed.data.length) {
+                    for (let i = 0; i < parsed.data.length; i++) {
+                        let data = parsed.data[i];
+                        if (!data || data.length < 6) continue;
+                        let [
+                            map,
+                            type,
+                            lat,
+                            long,
+                            link,
+                            layer,
+                            id
+                        ] = data.map((l) => l.replace(/"/g, ""));
+                        if (!map || !map.length || map === "undefined") {
+                            new Notice("Map not specified for line " + i + 1);
+                            continue;
+                        }
+                        if (
+                            !type ||
+                            !type.length ||
+                            type === "undefined" ||
+                            (type != "default" &&
+                                !this.data.markerIcons.find(
+                                    ({ type: t }) => t == type
+                                ))
+                        ) {
+                            type = "default";
+                        }
+                        if (!lat || !lat.length || isNaN(Number(lat))) {
+                            new Notice(
+                                "Could not parse latitude for line " + i + 1
+                            );
+                            continue;
+                        }
+                        if (!long || !long.length || isNaN(Number(long))) {
+                            new Notice(
+                                "Could not parse longitude for line " + i + 1
+                            );
+                            continue;
+                        }
 
-                    if (!data[0]) throw new Error("Map was not specified.");
-                    let [map, type, lat, long, link, layer, id] = data;
-                    if (!map || map === "undefined") {
-                        new Notice(
-                            "Map not specified for line " + csv.indexOf(line)
+                        if (!link || !link.length || link === "undefined")
+                            link = undefined;
+                        if (!id || !id.length || id === "undefined")
+                            id = uuidv4();
+
+                        if (!markersToAdd.has(map)) markersToAdd.set(map, []);
+                        const mapMap = markersToAdd.get(data[0]);
+                        mapMap.push({
+                            type: type,
+                            loc: [Number(lat), Number(long)],
+                            link: link,
+                            layer: layer,
+                            id: id
+                        });
+                        markersToAdd.set(data[0], mapMap);
+                    }
+
+                    for (let [path, markers] of [...markersToAdd]) {
+                        if (
+                            !this.data.mapMarkers.find(
+                                ({ path: p }) => p == path
+                            )
+                        ) {
+                            const map: MapMarkerData = {
+                                path: path,
+                                file: path.split(".md")[0] + ".md",
+                                markers: []
+                            };
+                            this.data.mapMarkers.push(map);
+                        }
+                        let map = this.data.mapMarkers.find(
+                            ({ path: p }) => p == path
                         );
-                        continue;
+                        for (let marker of markers) {
+                            map.markers = map.markers.filter(
+                                ({ id }) => id != marker.id
+                            );
+                            map.markers.push(marker);
+                        }
                     }
-                    if (
-                        !type ||
-                        type === "undefined" ||
-                        (type != "default" &&
-                            !this.data.markerIcons.find(
-                                ({ type: t }) => t == type
-                            ))
-                    ) {
-                        type = "default";
-                    }
-                    if (!lat || isNaN(Number(lat))) {
-                        new Notice(
-                            "Could not parse latitude for line " +
-                                csv.indexOf(line)
-                        );
-                        continue;
-                    }
-                    if (!long || isNaN(Number(long))) {
-                        new Notice(
-                            "Could not parse longitude for line " +
-                                csv.indexOf(line)
-                        );
-                        continue;
-                    }
-
-                    if (!link || link === "undefined") link = undefined;
-                    if (!id || id === "undefined") id = uuidv4();
-
-                    if (!markersToAdd.has(map)) markersToAdd.set(map, []);
-                    const mapMap = markersToAdd.get(data[0]);
-                    mapMap.push({
-                        type: type,
-                        loc: [Number(lat), Number(long)],
-                        link: link,
-                        layer: layer,
-                        id: id
-                    });
-                    markersToAdd.set(data[0], mapMap);
+                    await this.plugin.saveSettings();
+                    new Notice("Marker file successfully imported.");
                 }
-                for (let [path, markers] of [...markersToAdd]) {
-                    let map = this.data.mapMarkers.find(
-                        ({ path: p }) => p == path
-                    );
-                    if (!map) {
-                        map = {
-                            path: path,
-                            file: path.split(".md")[0] + ".md",
-                            markers: []
-                        };
-                        this.data.mapMarkers.push(map);
-                    }
-
-                    for (let marker of markers) {
-                        map.markers = map.markers.filter(
-                            ({ id }) => id != marker.id
-                        );
-                        map.markers.push(marker);
-                    }
-                }
-                await this.plugin.saveSettings();
-                new Notice("Marker file successfully imported.");
             } catch (e) {
                 new Notice(
                     "There was an error while importing " + files[0].name
@@ -422,21 +507,19 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     let csv = [];
                     for (let { path, markers } of this.data.mapMarkers) {
                         for (let { type, loc, link, layer, id } of markers) {
-                            csv.push(
-                                [
-                                    path,
-                                    type,
-                                    loc[0],
-                                    loc[1],
-                                    link,
-                                    layer,
-                                    id
-                                ].join(",")
-                            );
+                            csv.push([
+                                path,
+                                type,
+                                loc[0],
+                                loc[1],
+                                link,
+                                layer,
+                                id
+                            ]);
                         }
                     }
 
-                    let csvFile = new Blob([csv.join("\n")], {
+                    let csvFile = new Blob([unparseCSV(csv)], {
                         type: "text/csv"
                     });
                     let downloadLink = document.createElement("a");
@@ -448,122 +531,6 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     document.body.removeChild(downloadLink);
                 });
             });
-    }
-    createColorPicker(
-        setting: Setting,
-        marker: Marker,
-        insertAfter?: HTMLInputElement
-    ) {
-        if (setting.controlEl.querySelector(".color-picker")) {
-            setting.controlEl.removeChild(
-                setting.controlEl.querySelector(".color-picker")
-            );
-        }
-
-        let colorContainer = document.createElement("div");
-        /* setting.controlEl.createDiv({
-            cls: "marker-icon-display color-picker",
-        }); */
-
-        colorContainer.addClasses(["marker-icon-display", "color-picker"]);
-
-        if (insertAfter) {
-            setting.controlEl.insertBefore(
-                colorContainer,
-                insertAfter.nextSibling
-            );
-        } else {
-            setting.controlEl.appendChild(colorContainer);
-        }
-
-        let buttonEl: HTMLButtonElement;
-
-        colorContainer.appendChild(
-            colorContainer.createEl(
-                "button",
-                {
-                    cls: "button"
-                },
-                (el) => {
-                    buttonEl = el;
-                    if (
-                        marker.type == "default" ||
-                        !this.data.defaultMarker.iconName
-                    ) {
-                        el.appendChild(
-                            icon(getIcon(marker.iconName), {
-                                styles: {
-                                    color: marker.color
-                                        ? marker.color
-                                        : this.data.defaultMarker.color
-                                }
-                            }).node[0]
-                        );
-                    } else {
-                        let i = icon(getIcon(marker.iconName), {
-                            transform: { size: 6, x: 0, y: -2 },
-                            mask: getIcon(this.data.defaultMarker.iconName),
-                            styles: {
-                                color: marker.color
-                                    ? marker.color
-                                    : this.data.defaultMarker.color
-                            }
-                        }).abstract[0];
-                        i.attributes = {
-                            ...i.attributes,
-                            style: `color: ${
-                                marker.color
-                                    ? marker.color
-                                    : this.data.defaultMarker.color
-                            }`
-                        };
-
-                        let html = toHtml(i);
-                        let temp = document.createElement("div");
-                        temp.innerHTML = html;
-                        el.appendChild(temp.children[0]);
-                    }
-                    el.addClass(`${marker.type}-map-marker`);
-                    if (this.data.defaultMarker.iconName && !marker.color)
-                        el.addClass("default-map-marker");
-                }
-            )
-        );
-
-        colorContainer.appendChild(
-            colorContainer.createEl(
-                "input",
-                {
-                    attr: { type: "color" }
-                },
-                (el) => {
-                    el.oninput = (evt) => {
-                        let iconNodes = this.containerEl.querySelectorAll(
-                            `.${marker.type}-map-marker > svg`
-                        );
-
-                        if (marker.type !== "default")
-                            buttonEl.removeClass("default-map-marker");
-
-                        iconNodes.forEach((node) =>
-                            node.setAttribute(
-                                "style",
-                                `color: ${
-                                    (evt.target as HTMLInputElement).value
-                                }`
-                            )
-                        );
-                    };
-
-                    el.onchange = async (evt) => {
-                        marker.color = (evt.target as HTMLInputElement).value;
-
-                        await this.plugin.saveSettings();
-                        this.display();
-                    };
-                }
-            )
-        );
     }
 }
 

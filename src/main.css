@@ -22,14 +22,28 @@
     margin-right: auto !important;
 }
 
-.setting-item-control.marker-icon-display,
-.setting-item-control > .marker-icon-display {
-    margin-left: 0.5rem;
+.additional-markers-container > .additional-markers {
+    margin: 6px 12px;
+}
+.additional-markers-container > .additional-markers > .setting-item {
+    border-top: 0;
+    padding-top: 9px;
+}
+.additional-markers-container
+    > .additional-markers
+    > .setting-item
+    > .setting-item-control
+    > *:first-child {
+    margin: 0 6px;
+}
+
+.setting-item-name > .marker-type-display {
+    display: flex;
+    justify-content: flex-start;
+}
+.marker-type-display > .marker-icon-display {
     margin-right: 12px;
-    position: relative;
-    /* 	width: 12px;
-	display: flex;
-	justify-content: center; */
+    font-size: 24px;
 }
 
 .marker-creation-modal {

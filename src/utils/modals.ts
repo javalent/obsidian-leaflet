@@ -13,7 +13,7 @@ import { createPopper, Instance as PopperInstance } from "@popperjs/core";
 
 import {
     findIconDefinition,
-    IconLookup,
+    IconName,
     icon,
     toHtml,
     AbstractElement,
@@ -69,7 +69,6 @@ class Suggester<T> {
         });
     }
     chooseSuggestion(evt: KeyboardEvent) {
-
         if (!this.items || !this.items.length) return;
         const currentValue = this.items[this.selectedItem];
         if (currentValue) {
@@ -289,7 +288,7 @@ export class CreateMarkerModal extends Modal {
                     ) {
                         setValidationError(
                             typeTextInput,
-                            "Marker type already exists."
+                            "Marker name already exists."
                         );
                         return;
                     }
@@ -321,8 +320,9 @@ export class CreateMarkerModal extends Modal {
                     .onChange(
                         async (new_value): Promise<void> => {
                             let icon = findIconDefinition({
-                                iconName: new_value
-                            } as IconLookup);
+                                iconName: new_value as IconName,
+                                prefix: "fas"
+                            });
 
                             if (!icon) {
                                 setValidationError(
@@ -525,9 +525,12 @@ export class CreateMarkerModal extends Modal {
         let colorInput = new Setting(createNewMarker)
             .setName("Icon Color")
             .setDesc("Override default icon color.");
-        let colorInputNode = document.createElement("input");
-        colorInputNode.setAttribute("type", "color");
-        colorInputNode.setAttribute("value", this.tempMarker.color);
+        let colorInputNode = colorInput.controlEl.createEl("input", {
+            attr: {
+                type: "color",
+                value: this.tempMarker.color
+            }
+        });
         colorInputNode.oninput = (evt) => {
             this.tempMarker.color = (evt.target as HTMLInputElement).value;
 
@@ -541,7 +544,6 @@ export class CreateMarkerModal extends Modal {
 
             this.display();
         };
-        colorInput.controlEl.appendChild(colorInputNode);
 
         let add = new Setting(createNewMarker);
 
@@ -572,8 +574,9 @@ export class CreateMarkerModal extends Modal {
                     }
                     if (
                         !findIconDefinition({
-                            iconName: iconTextInput.inputEl.value
-                        } as IconLookup)
+                            iconName: iconTextInput.inputEl.value as IconName,
+                            prefix: "fas"
+                        })
                     ) {
                         setValidationError(iconTextInput, "Invalid icon name.");
                         error = true;
