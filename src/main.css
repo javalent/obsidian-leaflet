@@ -44,6 +44,9 @@
 .marker-type-display > .marker-icon-display {
     margin-right: 12px;
     font-size: 24px;
+    width: 24px;
+    display: flex;
+    justify-content: center;
 }
 
 .marker-creation-modal {
@@ -112,6 +115,10 @@ input.is-invalid {
     margin-top: 0.25rem;
     font-size: 0.875em;
     color: #dc3545;
+}
+
+.leaflet-bar a {
+    font-style: unset;
 }
 
 /* div icon override */

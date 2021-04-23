@@ -8,14 +8,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { parse as parseCSV, unparse as unparseCSV } from "papaparse";
 
-import {
-    findIconDefinition,
-    IconName,
-    icon,
-    toHtml,
-    AbstractElement,
-    getIcon
-} from "./utils/icons";
+import { findIconDefinition, IconName, icon, getIcon } from "./utils/icons";
 
 import {
     MapMarkerData,

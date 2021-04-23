@@ -7,7 +7,11 @@ import {
     FuzzySuggestModal,
     FuzzyMatch,
     Scope,
-    SuggestModal
+    SuggestModal,
+    TFile,
+    BlockCache,
+    HeadingCache,
+    CachedMetadata
 } from "obsidian";
 import { createPopper, Instance as PopperInstance } from "@popperjs/core";
 
@@ -131,7 +135,7 @@ class Suggester<T> {
     }
 }
 
-export class SuggestionModal<T> extends FuzzySuggestModal<T> {
+export abstract class SuggestionModal<T> extends FuzzySuggestModal<T> {
     items: T[] = [];
     suggestions: HTMLDivElement[];
     popper: PopperInstance;
@@ -171,15 +175,10 @@ export class SuggestionModal<T> extends FuzzySuggestModal<T> {
     onInputChanged(): void {
         const inputStr = this.modifyInput(this.inputEl.value);
         const suggestions = this.getSuggestions(inputStr);
-
         if (suggestions.length > 0) {
             this.suggester.setSuggestions(suggestions.slice(0, this.limit));
         } else {
-            this.empty();
-            this.renderSuggestion(
-                null,
-                this.contentEl.createDiv("suggestion-item")
-            );
+            this.onNoSuggestion();
         }
         this.open();
     }
@@ -187,7 +186,13 @@ export class SuggestionModal<T> extends FuzzySuggestModal<T> {
     modifyInput(input: string): string {
         return input;
     }
-    onNoSuggestion() {}
+    onNoSuggestion() {
+        this.empty();
+        this.renderSuggestion(
+            null,
+            this.contentEl.createDiv("suggestion-item")
+        );
+    }
     open(): void {
         // TODO: Figure out a better way to do this. Idea from Periodic Notes plugin
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -224,13 +229,6 @@ export class SuggestionModal<T> extends FuzzySuggestModal<T> {
         }
         this.suggestEl.detach();
     }
-    getItemText(arg: T): string {
-        return "";
-    }
-    getItems(): T[] {
-        return this.items;
-    }
-    onChooseItem(item: T, evt: MouseEvent | KeyboardEvent): void {}
     createPrompt(prompts: HTMLSpanElement[]) {
         if (!this.promptEl)
             this.promptEl = this.suggestEl.createDiv("prompt-instructions");
@@ -239,8 +237,180 @@ export class SuggestionModal<T> extends FuzzySuggestModal<T> {
             prompt.appendChild(p);
         }
     }
-    setSuggestions(items: T[]) {
-        this.items = items;
+    abstract onChooseItem(item: T, evt: MouseEvent | KeyboardEvent): void;
+    abstract getItemText(arg: T): string;
+    abstract getItems(): T[];
+}
+
+export class PathSuggestionModal extends SuggestionModal<
+    TFile | BlockCache | HeadingCache
+> {
+    file: TFile;
+    files: TFile[];
+    text: TextComponent;
+    cache: CachedMetadata;
+    constructor(app: App, input: TextComponent, items: TFile[]) {
+        super(app, input.inputEl, items);
+        this.files = [...items];
+        this.text = input;
+        this.getFile();
+
+        this.createPrompts();
+
+        this.inputEl.addEventListener("input", this.getFile.bind(this));
+    }
+    createPrompts() {
+        this.createPrompt([
+            createSpan({
+                cls: "prompt-instruction-command",
+                text: "Type #"
+            }),
+            createSpan({ text: "to link heading" })
+        ]);
+        this.createPrompt([
+            createSpan({
+                cls: "prompt-instruction-command",
+                text: "Type ^"
+            }),
+            createSpan({ text: "to link blocks" })
+        ]);
+        this.createPrompt([
+            createSpan({
+                cls: "prompt-instruction-command",
+                text: "Note: "
+            }),
+            createSpan({
+                text: "Blocks must have been created already"
+            })
+        ]);
+    }
+    getFile() {
+        const v = this.inputEl.value,
+            file = this.app.metadataCache.getFirstLinkpathDest(
+                v.split(/[\^#]/).shift() || "",
+                ""
+            );
+        if (file == this.file) return;
+        this.file = file;
+        if (this.file)
+            this.cache = this.app.metadataCache.getFileCache(this.file);
+        this.onInputChanged();
+    }
+    getItemText(item: TFile | HeadingCache | BlockCache) {
+        if (item instanceof TFile) return item.path;
+        if (Object.prototype.hasOwnProperty.call(item, "heading")) {
+            return (<HeadingCache>item).heading;
+        }
+        if (Object.prototype.hasOwnProperty.call(item, "id")) {
+            return (<BlockCache>item).id;
+        }
+    }
+    onChooseItem(item: TFile | HeadingCache | BlockCache) {
+        if (item instanceof TFile) {
+            this.text.setValue(item.basename);
+            this.file = item;
+            this.cache = this.app.metadataCache.getFileCache(this.file);
+        } else if (Object.prototype.hasOwnProperty.call(item, "heading")) {
+            this.text.setValue(
+                this.file.basename + "#" + (<HeadingCache>item).heading
+            );
+        } else if (Object.prototype.hasOwnProperty.call(item, "id")) {
+            this.text.setValue(
+                this.file.basename + "^" + (<BlockCache>item).id
+            );
+        }
+    }
+    selectSuggestion({ item }: FuzzyMatch<TFile | BlockCache | HeadingCache>) {
+        let link: string;
+        if (item instanceof TFile) {
+            link = item.basename;
+        } else if (Object.prototype.hasOwnProperty.call(item, "heading")) {
+            link = this.file.basename + "#" + (<HeadingCache>item).heading;
+        } else if (Object.prototype.hasOwnProperty.call(item, "id")) {
+            link = this.file.basename + "^" + (<BlockCache>item).id;
+        }
+
+        this.text.setValue(link);
+        this.onClose();
+
+        this.close();
+    }
+    renderSuggestion(
+        result: FuzzyMatch<TFile | BlockCache | HeadingCache>,
+        el: HTMLElement
+    ) {
+        let { item, match: matches } = result || {};
+        let content = el.createDiv({
+            cls: "suggestion-content"
+        });
+        if (!item) {
+            content.setText(this.emptyStateText);
+            content.parentElement.addClass("is-selected");
+            return;
+        }
+
+        if (item instanceof TFile) {
+            let pathLength = item.path.length - item.name.length;
+            const matchElements = matches.matches.map((m) => {
+                return createSpan("suggestion-highlight");
+            });
+            for (
+                let i = pathLength;
+                i < item.path.length - item.extension.length - 1;
+                i++
+            ) {
+                let match = matches.matches.find((m) => m[0] === i);
+                if (match) {
+                    let element = matchElements[matches.matches.indexOf(match)];
+                    content.appendChild(element);
+                    element.appendText(item.path.substring(match[0], match[1]));
+
+                    i += match[1] - match[0] - 1;
+                    continue;
+                }
+
+                content.appendText(item.path[i]);
+            }
+            el.createDiv({
+                cls: "suggestion-note",
+                text: item.path
+            });
+        } else if (Object.prototype.hasOwnProperty.call(item, "heading")) {
+            content.setText((<HeadingCache>item).heading);
+            content.prepend(
+                createSpan({
+                    cls: "suggestion-flair",
+                    text: `H${(<HeadingCache>item).level}`
+                })
+            );
+        } else if (Object.prototype.hasOwnProperty.call(item, "id")) {
+            content.setText((<BlockCache>item).id);
+        }
+    }
+    get headings() {
+        if (!this.file) return [];
+        if (!this.cache) {
+            this.cache = this.app.metadataCache.getFileCache(this.file);
+        }
+        return this.cache.headings || [];
+    }
+    get blocks() {
+        if (!this.file) return [];
+        if (!this.cache) {
+            this.cache = this.app.metadataCache.getFileCache(this.file);
+        }
+        return Object.values(this.cache.blocks || {}) || [];
+    }
+    getItems() {
+        const v = this.inputEl.value;
+        if (/#/.test(v)) {
+            this.modifyInput = (i) => i.split(/#/).pop();
+            return this.headings;
+        } else if (/\^/.test(v)) {
+            this.modifyInput = (i) => i.split(/\^/).pop();
+            return this.blocks;
+        }
+        return this.files;
     }
 }
 
@@ -655,6 +825,10 @@ export class CreateMarkerModal extends Modal {
         }
     }
 }
+
+/* export class BulkEditMarkerModal extends Modal {
+    constructor(app: App) {}
+} */
 
 export const setValidationError = function (
     textInput: TextComponent,

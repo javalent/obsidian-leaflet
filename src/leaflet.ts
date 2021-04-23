@@ -1,4 +1,3 @@
-//module imports
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -15,6 +14,7 @@ import { LayerGroup, LeafletMarker, MarkerData, MarkerIcon } from "./@types";
  * Used to construct a new leaflet map.
  *
  */
+
 export default class LeafletMap extends Events {
     parentEl: HTMLElement;
     id: string;
@@ -63,9 +63,7 @@ export default class LeafletMap extends Events {
         };
         this.unit = unit;
         this.scale = scale;
-        this.contentEl = el.appendChild(
-            document.createElement("div") as HTMLElement
-        );
+        this.contentEl = el.createDiv();
     }
 
     loadData(data: any): Promise<void> {
@@ -270,6 +268,27 @@ export default class LeafletMap extends Events {
                 click = evt.latlng;
             }
         });
+
+        const _this = this;
+        const editMarkers = L.Control.extend({
+            onAdd: function (map: L.Map) {
+                const button = L.DomUtil.create(
+                    "button",
+                    "leaflet-bar leaflet-control leaflet-control-load"
+                );
+                button.innerText = "Edit";
+                button.id = "button";
+
+                L.DomEvent.on(button, "click", () => {
+                    _this.trigger("bulk-edit-markers");
+                });
+
+                return button;
+            }
+        });
+
+        /* new editMarkers({ position: "topleft" }).addTo(this.map); */
+
         this.rendered = true;
         this.handleResize();
     }

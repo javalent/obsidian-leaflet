@@ -8,9 +8,7 @@ import {
     TFile,
     MarkdownRenderChild,
     Menu,
-    MarkdownPostProcessorContext,
-    BlockCache,
-    HeadingCache
+    MarkdownPostProcessorContext
 } from "obsidian";
 import { LeafletMouseEvent, Point } from "leaflet";
 import { getType as lookupMimeType } from "mime/lite";
@@ -30,7 +28,7 @@ import {
     ObsidianAppData,
     Marker
 } from "./@types";
-import { SuggestionModal } from "./utils/modals";
+import { PathSuggestionModal } from "./utils/modals";
 
 export default class ObsidianLeaflet extends Plugin {
     AppData: ObsidianAppData;
@@ -505,6 +503,57 @@ export default class ObsidianLeaflet extends Plugin {
         });
 
         this.registerEvent(
+            map.on("bulk-edit-markers", () => {
+                let bulkModal = new Modal(this.app);
+
+                bulkModal.titleEl.setText("Bulk Edit Markers");
+
+                const markersEl = bulkModal.contentEl.createDiv(
+                    "bulk-edit-markers"
+                );
+
+                for (let marker of map.markers) {
+                    let markerSetting = new Setting(
+                        markersEl.createDiv("bulk-edit-marker-instance")
+                    );
+                    markerSetting
+                        .addDropdown((d) => {
+                            d.setValue(marker.marker.type);
+                        })
+                        .addText((t) => {
+                            t.setValue(`${marker.loc.lat}`);
+                        })
+                        .addText((t) => {
+                            t.setValue(`${marker.loc.lng}`);
+                        })
+                        .addText((t) => {
+                            t.setValue(`${marker.link}`);
+                        })
+                        .addExtraButton((b) =>
+                            b.setIcon("trash").onClick(() => {})
+                        );
+                    /* markerEl.createSpan({
+                        text:
+                            marker.marker.type == "default"
+                                ? "Default"
+                                : marker.marker.type
+                    });
+                    markerEl.createSpan({
+                        text: `${marker.loc.lat}`
+                    });
+                    markerEl.createSpan({
+                        text: `${marker.loc.lng}`
+                    });
+                    markerEl.createSpan({
+                        text: `${marker.link}`
+                    }); */
+                }
+
+                bulkModal.open();
+            })
+        );
+
+        this.registerEvent(
             map.on("marker-added", async (marker: LeafletMarker) => {
                 marker.leafletInstance.closeTooltip();
                 marker.leafletInstance.unbindTooltip();
@@ -517,6 +566,7 @@ export default class ObsidianLeaflet extends Plugin {
                     });
             })
         );
+
         this.registerEvent(
             map.on("marker-dragging", (marker: LeafletMarker) => {
                 this.maps
@@ -534,6 +584,7 @@ export default class ObsidianLeaflet extends Plugin {
                     });
             })
         );
+
         this.registerEvent(
             map.on("marker-data-updated", async (marker: LeafletMarker) => {
                 marker.leafletInstance.closeTooltip();
@@ -558,22 +609,10 @@ export default class ObsidianLeaflet extends Plugin {
 
         this.registerEvent(
             map.on("marker-click", (link: string, newWindow: boolean) => {
-                /* if (!/^.*\.(md)$/.test(link)) link += ".md"; */
-
-                let file = this.app.metadataCache.getFirstLinkpathDest(
-                    link.split(/[\^#]/).shift(),
-                    ""
-                );
-
-                let name = file?.basename || link.split(/(?=[\^#])/).shift();
-
-                if (/(?=[\^#])/.test(link)) {
-                    name += link.split(/(?=[\^#])/).pop();
-                }
                 this.app.workspace
                     .openLinkText(
-                        name,
-                        file?.path || link.split(/(?=[\^#])/).shift(),
+                        link.replace("^", "#^"),
+                        this.app.workspace.getActiveFile()?.path,
                         newWindow
                     )
                     .then(() => {
@@ -584,343 +623,9 @@ export default class ObsidianLeaflet extends Plugin {
         );
 
         this.registerEvent(
-            map.on("marker-context", async (marker: LeafletMarker) => {
-                let markerSettingsModal = new Modal(this.app);
-                const otherMaps = this.maps.filter(
-                    (m) => m.path == map.path && m.view != view
-                );
-                const markersToUpdate = [
-                    marker,
-                    ...otherMaps.map((map) =>
-                        map.map.markers.find((m) => m.id == marker.id)
-                    )
-                ];
-
-                let path = new Setting(markerSettingsModal.contentEl)
-                    .setName("Note to Open")
-                    .setDesc("Path of note to open")
-                    .addText((text) => {
-                        let files = this.app.vault.getFiles();
-                        let file: TFile,
-                            headings: HeadingCache[],
-                            blocks: Record<string, BlockCache>;
-
-                        let current: "files" | "headings" | "blocks" = "files";
-
-                        const chooseSuggestions = (v: string) => {
-                            if (/#/.test(v)) {
-                                if (current === "headings") return;
-                                current = "headings";
-                                file = this.app.metadataCache.getFirstLinkpathDest(
-                                    v.split("#").shift(),
-                                    ""
-                                );
-
-                                ({
-                                    headings
-                                } = this.app.metadataCache.getFileCache(
-                                    file
-                                ) || { headings: [] });
-
-                                if (!headings || !headings.length)
-                                    headings = [];
-
-                                modal.modifyInput = (input) =>
-                                    input.split("#").pop();
-                                modal.setSuggestions(headings);
-                            } else if (/\^/.test(v)) {
-                                if (current === "blocks") return;
-                                current = "blocks";
-                                file = this.app.metadataCache.getFirstLinkpathDest(
-                                    v.split("^").shift(),
-                                    ""
-                                );
-                                ({
-                                    blocks
-                                } = this.app.metadataCache.getFileCache(
-                                    file
-                                ) || { blocks: {} });
-                                let blockValues = Object.values(blocks);
-                                modal.modifyInput = (input) =>
-                                    input.split("^").pop();
-                                modal.setSuggestions(blockValues);
-                            } else if (current != "files") {
-                                current = "files";
-                                modal.modifyInput = (i) => i;
-                                modal.setSuggestions(files);
-                            }
-                        };
-
-                        text.setPlaceholder("Path").setValue(marker.link);
-                        let modal = new SuggestionModal<
-                            TFile | BlockCache | HeadingCache
-                        >(this.app, text.inputEl, [...files]);
-
-                        text.inputEl.onblur = async () => {
-                            markersToUpdate.forEach((marker) => {
-                                marker.link = text.inputEl.value;
-                            });
-                            await this.saveSettings();
-                        };
-
-                        chooseSuggestions(text.inputEl.value);
-
-                        modal.createPrompt([
-                            createSpan({
-                                cls: "prompt-instruction-command",
-                                text: "Type #"
-                            }),
-                            createSpan({ text: "to link heading" })
-                        ]);
-                        modal.createPrompt([
-                            createSpan({
-                                cls: "prompt-instruction-command",
-                                text: "Type ^"
-                            }),
-                            createSpan({ text: "to link blocks" })
-                        ]);
-                        modal.createPrompt([
-                            createSpan({
-                                cls: "prompt-instruction-command",
-                                text: "Note: "
-                            }),
-                            createSpan({
-                                text: "Blocks must have been created already"
-                            })
-                        ]);
-
-                        text.onChange((v) => {
-                            chooseSuggestions(v);
-                        });
-
-                        modal.getItemText = (item) => {
-                            if (item instanceof TFile) return item.path;
-                            if (
-                                Object.prototype.hasOwnProperty.call(
-                                    item,
-                                    "heading"
-                                )
-                            ) {
-                                return (<HeadingCache>item).heading;
-                            }
-                            if (
-                                Object.prototype.hasOwnProperty.call(item, "id")
-                            ) {
-                                return (<BlockCache>item).id;
-                            }
-                        };
-
-                        modal.onChooseItem = (item) => {
-                            if (item instanceof TFile) {
-                                text.setValue(item.basename);
-                                file = item;
-                                ({
-                                    headings,
-                                    blocks
-                                } = this.app.metadataCache.getFileCache(file));
-                            } else if (
-                                Object.prototype.hasOwnProperty.call(
-                                    item,
-                                    "heading"
-                                )
-                            ) {
-                                text.setValue(
-                                    file.basename +
-                                        "#" +
-                                        (<HeadingCache>item).heading
-                                );
-                            } else if (
-                                Object.prototype.hasOwnProperty.call(item, "id")
-                            ) {
-                                text.setValue(
-                                    file.basename + "^" + (<BlockCache>item).id
-                                );
-                            }
-                        };
-
-                        modal.renderSuggestion = (result, el) => {
-                            let { item, match: matches } = result || {};
-                            let content = el.createDiv({
-                                cls: "suggestion-content"
-                            });
-                            if (!item) {
-                                content.setText(modal.emptyStateText);
-                                content.parentElement.addClass("is-selected");
-                                return;
-                            }
-
-                            if (item instanceof TFile) {
-                                let pathLength =
-                                    item.path.length - item.name.length;
-                                const matchElements = matches.matches.map(
-                                    (m) => {
-                                        return createSpan(
-                                            "suggestion-highlight"
-                                        );
-                                    }
-                                );
-                                for (
-                                    let i = pathLength;
-                                    i <
-                                    item.path.length -
-                                        item.extension.length -
-                                        1;
-                                    i++
-                                ) {
-                                    let match = matches.matches.find(
-                                        (m) => m[0] === i
-                                    );
-                                    if (match) {
-                                        let element =
-                                            matchElements[
-                                                matches.matches.indexOf(match)
-                                            ];
-                                        content.appendChild(element);
-                                        element.appendText(
-                                            item.path.substring(
-                                                match[0],
-                                                match[1]
-                                            )
-                                        );
-
-                                        i += match[1] - match[0] - 1;
-                                        continue;
-                                    }
-
-                                    content.appendText(item.path[i]);
-                                }
-                                el.createDiv({
-                                    cls: "suggestion-note",
-                                    text: item.path
-                                });
-                            } else if (
-                                Object.prototype.hasOwnProperty.call(
-                                    item,
-                                    "heading"
-                                )
-                            ) {
-                                content.setText((<HeadingCache>item).heading);
-                                content.prepend(
-                                    createSpan({
-                                        cls: "suggestion-flair",
-                                        text: `H${(<HeadingCache>item).level}`
-                                    })
-                                );
-                            } else if (
-                                Object.prototype.hasOwnProperty.call(item, "id")
-                            ) {
-                                content.setText((<BlockCache>item).id);
-                            }
-                        };
-
-                        modal.selectSuggestion = async ({ item }) => {
-                            let link: string;
-                            if (item instanceof TFile) {
-                                link = item.basename;
-                            } else if (
-                                Object.prototype.hasOwnProperty.call(
-                                    item,
-                                    "heading"
-                                )
-                            ) {
-                                link =
-                                    file.basename +
-                                    "#" +
-                                    (<HeadingCache>item).heading;
-                            } else if (
-                                Object.prototype.hasOwnProperty.call(item, "id")
-                            ) {
-                                link =
-                                    file.basename + "^" + (<BlockCache>item).id;
-                            }
-                            markersToUpdate.forEach((marker) => {
-                                marker.link = link;
-                            });
-                            text.setValue(link);
-                            modal.close();
-                            await this.saveSettings();
-                        };
-                    });
-
-                new Setting(markerSettingsModal.contentEl)
-                    .setName("Marker Type")
-                    .addDropdown((drop) => {
-                        drop.addOption("default", "Base Marker");
-                        this.AppData.markerIcons.forEach((marker) => {
-                            drop.addOption(marker.type, marker.type);
-                        });
-                        drop.setValue(marker.marker.type).onChange(
-                            async (value) => {
-                                let newMarker =
-                                    value == "default"
-                                        ? this.AppData.defaultMarker
-                                        : this.AppData.markerIcons.find(
-                                              (m) => m.type == value
-                                          );
-                                let html: string,
-                                    iconNode: AbstractElement = icon(
-                                        getIcon(newMarker.iconName),
-                                        {
-                                            transform: { size: 6, x: 0, y: -2 },
-                                            mask: getIcon(
-                                                this.AppData.defaultMarker
-                                                    .iconName
-                                            ),
-                                            classes: ["full-width-height"]
-                                        }
-                                    ).abstract[0];
-
-                                iconNode.attributes = {
-                                    ...iconNode.attributes,
-                                    style: `color: ${
-                                        newMarker.color
-                                            ? newMarker.color
-                                            : this.AppData.defaultMarker.color
-                                    }`
-                                };
-
-                                html = toHtml(iconNode);
-                                markersToUpdate.forEach((marker) => {
-                                    marker.marker = {
-                                        type: newMarker.type,
-                                        html: html
-                                    };
-                                });
-                                await this.saveSettings();
-                            }
-                        );
-                    });
-
-                new Setting(markerSettingsModal.contentEl).addButton((b) => {
-                    b.setIcon("trash")
-                        .setWarning()
-                        .setTooltip("Delete Marker")
-                        .onClick(async () => {
-                            map.group.group.removeLayer(marker.leafletInstance);
-                            marker.leafletInstance.remove();
-                            map.markers = map.markers.filter(
-                                (m) => m.id != marker.id
-                            );
-                            otherMaps.forEach((oM) => {
-                                let otherMarker = oM.map.markers.find(
-                                    (m) => m.id == marker.id
-                                );
-                                oM.map.group.group.removeLayer(
-                                    otherMarker.leafletInstance
-                                );
-                                otherMarker.leafletInstance.remove();
-                                oM.map.markers = oM.map.markers.filter(
-                                    (m) => m.id != marker.id
-                                );
-                            });
-                            markerSettingsModal.close();
-                            await this.saveSettings();
-                        });
-                    return b;
-                });
-
-                markerSettingsModal.open();
-            })
+            map.on("marker-context", (marker) =>
+                this.handleMarkerContext(map, view, marker)
+            )
         );
 
         this.registerEvent(
@@ -929,19 +634,12 @@ export default class ObsidianLeaflet extends Plugin {
                 async (evt: L.LeafletMouseEvent, marker: LeafletMarker) => {
                     if (this.AppData.notePreview) {
                         marker.leafletInstance.unbindTooltip();
-                        let link = marker.link;
-
-                        let file = this.app.metadataCache.getFirstLinkpathDest(
-                            link.split(/[\^#]/).shift(),
-                            ""
-                        );
-
                         this.app.workspace.trigger(
                             "link-hover",
-                            this,
-                            marker.leafletInstance.getElement(),
-                            link,
-                            file?.path || link
+                            this, //not sure
+                            marker.leafletInstance.getElement(), //targetEl
+                            marker.link.replace("^", "#^"), //linkText
+                            this.app.workspace.getActiveFile()?.path //source
                         );
                     } else {
                         let el = evt.originalEvent.target as SVGElement;
@@ -958,6 +656,7 @@ export default class ObsidianLeaflet extends Plugin {
                 }
             )
         );
+
         this.registerEvent(
             map.on("display-distance", async (distance: string) => {
                 new Notice(distance);
@@ -981,9 +680,10 @@ export default class ObsidianLeaflet extends Plugin {
                             marker.type == "default" ? "Default" : marker.type
                         );
                         item.setActive(true);
-                        item.onClick(() =>
-                            map.createMarker(marker, evt.latlng)
-                        );
+                        item.onClick(async () => {
+                            map.createMarker(marker, evt.latlng);
+                            await this.saveSettings();
+                        });
                     });
                 });
 
@@ -993,5 +693,123 @@ export default class ObsidianLeaflet extends Plugin {
                 } as Point);
             })
         );
+    }
+    handleMarkerContext(
+        map: LeafletMap,
+        view: MarkdownView,
+        marker: LeafletMarker
+    ) {
+        let markerSettingsModal = new Modal(this.app);
+        const otherMaps = this.maps.filter(
+            (m) => m.path == map.path && m.view != view
+        );
+        const markersToUpdate = [
+            marker,
+            ...otherMaps.map((map) =>
+                map.map.markers.find((m) => m.id == marker.id)
+            )
+        ];
+
+        let path = new Setting(markerSettingsModal.contentEl)
+            .setName("Note to Open")
+            .setDesc("Path of note to open")
+            .addText((text) => {
+                let files = this.app.vault.getFiles();
+
+                /* const chooseSuggestions = (v: string) => {
+                        
+                    }; */
+
+                text.setPlaceholder("Path").setValue(marker.link);
+                let modal = new PathSuggestionModal(this.app, text, [...files]);
+
+                modal.onClose = async () => {
+                    markersToUpdate.forEach((marker) => {
+                        marker.link = text.inputEl.value;
+                    });
+                    await this.saveSettings();
+                };
+
+                text.inputEl.onblur = async () => {
+                    markersToUpdate.forEach((marker) => {
+                        marker.link = text.inputEl.value;
+                    });
+                    await this.saveSettings();
+                };
+            });
+
+        new Setting(markerSettingsModal.contentEl)
+            .setName("Marker Type")
+            .addDropdown((drop) => {
+                drop.addOption("default", "Base Marker");
+                this.AppData.markerIcons.forEach((marker) => {
+                    drop.addOption(marker.type, marker.type);
+                });
+                drop.setValue(marker.marker.type).onChange(async (value) => {
+                    let newMarker =
+                        value == "default"
+                            ? this.AppData.defaultMarker
+                            : this.AppData.markerIcons.find(
+                                  (m) => m.type == value
+                              );
+                    let html: string,
+                        iconNode: AbstractElement = icon(
+                            getIcon(newMarker.iconName),
+                            {
+                                transform: { size: 6, x: 0, y: -2 },
+                                mask: getIcon(
+                                    this.AppData.defaultMarker.iconName
+                                ),
+                                classes: ["full-width-height"]
+                            }
+                        ).abstract[0];
+
+                    iconNode.attributes = {
+                        ...iconNode.attributes,
+                        style: `color: ${
+                            newMarker.color
+                                ? newMarker.color
+                                : this.AppData.defaultMarker.color
+                        }`
+                    };
+
+                    html = toHtml(iconNode);
+                    markersToUpdate.forEach((marker) => {
+                        marker.marker = {
+                            type: newMarker.type,
+                            html: html
+                        };
+                    });
+                    await this.saveSettings();
+                });
+            });
+
+        new Setting(markerSettingsModal.contentEl).addButton((b) => {
+            b.setIcon("trash")
+                .setWarning()
+                .setTooltip("Delete Marker")
+                .onClick(async () => {
+                    map.group.group.removeLayer(marker.leafletInstance);
+                    marker.leafletInstance.remove();
+                    map.markers = map.markers.filter((m) => m.id != marker.id);
+                    otherMaps.forEach((oM) => {
+                        let otherMarker = oM.map.markers.find(
+                            (m) => m.id == marker.id
+                        );
+                        oM.map.group.group.removeLayer(
+                            otherMarker.leafletInstance
+                        );
+                        otherMarker.leafletInstance.remove();
+                        oM.map.markers = oM.map.markers.filter(
+                            (m) => m.id != marker.id
+                        );
+                    });
+                    markerSettingsModal.close();
+                    await this.saveSettings();
+                });
+            return b;
+        });
+
+        markerSettingsModal.open();
     }
 }
