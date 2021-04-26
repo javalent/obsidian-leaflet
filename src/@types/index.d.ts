@@ -26,6 +26,7 @@ export interface LeafletMarker {
     link?: string;
     leafletInstance: L.Marker;
     layer: string;
+    mutable: boolean;
 }
 
 export interface MarkerData {

@@ -310,7 +310,8 @@ export default class LeafletMap extends Events {
             }),
             layer: markerToBeAdded.layer
                 ? markerToBeAdded.layer
-                : this.group?.id
+                : this.group?.id,
+            mutable: true
         };
         this.bindMarkerEvents(marker);
 
@@ -326,12 +327,12 @@ export default class LeafletMap extends Events {
         loc: L.LatLng,
         link: string | undefined = undefined,
         id: string = uuidv4(),
-        layer: string | undefined = undefined
+        layer: string | undefined = undefined,
+        mutable: boolean = true
     ): LeafletMarker {
         const mapIcon = L.divIcon({
             html: markerIcon.html
         });
-
         const marker: LeafletMarker = {
             id: id,
             marker: markerIcon,
@@ -339,33 +340,40 @@ export default class LeafletMap extends Events {
             link: link,
             leafletInstance: L.marker(loc, {
                 icon: mapIcon,
-                draggable: true,
+                draggable: mutable,
+                keyboard: mutable,
                 bubblingMouseEvents: true
             }),
-            layer: layer ? layer : this.group?.id
+            layer: layer ? layer : this.group?.id,
+            mutable: mutable
         };
-
-        this.bindMarkerEvents(marker);
+        this.bindMarkerEvents(marker, mutable);
 
         if (this.rendered) {
             //marker.leafletInstance.addTo(this.map);
             this.group.group.addLayer(marker.leafletInstance);
+
             marker.leafletInstance.closeTooltip();
         }
 
         this.markers.push(marker);
-
-        this.trigger("marker-added", marker);
-
+        if (mutable) {
+            this.trigger("marker-added", marker);
+        }
         return marker;
     }
 
-    bindMarkerEvents(marker: LeafletMarker) {
+    bindMarkerEvents(marker: LeafletMarker, mutable: boolean = true) {
         marker.leafletInstance
             .on("contextmenu", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
 
-                this.trigger("marker-context", marker);
+                if (mutable) this.trigger("marker-context", marker);
+                else {
+                    new Notice(
+                        "This marker cannot be edited because it was defined in the code block."
+                    );
+                }
             })
             .on("click", async (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
@@ -376,10 +384,23 @@ export default class LeafletMap extends Events {
                         marker.link,
                         evt.originalEvent.ctrlKey
                     );
+                } else {
+                    if (mutable) this.trigger("marker-context", marker);
+                    else {
+                        new Notice(
+                            "This marker cannot be edited because it was defined in the code block."
+                        );
+                    }
                 }
             })
             .on("dragstart", () => {
                 marker.leafletInstance.closeTooltip();
+                if (mutable) this.trigger("marker-context", marker);
+                else {
+                    new Notice(
+                        "This marker cannot be edited because it was defined in the code block."
+                    );
+                }
             })
             .on("drag", () => {
                 this.trigger("marker-dragging", marker);

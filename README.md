@@ -24,6 +24,7 @@ maxZoom: 10
 defaultZoom: 5
 unit: meters
 scale: 1
+marker: <type>,<latitude>,<longitude>,<link>
 ```
 ````
 
@@ -43,6 +44,7 @@ scale: 1
 | 1           |
 | unit        | Unit to display distances in                                                                                                        | meters                                     |
 | scale       | Scale factor for image map distance calculation.                                                                                    | 1                                          |
+| marker      | Create immutable markers on the map                                                                                                 |                                            |
 
 ## Image Maps
 
@@ -102,6 +104,38 @@ If you have multiple notes with the same name, you should specify the direct pat
 Once linked, a click will open the note (<kbd>Ctrl</kbd>/<kbd>Cmd</kbd>-click to open in new window).
 
 Additionally, markers can be created by dragging a note from the file tree and dropping it on the map.
+
+### Markers Defined in the Code Block
+
+Markers may be defined directly in the code block using the following syntax:
+
+`marker: <type>,<latitude>,<longitude>,<link>`
+
+An arbitrary number of markers can be defined, but _none of these markers will be editable._ If a change needs to be made to these markers, the code block must be edited.
+
+The marker link may be defined as an Obsidian wikilink.
+
+### Marker CSV File
+
+Marker data may be exportable to a CSV file. This data takes the following format:
+
+| Column 1 | Column 2    | Column 3 | Column 4  | Column 5    | Column 6     | Column 7  |
+| -------- | ----------- | -------- | --------- | ----------- | ------------ | --------- |
+| Map ID   | Marker Type | Latitude | Longitude | Marker Link | Marker Layer | Marker ID |
+
+Map ID is the _path to the note_ **plus** _"real" for real maps_ **OR** _the path to the image_ **OR** _the map id defined in the code block_. Example:
+
+`Path/To/Note.md/Path/To/File.jpg` OR
+`Path/To/Note.md/real` OR
+`Path/To/Note.md/map-id-defined-in-code-block`
+
+If left blank, Marker Type will default to "default".
+
+Marker layer may be kept blank if a map only has 1 layer.
+
+For new markers, Marker ID may be kept blank.
+
+Marker data in this format can then be re-imported. This feature is still under development and may not work as expected.
 
 ## Distances
 

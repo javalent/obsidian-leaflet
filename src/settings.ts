@@ -39,6 +39,7 @@ import {
     removeValidationError,
     setValidationError
 } from "./utils/modals";
+import { latLng } from "leaflet";
 
 export class ObsidianLeafletSettingTab extends PluginSettingTab {
     plugin: ObsidianLeaflet;
@@ -438,11 +439,15 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                             continue;
                         }
 
-                        if (!link || !link.length || link === "undefined")
+                        if (!link || !link.length || link === "undefined") {
                             link = undefined;
-                        if (!id || !id.length || id === "undefined")
+                        } else if (/\[\[[\s\S]+\]\]/.test(link)) {
+                            //obsidian wiki-link
+                            [, link] = link.match(/\[\[([\s\S]+)\]\]/);
+                        }
+                        if (!id || !id.length || id === "undefined") {
                             id = uuidv4();
-
+                        }
                         if (!markersToAdd.has(map)) markersToAdd.set(map, []);
                         const mapMap = markersToAdd.get(data[0]);
                         mapMap.push({
@@ -468,14 +473,35 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                             };
                             this.data.mapMarkers.push(map);
                         }
-                        let map = this.data.mapMarkers.find(
-                            ({ path: p }) => p == path
-                        );
-                        for (let marker of markers) {
-                            map.markers = map.markers.filter(
-                                ({ id }) => id != marker.id
+
+                        if (this.plugin.maps.find(({ path: p }) => p == path)) {
+                            let map = this.plugin.maps.find(
+                                ({ path: p }) => p == path
+                            ).map;
+                            for (let marker of markers) {
+                                map.markers = map.markers.filter(
+                                    ({ id }) => id != marker.id
+                                );
+                                map.createMarker(
+                                    this.plugin.markerIcons.find(
+                                        ({ type }) => type === marker.type
+                                    ),
+                                    latLng(marker.loc),
+                                    marker.link,
+                                    marker.id,
+                                    marker.layer
+                                );
+                            }
+                        } else {
+                            let map = this.data.mapMarkers.find(
+                                ({ path: p }) => p == path
                             );
-                            map.markers.push(marker);
+                            for (let marker of markers) {
+                                map.markers = map.markers.filter(
+                                    ({ id }) => id != marker.id
+                                );
+                                map.markers.push(marker);
+                            }
                         }
                     }
                     await this.plugin.saveSettings();

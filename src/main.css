@@ -121,6 +121,11 @@ input.is-invalid {
     font-style: unset;
 }
 
+/* immutable leaflet markers */
+.leaflet-marker-icon:not(.leaflet-marker-draggable) {
+    cursor: not-allowed;
+}
+
 /* div icon override */
 
 .leaflet-div-icon {

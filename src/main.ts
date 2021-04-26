@@ -10,8 +10,9 @@ import {
     Menu,
     MarkdownPostProcessorContext
 } from "obsidian";
-import { LeafletMouseEvent, Point } from "leaflet";
+import { latLng, LeafletMouseEvent, Point } from "leaflet";
 import { getType as lookupMimeType } from "mime/lite";
+import { parse as parseCSV } from "papaparse";
 
 //Local Imports
 import "./main.css";
@@ -90,10 +91,7 @@ export default class ObsidianLeaflet extends Plugin {
         ctx: MarkdownPostProcessorContext
     ): Promise<void> {
         try {
-            let layers = (
-                source.match(/^\bimage\b:[\s\S]*?$/gm) || []
-            ).map((p) => p.split(/(?:image):\s?/)[1]?.trim());
-
+            /** Get Parameters from Source */
             let {
                 height = "500px",
                 minZoom = 1,
@@ -108,7 +106,16 @@ export default class ObsidianLeaflet extends Plugin {
             } = Object.fromEntries(
                 source.split("\n").map((l) => l.split(/:\s?/))
             );
+
             let image = "real";
+            let layers = (
+                source.match(/^\bimage\b:[\s\S]*?$/gm) || []
+            ).map((p) => p.split(/(?:image):\s?/)[1]?.trim());
+
+            /* let [, test] = source.match(/\[\[([\s\S]+)\]\]/);
+
+            console.log(this.app.metadataCache.getFirstLinkpathDest(test, "")); */
+
             if (layers.length > 1 && !id) {
                 layers = [layers[0]];
                 new Notice("A map with multiple layers must have an ID.");
@@ -131,6 +138,61 @@ export default class ObsidianLeaflet extends Plugin {
                 unit,
                 scale
             );
+
+            let markersInSourceBlock = (
+                source.match(/^\bmarker\b:[\s\S]*?$/gm) || []
+            ).map((p) => p.split(/(?:marker):\s?/)[1]?.trim());
+
+            if (markersInSourceBlock.length) {
+                for (let marker of markersInSourceBlock) {
+                    /* type, lat, long, link, layer, */
+                    const { data } = parseCSV<string>(marker);
+                    if (!data.length) {
+                        new Notice("No data");
+                        continue;
+                    }
+
+                    let [type, lat, long, link, layer] = data[0];
+
+                    if (
+                        !type ||
+                        !type.length ||
+                        type === "undefined" ||
+                        (type != "default" &&
+                            !this.markerIcons.find(({ type: t }) => t == type))
+                    ) {
+                        type = "default";
+                    }
+                    if (!lat || !lat.length || isNaN(Number(lat))) {
+                        new Notice("Could not parse latitude");
+                        continue;
+                    }
+                    if (!long || !long.length || isNaN(Number(long))) {
+                        new Notice("Could not parse longitude");
+                        continue;
+                    }
+
+                    if (!link || !link.length || link === "undefined") {
+                        link = undefined;
+                    } else if (/\[\[[\s\S]+\]\]/.test(link)) {
+                        //obsidian wiki-link
+                        [, link] = link.match(/\[\[([\s\S]+)\]\]/);
+                    }
+
+                    if (!layer || !layer.length || layer === "undefined") {
+                        layer = layers[0];
+                    }
+
+                    map.createMarker(
+                        this.markerIcons.find(({ type: t }) => t == type),
+                        latLng([Number(lat), Number(long)]),
+                        link,
+                        undefined,
+                        layer,
+                        false
+                    );
+                }
+            }
 
             /**
              * Set height of map element in pixels.
@@ -340,17 +402,19 @@ export default class ObsidianLeaflet extends Plugin {
             this.AppData.mapMarkers.push({
                 path: map.path,
                 file: map.file,
-                markers: map.map.markers.map(
-                    (marker): MarkerData => {
-                        return {
-                            type: marker.marker.type,
-                            id: marker.id,
-                            loc: [marker.loc.lat, marker.loc.lng],
-                            link: marker.link,
-                            layer: marker.layer
-                        };
-                    }
-                )
+                markers: map.map.markers
+                    .filter(({ mutable }) => mutable)
+                    .map(
+                        (marker): MarkerData => {
+                            return {
+                                type: marker.marker.type,
+                                id: marker.id,
+                                loc: [marker.loc.lat, marker.loc.lng],
+                                link: marker.link,
+                                layer: marker.layer
+                            };
+                        }
+                    )
             });
         });
 
@@ -377,40 +441,45 @@ export default class ObsidianLeaflet extends Plugin {
     generateMarkerMarkup(
         markers: Marker[] = this.AppData.markerIcons
     ): MarkerIcon[] {
-        let ret = markers.map((marker) => {
-            if (!marker.transform) {
-                marker.transform = this.AppData.defaultMarker.transform;
+        let ret: MarkerIcon[] = markers.map(
+            (marker): MarkerIcon => {
+                if (!marker.transform) {
+                    marker.transform = this.AppData.defaultMarker.transform;
+                }
+                if (!marker.iconName) {
+                    marker.iconName = this.AppData.defaultMarker.iconName;
+                }
+                let html: string, iconNode: AbstractElement;
+
+                if (this.AppData.layerMarkers) {
+                    iconNode = icon(getIcon(marker.iconName), {
+                        transform: marker.transform,
+                        mask: getIcon(this.AppData.defaultMarker.iconName),
+                        classes: ["full-width-height"]
+                    }).abstract[0];
+                } else {
+                    iconNode = icon(getIcon(marker.iconName), {
+                        classes: ["full-width-height"]
+                    }).abstract[0];
+                }
+
+                iconNode.attributes = {
+                    ...iconNode.attributes,
+                    style: `color: ${
+                        marker.color
+                            ? marker.color
+                            : this.AppData.defaultMarker.color
+                    }`
+                };
+
+                html = toHtml(iconNode);
+
+                return {
+                    type: marker.type,
+                    html: html
+                };
             }
-            if (!marker.iconName) {
-                marker.iconName = this.AppData.defaultMarker.iconName;
-            }
-            let html: string, iconNode: AbstractElement;
-
-            if (this.AppData.layerMarkers) {
-                iconNode = icon(getIcon(marker.iconName), {
-                    transform: marker.transform,
-                    mask: getIcon(this.AppData.defaultMarker.iconName),
-                    classes: ["full-width-height"]
-                }).abstract[0];
-            } else {
-                iconNode = icon(getIcon(marker.iconName), {
-                    classes: ["full-width-height"]
-                }).abstract[0];
-            }
-
-            iconNode.attributes = {
-                ...iconNode.attributes,
-                style: `color: ${
-                    marker.color
-                        ? marker.color
-                        : this.AppData.defaultMarker.color
-                }`
-            };
-
-            html = toHtml(iconNode);
-
-            return { type: marker.type, html: html };
-        });
+        );
         ret.unshift({
             type: "default",
             html: icon(getIcon(this.AppData.defaultMarker.iconName), {
@@ -557,13 +626,13 @@ export default class ObsidianLeaflet extends Plugin {
             map.on("marker-added", async (marker: LeafletMarker) => {
                 marker.leafletInstance.closeTooltip();
                 marker.leafletInstance.unbindTooltip();
-                await this.saveSettings();
 
                 this.maps
                     .filter((m) => m.path == map.path && m.view != view)
                     .forEach((map) => {
                         map.map.addMarker(marker);
                     });
+                await this.saveSettings();
             })
         );
 
