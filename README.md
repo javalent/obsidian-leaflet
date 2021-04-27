@@ -93,7 +93,10 @@ New markers can be added to the map by right clicking.
 
 If any additional marker types have been created in the settings, a list will appear to choose from.
 
-Once a marker has been created, it can be dragged to a different location. A marker can also point to a note; right-click on it, and a popup will appear. The target can be entered as the name of the note. Additionally, headers or blocks within a note can be the target of a marker:
+Once a marker has been created, it can be dragged to a different location. 
+
+### Marker Links
+A marker can also point to a note; right-click on it, and a popup will appear. The target can be entered as the name of the note. Additionally, headers or blocks within a note can be the target of a marker:
 
 `Note`
 
@@ -105,6 +108,8 @@ Once linked, a click will open the note (<kbd>Ctrl</kbd>/<kbd>Cmd</kbd>-click to
 
 Additionally, markers can be created by dragging a note from the file tree and dropping it on the map.
 
+Marker links can also be set to external websites. Clicking the marker will open the website.
+
 ### Markers Defined in the Code Block
 
 Markers may be defined directly in the code block using the following syntax:
@@ -114,6 +119,8 @@ Markers may be defined directly in the code block using the following syntax:
 An arbitrary number of markers can be defined, but _none of these markers will be editable._ If a change needs to be made to these markers, the code block must be edited.
 
 The marker link may be defined as an Obsidian wikilink.
+
+These markers **will not be included in exported marker data.**
 
 ### Marker CSV File
 

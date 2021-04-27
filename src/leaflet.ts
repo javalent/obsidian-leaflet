@@ -333,6 +333,7 @@ export default class LeafletMap extends Events {
         const mapIcon = L.divIcon({
             html: markerIcon.html
         });
+
         const marker: LeafletMarker = {
             id: id,
             marker: markerIcon,
@@ -347,6 +348,7 @@ export default class LeafletMap extends Events {
             layer: layer ? layer : this.group?.id,
             mutable: mutable
         };
+
         this.bindMarkerEvents(marker, mutable);
 
         if (this.rendered) {
