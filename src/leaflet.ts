@@ -2,11 +2,158 @@ import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 import { Events, Notice } from "obsidian";
-import { v4 as uuidv4 } from "uuid";
 
 // @ts-expect-error
 import layerIcon from "../node_modules/leaflet/dist/images/layers.png";
-import { LayerGroup, LeafletMarker, MarkerData, MarkerIcon } from "./@types";
+import {
+    LayerGroup,
+    LeafletMarker,
+    LeafletMarkerIcon,
+    MarkerData,
+    MarkerIcon
+} from "./@types";
+import { getId, getImageDimensions } from "./utils";
+
+interface MarkerDivIconOptions extends L.DivIconOptions {
+    data?: { [key: string]: string };
+}
+
+export class MarkerDivIcon extends L.DivIcon {
+    options: MarkerDivIconOptions;
+    div: HTMLElement;
+    constructor(options: MarkerDivIconOptions) {
+        super(options);
+    }
+    createIcon(oldIcon: HTMLElement) {
+        const div = super.createIcon(oldIcon);
+        for (let item in this.options.data) {
+            div.dataset[item] = this.options.data[item];
+        }
+        this.div = div;
+        return div;
+    }
+    setData(data: { [key: string]: string }) {
+        this.options.data = {
+            ...this.options.data,
+            ...data
+        };
+        if (this.div) {
+            for (let item in data) {
+                this.div.dataset[item] = this.options.data[item];
+            }
+        }
+    }
+}
+
+const markerDivIcon = function (options: MarkerDivIconOptions) {
+    return new MarkerDivIcon(options);
+};
+
+interface DivIconMarkerOptions extends L.MarkerOptions {
+    icon: MarkerDivIcon;
+}
+export class DivIconMarker extends L.Marker {
+    options: DivIconMarkerOptions;
+    constructor(
+        latlng: L.LatLng,
+        options: L.MarkerOptions,
+        data: { [key: string]: string }
+    ) {
+        super(latlng, options);
+        this.options.icon.options.data = data;
+    }
+}
+
+export class Marker implements LeafletMarker {
+    private _link: string;
+    private _mutable: boolean;
+    private _type: string;
+    leafletInstance: DivIconMarker;
+    loc: L.LatLng;
+    id: string;
+    layer: string;
+    constructor({
+        id,
+        icon,
+        type,
+        loc,
+        link,
+        layer,
+        mutable
+    }: {
+        id: string;
+        icon: MarkerDivIcon;
+        type: string;
+        loc: L.LatLng;
+        link: string;
+        layer: string;
+        mutable: boolean;
+    }) {
+        this.leafletInstance = divIconMarker(
+            loc,
+            {
+                icon: icon,
+                keyboard: mutable,
+                draggable: mutable,
+                bubblingMouseEvents: true
+            },
+            {
+                link: link,
+                mutable: `${mutable}`,
+                type: type
+            }
+        );
+
+        this.id = id;
+        this.type = type;
+        this.loc = loc;
+        this.link = link;
+        this.layer = layer;
+        this.mutable = mutable;
+    }
+    get link() {
+        return this._link;
+    }
+    set link(x: string) {
+        this._link = x;
+        if (this.leafletInstance.options?.icon) {
+            this.leafletInstance.options.icon.setData({
+                link: `${x}`
+            });
+        }
+    }
+    get mutable() {
+        return this._mutable;
+    }
+    set mutable(x: boolean) {
+        this._mutable = x;
+        if (this.leafletInstance.options?.icon) {
+            this.leafletInstance.options.icon.setData({
+                mutable: `${x}`
+            });
+        }
+    }
+
+    get type() {
+        return this._type;
+    }
+    set type(x: string) {
+        this._type = x;
+        if (this.leafletInstance.options?.icon) {
+            this.leafletInstance.options.icon.setData({
+                type: `${x}`
+            });
+        }
+    }
+}
+
+const divIconMarker = function (
+    latlng: L.LatLng,
+    options: DivIconMarkerOptions,
+    data: { [key: string]: string }
+) {
+    return new DivIconMarker(latlng, options, data);
+};
 
 /**
  * LeafletMap Class
@@ -20,11 +167,9 @@ export default class LeafletMap extends Events {
     id: string;
     contentEl: HTMLElement;
     map: L.Map;
-    markers: Array<LeafletMarker> = [];
-    file: string;
-    path: string;
-    markerIcons: MarkerIcon[] = [];
-    rendered: boolean = false;
+    markers: Array<Marker> = [];
+    markerIcons: LeafletMarkerIcon[] = [];
+    /* rendered: boolean = false; */
     zoom: { min: number; max: number; default: number; delta: number };
     tooltip: L.Tooltip = L.tooltip({
         className: "leaflet-marker-link-tooltip",
@@ -36,25 +181,25 @@ export default class LeafletMap extends Events {
     type: string;
     scale: number;
     unit: string;
+    private _rendered: boolean;
     constructor(
         el: HTMLElement,
-        id: string,
-        file: string,
-        path: string,
         markerIcons: MarkerIcon[],
         minZoom: number = 1,
         maxZoom: number = 10,
         defaultZoom: number = 1,
         zoomDelta: number = 1,
         unit: string,
-        scale: number
+        scale: number,
+        id: string
     ) {
         super();
+
         this.id = id;
+
         this.parentEl = el;
-        this.file = file;
-        this.path = path;
-        this.markerIcons = markerIcons;
+        this.contentEl = this.parentEl.createDiv();
+
         this.zoom = {
             min: minZoom,
             max: maxZoom,
@@ -63,7 +208,8 @@ export default class LeafletMap extends Events {
         };
         this.unit = unit;
         this.scale = scale;
-        this.contentEl = el.createDiv();
+
+        this.setMarkerIcons(markerIcons);
     }
 
     loadData(data: any): Promise<void> {
@@ -84,56 +230,46 @@ export default class LeafletMap extends Events {
         });
     }
 
-    async renderImage(
-        layers: { data: string; id: string }[],
-        coords?: [number, number]
+    get coordMult() {
+        let mult = [1, 1];
+        if (this.type == "image") {
+            mult = [
+                this.bounds.getSouthEast().lat / 100,
+                this.bounds.getSouthEast().lng / 100
+            ];
+        }
+        return mult;
+    }
+
+    async render(
+        type: "real" | "image",
+        options: {
+            coords?: [number, number];
+            layers?: { data: string; id: string }[];
+        }
     ) {
-        this.type = "image";
-        this.map = L.map(this.contentEl, {
-            crs: L.CRS.Simple,
-            maxZoom: this.zoom.max,
-            minZoom: this.zoom.min,
-            zoomDelta: this.zoom.delta,
-            zoomSnap: this.zoom.delta
-        });
+        this.type = type;
+        this.map = this.getMapForType(type);
+        this.layer = await this.buildLayersForType(type, options.layers);
 
-        this.map.on("baselayerchange", ({ layer }) => {
-            // need to do this to prevent panning animation for some reason
-            this.map.setMaxBounds([undefined, undefined]);
-            this.layer = layer.getLayers()[0];
-            this.map.panTo(this.bounds.getCenter(), {
-                animate: false
-            });
-            this.map.setMaxBounds(this.bounds);
-        });
+        switch (this.type) {
+            case "real": {
+                this.renderReal();
+                break;
+            }
+            case "image": {
+                this.renderImage();
+                break;
+            }
+        }
 
-        this.mapLayers = await Promise.all(
-            layers.map(async (layer) => {
-                let { h, w } = await LeafletMap.getImageDimensions(layer.data);
+        if (options.coords) {
+            this.map.panTo([
+                options.coords[0] * this.coordMult[0],
+                options.coords[1] * this.coordMult[1]
+            ]);
+        }
 
-                let southWest = this.map.unproject([0, h], this.zoom.max - 1);
-                let northEast = this.map.unproject([w, 0], this.zoom.max - 1);
-
-                let mapLayer = L.imageOverlay(
-                    layer.data,
-                    new L.LatLngBounds(southWest, northEast)
-                );
-                return {
-                    group: L.layerGroup([mapLayer]),
-                    layer: mapLayer,
-                    id: layer.id
-                };
-            })
-        );
-
-        this.layer = this.mapLayers[0].layer as L.ImageOverlay;
-        this.map.addLayer(this.mapLayers[0].group);
-        this.map.fitBounds(this.bounds);
-        this.map.panTo(this.bounds.getCenter(), {
-            animate: false
-        });
-        this.map.setMaxBounds(this.bounds);
-        this.map.setZoom(this.zoom.default, { animate: false });
         this.markers.forEach((marker) => {
             if (marker.layer) {
                 this.mapLayers
@@ -143,30 +279,6 @@ export default class LeafletMap extends Events {
                 this.mapLayers[0].group.addLayer(marker.leafletInstance);
             }
         });
-
-        if (coords) {
-            this.map.panTo([
-                (coords[0] * this.bounds.getSouthEast().lat) / 100,
-                (coords[1] * this.bounds.getSouthEast().lng) / 100
-            ]);
-        }
-        if (layers.length > 1) {
-            const layerControls = Object.fromEntries(
-                this.mapLayers.reverse().map((l, i) => [`Layer ${i}`, l.group])
-            );
-            let control = L.control.layers(layerControls).addTo(this.map);
-
-            // hack to get icon from layers.png
-            // @ts-expect-error
-            control._container.children[0].appendChild(
-                createEl("img", {
-                    attr: {
-                        src: layerIcon,
-                        style: "width: 26px; height: 26px; margin: auto;"
-                    }
-                })
-            );
-        }
 
         this.map.on("contextmenu", (evt) =>
             this.trigger("map-contextmenu", evt)
@@ -194,80 +306,128 @@ export default class LeafletMap extends Events {
             }
         });
 
-        this.rendered = true;
         this.handleResize();
     }
-    handleResize() {
-        this.resize = new ResizeObserver(() => {
-            this.map.invalidateSize();
-        });
-        this.resize.observe(this.contentEl);
-    }
-    get group() {
-        return this.mapLayers?.find((group) => group.layer == this.layer);
-    }
-    get bounds() {
-        if (this.layer instanceof L.ImageOverlay) {
-            return this.layer.getBounds();
+
+    getMapForType(type: string): L.Map {
+        if (type === "image") {
+            return L.map(this.contentEl, {
+                crs: L.CRS.Simple,
+                maxZoom: this.zoom.max,
+                minZoom: this.zoom.min,
+                zoomDelta: this.zoom.delta,
+                zoomSnap: this.zoom.delta
+            });
+        } else if (type === "real") {
+            return L.map(this.contentEl, {
+                maxZoom: this.zoom.max,
+                minZoom: this.zoom.min,
+                worldCopyJump: true,
+                zoomDelta: this.zoom.delta,
+                zoomSnap: this.zoom.delta
+            });
         }
-        return;
     }
-    async renderReal(coords: [number, number] = [0, 0]) {
-        this.type = "real";
+    async buildLayersForType(
+        type: string,
+        layers?: { data: string; id: string }[]
+    ): Promise<L.TileLayer | L.ImageOverlay> {
+        if (type === "real") {
+            this.layer = L.tileLayer(
+                "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+                    attribution:
+                        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }
+            );
+            const group = L.layerGroup([this.layer]);
 
-        this.map = L.map(this.contentEl, {
-            maxZoom: this.zoom.max,
-            minZoom: this.zoom.min,
-            worldCopyJump: true,
-            zoomDelta: this.zoom.delta,
-            zoomSnap: this.zoom.delta
-        }).setView(coords, this.zoom.default);
-        this.layer = L.tileLayer(
-            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            {
-                attribution:
-                    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }
-        );
-        const group = L.layerGroup([this.layer]);
-        this.mapLayers = [
-            {
-                group: group,
-                layer: this.layer,
-                id: "real"
-            }
-        ];
-        this.mapLayers[0].group.addTo(this.map);
+            this.mapLayers = [
+                {
+                    group: group,
+                    layer: this.layer,
+                    id: "real"
+                }
+            ];
+        } else if (type === "image") {
+            this.map.on("baselayerchange", ({ layer }) => {
+                // need to do this to prevent panning animation for some reason
+                this.map.setMaxBounds([undefined, undefined]);
+                this.layer = layer.getLayers()[0];
+                this.map.panTo(this.bounds.getCenter(), {
+                    animate: false
+                });
+                this.map.setMaxBounds(this.bounds);
+            });
 
-        this.markers.forEach((marker) => {
-            marker.leafletInstance.addTo(this.map);
+            this.mapLayers = await Promise.all(
+                layers.map(async (layer) => {
+                    let { h, w } = await getImageDimensions(layer.data);
+
+                    let southWest = this.map.unproject(
+                        [0, h],
+                        this.zoom.max - 1
+                    );
+                    let northEast = this.map.unproject(
+                        [w, 0],
+                        this.zoom.max - 1
+                    );
+
+                    let mapLayer = L.imageOverlay(
+                        layer.data,
+                        new L.LatLngBounds(southWest, northEast)
+                    );
+                    return {
+                        group: L.layerGroup([mapLayer]),
+                        layer: mapLayer,
+                        id: layer.id
+                    };
+                })
+            );
+
+            this.layer = this.mapLayers[0].layer;
+        }
+
+        this.layer.on("load", () => {
+            this.rendered = true;
         });
+
+        return this.layer;
+    }
+    renderImage() {
+        this.map.addLayer(this.mapLayers[0].group);
+        this.map.fitBounds(this.bounds);
+        this.map.panTo(this.bounds.getCenter(), {
+            animate: false
+        });
+        this.map.setMaxBounds(this.bounds);
         this.map.setZoom(this.zoom.default, { animate: false });
 
-        this.map.on("contextmenu", (evt) =>
-            this.trigger("map-contextmenu", evt)
-        );
-        let click: L.LatLng | undefined = undefined;
-        this.map.on("click", (evt: L.LeafletMouseEvent) => {
-            if (!evt.originalEvent.ctrlKey) {
-                click = undefined;
-                return;
-            }
+        if (this.mapLayers.length > 1) {
+            const layerControls = Object.fromEntries(
+                this.mapLayers.reverse().map((l, i) => [`Layer ${i}`, l.group])
+            );
+            let control = L.control.layers(layerControls).addTo(this.map);
 
-            if (click != undefined) {
-                this.trigger(
-                    "display-distance",
-                    `${this.map
-                        .distance(click, evt.latlng)
-                        .toLocaleString(navigator.language, {
-                            maximumFractionDigits: 1
-                        })}${this.unit}`
-                );
-                click = undefined;
-            } else {
-                click = evt.latlng;
-            }
-        });
+            // hack to get icon from layers.png
+            // @ts-expect-error
+            control._container.children[0].appendChild(
+                createEl("img", {
+                    attr: {
+                        src: layerIcon,
+                        style: "width: 26px; height: 26px; margin: auto;"
+                    }
+                })
+            );
+        }
+    }
+    async renderReal() {
+        this.mapLayers[0].group.addTo(this.map);
+
+        /* this.markers.forEach((marker) => {
+            marker.leafletInstance.addTo(this.map);
+        }); */
+        this.map.setZoom(this.zoom.default, { animate: false });
 
         const _this = this;
         const editMarkers = L.Control.extend({
@@ -289,30 +449,76 @@ export default class LeafletMap extends Events {
 
         /* new editMarkers({ position: "topleft" }).addTo(this.map); */
 
-        this.rendered = true;
+        //this.rendered = true;
         this.handleResize();
+    }
+    handleResize() {
+        this.resize = new ResizeObserver(() => {
+            if (this.rendered) {
+                this.map.invalidateSize();
+            }
+        });
+        this.resize.observe(this.contentEl);
+    }
+    get group() {
+        return this.mapLayers?.find((group) => group.layer == this.layer);
+    }
+    get bounds() {
+        if (this.layer instanceof L.ImageOverlay) {
+            return this.layer.getBounds();
+        }
+        return;
+    }
+    get rendered() {
+        return this._rendered;
+    }
+    set rendered(v: boolean) {
+        this._rendered = v;
+        if (v) this.trigger("map-rendered", v);
     }
 
     addMarker(markerToBeAdded: LeafletMarker) {
-        const mapIcon = L.divIcon({
-            html: markerToBeAdded.marker.html
+        const mapIcon = this.markerIcons.find(
+            ({ type }) => type == markerToBeAdded.type
+        ).icon;
+
+        const marker = new Marker({
+            id: markerToBeAdded.id,
+            type: markerToBeAdded.type,
+            loc: markerToBeAdded.loc,
+            link: markerToBeAdded.link,
+            icon: mapIcon,
+            layer: markerToBeAdded.layer
+                ? markerToBeAdded.layer
+                : this.group?.id,
+            mutable: markerToBeAdded.mutable
         });
 
-        const marker: LeafletMarker = {
+        /* const marker: LeafletMarker = {
             id: markerToBeAdded.id,
             marker: markerToBeAdded.marker,
             loc: markerToBeAdded.loc,
             link: markerToBeAdded.link,
-            leafletInstance: L.marker(markerToBeAdded.loc, {
-                icon: mapIcon,
-                draggable: true,
-                bubblingMouseEvents: true
-            }),
+            leafletInstance: divIconMarker(
+                markerToBeAdded.loc,
+                {
+                    icon: mapIcon,
+                    keyboard: markerToBeAdded.mutable,
+                    draggable: markerToBeAdded.mutable,
+                    bubblingMouseEvents: true
+                },
+                {
+                    link: markerToBeAdded.link,
+                    lat: `${markerToBeAdded.loc.lat}`,
+                    long: `${markerToBeAdded.loc.lng}`,
+                    mutable: `${markerToBeAdded.mutable}`
+                }
+            ),
             layer: markerToBeAdded.layer
                 ? markerToBeAdded.layer
                 : this.group?.id,
-            mutable: true
-        };
+            mutable: markerToBeAdded.mutable
+        }; */
         this.bindMarkerEvents(marker);
 
         if (this.rendered) {
@@ -326,28 +532,23 @@ export default class LeafletMap extends Events {
         markerIcon: MarkerIcon,
         loc: L.LatLng,
         link: string | undefined = undefined,
-        id: string = uuidv4(),
+        id: string = getId(),
         layer: string | undefined = undefined,
         mutable: boolean = true
     ): LeafletMarker {
-        const mapIcon = L.divIcon({
-            html: markerIcon.html
-        });
+        const mapIcon = this.markerIcons.find(
+            ({ type }) => type == markerIcon?.type || "default"
+        ).icon;
 
-        const marker: LeafletMarker = {
+        const marker = new Marker({
             id: id,
-            marker: markerIcon,
+            type: markerIcon?.type || "default",
             loc: loc,
             link: link,
-            leafletInstance: L.marker(loc, {
-                icon: mapIcon,
-                draggable: mutable,
-                keyboard: mutable,
-                bubblingMouseEvents: true
-            }),
+            icon: mapIcon,
             layer: layer ? layer : this.group?.id,
             mutable: mutable
-        };
+        });
 
         this.bindMarkerEvents(marker, mutable);
 
@@ -387,29 +588,24 @@ export default class LeafletMap extends Events {
                         evt.originalEvent.ctrlKey
                     );
                 } else {
-                    if (mutable) this.trigger("marker-context", marker);
-                    else {
+                    if (!mutable) {
                         new Notice(
                             "This marker cannot be edited because it was defined in the code block."
                         );
                     }
                 }
             })
-            .on("dragstart", () => {
-                marker.leafletInstance.closeTooltip();
-                if (mutable) this.trigger("marker-context", marker);
-                else {
-                    new Notice(
-                        "This marker cannot be edited because it was defined in the code block."
-                    );
-                }
+            .on("dragstart", (evt: L.LeafletMouseEvent) => {
+                L.DomEvent.stopPropagation(evt);
+                if (mutable) marker.leafletInstance.closeTooltip();
             })
             .on("drag", () => {
                 this.trigger("marker-dragging", marker);
             })
             .on("dragend", (evt: L.LeafletMouseEvent) => {
+                const old = marker.loc;
                 marker.loc = marker.leafletInstance.getLatLng();
-                this.trigger("marker-data-updated", marker);
+                this.trigger("marker-data-updated", marker, old);
                 marker.leafletInstance.closeTooltip();
             })
             .on("mouseover", (evt: L.LeafletMouseEvent) => {
@@ -423,35 +619,29 @@ export default class LeafletMap extends Events {
     }
 
     setMarkerIcons(markerIcons: MarkerIcon[]) {
-        this.markerIcons = markerIcons;
+        this.markerIcons = markerIcons.map(({ html, type }) => {
+            return {
+                html: html,
+                type: type,
+                icon: markerDivIcon({
+                    html: html,
+                    className: `leaflet-div-icon`
+                })
+            };
+        });
+
         this.markers.forEach((marker) => {
             marker.leafletInstance.setIcon(
-                L.divIcon({
-                    html: markerIcons.find(
-                        (icon) => icon.type == marker.marker.type
-                    ).html
-                })
+                this.markerIcons.find((icon) => icon.type == marker.type).icon
             );
         });
     }
 
     remove(): void {
         this.map?.remove();
+
         this.resize?.disconnect();
-    }
 
-    static async getImageDimensions(url: string): Promise<any> {
-        return new Promise(function (resolved, reject) {
-            var i = new Image();
-            i.onload = function () {
-                resolved({ w: i.width, h: i.height });
-            };
-            i.onerror = () => {
-                new Notice("There was an issue getting the image dimensions.");
-                reject();
-            };
-
-            i.src = url;
-        });
+        this.rendered = false;
     }
 }

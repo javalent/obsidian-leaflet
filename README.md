@@ -30,21 +30,31 @@ marker: <type>,<latitude>,<longitude>,<link>
 
 ## Options
 
-| Option      | Description                                                                                                                         | Default                                    |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| id          | Unique identifier (can be anything). Required on multi-image maps or if the same image is used in a different map in the same file. |                                            |
-| image       | Direct URL/file path to an image file to be used as the map layer.                                                                  | OpenStreetMap map                          |
-| lat         | Default latitude to display when rendering.                                                                                         | 50% (image) / 39.983334 (open street map)  |
-| long        | Default longitude to display when rendering.                                                                                        | 50% (image) / -82.983330 (open street map) |
-| height      | Height of the map element. Can be provided in pixels or percentage of window height.                                                | 500px                                      |
-| minZoom     | Minimum allowable zoom level of the map.                                                                                            | 1                                          |
-| maxZoom     | Maximum allowable zoom level of the map.                                                                                            | 10                                         |
-| defaultZoom | Map will load zoomed to this level.                                                                                                 | 5                                          |
-| zoomDelta   | Zoom level will change by this amount when zooming.                                                                                 |
-| 1           |
-| unit        | Unit to display distances in                                                                                                        | meters                                     |
-| scale       | Scale factor for image map distance calculation.                                                                                    | 1                                          |
-| marker      | Create immutable markers on the map                                                                                                 |                                            |
+| Option       | Description                                                                          | Default                                    |
+| ------------ | ------------------------------------------------------------------------------------ | ------------------------------------------ |
+| id           | Unique identifier (can be anything). **Required.**                                   |                                            |
+| image        | Direct URL/file path to an image file to be used as the map layer.                   | OpenStreetMap map                          |
+| lat          | Default latitude to display when rendering.                                          | 50% (image) / 39.983334 (open street map)  |
+| long         | Default longitude to display when rendering.                                         | 50% (image) / -82.983330 (open street map) |
+| height       | Height of the map element. Can be provided in pixels or percentage of window height. | 500px                                      |
+| minZoom      | Minimum allowable zoom level of the map.                                             | 1                                          |
+| maxZoom      | Maximum allowable zoom level of the map.                                             | 10                                         |
+| defaultZoom  | Map will load zoomed to this level.                                                  | 5                                          |
+| zoomDelta    | Zoom level will change by this amount when zooming.                                  |
+| 1            |
+| unit         | Unit to display distances in                                                         | meters                                     |
+| scale        | Scale factor for image map distance calculation.                                     | 1                                          |
+| marker       | Create immutable markers on the map                                                  |                                            |
+| markerFile   | Create immutable marker from a note's frontmatter                                    |                                            |
+| markerFolder | Create immutable markers from _all_ of the notes in a given folder                   |                                            |
+
+## Map IDs
+
+As of **3.0.0**, map ids are required. If a note with a old map block is opened, the plugin will warn you that the map now requires an ID.
+
+Once an old map is given an ID, the plugin will try to associate the marker data with the new map.
+
+The first time you open the plugin after updating to 3.0.0, a backup of your marker data will be created in case you need to downgrade. If you run into issues, please create an issue on Github.
 
 ## Image Maps
 
@@ -93,9 +103,10 @@ New markers can be added to the map by right clicking.
 
 If any additional marker types have been created in the settings, a list will appear to choose from.
 
-Once a marker has been created, it can be dragged to a different location. 
+Once a marker has been created, it can be dragged to a different location.
 
 ### Marker Links
+
 A marker can also point to a note; right-click on it, and a popup will appear. The target can be entered as the name of the note. Additionally, headers or blocks within a note can be the target of a marker:
 
 `Note`
@@ -121,6 +132,22 @@ An arbitrary number of markers can be defined, but _none of these markers will b
 The marker link may be defined as an Obsidian wikilink.
 
 These markers **will not be included in exported marker data.**
+
+#### MarkerFile and MarkerFolder
+
+Markers may also be defined in the code block using the following syntax:
+
+`markerFile: [[WikiLinkToFile]]`
+
+**OR**
+
+`markerFolder: Direct/Path/To/Folder`
+
+A note specified in this manner should have the following frontmatter tags:
+`location: [lat, long]` **REQUIRED**
+`marker: <marker-type>` **OPTIONAL**
+
+_Note: If a folder with a large amount of nest notes is provided, rendering could be slower than normal._
 
 ### Marker CSV File
 
@@ -186,6 +213,65 @@ Adding a new marker displays a new window, where the new marker parameters can b
 If layer icon is on, the icon be moved around the base icon by clicking and dragging, to customize where the icon is layered. If <kbd>Shift</kbd> is held while moving the icon, it will snap to the midlines.
 
 # Version History
+
+## 3.0.0
+
+### New Features
+
+-   Map IDs are now required.
+    -   A map that does not have an id will **not render**
+    -   The plugin will try to load previously defined marker data once an id has been given to the map.
+    -   This means marker definitions are no longer tied to maps - giving a map on a different note the same ID will load the same marker data
+-   Marker data that is not associated with a file will now be deleted after 7 days to prevent data accumulation
+-   Map data is now only saved if the map has defined markers
+-   Image files can now be linked using an Obsidian wikilink (e.g., [[Image Name.jpg]])
+-   New `markerFile` and `markerFolder` parameters in maps
+    -   `markerFile` will read a note file's frontmatter and create a marker based on the `marker` and `location` tags
+        -   `marker` should be a defined marker type (will default to `default` if not provided)
+        -   `location` should be a array of [latitude, longitude]. **If not provided, the marker will not be created**
+        -   The marker link target will be set to the file
+    -   `markerFolder` will read _all_ of the files in the folder, and try to parse the frontmatter as above.
+-   Made display of marker link in tooltip consistent with Obsidian's display style
+-   Added data attributes to marker HTML element
+    -   data-type: marker type
+    -   data-link: marker link target, if any
+    -   data-mutable: whether marker data can be edited
+    -   data-type: marker type name (such as default)
+-   Switched from uuid to 6 digit nanoid
+-   Rendering improvements
+
+### Bug Fixes
+
+-   Fixed issue where a new marker type's Layer Icon setting was not respecting the default layer marker setting
+-   Fixed issue where clicking a marker could open the context menu
+-   Fixed issue where clicking a marker without a link could cause an error
+-   Fixed issue with opening a marker link defined with alt-text
+-   Fixed issue where resizing the leaf containing a map caused it to calculate marker positions incorrectly
+-   Fixed issue where having the same map open in multiple windows was not adding markers correctly
+-   Fixed issue where dragging a marker created on a map open in multiple views would not drag correctly on other maps
+-   Fixed issue where turning the plugin off would leave map tiles in random locations on open notes
+-   Fixed issue where showing the note preview of a note with a map that is already open in the workspace would cause the map to be disassociated
+
+## 2.1.0
+
+-   Added marker parameter in code block
+-   Fixed issue where importing a CSV file that changed a marker on an open map failed to update the marker information
+
+## 2.0.0
+
+-   Added ability to export marker data to a CSV file
+-   Added ability to import marker data from a CSV file
+-   Added Obsidian-like file chooser to marker link path
+
+## 1.3.0
+
+-   Removed requirement for file path in marker target
+-   Added ability to target blocks in marker target
+
+## 1.2.0
+
+-   Add rudimentary distance calculation between two points on the map
+-   Fixed issue where opening the same map in multiple leaves could cause one map to de-render
 
 ## 1.1.0
 

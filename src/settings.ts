@@ -5,10 +5,19 @@ import {
     Notice,
     ButtonComponent
 } from "obsidian";
-import { v4 as uuidv4 } from "uuid";
+
 import { parse as parseCSV, unparse as unparseCSV } from "papaparse";
 
-import { findIconDefinition, IconName, icon, getIcon } from "./utils/icons";
+import {
+    findIconDefinition,
+    IconName,
+    icon,
+    getIcon,
+    getId,
+    CreateMarkerModal,
+    removeValidationError,
+    setValidationError
+} from "./utils";
 
 import {
     MapMarkerData,
@@ -30,15 +39,11 @@ export const DEFAULT_SETTINGS: ObsidianAppData = {
     lat: 39.983334,
     long: -82.98333,
     notePreview: false,
-    layerMarkers: true
+    layerMarkers: true,
+    previousVersion: null
 };
 
 import ObsidianLeaflet from "./main";
-import {
-    CreateMarkerModal,
-    removeValidationError,
-    setValidationError
-} from "./utils/modals";
 import { latLng } from "leaflet";
 
 export class ObsidianLeafletSettingTab extends PluginSettingTab {
@@ -55,7 +60,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             color: this.data.layerMarkers
                 ? this.data.defaultMarker.color
                 : this.data.color,
-            layer: false,
+            layer: this.data.layerMarkers,
             transform: this.data.defaultMarker.transform
         };
     }
@@ -446,7 +451,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                             [, link] = link.match(/\[\[([\s\S]+)\]\]/);
                         }
                         if (!id || !id.length || id === "undefined") {
-                            id = uuidv4();
+                            id = getId();
                         }
                         if (!markersToAdd.has(map)) markersToAdd.set(map, []);
                         const mapMap = markersToAdd.get(data[0]);
@@ -460,23 +465,22 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                         markersToAdd.set(data[0], mapMap);
                     }
 
-                    for (let [path, markers] of [...markersToAdd]) {
+                    for (let [id, markers] of [...markersToAdd]) {
                         if (
-                            !this.data.mapMarkers.find(
-                                ({ path: p }) => p == path
-                            )
+                            !this.data.mapMarkers.find(({ id: p }) => p == id)
                         ) {
                             const map: MapMarkerData = {
-                                path: path,
-                                file: path.split(".md")[0] + ".md",
+                                id: id,
+                                files: [],
+                                lastAccessed: Date.now(),
                                 markers: []
                             };
                             this.data.mapMarkers.push(map);
                         }
 
-                        if (this.plugin.maps.find(({ path: p }) => p == path)) {
+                        if (this.plugin.maps.find(({ id: p }) => p == id)) {
                             let map = this.plugin.maps.find(
-                                ({ path: p }) => p == path
+                                ({ id: p }) => p == id
                             ).map;
                             for (let marker of markers) {
                                 map.markers = map.markers.filter(
@@ -494,7 +498,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                             }
                         } else {
                             let map = this.data.mapMarkers.find(
-                                ({ path: p }) => p == path
+                                ({ id: p }) => p == id
                             );
                             for (let marker of markers) {
                                 map.markers = map.markers.filter(
@@ -524,10 +528,10 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             .addButton((b) => {
                 b.setButtonText("Export").onClick(() => {
                     let csv = [];
-                    for (let { path, markers } of this.data.mapMarkers) {
+                    for (let { id: mapId, markers } of this.data.mapMarkers) {
                         for (let { type, loc, link, layer, id } of markers) {
                             csv.push([
-                                path,
+                                mapId,
                                 type,
                                 loc[0],
                                 loc[1],
@@ -552,111 +556,3 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             });
     }
 }
-
-/*         csvMarkerSetting
-            .setDesc(
-                "Marker data will also be stored in a specified CSV file. Data will always be backed up in the plugin folder."
-            )
-            .addToggle((toggle) =>
-                toggle
-                    .setTooltip("Warning: Experimental")
-                    .setValue(this.data.useCSV)
-                    .onChange((v) => {
-                        if (v) {
-                            let confirm = new Modal(this.plugin.app),
-                                saved = false;
-                            confirm.titleEl.createEl("h3", {
-                                text: "Warning: Experimental Feature",
-                                attr: { style: "margin-bottom: 0;" }
-                            });
-                            let { contentEl } = confirm;
-                            contentEl.createEl("p", {
-                                text:
-                                    "This setting is experimental and could cause marker data corruption issues."
-                            });
-                            contentEl.createEl("p", {
-                                text:
-                                    "Marker data will continue to be saved locally in the plugin folder."
-                            });
-                            contentEl.createEl("p", {
-                                text: "Are you sure you want to turn it on?"
-                            });
-
-                            let footerEl = contentEl.createDiv();
-                            let footerButtons = new Setting(footerEl);
-                            footerButtons.addButton((b) => {
-                                b.setTooltip("Confirm")
-                                    .setIcon("checkmark")
-                                    .onClick(async () => {
-                                        saved = true;
-                                        confirm.close();
-                                    });
-                                return b;
-                            });
-                            footerButtons.addExtraButton((b) => {
-                                b.setIcon("cross")
-                                    .setTooltip("Cancel")
-                                    .onClick(() => {
-                                        saved = false;
-                                        confirm.close();
-                                    });
-                                return b;
-                            });
-
-                            confirm.onClose = async () => {
-                                if (saved) {
-                                    this.data.useCSV = true;
-                                    this.plugin.saveSettings();
-                                    this.display();
-                                }
-                            };
-
-                            confirm.open();
-                        } else {
-                            this.data.useCSV = v;
-                            this.display();
-                        }
-                    })
-            );
-
-        if (this.data.useCSV) {
-            let csv = containerEl.createDiv({
-                attr: {
-                    style: "margin-left: 12px; margin-right: 12px;"
-                }
-            });
-
-            let location = new Setting(csv)
-                .setName("File Location")
-                .setDesc(`${this.data.csvPath}`)
-                .addText((t) => {
-                    t.setPlaceholder("Example: folder 1/folder 2");
-                    let folders = new Map<string, TFolder>();
-                    folders.set("/", this.app.vault.getRoot());
-                    const recursiveFolderAdd = (folder: TFolder) => {
-                        if (folder.parent) {
-                            folders.set(folder.parent.path, folder.parent);
-                        }
-                        if (folder.children) {
-                            folder.children.forEach((child) => {
-                                recursiveFolderAdd(child as TFolder);
-                            });
-                        }
-                    };
-                    recursiveFolderAdd(this.app.vault.getRoot());
-                    let modal = new SuggestionModal<TFolder>(
-                        this.app,
-                        t.inputEl,
-                        [...folders].map((f) => f[1])
-                    );
-
-                    modal.getItemText = (folder) => folder.path;
-                    modal.selectSuggestion = async (folder, evt) => {
-                        this.data.csvPath = folder.item.path;
-                        modal.close();
-                        await this.plugin.saveSettings();
-                        this.display();
-                    };
-                });
-
-        } */

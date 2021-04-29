@@ -1,5 +1,5 @@
-import { MarkdownPostProcessorContext, MarkdownView } from "obsidian";
-import LeafletMap from "src/leaflet";
+import { MarkdownView } from "obsidian";
+import LeafletMap, { DivIconMarker, MarkerDivIcon } from "src/leaflet";
 
 export interface ObsidianAppData {
     mapMarkers: MapMarkerData[];
@@ -10,6 +10,7 @@ export interface ObsidianAppData {
     long: number;
     notePreview: boolean;
     layerMarkers: boolean;
+    previousVersion: string;
 }
 
 export interface Marker {
@@ -20,11 +21,11 @@ export interface Marker {
     transform?: { size: number; x: number; y: number };
 }
 export interface LeafletMarker {
-    marker: MarkerIcon;
+    type: string;
     loc: L.LatLng;
     id: string;
     link?: string;
-    leafletInstance: L.Marker;
+    leafletInstance: DivIconMarker;
     layer: string;
     mutable: boolean;
 }
@@ -37,21 +38,30 @@ export interface MarkerData {
     layer: string;
 }
 
-export interface MapMarkerData {
-    path: string;
-    file: string;
-    markers: MarkerData[];
-}
-export type MarkerIcon = {
-    readonly type: string;
-    readonly html: string;
-};
-
 export interface MapInterface {
     map: LeafletMap;
-    path: string;
-    file: string;
+    path?: string;
+    file?: string;
     view: MarkdownView;
+    source: string;
+    el: HTMLElement;
+    id: string;
+}
+export interface MapMarkerData {
+    path?: string;
+    file?: string;
+    files: string[];
+    lastAccessed: number;
+    id: string;
+    markers: MarkerData[];
+}
+export interface MarkerIcon {
+    readonly type: string;
+    readonly html: string;
+}
+
+export interface LeafletMarkerIcon extends MarkerIcon {
+    icon: MarkerDivIcon;
 }
 
 export interface LayerGroup {

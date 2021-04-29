@@ -12,3 +12,4 @@ main.js
 .DS_Store
 *build.js
 rollup.config-dev.js
+.hotreload
