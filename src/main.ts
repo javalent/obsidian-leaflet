@@ -498,7 +498,7 @@ export default class ObsidianLeaflet extends Plugin {
                 //error is thrown here because plugins isn't exposed on Obsidian App
                 //@ts-expect-error
                 const cache = this.app.plugins.plugins.dataview?.index;
-                if (cache) {
+                if (cache && markerTags.length > 0) {
                     const tagSet = new Set();
                     for (let tags of markerTags) {
                         tags.map((tag) => {
