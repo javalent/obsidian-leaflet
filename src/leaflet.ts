@@ -582,10 +582,6 @@ export default class LeafletMap extends Events {
                 L.DomEvent.stopPropagation(evt);
 
                 if (evt.originalEvent.altKey) {
-                    console.log(
-                        "🚀 ~ file: leaflet.ts ~ line 585 ~ LeafletMap ~ .on ~ evt.originalEvent.altKey",
-                        evt.originalEvent.altKey
-                    );
                     this.tooltip.setContent(
                         `[${marker.loc.lat}, ${marker.loc.lng}]`
                     );
