@@ -40,7 +40,8 @@ export const DEFAULT_SETTINGS: ObsidianAppData = {
     long: -82.98333,
     notePreview: false,
     layerMarkers: true,
-    previousVersion: null
+    previousVersion: null,
+    warnedAboutMapMarker: false
 };
 
 import ObsidianLeaflet from "./main";

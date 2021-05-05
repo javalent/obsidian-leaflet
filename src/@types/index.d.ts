@@ -11,6 +11,7 @@ export interface ObsidianAppData {
     notePreview: boolean;
     layerMarkers: boolean;
     previousVersion: string;
+    warnedAboutMapMarker: boolean;
 }
 
 export interface Marker {

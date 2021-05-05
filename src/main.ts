@@ -451,78 +451,145 @@ export default class ObsidianLeaflet extends Plugin {
                 ]);
             }
 
-            let markerFiles = (
-                source.match(/^\bmarkerFile\b:[\s\S]*?$/gm) || []
-            ).map((p) =>
-                p
-                    .split(/(?:markerFile):\s?/)[1]
-                    ?.trim()
-                    .replace(/(\[|\])/g, "")
-            );
-            let markerFolders = (
-                source.match(/^\bmarkerFolder\b:[\s\S]*?$/gm) || []
-            ).map((p) =>
-                p
-                    .split(/(?:markerFolder):\s?/)[1]
-                    ?.trim()
-                    .replace(/(\[|\])/g, "")
-            );
-
-            for (let path of markerFolders) {
-                let abstractFile = this.app.vault.getAbstractFileByPath(path);
-                if (!abstractFile) continue;
-                if (abstractFile instanceof TFile) markerFiles.push(path);
-                if (abstractFile instanceof TFolder) {
-                    Vault.recurseChildren(abstractFile, (file) => {
-                        markerFiles.push(file.path);
-                    });
-                }
-            }
-
-            for (let path of markerFiles) {
-                const file = await this.app.metadataCache.getFirstLinkpathDest(
-                    path,
-                    ""
+            if (/marker(File|Folder|Tag)/.test(source)) {
+                let markerFiles = new Set(
+                    (source.match(/^\bmarkerFile\b:[\s\S]*?$/gm) || []).map(
+                        (file) =>
+                            file
+                                .split(/(?:markerFile):\s?/)[1]
+                                ?.trim()
+                                .replace(/(\[|\])/g, "")
+                    )
                 );
-                if (!file || !(file instanceof TFile)) continue;
+                let markerFolders = (
+                    source.match(/^\bmarkerFolder\b:[\s\S]*?$/gm) || []
+                ).map((folder) =>
+                    folder
+                        .split(/(?:markerFolder):\s?/)[1]
+                        ?.trim()
+                        .replace(/(\[|\])/g, "")
+                );
 
-                let { frontmatter } = this.app.metadataCache.getFileCache(file);
+                let markerTags = (
+                    source.match(/\bmarkerTag\b:[\s\S]*?$/gm) || []
+                ).map((tag) =>
+                    tag
+                        .split(/(?:markerTag):\s?/)[1]
+                        ?.trim()
+                        .replace(/(\[|\])/g, "")
+                        .split(/,\s*/)
+                );
 
-                if (
-                    !frontmatter ||
-                    !frontmatter.location ||
-                    !frontmatter.location.length
-                )
-                    continue;
-                let err = false,
-                    [lat, long] = frontmatter.location;
-
-                try {
-                    lat =
-                        typeof lat === "number"
-                            ? lat
-                            : Number(lat?.split("%").shift());
-                    long =
-                        typeof long === "number"
-                            ? long
-                            : Number(long?.split("%").shift());
-                } catch (e) {
-                    err = true;
+                for (let path of markerFolders) {
+                    let abstractFile = this.app.vault.getAbstractFileByPath(
+                        path
+                    );
+                    if (!abstractFile) continue;
+                    if (abstractFile instanceof TFile) markerFiles.add(path);
+                    if (abstractFile instanceof TFolder) {
+                        Vault.recurseChildren(abstractFile, (file) => {
+                            if (file instanceof TFile)
+                                markerFiles.add(file.path);
+                        });
+                    }
                 }
 
-                if (err || isNaN(lat) || isNaN(long)) {
-                    continue;
+                //get cache
+                //error is thrown here because plugins isn't exposed on Obsidian App
+                //@ts-expect-error
+                const cache = this.app.plugins.plugins.dataview?.index;
+                if (cache) {
+                    const tagSet = new Set();
+                    for (let tags of markerTags) {
+                        tags.map((tag) => {
+                            return cache.tags.getInverse(tag.trim());
+                        })
+                            .reduce(
+                                (a, b) =>
+                                    new Set(
+                                        [...b].filter(
+                                            Set.prototype.has,
+                                            new Set(a)
+                                        )
+                                    )
+                            )
+                            .forEach(tagSet.add, tagSet);
+                    }
+                    if (markerFiles.size) {
+                        markerFiles = new Set(
+                            [...markerFiles].filter(tagSet.has, tagSet)
+                        );
+                    } else {
+                        tagSet.forEach(markerFiles.add, markerFiles);
+                    }
+                } else {
+                    if (markerTags.length) {
+                        new Notice(
+                            "The `markerTag` field can only be used with the Dataview plugin installed."
+                        );
+                    }
                 }
 
-                markersToReturn.push([
-                    frontmatter.marker || "default",
-                    lat,
-                    long,
-                    this.app.metadataCache.fileToLinktext(file, "", true),
-                    undefined
-                ]);
+                for (let path of markerFiles) {
+                    const file = await this.app.metadataCache.getFirstLinkpathDest(
+                        path,
+                        ""
+                    );
+                    if (!file || !(file instanceof TFile)) continue;
+
+                    let { frontmatter } = this.app.metadataCache.getFileCache(
+                        file
+                    );
+
+                    if (
+                        !frontmatter ||
+                        !frontmatter.location ||
+                        !frontmatter.location.length
+                    )
+                        continue;
+                    let err = false,
+                        [lat, long] = frontmatter.location;
+
+                    try {
+                        lat =
+                            typeof lat === "number"
+                                ? lat
+                                : Number(lat?.split("%").shift());
+                        long =
+                            typeof long === "number"
+                                ? long
+                                : Number(long?.split("%").shift());
+                    } catch (e) {
+                        err = true;
+                    }
+
+                    if (err || isNaN(lat) || isNaN(long)) {
+                        continue;
+                    }
+
+                    if (
+                        frontmatter.marker &&
+                        !this.AppData.warnedAboutMapMarker
+                    ) {
+                        new Notice(
+                            "The `marker` front matter tag will be changing to `mapmarker` in a future release. Please update your notes."
+                        );
+                        this.AppData.warnedAboutMapMarker = true;
+                        await this.saveSettings();
+                    }
+
+                    markersToReturn.push([
+                        frontmatter.mapmarker ||
+                            frontmatter.marker ||
+                            "default",
+                        lat,
+                        long,
+                        this.app.metadataCache.fileToLinktext(file, "", true),
+                        undefined
+                    ]);
+                }
             }
-            
+
             resolve(markersToReturn);
         });
     }
@@ -1095,6 +1162,7 @@ export default class ObsidianLeaflet extends Plugin {
 
         markerSettingsModal.open();
     }
+
     async toDataURL(url: string): Promise<string> {
         //determine link type
         try {

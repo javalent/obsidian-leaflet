@@ -133,21 +133,79 @@ The marker link may be defined as an Obsidian wikilink.
 
 These markers **will not be included in exported marker data.**
 
-#### MarkerFile and MarkerFolder
+### Marker Files, Marker Folders and Marker Tags
 
-Markers may also be defined in the code block using the following syntax:
-
-`markerFile: [[WikiLinkToFile]]`
-
-**OR**
-
-`markerFolder: Direct/Path/To/Folder`
+These parameters allow you to create markers directly from a list of markdown note files.
 
 A note specified in this manner should have the following frontmatter tags:
 `location: [lat, long]` **REQUIRED**
-`marker: <marker-type>` **OPTIONAL**
+`mapmarker: <marker-type>` **OPTIONAL**
 
-_Note: If a folder with a large amount of nest notes is provided, rendering could be slower than normal._
+There is no limit to how many of these parameters you can have defined in the code block; all of the files found will be parsed for defined markers.
+
+_Please note that until I can utilize some form of caching, having a large amount of marker files defined could impact performance._
+
+#### Marker File
+
+Marker files may be defined in the code block using the following syntax:
+
+`markerFile: [[WikiLinkToFile]]` **OR**
+`markerFile: Direct/Path/To/Note`
+
+#### Marker Folders
+
+Marker folders may be defined in the code block using the following syntax:
+
+`markerFolder: Direct/Path/To/Folder`
+
+This will search through _all_ of the notes in the specified folder, even in sub folders.
+
+#### Marker Tags
+
+If you have the [Dataview plugin](https://github.com/blacksmithgu/obsidian-dataview) installed, markers may also be created from tags using the following syntax:
+
+`markerTag: #<tag>, #<tag>, ...`
+
+Each `markerTag` parameter will return notes that have _all_ of the tags defined in that paramter. If you are looking for files containing _any_ tag listed, use separate `markerTag` parameters.
+
+If one or more `markerFolder` parameters are specified, the `markerTag` parameter will only look for notes *in the folders that contain the tags*.
+
+#### Examples
+
+```
+markerFile: [[MarkerFile]]
+```
+
+would 
+1. Load the MarkerFile.md note file and, if it has the correct frontmatter fields, create a marker for it.
+
+```
+markerFile: [[MarkerFile]]
+markerFolder: People and Locations
+```
+
+would
+1. Load the MarkerFile.md note
+2. Look through the People and Locations folder for additional notes
+
+```
+markerTag: #location, #friends
+```
+
+would
+1. Find *all* notes tagged with both `#location` **and** `#friends` and create markers using their frontmatter
+
+```
+markerFolder: People and Locations
+markerFolder: Interests/Maps of the World
+markerTags: #people, #friends
+markerTags: #Paris
+```
+
+would search for notes that
+
+1. Are in the folders People and Locations OR Interests/Maps of the World, AND
+2. Contain both tags #people AND #friends OR the tag #Paris
 
 ### Marker CSV File
 
