@@ -580,7 +580,36 @@ export default class LeafletMap extends Events {
             })
             .on("click", async (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
+
+                if (evt.originalEvent.altKey) {
+                    console.log(
+                        "🚀 ~ file: leaflet.ts ~ line 585 ~ LeafletMap ~ .on ~ evt.originalEvent.altKey",
+                        evt.originalEvent.altKey
+                    );
+                    this.tooltip.setContent(
+                        `[${marker.loc.lat}, ${marker.loc.lng}]`
+                    );
+                    marker.leafletInstance
+                        .bindTooltip(this.tooltip, {
+                            offset: new L.Point(
+                                0,
+                                -1 *
+                                    (<SVGElement>(
+                                        evt.originalEvent.target
+                                    )).getBoundingClientRect().height
+                            )
+                        })
+                        .openTooltip();
+
+                    marker.leafletInstance.once("mouseout", () =>
+                        marker.leafletInstance.unbindTooltip().closeTooltip()
+                    );
+
+                    return;
+                }
+
                 marker.leafletInstance.closeTooltip();
+
                 if (marker.link) {
                     this.trigger(
                         "marker-click",

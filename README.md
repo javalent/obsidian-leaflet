@@ -105,6 +105,12 @@ If any additional marker types have been created in the settings, a list will ap
 
 Once a marker has been created, it can be dragged to a different location.
 
+Markers created on the map will be saved to the map instance. Marker data saved this way will persist as long as the map is associated with a note - if the map blocks are removed from notes, or if all of the notes containing map blocks are removed, **the data associated with it will be deleted after 7 days.**
+
+### Marker Coordinates
+
+<kbd>Alt</kbd>-clicking on a marker will reveal its coordinates.
+
 ### Marker Links
 
 A marker can also point to a note; right-click on it, and a popup will appear. The target can be entered as the name of the note. Additionally, headers or blocks within a note can be the target of a marker:
@@ -168,7 +174,7 @@ If you have the [Dataview plugin](https://github.com/blacksmithgu/obsidian-datav
 
 Each `markerTag` parameter will return notes that have _all_ of the tags defined in that paramter. If you are looking for files containing _any_ tag listed, use separate `markerTag` parameters.
 
-If one or more `markerFolder` parameters are specified, the `markerTag` parameter will only look for notes *in the folders that contain the tags*.
+If one or more `markerFolder` parameters are specified, the `markerTag` parameter will only look for notes _in the folders that contain the tags_.
 
 #### Examples
 
@@ -176,7 +182,8 @@ If one or more `markerFolder` parameters are specified, the `markerTag` paramete
 markerFile: [[MarkerFile]]
 ```
 
-would 
+would
+
 1. Load the MarkerFile.md note file and, if it has the correct frontmatter fields, create a marker for it.
 
 ```
@@ -185,6 +192,7 @@ markerFolder: People and Locations
 ```
 
 would
+
 1. Load the MarkerFile.md note
 2. Look through the People and Locations folder for additional notes
 
@@ -193,7 +201,8 @@ markerTag: #location, #friends
 ```
 
 would
-1. Find *all* notes tagged with both `#location` **and** `#friends` and create markers using their frontmatter
+
+1. Find _all_ notes tagged with both `#location` **and** `#friends` and create markers using their frontmatter
 
 ```
 markerFolder: People and Locations
