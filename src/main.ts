@@ -10,7 +10,8 @@ import {
     Menu,
     MarkdownPostProcessorContext,
     Vault,
-    TFolder
+    TFolder,
+    setIcon
 } from "obsidian";
 import { latLng, LeafletMouseEvent, Point } from "leaflet";
 import { parse as parseCSV } from "papaparse";
@@ -892,6 +893,25 @@ export default class ObsidianLeaflet extends Plugin {
 
         this.registerEvent(
             map.on("marker-click", async (link: string, newWindow: boolean) => {
+                //@ts-expect-error
+                const commands = this.app.commands.listCommands();
+
+                if (
+                    commands.find(
+                        ({ name }: { name: string }) =>
+                            name.toLowerCase() === link.toLowerCase().trim()
+                    )
+                ) {
+                    const command = commands.find(
+                        ({ name }: { name: string }) =>
+                            name.toLowerCase() === link.toLowerCase().trim()
+                    );
+
+                    //@ts-expect-error
+                    this.app.commands.executeCommandById(command.id);
+                    return;
+                }
+
                 let internal = await this.app.metadataCache.getFirstLinkpathDest(
                     link.split(/(\^|\||#)/).shift(),
                     ""
@@ -934,6 +954,50 @@ export default class ObsidianLeaflet extends Plugin {
             map.on(
                 "marker-mouseover",
                 async (evt: L.LeafletMouseEvent, marker: LeafletMarker) => {
+                    //@ts-expect-error
+                    const commands = this.app.commands.listCommands();
+
+                    if (
+                        commands.find(
+                            ({ name }: { name: string }) =>
+                                name.toLowerCase() ===
+                                marker.link.toLowerCase().trim()
+                        )
+                    ) {
+                        const command = commands.find(
+                            ({ name }: { name: string }) =>
+                                name.toLowerCase() ===
+                                marker.link.toLowerCase().trim()
+                        );
+
+                        let el = evt.originalEvent.target as SVGElement;
+                        const div = createDiv({
+                            attr: {
+                                style: "display: flex; align-items: center;"
+                            }
+                        });
+                        setIcon(
+                            div.createSpan({
+                                attr: {
+                                    style:
+                                        "margin-right: 0.5em; display: flex; align-items: center;"
+                                }
+                            }),
+                            "run-command"
+                        );
+                        div.createSpan({ text: command.name });
+                        map.tooltip.setContent(div);
+                        marker.leafletInstance
+                            .bindTooltip(map.tooltip, {
+                                offset: new Point(
+                                    0,
+                                    -1 * el.getBoundingClientRect().height
+                                )
+                            })
+                            .openTooltip();
+                        return;
+                    }
+
                     let internal = await this.app.metadataCache.getFirstLinkpathDest(
                         marker.link.split(/(\^|\||#)/).shift(),
                         ""

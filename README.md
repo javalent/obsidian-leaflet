@@ -127,6 +127,12 @@ Additionally, markers can be created by dragging a note from the file tree and d
 
 Marker links can also be set to external websites. Clicking the marker will open the website.
 
+#### Obsidian Commands as Links
+
+Markers links can also be set to a defined Obsidian command from the command palette. This must be the full name of the command as it appears in the palette.
+
+Setting a marker link to a command will execute the command when the marker is clicked.
+
 ### Markers Defined in the Code Block
 
 Markers may be defined directly in the code block using the following syntax:
