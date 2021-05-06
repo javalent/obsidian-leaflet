@@ -26,23 +26,23 @@ import {
     icon,
     toHtml,
     getIcon,
-    PathSuggestionModal,
-    compareVersions
+    compareVersions,
+    MarkerContextModal
 } from "./utils";
 import {
-    MapInterface,
-    LeafletMarker,
-    MarkerData,
-    MarkerIcon,
-    ObsidianAppData,
-    Marker
+    IMapInterface,
+    ILeafletMarker,
+    IMarkerData,
+    IMarkerIcon,
+    IObsidianAppData,
+    IMarker
 } from "./@types";
-import LeafletMap from "./leaflet";
+import LeafletMap, { Marker } from "./leaflet";
 
 export default class ObsidianLeaflet extends Plugin {
-    AppData: ObsidianAppData;
-    markerIcons: MarkerIcon[];
-    maps: MapInterface[] = [];
+    AppData: IObsidianAppData;
+    markerIcons: IMarkerIcon[];
+    maps: IMapInterface[] = [];
     mapFiles: { file: string; maps: string[] }[] = [];
     async onload(): Promise<void> {
         console.log("Loading Obsidian Leaflet v" + this.manifest.version);
@@ -217,15 +217,17 @@ export default class ObsidianLeaflet extends Plugin {
                 lat,
                 long,
                 link,
-                layer = layers[0]
+                layer = layers[0],
+                command = false
             ] of immutableMarkers) {
                 map.createMarker(
                     this.markerIcons.find(({ type: t }) => t == type),
                     latLng([Number(lat), Number(long)]),
-                    link,
+                    link.trim(),
                     undefined,
                     layer,
-                    false
+                    false,
+                    command
                 );
             }
 
@@ -392,7 +394,7 @@ export default class ObsidianLeaflet extends Plugin {
     }
     async getMarkersFromSource(
         source: string
-    ): Promise<[string, number, number, string, string][]> {
+    ): Promise<[string, number, number, string, string, boolean][]> {
         return new Promise(async (resolve, reject) => {
             let markersInSourceBlock = (
                     source.match(/^\bmarker\b:[\s\S]*?$/gm) || []
@@ -402,7 +404,8 @@ export default class ObsidianLeaflet extends Plugin {
                     number,
                     number,
                     string,
-                    string
+                    string,
+                    boolean
                 ][] = [];
 
             for (let marker of markersInSourceBlock) {
@@ -448,7 +451,60 @@ export default class ObsidianLeaflet extends Plugin {
                     Number(lat),
                     Number(long),
                     link,
-                    layer
+                    layer,
+                    false
+                ]);
+            }
+
+            let commandMarkersInSourceBlock = (
+                source.match(/^\bcommandMarker\b:[\s\S]*?$/gm) || []
+            ).map((p) => p.split(/(?:commandMarker):\s?/)[1]?.trim());
+
+            for (let marker of commandMarkersInSourceBlock) {
+                /* type, lat, long, link, layer, */
+                const { data } = parseCSV<string>(marker);
+                if (!data.length) {
+                    new Notice("No data");
+                    continue;
+                }
+
+                let [type, lat, long, link, layer] = data[0];
+
+                if (
+                    !type ||
+                    !type.length ||
+                    type === "undefined" ||
+                    (type != "default" &&
+                        !this.markerIcons.find(({ type: t }) => t == type))
+                ) {
+                    type = "default";
+                }
+                if (!lat || !lat.length || isNaN(Number(lat))) {
+                    new Notice("Could not parse latitude");
+                    continue;
+                }
+                if (!long || !long.length || isNaN(Number(long))) {
+                    new Notice("Could not parse longitude");
+                    continue;
+                }
+
+                if (!link || !link.length || link === "undefined") {
+                    link = undefined;
+                } else if (/\[\[[\s\S]+\]\]/.test(link)) {
+                    //obsidian wiki-link
+                    [, link] = link.match(/\[\[([\s\S]+)\]\]/);
+                }
+
+                if (!layer || !layer.length || layer === "undefined") {
+                    layer = undefined;
+                }
+                markersToReturn.push([
+                    type,
+                    Number(lat),
+                    Number(long),
+                    link,
+                    layer,
+                    true
                 ]);
             }
 
@@ -586,7 +642,8 @@ export default class ObsidianLeaflet extends Plugin {
                         lat,
                         long,
                         this.app.metadataCache.fileToLinktext(file, "", true),
-                        undefined
+                        undefined,
+                        false
                     ]);
                 }
             }
@@ -655,13 +712,14 @@ export default class ObsidianLeaflet extends Plugin {
                 markers: map.map.markers
                     .filter(({ mutable }) => mutable)
                     .map(
-                        (marker): MarkerData => {
+                        (marker): IMarkerData => {
                             return {
                                 type: marker.type,
                                 id: marker.id,
                                 loc: [marker.loc.lat, marker.loc.lng],
                                 link: marker.link,
-                                layer: marker.layer
+                                layer: marker.layer,
+                                command: marker.command || false
                             };
                         }
                     )
@@ -691,19 +749,12 @@ export default class ObsidianLeaflet extends Plugin {
             map.map.setMarkerIcons(this.markerIcons);
         });
     }
-    getEditor(): CodeMirror.Editor {
-        let view = this.app.workspace.getActiveViewOfType(MarkdownView);
-        if (view) {
-            return view.sourceMode.cmEditor;
-        }
-        return null;
-    }
 
     generateMarkerMarkup(
-        markers: Marker[] = this.AppData.markerIcons
-    ): MarkerIcon[] {
-        let ret: MarkerIcon[] = markers.map(
-            (marker): MarkerIcon => {
+        markers: IMarker[] = this.AppData.markerIcons
+    ): IMarkerIcon[] {
+        let ret: IMarkerIcon[] = markers.map(
+            (marker): IMarkerIcon => {
                 if (!marker.transform) {
                     marker.transform = this.AppData.defaultMarker.transform;
                 }
@@ -827,7 +878,7 @@ export default class ObsidianLeaflet extends Plugin {
         );
 
         this.registerEvent(
-            map.on("marker-added", async (marker: LeafletMarker) => {
+            map.on("marker-added", async (marker: ILeafletMarker) => {
                 marker.leafletInstance.closeTooltip();
                 marker.leafletInstance.unbindTooltip();
                 this.maps
@@ -843,7 +894,7 @@ export default class ObsidianLeaflet extends Plugin {
         );
 
         this.registerEvent(
-            map.on("marker-dragging", (marker: LeafletMarker) => {
+            map.on("marker-dragging", (marker: ILeafletMarker) => {
                 this.maps
                     .filter(
                         ({ id, view: mapView }) =>
@@ -866,7 +917,7 @@ export default class ObsidianLeaflet extends Plugin {
         this.registerEvent(
             map.on(
                 "marker-data-updated",
-                async (marker: LeafletMarker, old: any) => {
+                async (marker: ILeafletMarker, old: any) => {
                     marker.leafletInstance.closeTooltip();
                     marker.leafletInstance.unbindTooltip();
 
@@ -892,56 +943,64 @@ export default class ObsidianLeaflet extends Plugin {
         );
 
         this.registerEvent(
-            map.on("marker-click", async (link: string, newWindow: boolean) => {
-                //@ts-expect-error
-                const commands = this.app.commands.listCommands();
+            map.on(
+                "marker-click",
+                async (link: string, newWindow: boolean, command: boolean) => {
+                    if (command) {
+                        //@ts-expect-error
+                        const commands = this.app.commands.listCommands();
 
-                if (
-                    commands.find(
-                        ({ name }: { name: string }) =>
-                            name.toLowerCase() === link.toLowerCase().trim()
-                    )
-                ) {
-                    const command = commands.find(
-                        ({ name }: { name: string }) =>
-                            name.toLowerCase() === link.toLowerCase().trim()
+                        if (
+                            commands.find(
+                                ({ name }: { name: string }) =>
+                                    name.toLowerCase() ===
+                                    link.toLowerCase().trim()
+                            )
+                        ) {
+                            const command = commands.find(
+                                ({ name }: { name: string }) =>
+                                    name.toLowerCase() ===
+                                    link.toLowerCase().trim()
+                            );
+
+                            //@ts-expect-error
+                            this.app.commands.executeCommandById(command.id);
+                        } else {
+                            new Notice(`Command ${link} could not be found.`);
+                        }
+                        return;
+                    }
+                    let internal = await this.app.metadataCache.getFirstLinkpathDest(
+                        link.split(/(\^|\||#)/).shift(),
+                        ""
                     );
 
-                    //@ts-expect-error
-                    this.app.commands.executeCommandById(command.id);
-                    return;
+                    if (
+                        /(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/.test(
+                            link
+                        ) &&
+                        !internal
+                    ) {
+                        //external url
+                        let [, l] = link.match(
+                            /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))/
+                        );
+
+                        let [, text = l] = link.match(/\[([\s\S]+)\]/) || l;
+
+                        const a = createEl("a", { href: l, text: text });
+
+                        a.click();
+                        a.detach();
+                    } else {
+                        await this.app.workspace.openLinkText(
+                            link.replace("^", "#^").split(/\|/).shift(),
+                            this.app.workspace.getActiveFile()?.path,
+                            newWindow
+                        );
+                    }
                 }
-
-                let internal = await this.app.metadataCache.getFirstLinkpathDest(
-                    link.split(/(\^|\||#)/).shift(),
-                    ""
-                );
-
-                if (
-                    /(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/.test(
-                        link
-                    ) &&
-                    !internal
-                ) {
-                    //external url
-                    let [, l] = link.match(
-                        /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))/
-                    );
-
-                    let [, text = l] = link.match(/\[([\s\S]+)\]/) || l;
-
-                    const a = createEl("a", { href: l, text: text });
-
-                    a.click();
-                    a.detach();
-                } else {
-                    await this.app.workspace.openLinkText(
-                        link.replace("^", "#^").split(/\|/).shift(),
-                        this.app.workspace.getActiveFile()?.path,
-                        newWindow
-                    );
-                }
-            })
+            )
         );
 
         this.registerEvent(
@@ -953,48 +1012,76 @@ export default class ObsidianLeaflet extends Plugin {
         this.registerEvent(
             map.on(
                 "marker-mouseover",
-                async (evt: L.LeafletMouseEvent, marker: LeafletMarker) => {
-                    //@ts-expect-error
-                    const commands = this.app.commands.listCommands();
+                async (evt: L.LeafletMouseEvent, marker: ILeafletMarker) => {
+                    if (marker.command) {
+                        //@ts-expect-error
+                        const commands = this.app.commands.listCommands();
 
-                    if (
-                        commands.find(
-                            ({ name }: { name: string }) =>
-                                name.toLowerCase() ===
-                                marker.link.toLowerCase().trim()
-                        )
-                    ) {
-                        const command = commands.find(
-                            ({ name }: { name: string }) =>
-                                name.toLowerCase() ===
-                                marker.link.toLowerCase().trim()
-                        );
+                        if (
+                            commands.find(
+                                ({ name }: { name: string }) =>
+                                    name.toLowerCase() ===
+                                    marker.link.toLowerCase().trim()
+                            )
+                        ) {
+                            const command = commands.find(
+                                ({ name }: { name: string }) =>
+                                    name.toLowerCase() ===
+                                    marker.link.toLowerCase().trim()
+                            );
 
-                        let el = evt.originalEvent.target as SVGElement;
-                        const div = createDiv({
-                            attr: {
-                                style: "display: flex; align-items: center;"
-                            }
-                        });
-                        setIcon(
-                            div.createSpan({
+                            let el = evt.originalEvent.target as SVGElement;
+                            const div = createDiv({
                                 attr: {
-                                    style:
-                                        "margin-right: 0.5em; display: flex; align-items: center;"
+                                    style: "display: flex; align-items: center;"
                                 }
-                            }),
-                            "run-command"
-                        );
-                        div.createSpan({ text: command.name });
-                        map.tooltip.setContent(div);
-                        marker.leafletInstance
-                            .bindTooltip(map.tooltip, {
-                                offset: new Point(
-                                    0,
-                                    -1 * el.getBoundingClientRect().height
-                                )
-                            })
-                            .openTooltip();
+                            });
+                            setIcon(
+                                div.createSpan({
+                                    attr: {
+                                        style:
+                                            "margin-right: 0.5em; display: flex; align-items: center;"
+                                    }
+                                }),
+                                "run-command"
+                            );
+                            div.createSpan({ text: command.name });
+                            map.tooltip.setContent(div);
+                            marker.leafletInstance
+                                .bindTooltip(map.tooltip, {
+                                    offset: new Point(
+                                        0,
+                                        -1 * el.getBoundingClientRect().height
+                                    )
+                                })
+                                .openTooltip();
+                        } else {
+                            let el = evt.originalEvent.target as SVGElement;
+                            const div = createDiv({
+                                attr: {
+                                    style: "display: flex; align-items: center;"
+                                }
+                            });
+                            setIcon(
+                                div.createSpan({
+                                    attr: {
+                                        style:
+                                            "margin-right: 0.5em; display: flex; align-items: center;"
+                                    }
+                                }),
+                                "cross"
+                            );
+                            div.createSpan({ text: "No command found!" });
+                            map.tooltip.setContent(div);
+                            marker.leafletInstance
+                                .bindTooltip(map.tooltip, {
+                                    offset: new Point(
+                                        0,
+                                        -1 * el.getBoundingClientRect().height
+                                    )
+                                })
+                                .openTooltip();
+                        }
                         return;
                     }
 
@@ -1083,14 +1170,14 @@ export default class ObsidianLeaflet extends Plugin {
         this.registerEvent(
             map.on("map-contextmenu", (evt: LeafletMouseEvent) => {
                 if (map.markerIcons.length <= 1) {
-                    map.createMarker(map.markerIcons[0], evt.latlng);
+                    map.createMarker(map.markerIcons[0], evt.latlng );
                     return;
                 }
 
                 let contextMenu = new Menu(this.app);
 
                 contextMenu.setNoIcon();
-                map.markerIcons.forEach((marker: MarkerIcon) => {
+                map.markerIcons.forEach((marker: IMarkerIcon) => {
                     if (!marker.type || !marker.html) return;
                     contextMenu.addItem((item) => {
                         item.setTitle(
@@ -1098,7 +1185,10 @@ export default class ObsidianLeaflet extends Plugin {
                         );
                         item.setActive(true);
                         item.onClick(async () => {
-                            map.createMarker(marker, evt.latlng);
+                            map.createMarker(
+                                marker,
+                                evt.latlng
+                            );
                             await this.saveSettings();
                         });
                     });
@@ -1111,12 +1201,13 @@ export default class ObsidianLeaflet extends Plugin {
             })
         );
     }
-    handleMarkerContext(
-        map: LeafletMap,
-        view: MarkdownView,
-        marker: LeafletMarker
-    ) {
-        let markerSettingsModal = new Modal(this.app);
+    handleMarkerContext(map: LeafletMap, view: MarkdownView, marker: Marker) {
+        let markerSettingsModal = new MarkerContextModal(
+            this.app,
+            this,
+            marker,
+            map
+        );
         const otherMaps = this.maps.filter(
             ({ id, view: mapView }) => id == map.id && view != mapView
         );
@@ -1127,102 +1218,32 @@ export default class ObsidianLeaflet extends Plugin {
             )
         ];
 
-        let path = new Setting(markerSettingsModal.contentEl)
-            .setName("Note to Open")
-            .setDesc("Path of note to open")
-            .addText((text) => {
-                let files = this.app.vault.getFiles();
-
-                /* const chooseSuggestions = (v: string) => {
-                        
-                    }; */
-
-                text.setPlaceholder("Path").setValue(marker.link);
-                let modal = new PathSuggestionModal(this.app, text, [...files]);
-
-                modal.onClose = async () => {
-                    markersToUpdate.forEach((marker) => {
-                        marker.link = text.inputEl.value;
-                    });
-                    await this.saveSettings();
-                };
-
-                text.inputEl.onblur = async () => {
-                    markersToUpdate.forEach((marker) => {
-                        marker.link = text.inputEl.value;
-                    });
-                    await this.saveSettings();
-                };
-            });
-
-        new Setting(markerSettingsModal.contentEl)
-            .setName("Marker Type")
-            .addDropdown((drop) => {
-                drop.addOption("default", "Base Marker");
-                this.AppData.markerIcons.forEach((marker) => {
-                    drop.addOption(marker.type, marker.type);
+        markerSettingsModal.onClose = async () => {
+            if (markerSettingsModal.deleted) {
+                map.group.group.removeLayer(marker.leafletInstance);
+                marker.leafletInstance.remove();
+                map.markers = map.markers.filter((m) => m.id != marker.id);
+                otherMaps.forEach((oM) => {
+                    let otherMarker = oM.map.markers.find(
+                        (m) => m.id == marker.id
+                    );
+                    oM.map.group.group.removeLayer(otherMarker.leafletInstance);
+                    otherMarker.leafletInstance.remove();
+                    oM.map.markers = oM.map.markers.filter(
+                        (m) => m.id != marker.id
+                    );
                 });
-                drop.setValue(marker.type).onChange(async (value) => {
-                    let newMarker =
-                        value == "default"
-                            ? this.AppData.defaultMarker
-                            : this.AppData.markerIcons.find(
-                                  (m) => m.type == value
-                              );
-                    let html: string,
-                        iconNode: AbstractElement = icon(
-                            getIcon(newMarker.iconName),
-                            {
-                                transform: { size: 6, x: 0, y: -2 },
-                                mask: getIcon(
-                                    this.AppData.defaultMarker.iconName
-                                ),
-                                classes: ["full-width-height"]
-                            }
-                        ).abstract[0];
-
-                    iconNode.attributes = {
-                        ...iconNode.attributes,
-                        style: `color: ${
-                            newMarker.color
-                                ? newMarker.color
-                                : this.AppData.defaultMarker.color
-                        }`
-                    };
-
-                    html = toHtml(iconNode);
-                    markersToUpdate.forEach((marker) => {
-                        marker.type = newMarker.type;
-                    });
-                    await this.saveSettings();
+            } else {
+                markersToUpdate.forEach((m) => {
+                    m.link = markerSettingsModal.tempMarker.link;
+                    m.icon = map.markerIcons.find(
+                        (i) => i.type === markerSettingsModal.tempMarker.type
+                    );
+                    m.command = markerSettingsModal.tempMarker.command;
                 });
-            });
-
-        new Setting(markerSettingsModal.contentEl).addButton((b) => {
-            b.setIcon("trash")
-                .setWarning()
-                .setTooltip("Delete Marker")
-                .onClick(async () => {
-                    map.group.group.removeLayer(marker.leafletInstance);
-                    marker.leafletInstance.remove();
-                    map.markers = map.markers.filter((m) => m.id != marker.id);
-                    otherMaps.forEach((oM) => {
-                        let otherMarker = oM.map.markers.find(
-                            (m) => m.id == marker.id
-                        );
-                        oM.map.group.group.removeLayer(
-                            otherMarker.leafletInstance
-                        );
-                        otherMarker.leafletInstance.remove();
-                        oM.map.markers = oM.map.markers.filter(
-                            (m) => m.id != marker.id
-                        );
-                    });
-                    markerSettingsModal.close();
-                    await this.saveSettings();
-                });
-            return b;
-        });
+                await this.saveSettings();
+            }
+        };
 
         markerSettingsModal.open();
     }

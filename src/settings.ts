@@ -20,13 +20,13 @@ import {
 } from "./utils";
 
 import {
-    MapMarkerData,
-    Marker,
-    MarkerData,
-    ObsidianAppData
+    IMapMarkerData,
+    IMarker,
+    IMarkerData,
+    IObsidianAppData
 } from "./@types/index";
 
-export const DEFAULT_SETTINGS: ObsidianAppData = {
+export const DEFAULT_SETTINGS: IObsidianAppData = {
     mapMarkers: [],
     defaultMarker: {
         type: "default",
@@ -49,7 +49,7 @@ import { latLng } from "leaflet";
 
 export class ObsidianLeafletSettingTab extends PluginSettingTab {
     plugin: ObsidianLeaflet;
-    newMarker: Marker;
+    newMarker: IMarker;
 
     constructor(app: App, plugin: ObsidianLeaflet) {
         super(app, plugin);
@@ -401,7 +401,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             if (!files.length) return;
             try {
                 const csv = await files[0].text(),
-                    markersToAdd: Map<string, MarkerData[]> = new Map(),
+                    markersToAdd: Map<string, IMarkerData[]> = new Map(),
                     parsed = parseCSV<string[]>(csv);
 
                 if (parsed.data && parsed.data.length) {
@@ -461,7 +461,8 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                             loc: [Number(lat), Number(long)],
                             link: link,
                             layer: layer,
-                            id: id
+                            id: id,
+                            command: false
                         });
                         markersToAdd.set(data[0], mapMap);
                     }
@@ -470,7 +471,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                         if (
                             !this.data.mapMarkers.find(({ id: p }) => p == id)
                         ) {
-                            const map: MapMarkerData = {
+                            const map: IMapMarkerData = {
                                 id: id,
                                 files: [],
                                 lastAccessed: Date.now(),

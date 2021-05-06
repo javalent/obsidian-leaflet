@@ -11,7 +11,8 @@ import {
     TFile,
     BlockCache,
     HeadingCache,
-    CachedMetadata
+    CachedMetadata,
+    Command
 } from "obsidian";
 import { createPopper, Instance as PopperInstance } from "@popperjs/core";
 
@@ -26,7 +27,8 @@ import {
 
 import ObsidianLeaflet from "../main";
 
-import { Marker } from "../@types/index";
+import { ILeafletMarker, IMarker } from "../@types/index";
+import LeafletMap, { Marker } from "src/leaflet";
 
 class Suggester<T> {
     owner: SuggestModal<T>;
@@ -227,6 +229,7 @@ export abstract class SuggestionModal<T> extends FuzzySuggestModal<T> {
         if (this.popper) {
             this.popper.destroy();
         }
+
         this.suggestEl.detach();
     }
     createPrompt(prompts: HTMLSpanElement[]) {
@@ -253,7 +256,7 @@ export class PathSuggestionModal extends SuggestionModal<
         super(app, input.inputEl, items);
         this.files = [...items];
         this.text = input;
-        this.getFile();
+        //this.getFile();
 
         this.createPrompts();
 
@@ -414,11 +417,200 @@ export class PathSuggestionModal extends SuggestionModal<
     }
 }
 
-export class CreateMarkerModal extends Modal {
-    marker: Marker;
-    tempMarker: Marker;
+export class CommandSuggestionModal extends SuggestionModal<Command> {
+    commands: Command[];
+    command: Command;
+    text: TextComponent;
+    constructor(app: App, input: TextComponent, items: Command[]) {
+        super(app, input.inputEl, items);
+        this.commands = [...items];
+        this.text = input;
+        //this.getItem();
+
+        this.createPrompts();
+
+        this.inputEl.addEventListener("input", this.getItem.bind(this));
+    }
+    createPrompts() {}
+    getItem() {
+        const v = this.inputEl.value,
+            command = this.commands.find((c) => c.name === v.trim());
+        if (command == this.command) return;
+        this.command = command;
+        if (this.command)
+            /* this.cache = this.app.metadataCache.getFileCache(this.command); */
+            this.onInputChanged();
+    }
+    getItemText(item: Command) {
+        return item.name;
+    }
+    onChooseItem(item: Command) {
+        this.text.setValue(item.name);
+        this.command = item;
+    }
+    selectSuggestion({ item }: FuzzyMatch<Command>) {
+        let link = item.name;
+
+        this.text.setValue(link);
+        this.onClose();
+
+        this.close();
+    }
+    renderSuggestion(result: FuzzyMatch<Command>, el: HTMLElement) {
+        let { item, match: matches } = result || {};
+        let content = el.createDiv({
+            cls: "suggestion-content"
+        });
+        if (!item) {
+            content.setText(this.emptyStateText);
+            content.parentElement.addClass("is-selected");
+            return;
+        }
+
+        const matchElements = matches.matches.map((m) => {
+            return createSpan("suggestion-highlight");
+        });
+        for (let i = 0; i < item.name.length; i++) {
+            let match = matches.matches.find((m) => m[0] === i);
+            if (match) {
+                let element = matchElements[matches.matches.indexOf(match)];
+                content.appendChild(element);
+                element.appendText(item.name.substring(match[0], match[1]));
+
+                i += match[1] - match[0] - 1;
+                continue;
+            }
+
+            content.appendText(item.name[i]);
+        }
+    }
+    getItems() {
+        return this.commands;
+    }
+}
+export class MarkerContextModal extends Modal {
     plugin: ObsidianLeaflet;
-    constructor(app: App, plugin: ObsidianLeaflet, marker: Marker) {
+    marker: Marker;
+    map: LeafletMap;
+    deleted: boolean = false;
+    tempMarker: Marker;
+    modal: CommandSuggestionModal | PathSuggestionModal;
+    constructor(
+        app: App,
+        plugin: ObsidianLeaflet,
+        marker: Marker,
+        map: LeafletMap
+    ) {
+        super(app);
+        this.marker = marker;
+        this.plugin = plugin;
+        this.map = map;
+
+        this.tempMarker = Object.assign(
+            Object.create(Object.getPrototypeOf(this.marker)),
+            this.marker
+        );
+        if (this.modal) this.modal.close();
+    }
+    async display() {
+        this.contentEl.empty();
+        new Setting(this.contentEl)
+            .setName("Execute Command")
+            .setDesc("The marker will execute an Obsidian command on click")
+            .addToggle((t) => {
+                t.setValue(this.tempMarker.command || false).onChange((v) => {
+                    this.tempMarker.command = v;
+                    this.tempMarker.link = "";
+                    this.display();
+                });
+            });
+
+        if (this.tempMarker.command) {
+            new Setting(this.contentEl)
+                .setName("Command to Execute")
+                .setDesc("Name of Obsidian Command to execute")
+                .addText((text) => {
+                    //@ts-expect-error
+                    let { commands } = this.app.commands;
+
+                    text.setPlaceholder("Command").setValue(this.marker.link);
+                    this.modal = new CommandSuggestionModal(this.app, text, [
+                        ...(Object.values(commands) as Command[])
+                    ]);
+
+                    this.modal.onClose = async () => {
+                        this.tempMarker.link = text.inputEl.value;
+                    };
+
+                    text.inputEl.onblur = async () => {
+                        this.tempMarker.link = text.inputEl.value;
+                    };
+                });
+        } else {
+            new Setting(this.contentEl)
+                .setName("Note to Open")
+                .setDesc("Path of note to open")
+                .addText((text) => {
+                    let files = this.app.vault.getFiles();
+
+                    text.setPlaceholder("Path").setValue(this.marker.link);
+                    this.modal = new PathSuggestionModal(this.app, text, [
+                        ...files
+                    ]);
+
+                    this.modal.onClose = async () => {
+                        this.tempMarker.link = text.inputEl.value;
+                    };
+
+                    text.inputEl.onblur = async () => {
+                        this.tempMarker.link = text.inputEl.value;
+                    };
+                });
+        }
+        new Setting(this.contentEl)
+            .setName("Marker Type")
+            .addDropdown((drop) => {
+                drop.addOption("default", "Default");
+                this.plugin.AppData.markerIcons.forEach((marker) => {
+                    drop.addOption(
+                        marker.type,
+                        marker.type[0].toUpperCase() +
+                            marker.type.slice(1).toLowerCase()
+                    );
+                });
+                drop.setValue(this.marker.type).onChange(async (value) => {
+                    let newMarker =
+                        value == "default"
+                            ? this.plugin.AppData.defaultMarker
+                            : this.plugin.AppData.markerIcons.find(
+                                  (m) => m.type == value
+                              );
+                    this.tempMarker.type = newMarker.type;
+                });
+            });
+
+        new Setting(this.contentEl).addButton((b) => {
+            b.setIcon("trash")
+                .setWarning()
+                .setTooltip("Delete Marker")
+                .onClick(async () => {
+                    this.deleted = true;
+
+                    this.close();
+                    await this.plugin.saveSettings();
+                });
+            return b;
+        });
+    }
+    onOpen() {
+        this.display();
+    }
+}
+export class CreateMarkerModal extends Modal {
+    marker: IMarker;
+    tempMarker: IMarker;
+    plugin: ObsidianLeaflet;
+    constructor(app: App, plugin: ObsidianLeaflet, marker: IMarker) {
         super(app);
         this.marker = marker;
         this.plugin = plugin;

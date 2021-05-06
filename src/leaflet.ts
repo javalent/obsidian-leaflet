@@ -6,11 +6,11 @@ import { Events, Notice } from "obsidian";
 // @ts-expect-error
 import layerIcon from "../node_modules/leaflet/dist/images/layers.png";
 import {
-    LayerGroup,
-    LeafletMarker,
-    LeafletMarkerIcon,
-    MarkerData,
-    MarkerIcon
+    ILayerGroup,
+    ILeafletMarker,
+    ILeafletMarkerIcon,
+    IMarkerData,
+    IMarkerIcon
 } from "./@types";
 import { getId, getImageDimensions } from "./utils";
 
@@ -64,7 +64,7 @@ export class DivIconMarker extends L.Marker {
     }
 }
 
-export class Marker implements LeafletMarker {
+export class Marker /*  implements DivMarker */ {
     private _link: string;
     private _mutable: boolean;
     private _type: string;
@@ -72,6 +72,7 @@ export class Marker implements LeafletMarker {
     loc: L.LatLng;
     id: string;
     layer: string;
+    command: boolean;
     constructor({
         id,
         icon,
@@ -79,7 +80,8 @@ export class Marker implements LeafletMarker {
         loc,
         link,
         layer,
-        mutable
+        mutable,
+        command
     }: {
         id: string;
         icon: MarkerDivIcon;
@@ -88,6 +90,7 @@ export class Marker implements LeafletMarker {
         link: string;
         layer: string;
         mutable: boolean;
+        command: boolean;
     }) {
         this.leafletInstance = divIconMarker(
             loc,
@@ -110,6 +113,7 @@ export class Marker implements LeafletMarker {
         this.link = link;
         this.layer = layer;
         this.mutable = mutable;
+        this.command = command;
     }
     get link() {
         return this._link;
@@ -145,6 +149,10 @@ export class Marker implements LeafletMarker {
             });
         }
     }
+    set icon(x: ILeafletMarkerIcon) {
+        this.type = x.type;
+        this.leafletInstance.setIcon(x.icon);
+    }
 }
 
 const divIconMarker = function (
@@ -168,14 +176,14 @@ export default class LeafletMap extends Events {
     contentEl: HTMLElement;
     map: L.Map;
     markers: Array<Marker> = [];
-    markerIcons: LeafletMarkerIcon[] = [];
+    markerIcons: ILeafletMarkerIcon[] = [];
     /* rendered: boolean = false; */
     zoom: { min: number; max: number; default: number; delta: number };
     tooltip: L.Tooltip = L.tooltip({
         className: "leaflet-marker-link-tooltip",
         direction: "top"
     });
-    mapLayers: LayerGroup[];
+    mapLayers: ILayerGroup[];
     layer: L.ImageOverlay | L.TileLayer;
     resize: ResizeObserver;
     type: string;
@@ -184,7 +192,7 @@ export default class LeafletMap extends Events {
     private _rendered: boolean;
     constructor(
         el: HTMLElement,
-        markerIcons: MarkerIcon[],
+        markerIcons: IMarkerIcon[],
         minZoom: number = 1,
         maxZoom: number = 10,
         defaultZoom: number = 1,
@@ -214,7 +222,7 @@ export default class LeafletMap extends Events {
 
     loadData(data: any): Promise<void> {
         return new Promise((resolve) => {
-            data?.markers.forEach((marker: MarkerData) => {
+            data?.markers.forEach((marker: IMarkerData) => {
                 if (!marker.layer && this.group) {
                     marker.layer = this.group.id;
                 }
@@ -223,7 +231,9 @@ export default class LeafletMap extends Events {
                     L.latLng(marker.loc),
                     marker.link,
                     marker.id,
-                    marker.layer
+                    marker.layer,
+                    true,
+                    marker.command
                 );
             });
             resolve();
@@ -424,9 +434,6 @@ export default class LeafletMap extends Events {
     async renderReal() {
         this.mapLayers[0].group.addTo(this.map);
 
-        /* this.markers.forEach((marker) => {
-            marker.leafletInstance.addTo(this.map);
-        }); */
         this.map.setZoom(this.zoom.default, { animate: false });
 
         const _this = this;
@@ -477,7 +484,7 @@ export default class LeafletMap extends Events {
         if (v) this.trigger("map-rendered", v);
     }
 
-    addMarker(markerToBeAdded: LeafletMarker) {
+    addMarker(markerToBeAdded: ILeafletMarker) {
         const mapIcon = this.markerIcons.find(
             ({ type }) => type == markerToBeAdded.type
         ).icon;
@@ -491,34 +498,10 @@ export default class LeafletMap extends Events {
             layer: markerToBeAdded.layer
                 ? markerToBeAdded.layer
                 : this.group?.id,
-            mutable: markerToBeAdded.mutable
+            mutable: markerToBeAdded.mutable,
+            command: markerToBeAdded.command || false
         });
 
-        /* const marker: LeafletMarker = {
-            id: markerToBeAdded.id,
-            marker: markerToBeAdded.marker,
-            loc: markerToBeAdded.loc,
-            link: markerToBeAdded.link,
-            leafletInstance: divIconMarker(
-                markerToBeAdded.loc,
-                {
-                    icon: mapIcon,
-                    keyboard: markerToBeAdded.mutable,
-                    draggable: markerToBeAdded.mutable,
-                    bubblingMouseEvents: true
-                },
-                {
-                    link: markerToBeAdded.link,
-                    lat: `${markerToBeAdded.loc.lat}`,
-                    long: `${markerToBeAdded.loc.lng}`,
-                    mutable: `${markerToBeAdded.mutable}`
-                }
-            ),
-            layer: markerToBeAdded.layer
-                ? markerToBeAdded.layer
-                : this.group?.id,
-            mutable: markerToBeAdded.mutable
-        }; */
         this.bindMarkerEvents(marker);
 
         if (this.rendered) {
@@ -529,13 +512,14 @@ export default class LeafletMap extends Events {
         this.markers.push(marker);
     }
     createMarker(
-        markerIcon: MarkerIcon,
+        markerIcon: IMarkerIcon,
         loc: L.LatLng,
         link: string | undefined = undefined,
         id: string = getId(),
         layer: string | undefined = undefined,
-        mutable: boolean = true
-    ): LeafletMarker {
+        mutable: boolean = true,
+        command: boolean = false
+    ): ILeafletMarker {
         const mapIcon = this.markerIcons.find(
             ({ type }) => type == markerIcon?.type || "default"
         ).icon;
@@ -547,7 +531,8 @@ export default class LeafletMap extends Events {
             link: link,
             icon: mapIcon,
             layer: layer ? layer : this.group?.id,
-            mutable: mutable
+            mutable: mutable,
+            command: command
         });
 
         this.bindMarkerEvents(marker, mutable);
@@ -566,7 +551,7 @@ export default class LeafletMap extends Events {
         return marker;
     }
 
-    bindMarkerEvents(marker: LeafletMarker, mutable: boolean = true) {
+    bindMarkerEvents(marker: ILeafletMarker, mutable: boolean = true) {
         marker.leafletInstance
             .on("contextmenu", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
@@ -610,7 +595,8 @@ export default class LeafletMap extends Events {
                     this.trigger(
                         "marker-click",
                         marker.link,
-                        evt.originalEvent.ctrlKey
+                        evt.originalEvent.ctrlKey,
+                        marker.command
                     );
                 } else {
                     if (!mutable) {
@@ -643,7 +629,7 @@ export default class LeafletMap extends Events {
             });
     }
 
-    setMarkerIcons(markerIcons: MarkerIcon[]) {
+    setMarkerIcons(markerIcons: IMarkerIcon[]) {
         this.markerIcons = markerIcons.map(({ html, type }) => {
             return {
                 html: html,

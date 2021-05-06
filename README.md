@@ -45,6 +45,7 @@ marker: <type>,<latitude>,<longitude>,<link>
 | unit         | Unit to display distances in                                                         | meters                                     |
 | scale        | Scale factor for image map distance calculation.                                     | 1                                          |
 | marker       | Create immutable markers on the map                                                  |                                            |
+| commandMarker       | Create immutable markers that execute commands                                                  |                                            |
 | markerFile   | Create immutable marker from a note's frontmatter                                    |                                            |
 | markerFolder | Create immutable markers from _all_ of the notes in a given folder                   |                                            |
 
@@ -129,9 +130,25 @@ Marker links can also be set to external websites. Clicking the marker will open
 
 #### Obsidian Commands as Links
 
-Markers links can also be set to a defined Obsidian command from the command palette. This must be the full name of the command as it appears in the palette.
+Markers links can also be set to a defined Obsidian command from the command palette one of two ways.
 
-Setting a marker link to a command will execute the command when the marker is clicked.
+The command must be the full name of the command as it appears in the palette.
+
+**Setting a marker link to a command will execute the command when the marker is clicked.**
+
+> ##### **Warning**
+>
+> Using a command as a marker target could have unintended consequences.
+>
+> Please see [this issue](https://github.com/valentine195/obsidian-leaflet-plugin/issues/38) for reference.
+
+##### Defined in Code Block
+
+Use `commandMarker:` instead of `marker:`
+
+##### Created on Map
+
+Turning on the `Command Marker` toggle.
 
 ### Markers Defined in the Code Block
 
