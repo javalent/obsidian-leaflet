@@ -189,6 +189,7 @@ export default class LeafletMap extends Events {
     type: string;
     scale: number;
     unit: string;
+    distanceEvent: L.LatLng | undefined = undefined;
     private _rendered: boolean;
     constructor(
         el: HTMLElement,
@@ -293,32 +294,35 @@ export default class LeafletMap extends Events {
         this.map.on("contextmenu", (evt) =>
             this.trigger("map-contextmenu", evt)
         );
-
-        let click: L.LatLng | undefined = undefined;
-        this.map.on("click", (evt: L.LeafletMouseEvent) => {
-            if (!evt.originalEvent.ctrlKey) {
-                click = undefined;
-                return;
-            }
-
-            if (click != undefined) {
-                this.trigger(
-                    "display-distance",
-                    `${(
-                        this.map.distance(click, evt.latlng) * this.scale
-                    ).toLocaleString(navigator.language, {
-                        maximumFractionDigits: 1
-                    })} ${this.unit}`
-                );
-                click = undefined;
-            } else {
-                click = evt.latlng;
-            }
-        });
+        this.map.on("click", this.onHandleDistance.bind(this));
 
         this.handleResize();
     }
 
+    onHandleDistance(evt: L.LeafletMouseEvent) {
+        if (
+            !evt.originalEvent.getModifierState("Shift") &&
+            !evt.originalEvent.getModifierState("Alt")
+        ) {
+            this.distanceEvent = undefined;
+            return;
+        }
+
+        if (this.distanceEvent != undefined) {
+            this.trigger(
+                "display-distance",
+                `${(
+                    this.map.distance(this.distanceEvent, evt.latlng) *
+                    this.scale
+                ).toLocaleString(navigator.language, {
+                    maximumFractionDigits: 1
+                })} ${this.unit}`
+            );
+            this.distanceEvent = undefined;
+        } else {
+            this.distanceEvent = evt.latlng;
+        }
+    }
     getMapForType(type: string): L.Map {
         if (type === "image") {
             return L.map(this.contentEl, {
@@ -566,7 +570,11 @@ export default class LeafletMap extends Events {
             .on("click", async (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
 
-                if (evt.originalEvent.getModifierState('Alt')) {
+                if (
+                    evt.originalEvent.getModifierState("Alt") ||
+                    evt.originalEvent.getModifierState("Shift")
+                ) {
+                    this.onHandleDistance(evt);
                     this.tooltip.setContent(
                         `[${marker.loc.lat}, ${marker.loc.lng}]`
                     );

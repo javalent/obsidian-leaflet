@@ -30,24 +30,24 @@ marker: <type>,<latitude>,<longitude>,<link>
 
 ## Options
 
-| Option       | Description                                                                          | Default                                    |
-| ------------ | ------------------------------------------------------------------------------------ | ------------------------------------------ |
-| id           | Unique identifier (can be anything). **Required.**                                   |                                            |
-| image        | Direct URL/file path to an image file to be used as the map layer.                   | OpenStreetMap map                          |
-| lat          | Default latitude to display when rendering.                                          | 50% (image) / 39.983334 (open street map)  |
-| long         | Default longitude to display when rendering.                                         | 50% (image) / -82.983330 (open street map) |
-| height       | Height of the map element. Can be provided in pixels or percentage of window height. | 500px                                      |
-| minZoom      | Minimum allowable zoom level of the map.                                             | 1                                          |
-| maxZoom      | Maximum allowable zoom level of the map.                                             | 10                                         |
-| defaultZoom  | Map will load zoomed to this level.                                                  | 5                                          |
-| zoomDelta    | Zoom level will change by this amount when zooming.                                  |
-| 1            |
-| unit         | Unit to display distances in                                                         | meters                                     |
-| scale        | Scale factor for image map distance calculation.                                     | 1                                          |
-| marker       | Create immutable markers on the map                                                  |                                            |
-| commandMarker       | Create immutable markers that execute commands                                                  |                                            |
-| markerFile   | Create immutable marker from a note's frontmatter                                    |                                            |
-| markerFolder | Create immutable markers from _all_ of the notes in a given folder                   |                                            |
+| Option        | Description                                                                          | Default                                    |
+| ------------- | ------------------------------------------------------------------------------------ | ------------------------------------------ |
+| id            | Unique identifier (can be anything). **Required.**                                   |                                            |
+| image         | Direct URL/file path to an image file to be used as the map layer.                   | OpenStreetMap map                          |
+| lat           | Default latitude to display when rendering.                                          | 50% (image) / 39.983334 (open street map)  |
+| long          | Default longitude to display when rendering.                                         | 50% (image) / -82.983330 (open street map) |
+| height        | Height of the map element. Can be provided in pixels or percentage of window height. | 500px                                      |
+| minZoom       | Minimum allowable zoom level of the map.                                             | 1                                          |
+| maxZoom       | Maximum allowable zoom level of the map.                                             | 10                                         |
+| defaultZoom   | Map will load zoomed to this level.                                                  | 5                                          |
+| zoomDelta     | Zoom level will change by this amount when zooming.                                  |
+| 1             |
+| unit          | Unit to display distances in                                                         | meters                                     |
+| scale         | Scale factor for image map distance calculation.                                     | 1                                          |
+| marker        | Create immutable markers on the map                                                  |                                            |
+| commandMarker | Create immutable markers that execute commands                                       |                                            |
+| markerFile    | Create immutable marker from a note's frontmatter                                    |                                            |
+| markerFolder  | Create immutable markers from _all_ of the notes in a given folder                   |                                            |
 
 ## Map IDs
 
@@ -110,7 +110,7 @@ Markers created on the map will be saved to the map instance. Marker data saved 
 
 ### Marker Coordinates
 
-<kbd>Alt</kbd>-clicking on a marker will reveal its coordinates.
+<kbd>Alt</kbd> or <kbd>Shift</kbd>-clicking on a marker will reveal its coordinates.
 
 ### Marker Links
 
@@ -263,11 +263,9 @@ Marker data in this format can then be re-imported. This feature is still under 
 
 ## Distances
 
-<kbd>Ctrl</kbd>/<kbd>Cmd</kbd>-clicking the map, then <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>-clicking again, will display the distance between the two points.
+<kbd>Shift</kbd>/<kbd>Alt</kbd>-clicking the map or a marker, then <kbd>Shift</kbd>/<kbd>Alt</kbd>-clicking again, will display the distance between the two points.
 
-Real-world map distances are displayed in meters.
-
-Image maps can have an optional unit and scaling factor provided to display.
+Distances are displayed in meters, unless a scale factor and/or unit is specified in the map block.
 
 ## Configuration
 
