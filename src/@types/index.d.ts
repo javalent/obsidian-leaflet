@@ -12,6 +12,7 @@ export interface IObsidianAppData {
     layerMarkers: boolean;
     previousVersion: string;
     warnedAboutMapMarker: boolean;
+    copyOnClick: boolean;
 }
 
 export interface IMarker {

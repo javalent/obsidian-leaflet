@@ -10,7 +10,8 @@ import {
     ILeafletMarker,
     ILeafletMarkerIcon,
     IMarkerData,
-    IMarkerIcon
+    IMarkerIcon,
+    IObsidianAppData
 } from "./@types";
 import { getId, getImageDimensions } from "./utils";
 
@@ -177,11 +178,17 @@ export default class LeafletMap extends Events {
     map: L.Map;
     markers: Array<Marker> = [];
     markerIcons: ILeafletMarkerIcon[] = [];
-    /* rendered: boolean = false; */
     zoom: { min: number; max: number; default: number; delta: number };
     tooltip: L.Tooltip = L.tooltip({
         className: "leaflet-marker-link-tooltip",
         direction: "top"
+    });
+    popup: L.Popup = L.popup({
+        className: "leaflet-marker-link-popup",
+        autoClose: false,
+        closeButton: false,
+        closeOnClick: false,
+        autoPan: false
     });
     mapLayers: ILayerGroup[];
     layer: L.ImageOverlay | L.TileLayer;
@@ -190,7 +197,10 @@ export default class LeafletMap extends Events {
     scale: number;
     unit: string;
     distanceEvent: L.LatLng | undefined = undefined;
+    data: IObsidianAppData;
     private _rendered: boolean;
+    private _timeoutHandler: ReturnType<typeof setTimeout>;
+    private _popupTarget: ILeafletMarker | L.LatLng;
     constructor(
         el: HTMLElement,
         markerIcons: IMarkerIcon[],
@@ -200,9 +210,12 @@ export default class LeafletMap extends Events {
         zoomDelta: number = 1,
         unit: string,
         scale: number,
-        id: string
+        id: string,
+        data: IObsidianAppData
     ) {
         super();
+
+        this.data = data;
 
         this.id = id;
 
@@ -294,7 +307,20 @@ export default class LeafletMap extends Events {
         this.map.on("contextmenu", (evt) =>
             this.trigger("map-contextmenu", evt)
         );
-        this.map.on("click", this.onHandleDistance.bind(this));
+        this.map.on("click", (evt: L.LeafletMouseEvent) => {
+            this.onHandleDistance(evt);
+            if (this.data.copyOnClick) {
+                this.openPopup(
+                    evt.latlng,
+                    `[${evt.latlng.lat}, ${evt.latlng.lng}]`
+                );
+                navigator.clipboard
+                    .writeText(`[${evt.latlng.lat}, ${evt.latlng.lng}]`)
+                    .then(() => {
+                        new Notice("Map coordinates copied to clipboard.");
+                    });
+            }
+        });
 
         this.handleResize();
     }
@@ -460,7 +486,6 @@ export default class LeafletMap extends Events {
 
         /* new editMarkers({ position: "topleft" }).addTo(this.map); */
 
-        //this.rendered = true;
         this.handleResize();
     }
     handleResize() {
@@ -575,24 +600,20 @@ export default class LeafletMap extends Events {
                     evt.originalEvent.getModifierState("Shift")
                 ) {
                     this.onHandleDistance(evt);
-                    this.tooltip.setContent(
+                    this.openPopup(
+                        marker,
                         `[${marker.loc.lat}, ${marker.loc.lng}]`
                     );
-                    marker.leafletInstance
-                        .bindTooltip(this.tooltip, {
-                            offset: new L.Point(
-                                0,
-                                -1 *
-                                    (<SVGElement>(
-                                        evt.originalEvent.target
-                                    )).getBoundingClientRect().height
-                            )
-                        })
-                        .openTooltip();
 
-                    marker.leafletInstance.once("mouseout", () =>
-                        marker.leafletInstance.unbindTooltip().closeTooltip()
-                    );
+                    if (this.data.copyOnClick) {
+                        navigator.clipboard
+                            .writeText(`[${marker.loc.lat}, ${marker.loc.lng}]`)
+                            .then(() => {
+                                new Notice(
+                                    "Marker coordinates copied to clipboard."
+                                );
+                            });
+                    }
 
                     return;
                 }
@@ -635,6 +656,102 @@ export default class LeafletMap extends Events {
             .on("mouseout", (evt: L.LeafletMouseEvent) => {
                 marker.leafletInstance.closeTooltip();
             });
+    }
+    openPopup(
+        target: ILeafletMarker | L.LatLng,
+        content: ((source: L.Layer) => L.Content) | L.Content
+    ) {
+        if (this._timeoutHandler) {
+            clearTimeout(this._timeoutHandler);
+        }
+        if (this.popup.isOpen() && this._popupTarget == target) {
+            this.popup.setContent(content);
+            return;
+        }
+
+        this._popupTarget = target;
+
+        if (this.popup && this.popup.isOpen()) {
+            this.map.closePopup(this.popup);
+        }
+
+        this.popup = this.getPopup(target).setContent(content);
+        this.map.openPopup(this.popup);
+
+        const popupElement = this.popup.getElement();
+
+        let _this = this;
+        const mouseOutHandler = function () {
+            _this._timeoutHandler = setTimeout(function () {
+                if (!(target instanceof L.LatLng)) {
+                    target.leafletInstance.off("mouseenter", mouseOverHandler);
+                    target.leafletInstance.off("mouseout", mouseOutHandler);
+                }
+                popupElement.removeEventListener(
+                    "mouseenter",
+                    mouseOverHandler
+                );
+                popupElement.removeEventListener("mouseleave", mouseOutHandler);
+
+                _this.map.closePopup(_this.popup);
+            }, 500);
+        };
+        const mouseOverHandler = function () {
+            clearTimeout(_this._timeoutHandler);
+        };
+        if (target instanceof L.LatLng) {
+            this._timeoutHandler = setTimeout(function () {
+                popupElement.removeEventListener(
+                    "mouseenter",
+                    mouseOverHandler
+                );
+                popupElement.removeEventListener("mouseleave", mouseOutHandler);
+
+                _this.map.closePopup(_this.popup);
+            }, 1000);
+        } else {
+            target.leafletInstance
+                .on("mouseout", mouseOutHandler)
+                .on("mouseenter", mouseOverHandler);
+        }
+        popupElement.addEventListener("mouseenter", mouseOverHandler);
+        popupElement.addEventListener("mouseleave", mouseOutHandler);
+    }
+    getPopup(target: ILeafletMarker | L.LatLng): L.Popup {
+        if (this.popup.isOpen() && this._popupTarget == target) {
+            return this.popup;
+        }
+
+        this._popupTarget = target;
+
+        if (this.popup && this.popup.isOpen()) {
+            this.map.closePopup(this.popup);
+        }
+        if (target instanceof L.LatLng) {
+            return L.popup({
+                className: "leaflet-marker-link-popup",
+                autoClose: false,
+                closeButton: false,
+                closeOnClick: false,
+                autoPan: false
+            }).setLatLng(target);
+        } else {
+            return L.popup({
+                className: "leaflet-marker-link-popup",
+                autoClose: false,
+                closeButton: false,
+                closeOnClick: false,
+                autoPan: false,
+                offset: new L.Point(
+                    0,
+                    (-1 *
+                        target.leafletInstance
+                            .getElement()
+                            .getBoundingClientRect().height) /
+                        2
+                )
+            }).setLatLng(target.loc);
+        }
     }
 
     setMarkerIcons(markerIcons: IMarkerIcon[]) {

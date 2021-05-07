@@ -208,7 +208,8 @@ export default class ObsidianLeaflet extends Plugin {
                 +zoomDelta,
                 unit,
                 scale,
-                id
+                id,
+                this.AppData
             );
 
             let immutableMarkers = await this.getMarkersFromSource(source);
@@ -297,7 +298,6 @@ export default class ObsidianLeaflet extends Plugin {
                 if (layerData.filter((d) => !d.data).length) {
                     throw new Error();
                 }
-                /* map.renderImage(layerData, coords); */
             } else {
                 if (!lat || isNaN(lat)) {
                     lat = this.AppData.lat;
@@ -306,7 +306,6 @@ export default class ObsidianLeaflet extends Plugin {
                     long = this.AppData.long;
                 }
                 coords = [lat, long];
-                /* map.renderReal(coords); */
             }
 
             this.registerMapEvents(map, view);
@@ -1030,7 +1029,6 @@ export default class ObsidianLeaflet extends Plugin {
                                     marker.link.toLowerCase().trim()
                             );
 
-                            let el = evt.originalEvent.target as SVGElement;
                             const div = createDiv({
                                 attr: {
                                     style: "display: flex; align-items: center;"
@@ -1046,17 +1044,9 @@ export default class ObsidianLeaflet extends Plugin {
                                 "run-command"
                             );
                             div.createSpan({ text: command.name });
-                            map.tooltip.setContent(div);
-                            marker.leafletInstance
-                                .bindTooltip(map.tooltip, {
-                                    offset: new Point(
-                                        0,
-                                        -1 * el.getBoundingClientRect().height
-                                    )
-                                })
-                                .openTooltip();
+
+                            map.openPopup(marker, div);
                         } else {
-                            let el = evt.originalEvent.target as SVGElement;
                             const div = createDiv({
                                 attr: {
                                     style: "display: flex; align-items: center;"
@@ -1072,15 +1062,8 @@ export default class ObsidianLeaflet extends Plugin {
                                 "cross"
                             );
                             div.createSpan({ text: "No command found!" });
-                            map.tooltip.setContent(div);
-                            marker.leafletInstance
-                                .bindTooltip(map.tooltip, {
-                                    offset: new Point(
-                                        0,
-                                        -1 * el.getBoundingClientRect().height
-                                    )
-                                })
-                                .openTooltip();
+
+                            map.openPopup(marker, div);
                         }
                         return;
                     }
@@ -1113,15 +1096,7 @@ export default class ObsidianLeaflet extends Plugin {
                             cls: "external-link"
                         });
 
-                        map.tooltip.setContent(a);
-                        marker.leafletInstance
-                            .bindTooltip(map.tooltip, {
-                                offset: new Point(
-                                    0,
-                                    -1 * el.getBoundingClientRect().height
-                                )
-                            })
-                            .openTooltip();
+                        map.openPopup(marker, a);
                     } else {
                         if (this.AppData.notePreview) {
                             marker.leafletInstance.unbindTooltip();
@@ -1137,24 +1112,14 @@ export default class ObsidianLeaflet extends Plugin {
                                 this.app.workspace.getActiveFile()?.path //source
                             );
                         } else {
-                            let el = evt.originalEvent.target as SVGElement;
-
-                            map.tooltip.setContent(
+                            map.openPopup(
+                                marker,
                                 marker.link
                                     .replace(/(\^)/, " > ^")
                                     .replace(/#/, " > ")
                                     .split("|")
                                     .pop()
                             );
-
-                            marker.leafletInstance
-                                .bindTooltip(map.tooltip, {
-                                    offset: new Point(
-                                        0,
-                                        -1 * el.getBoundingClientRect().height
-                                    )
-                                })
-                                .openTooltip();
                         }
                     }
                 }
@@ -1170,7 +1135,7 @@ export default class ObsidianLeaflet extends Plugin {
         this.registerEvent(
             map.on("map-contextmenu", (evt: LeafletMouseEvent) => {
                 if (map.markerIcons.length <= 1) {
-                    map.createMarker(map.markerIcons[0], evt.latlng );
+                    map.createMarker(map.markerIcons[0], evt.latlng);
                     return;
                 }
 
@@ -1185,10 +1150,7 @@ export default class ObsidianLeaflet extends Plugin {
                         );
                         item.setActive(true);
                         item.onClick(async () => {
-                            map.createMarker(
-                                marker,
-                                evt.latlng
-                            );
+                            map.createMarker(marker, evt.latlng);
                             await this.saveSettings();
                         });
                     });

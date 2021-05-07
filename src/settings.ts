@@ -41,7 +41,8 @@ export const DEFAULT_SETTINGS: IObsidianAppData = {
     notePreview: false,
     layerMarkers: true,
     previousVersion: null,
-    warnedAboutMapMarker: false
+    warnedAboutMapMarker: false,
+    copyOnClick: false
 };
 
 import ObsidianLeaflet from "./main";
@@ -77,7 +78,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 
         this.createCSVSetting(containerEl);
 
-        this.createNotePreviewSetting(containerEl);
+        this.createMarkerSettings(containerEl);
 
         this.createLatLongSetting(containerEl);
 
@@ -353,15 +354,30 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                 });
             });
     }
-    createNotePreviewSetting(containerEl: HTMLElement) {
+    createMarkerSettings(containerEl: HTMLElement) {
         new Setting(containerEl)
             .setName("Display Note Preview")
             .setDesc(
                 "Markers linked to notes will show a note preview when hovered."
             )
             .addToggle((toggle) =>
-                toggle.setValue(this.data.notePreview).onChange((v) => {
+                toggle.setValue(this.data.notePreview).onChange(async (v) => {
                     this.data.notePreview = v;
+
+                    await this.plugin.saveSettings();
+                    this.display();
+                })
+            );
+        new Setting(containerEl)
+            .setName("Copy Coordinates on Shift-Click")
+            .setDesc(
+                "Map coordinates will be copied to the clipboard when shift-clicking."
+            )
+            .addToggle((toggle) =>
+                toggle.setValue(this.data.copyOnClick).onChange(async (v) => {
+                    this.data.copyOnClick = v;
+
+                    await this.plugin.saveSettings();
                     this.display();
                 })
             );
