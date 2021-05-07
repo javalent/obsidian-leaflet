@@ -566,7 +566,7 @@ export default class LeafletMap extends Events {
             .on("click", async (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
 
-                if (evt.originalEvent.altKey) {
+                if (evt.originalEvent.getModifierState('Alt')) {
                     this.tooltip.setContent(
                         `[${marker.loc.lat}, ${marker.loc.lng}]`
                     );
