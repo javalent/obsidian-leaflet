@@ -11,7 +11,8 @@ import {
     MarkdownPostProcessorContext,
     Vault,
     TFolder,
-    setIcon
+    setIcon,
+    Scope
 } from "obsidian";
 import { latLng, LeafletMouseEvent, Point } from "leaflet";
 import { parse as parseCSV } from "papaparse";
@@ -44,6 +45,7 @@ export default class ObsidianLeaflet extends Plugin {
     markerIcons: IMarkerIcon[];
     maps: IMapInterface[] = [];
     mapFiles: { file: string; maps: string[] }[] = [];
+    escapeScope: Scope;
     async onload(): Promise<void> {
         console.log("Loading Obsidian Leaflet v" + this.manifest.version);
 
@@ -132,6 +134,9 @@ export default class ObsidianLeaflet extends Plugin {
             });
         });
         this.maps = [];
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (<any>this.app).keymap.popScope(this.escapeScope);
     }
 
     async postprocessor(
@@ -151,9 +156,14 @@ export default class ObsidianLeaflet extends Plugin {
                 long = `${this.AppData.long}`,
                 id = undefined,
                 scale = 1,
-                unit = "m"
+                unit = "m",
+                distanceMultiplier = 1
             } = Object.fromEntries(
                 source.split("\n").map((l) => l.split(/:\s?/))
+            );
+            console.log(
+                "🚀 ~ file: main.ts ~ line 161 ~ ObsidianLeaflet ~ distanceMultiplier",
+                distanceMultiplier
             );
 
             let image = "real";
@@ -208,6 +218,7 @@ export default class ObsidianLeaflet extends Plugin {
                 +zoomDelta,
                 unit,
                 scale,
+                distanceMultiplier,
                 id,
                 this.AppData
             );
@@ -1127,12 +1138,6 @@ export default class ObsidianLeaflet extends Plugin {
         );
 
         this.registerEvent(
-            map.on("display-distance", async (distance: string) => {
-                new Notice(distance);
-            })
-        );
-
-        this.registerEvent(
             map.on("map-contextmenu", (evt: LeafletMouseEvent) => {
                 if (map.markerIcons.length <= 1) {
                     map.createMarker(map.markerIcons[0], evt.latlng);
@@ -1160,6 +1165,31 @@ export default class ObsidianLeaflet extends Plugin {
                     x: evt.originalEvent.clientX,
                     y: evt.originalEvent.clientY
                 } as Point);
+            })
+        );
+
+        this.escapeScope = new Scope();
+        this.escapeScope.register(undefined, "Escape", () => {
+            console.log("escape");
+            if (map.distanceEvent) {
+                map.distanceLine.unbindTooltip();
+                map.distanceLine.remove();
+                map.distanceEvent = undefined;
+            }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (<any>this.app).keymap.popScope(this.escapeScope);
+        });
+
+        this.registerEvent(
+            map.on("add-escape", () => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (<any>this.app).keymap.pushScope(this.escapeScope);
+            })
+        );
+        this.registerEvent(
+            map.on("remove-escape", () => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (<any>this.app).keymap.popScope(this.escapeScope);
             })
         );
     }

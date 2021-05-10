@@ -1,23 +1,17 @@
 {
-  "compilerOptions": {
-    "baseUrl": ".",
-    "inlineSourceMap": true,
-    "inlineSources": true,
-    "module": "ESNext",
-    "target": "es6",
-    "allowJs": true,
-    "noImplicitAny": true,
-    "moduleResolution": "node",
-    "importHelpers": true,
-	"experimentalDecorators": true,
-    "lib": [
-      "dom",
-      "es5",
-      "scripthost",
-      "es2019"
-    ]
-  },
-  "include": [
-    "**/src/*", "**/utils/*"
-  ]
+    "compilerOptions": {
+        "baseUrl": ".",
+        "inlineSourceMap": true,
+        "inlineSources": true,
+        "module": "ESNext",
+        "target": "es6",
+        "allowJs": true,
+        "noImplicitAny": true,
+        "moduleResolution": "node",
+        "importHelpers": true,
+        "experimentalDecorators": true,
+        "allowSyntheticDefaultImports": true,
+        "lib": ["dom", "es5", "scripthost", "es2019"]
+    },
+    "include": ["**/src/*", "**/utils/*"]
 }

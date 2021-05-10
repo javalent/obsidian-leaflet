@@ -1,7 +1,28 @@
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import convert, { allUnits, UnitFamilies } from "convert";
 
-import { Events, Notice } from "obsidian";
+/** Recreate Length Alias Types from "convert" */
+declare type UnitsCombined = typeof allUnits;
+declare type UnitKeys = Exclude<keyof UnitsCombined, "__proto__">;
+declare type AllValues = {
+    [P in UnitKeys]: {
+        key: P;
+        value: UnitsCombined[P][0];
+    };
+}[UnitKeys];
+declare type IdToFamily = {
+    [P in AllValues["value"]]: Extract<
+        AllValues,
+        {
+            value: P;
+        }
+    >["key"];
+};
+declare type GetAliases<X extends UnitFamilies> = IdToFamily[X];
+declare type Length = GetAliases<UnitFamilies.Length>;
+
+import { Events, Notice, moment } from "obsidian";
 
 // @ts-expect-error
 import layerIcon from "../node_modules/leaflet/dist/images/layers.png";
@@ -179,10 +200,6 @@ export default class LeafletMap extends Events {
     markers: Array<Marker> = [];
     markerIcons: ILeafletMarkerIcon[] = [];
     zoom: { min: number; max: number; default: number; delta: number };
-    tooltip: L.Tooltip = L.tooltip({
-        className: "leaflet-marker-link-tooltip",
-        direction: "top"
-    });
     popup: L.Popup = L.popup({
         className: "leaflet-marker-link-popup",
         autoClose: false,
@@ -194,13 +211,15 @@ export default class LeafletMap extends Events {
     layer: L.ImageOverlay | L.TileLayer;
     resize: ResizeObserver;
     type: string;
-    scale: number;
-    unit: string;
+    unit: string = "m";
+    distanceMultipler: number = 1;
     distanceEvent: L.LatLng | undefined = undefined;
     data: IObsidianAppData;
     private _rendered: boolean;
     private _timeoutHandler: ReturnType<typeof setTimeout>;
     private _popupTarget: ILeafletMarker | L.LatLng;
+    distanceLine: L.Polyline;
+    private _scale: number;
     constructor(
         el: HTMLElement,
         markerIcons: IMarkerIcon[],
@@ -210,6 +229,7 @@ export default class LeafletMap extends Events {
         zoomDelta: number = 1,
         unit: string,
         scale: number,
+        distanceMultipler: number,
         id: string,
         data: IObsidianAppData
     ) {
@@ -229,8 +249,8 @@ export default class LeafletMap extends Events {
             delta: zoomDelta
         };
         this.unit = unit;
-        this.scale = scale;
-
+        this._scale = scale;
+        this.distanceMultipler = distanceMultipler;
         this.setMarkerIcons(markerIcons);
     }
 
@@ -252,6 +272,18 @@ export default class LeafletMap extends Events {
             });
             resolve();
         });
+    }
+
+    get scale() {
+        if (this.type !== "real") return this._scale;
+
+        return convert(1)
+            .from("m")
+            .to(this.unit as Length);
+    }
+
+    private get _locale() {
+        return moment.locale();
     }
 
     get coordMult() {
@@ -309,13 +341,28 @@ export default class LeafletMap extends Events {
         );
         this.map.on("click", (evt: L.LeafletMouseEvent) => {
             this.onHandleDistance(evt);
-            if (this.data.copyOnClick) {
+
+            if (
+                this.data.copyOnClick &&
+                (evt.originalEvent.getModifierState("Shift") ||
+                    evt.originalEvent.getModifierState("Alt"))
+            ) {
                 this.openPopup(
                     evt.latlng,
-                    `[${evt.latlng.lat}, ${evt.latlng.lng}]`
+                    `[${evt.latlng.lat.toLocaleString("en-US", {
+                        maximumFractionDigits: 4
+                    })}, ${evt.latlng.lng.toLocaleString("en-US", {
+                        maximumFractionDigits: 4
+                    })}]`
                 );
                 navigator.clipboard
-                    .writeText(`[${evt.latlng.lat}, ${evt.latlng.lng}]`)
+                    .writeText(
+                        `[${evt.latlng.lat.toLocaleString("en-US", {
+                            maximumFractionDigits: 4
+                        })}, ${evt.latlng.lng.toLocaleString("en-US", {
+                            maximumFractionDigits: 4
+                        })}]`
+                    )
                     .then(() => {
                         new Notice("Map coordinates copied to clipboard.");
                     });
@@ -330,23 +377,88 @@ export default class LeafletMap extends Events {
             !evt.originalEvent.getModifierState("Shift") &&
             !evt.originalEvent.getModifierState("Alt")
         ) {
+            this.removeDistanceLine();
             this.distanceEvent = undefined;
             return;
         }
 
         if (this.distanceEvent != undefined) {
-            this.trigger(
-                "display-distance",
-                `${(
-                    this.map.distance(this.distanceEvent, evt.latlng) *
-                    this.scale
-                ).toLocaleString(navigator.language, {
-                    maximumFractionDigits: 1
-                })} ${this.unit}`
-            );
+            const dist = this.map.distance(this.distanceEvent, evt.latlng);
+            this.distanceLine.unbindTooltip();
+
+            let display = `${(dist * this.scale).toLocaleString(this._locale, {
+                maximumFractionDigits: 3
+            })}`;
+            if (this.distanceMultipler !== 1) {
+                display += ` (${(
+                    dist *
+                    this.scale *
+                    this.distanceMultipler
+                ).toLocaleString(this._locale, {
+                    maximumFractionDigits: 3
+                })})`;
+            }
+            new Notice(`${display} ${this.unit}`);
+            this.removeDistanceLine();
             this.distanceEvent = undefined;
         } else {
             this.distanceEvent = evt.latlng;
+
+            this.trigger("add-escape");
+
+            const originalLatLng = evt.latlng;
+
+            this.map.on("mousemove", (evt: L.LeafletMouseEvent) => {
+                if (!this.distanceLine) {
+                    this.distanceLine = L.polyline([evt.latlng, evt.latlng], {
+                        color: "blue"
+                    }).addTo(this.map);
+                }
+                this.distanceLine.setLatLngs([originalLatLng, evt.latlng]);
+
+                const dist = this.map.distance(originalLatLng, evt.latlng);
+                this.distanceLine.unbindTooltip();
+
+                let display = `${(dist * this.scale).toLocaleString(
+                    this._locale,
+                    {
+                        maximumFractionDigits: 3
+                    }
+                )}`;
+                console.log(
+                    "🚀 ~ file: leaflet.ts ~ line 421 ~ LeafletMap ~ this.map.on ~ this.distanceMultipler",
+                    this.distanceMultipler
+                );
+                if (this.distanceMultipler !== 1) {
+                    display += ` (${(
+                        dist *
+                        this.scale *
+                        this.distanceMultipler
+                    ).toLocaleString(this._locale, {
+                        maximumFractionDigits: 3
+                    })})`;
+                }
+
+                this.distanceLine
+                    .bindTooltip(display + ` ${this.unit}`)
+                    .openTooltip();
+                this.distanceLine.redraw();
+            });
+
+            this.map.on("mouseout", () => {
+                this.removeDistanceLine();
+                this.distanceEvent = undefined;
+            });
+        }
+    }
+    removeDistanceLine() {
+        if (this.distanceLine) {
+            this.trigger("remove-escape");
+            this.distanceLine.unbindTooltip();
+            this.distanceLine.remove();
+            this.distanceLine = undefined;
+            this.map.off("mousemove");
+            this.map.off("mouseout");
         }
     }
     getMapForType(type: string): L.Map {
@@ -602,12 +714,22 @@ export default class LeafletMap extends Events {
                     this.onHandleDistance(evt);
                     this.openPopup(
                         marker,
-                        `[${marker.loc.lat}, ${marker.loc.lng}]`
+                        `[${marker.loc.lat.toLocaleString("en-US", {
+                            maximumFractionDigits: 4
+                        })}, ${marker.loc.lng.toLocaleString("en-US", {
+                            maximumFractionDigits: 4
+                        })}]`
                     );
 
                     if (this.data.copyOnClick) {
                         navigator.clipboard
-                            .writeText(`[${marker.loc.lat}, ${marker.loc.lng}]`)
+                            .writeText(
+                                `[${marker.loc.lat.toLocaleString("en-US", {
+                                    maximumFractionDigits: 4
+                                })}, ${marker.loc.lng.toLocaleString("en-US", {
+                                    maximumFractionDigits: 4
+                                })}]`
+                            )
                             .then(() => {
                                 new Notice(
                                     "Marker coordinates copied to clipboard."
