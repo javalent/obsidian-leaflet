@@ -425,10 +425,6 @@ export default class LeafletMap extends Events {
                         maximumFractionDigits: 3
                     }
                 )}`;
-                console.log(
-                    "🚀 ~ file: leaflet.ts ~ line 421 ~ LeafletMap ~ this.map.on ~ this.distanceMultipler",
-                    this.distanceMultipler
-                );
                 if (this.distanceMultipler !== 1) {
                     display += ` (${(
                         dist *

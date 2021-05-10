@@ -161,10 +161,6 @@ export default class ObsidianLeaflet extends Plugin {
             } = Object.fromEntries(
                 source.split("\n").map((l) => l.split(/:\s?/))
             );
-            console.log(
-                "🚀 ~ file: main.ts ~ line 161 ~ ObsidianLeaflet ~ distanceMultiplier",
-                distanceMultiplier
-            );
 
             let image = "real";
             let layers = (
@@ -1170,7 +1166,6 @@ export default class ObsidianLeaflet extends Plugin {
 
         this.escapeScope = new Scope();
         this.escapeScope.register(undefined, "Escape", () => {
-            console.log("escape");
             if (map.distanceEvent) {
                 map.distanceLine.unbindTooltip();
                 map.distanceLine.remove();
