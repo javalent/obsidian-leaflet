@@ -121,6 +121,19 @@ export default class ObsidianLeaflet extends Plugin {
         );
 
         this.addSettingTab(new ObsidianLeafletSettingTab(this.app, this));
+
+        this.escapeScope = new Scope();
+        this.escapeScope.register(undefined, "Escape", () => {
+            const map = this.maps.find(({ map }) => map.distanceLine);
+            //@ts-expect-error
+            //THIS IS SILLY
+            if (map && !map.map.map.isFullscreen()) {
+                map.map.removeDistanceLine();
+                map.map.distanceEvent = undefined;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (<any>this.app).keymap.popScope(this.escapeScope);
+            }
+        });
     }
 
     async onunload(): Promise<void> {
@@ -1163,17 +1176,6 @@ export default class ObsidianLeaflet extends Plugin {
                 } as Point);
             })
         );
-
-        this.escapeScope = new Scope();
-        this.escapeScope.register(undefined, "Escape", () => {
-            if (map.distanceEvent) {
-                map.distanceLine.unbindTooltip();
-                map.distanceLine.remove();
-                map.distanceEvent = undefined;
-            }
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (<any>this.app).keymap.popScope(this.escapeScope);
-        });
 
         this.registerEvent(
             map.on("add-escape", () => {
