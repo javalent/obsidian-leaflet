@@ -14,7 +14,8 @@ A map can be created with a `leaflet` code block. For example:
 
 ````markdown
 ```leaflet
-image: https://i.imgur.com/jH8j3mJ.jpg
+id: leaflet-map
+image: [[Image.jpg]]
 height: 500px
 lat: 50
 long: 50
@@ -24,7 +25,7 @@ maxZoom: 10
 defaultZoom: 5
 unit: meters
 scale: 1
-marker: <type>,<latitude>,<longitude>,<link>
+marker: default, 39.983334, -82.983330, [[Note]]
 ```
 ````
 
@@ -40,8 +41,7 @@ marker: <type>,<latitude>,<longitude>,<link>
 | minZoom       | Minimum allowable zoom level of the map.                                             | 1                                          |
 | maxZoom       | Maximum allowable zoom level of the map.                                             | 10                                         |
 | defaultZoom   | Map will load zoomed to this level.                                                  | 5                                          |
-| zoomDelta     | Zoom level will change by this amount when zooming.                                  |
-| 1             |
+| zoomDelta     | Zoom level will change by this amount when zooming.                                  | 1                                          |
 | unit          | Unit to display distances in                                                         | meters                                     |
 | scale         | Scale factor for image map distance calculation.                                     | 1                                          |
 | marker        | Create immutable markers on the map                                                  |                                            |
