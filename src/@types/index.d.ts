@@ -59,6 +59,7 @@ export interface IMarkerData {
     link: string;
     layer: string;
     command: boolean;
+    zoom?: number;
 }
 
 export interface IMapInterface {
@@ -81,14 +82,23 @@ export interface IMapMarkerData {
 export interface IMarkerIcon {
     readonly type: string;
     readonly html: string;
-}
-
-export interface ILeafletMarkerIcon extends IMarkerIcon {
-    icon: MarkerDivIcon;
+    readonly icon: MarkerDivIcon;
 }
 
 export interface ILayerGroup {
     group: L.LayerGroup;
     layer: L.TileLayer | L.ImageOverlay;
     id: string;
+}
+
+export interface ILeafletMapOptions {
+    id?: string;
+    minZoom?: number;
+    maxZoom?: number;
+    defaultZoom?: number;
+    zoomDelta?: number;
+    unit?: string;
+    scale?: number;
+    distanceMultiplier?: number;
+    simple?: boolean;
 }

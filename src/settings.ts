@@ -478,7 +478,8 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                             link: link,
                             layer: layer,
                             id: id,
-                            command: false
+                            command: false,
+                            zoom: null
                         });
                         markersToAdd.set(data[0], mapMap);
                     }

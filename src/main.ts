@@ -27,7 +27,6 @@ import {
     icon,
     toHtml,
     getIcon,
-    compareVersions,
     MarkerContextModal
 } from "./utils";
 import {
@@ -38,7 +37,7 @@ import {
     IObsidianAppData,
     IMarker
 } from "./@types";
-import LeafletMap, { Marker } from "./leaflet";
+import LeafletMap, { Marker, markerDivIcon } from "./leaflet";
 
 export default class ObsidianLeaflet extends Plugin {
     AppData: IObsidianAppData;
@@ -50,43 +49,6 @@ export default class ObsidianLeaflet extends Plugin {
         console.log("Loading Obsidian Leaflet v" + this.manifest.version);
 
         await this.loadSettings();
-
-        if (
-            !this.AppData.previousVersion ||
-            !compareVersions(this.AppData.previousVersion, "3.0.0", ">=")
-        ) {
-            this.AppData.previousVersion = this.manifest.version;
-
-            new Notice(
-                "Obsidian Leaflet 3.0.0 is a large update. Please read the changelog in the plugin's ReadMe."
-            );
-
-            if (
-                await this.app.vault.adapter.exists(
-                    this.app.vault.configDir +
-                        "/plugins/obsidian-leaflet-plugin/data.json"
-                )
-            ) {
-                if (
-                    !(await this.app.vault.adapter.exists(
-                        this.app.vault.configDir +
-                            "/plugins/obsidian-leaflet-plugin/data.backup.json"
-                    ))
-                ) {
-                    await this.app.vault.adapter.copy(
-                        this.app.vault.configDir +
-                            "/plugins/obsidian-leaflet-plugin/data.json",
-                        this.app.vault.configDir +
-                            "/plugins/obsidian-leaflet-plugin/data.backup.json"
-                    );
-
-                    new Notice(
-                        "A backup of your map marker data has been created, just in case."
-                    );
-                }
-            }
-            await this.saveSettings();
-        }
 
         this.markerIcons = this.generateMarkerMarkup(this.AppData.markerIcons);
 
@@ -218,19 +180,16 @@ export default class ObsidianLeaflet extends Plugin {
                     lastAccessed: Date.now()
                 });
             }
-            let map = new LeafletMap(
-                el,
-                this.markerIcons,
-                +minZoom,
-                +maxZoom,
-                +defaultZoom,
-                +zoomDelta,
-                unit,
-                scale,
-                distanceMultiplier,
-                id,
-                this.AppData
-            );
+            let map = new LeafletMap(this, el, {
+                minZoom: +minZoom,
+                maxZoom: +maxZoom,
+                defaultZoom: +defaultZoom,
+                zoomDelta: +zoomDelta,
+                unit: unit,
+                scale: scale,
+                distanceMultiplier: distanceMultiplier,
+                id: id
+            });
 
             let immutableMarkers = await this.getMarkersFromSource(source);
             for (let [
@@ -707,14 +666,15 @@ export default class ObsidianLeaflet extends Plugin {
             DEFAULT_SETTINGS,
             await this.loadData()
         );
+        this.AppData.previousVersion = this.manifest.version;
         if (
             !this.AppData.defaultMarker ||
             !this.AppData.defaultMarker.iconName
         ) {
             this.AppData.defaultMarker = DEFAULT_SETTINGS.defaultMarker;
             this.AppData.layerMarkers = false;
-            await this.saveSettings();
         }
+        await this.saveSettings();
     }
     async saveSettings() {
         this.maps.forEach((map) => {
@@ -738,7 +698,8 @@ export default class ObsidianLeaflet extends Plugin {
                                 loc: [marker.loc.lat, marker.loc.lng],
                                 link: marker.link,
                                 layer: marker.layer,
-                                command: marker.command || false
+                                command: marker.command || false,
+                                zoom: marker.zoom ?? 0
                             };
                         }
                     )
@@ -765,7 +726,7 @@ export default class ObsidianLeaflet extends Plugin {
         this.markerIcons = this.generateMarkerMarkup(this.AppData.markerIcons);
 
         this.maps.forEach((map) => {
-            map.map.setMarkerIcons(this.markerIcons);
+            map.map.updateMarkerIcons();
         });
     }
 
@@ -807,18 +768,27 @@ export default class ObsidianLeaflet extends Plugin {
 
                 return {
                     type: marker.type,
-                    html: html
+                    html: html,
+                    icon: markerDivIcon({
+                        html: html,
+                        className: `leaflet-div-icon`
+                    })
                 };
             }
         );
+        const defaultHtml = icon(getIcon(this.AppData.defaultMarker.iconName), {
+            classes: ["full-width-height"],
+            styles: {
+                color: this.AppData.defaultMarker.color
+            }
+        }).html[0];
         ret.unshift({
             type: "default",
-            html: icon(getIcon(this.AppData.defaultMarker.iconName), {
-                classes: ["full-width-height"],
-                styles: {
-                    color: this.AppData.defaultMarker.color
-                }
-            }).html[0]
+            html: defaultHtml,
+            icon: markerDivIcon({
+                html: defaultHtml,
+                className: `leaflet-div-icon`
+            })
         });
 
         return ret;
@@ -850,6 +820,14 @@ export default class ObsidianLeaflet extends Plugin {
                 let bulkModal = new Modal(this.app);
 
                 bulkModal.titleEl.setText("Bulk Edit Markers");
+
+                const mapEl = bulkModal.contentEl.createDiv({
+                    cls: "bulk-edit-map",
+                    attr: {
+                        style:
+                            "height: 250px;width: auto;margin: auto;margin-bottom: 1rem; "
+                    }
+                });
 
                 const markersEl = bulkModal.contentEl.createDiv(
                     "bulk-edit-markers"
