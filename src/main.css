@@ -1,12 +1,15 @@
 /* Settings */
+.icon > .suggestion-flair {
+    background-color: unset;
+    width: 12px;
+    height: 16px;
+    font-size: 12px;
+    text-align: center;
+}
 
 .additional-markers-container > .setting-item:not(.setting-item-heading) {
     border: 0px;
 }
-
-/* .additional-markers-container > .setting-item-heading:first-of-type {
-	border-bottom: 1px solid var(--background-modifier-border);
-} */
 
 .additional-markers-container {
     border-bottom: 1px solid var(--background-modifier-border);

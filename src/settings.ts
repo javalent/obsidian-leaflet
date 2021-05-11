@@ -16,7 +16,9 @@ import {
     getId,
     CreateMarkerModal,
     removeValidationError,
-    setValidationError
+    setValidationError,
+    IconSuggestionModal,
+    iconNames
 } from "./utils";
 
 import {
@@ -122,9 +124,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     ? this.data.defaultMarker.iconName
                     : ""
             );
-            text.inputEl.addEventListener("blur", async (evt) => {
-                let target = evt.target as HTMLInputElement;
-                let new_value: string = target.value;
+
+            const validate = async () => {
+                const new_value = text.inputEl.value;
 
                 if (!new_value.length) {
                     setValidationError(
@@ -152,7 +154,13 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                 await this.plugin.saveSettings();
 
                 this.display();
-            });
+            };
+
+            const modal = new IconSuggestionModal(this.app, text, iconNames);
+
+            modal.onClose = validate;
+
+            text.inputEl.onblur = validate;
         });
         let colorInput = new Setting(settings).setName("Marker Color");
 

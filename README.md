@@ -239,19 +239,21 @@ would search for notes that
 1. Are in the folders People and Locations OR Interests/Maps of the World, AND
 2. Contain both tags #people AND #friends OR the tag #Paris
 
-### Marker CSV File
+## Distances
+
+<kbd>Shift</kbd>/<kbd>Alt</kbd>-clicking the map or a marker, then <kbd>Shift</kbd>/<kbd>Alt</kbd>-clicking again, will display the distance between the two points.
+
+Distances are displayed in meters, unless a scale factor and/or unit is specified in the map block.
+
+## Settings
+
+### Marker CSV Files
 
 Marker data may be exportable to a CSV file. This data takes the following format:
 
 | Column 1 | Column 2    | Column 3 | Column 4  | Column 5    | Column 6     | Column 7  |
 | -------- | ----------- | -------- | --------- | ----------- | ------------ | --------- |
 | Map ID   | Marker Type | Latitude | Longitude | Marker Link | Marker Layer | Marker ID |
-
-Map ID is the _path to the note_ **plus** _"real" for real maps_ **OR** _the path to the image_ **OR** _the map id defined in the code block_. Example:
-
-`Path/To/Note.md/Path/To/File.jpg` OR
-`Path/To/Note.md/real` OR
-`Path/To/Note.md/map-id-defined-in-code-block`
 
 If left blank, Marker Type will default to "default".
 
@@ -261,27 +263,35 @@ For new markers, Marker ID may be kept blank.
 
 Marker data in this format can then be re-imported. This feature is still under development and may not work as expected.
 
-## Distances
-
-<kbd>Shift</kbd>/<kbd>Alt</kbd>-clicking the map or a marker, then <kbd>Shift</kbd>/<kbd>Alt</kbd>-clicking again, will display the distance between the two points.
-
-Distances are displayed in meters, unless a scale factor and/or unit is specified in the map block.
-
-## Configuration
-
-### Note Preview
+### Display Note Preview
 
 Use Obsidian's note preview when hovering a linked marker.
 
 **Please note, the Obsidian Page preview core plugin must be enabled to use this feature.**
 
+### Copy Coordinates on Shift-Click
+
+Turning this setting on will copy the latitude and longitude coordinates to the clipboard when <kbd>Shift</kbd>-clicking anywhere on the map.
+
 ### Latitude and Longitude
 
 A real-world map will open to this default latitude and longitude if not provided.
 
-### Base Marker
+### Default Map Marker
 
-The base marker setting allows you to define a marker that other markers can be layered on top of. If no additional markers have been added, right clicking on the map will place this marker.
+The efault marker setting allows you to define a marker that other markers can be layered on top of. If no additional markers have been added, right clicking on the map will place this marker.
+
+#### Marker Icon
+
+The [Font Awesome Free](https://fontawesome.com/icons?d=gallery&p=2&s=solid&m=free) icon name to use.
+
+#### Marker Color
+
+Color selector for the marker color.
+
+#### Layer Base Marker
+
+Additional markers will be layered on top of this marker by default. This setting can be overridden on specific additional markers.
 
 ### Additional Markers
 
@@ -291,101 +301,18 @@ Additional marker types can be added, selectable from a context menu on the map.
 
 Adding a new marker displays a new window, where the new marker parameters can be added.
 
-| Parameter   | Description                                                                        |
-| ----------- | ---------------------------------------------------------------------------------- |
-| Marker Name | Displayed in the context menu when adding a marker (e.g., Location, Event, Person) |
-| Marker Icon | Name of the Font Awesome icon to use                                               |
-| Layer Icon  | Layer this icon on top of the base marker. If off, the icon itself will be used.   |
-| Icon Color  | Override the default icon color                                                    |
+| Parameter   | Description                                                                                          |
+| ----------- | ---------------------------------------------------------------------------------------------------- |
+| Marker Name | Displayed in the context menu when adding a marker (e.g., Location, Event, Person)                   |
+| Marker Icon | The [Font Awesome Free](https://fontawesome.com/icons?d=gallery&p=2&s=solid&m=free) icon name to use |
+| Layer Icon  | Layer this icon on top of the base marker. If off, the icon itself will be used.                     |
+| Icon Color  | Override the default icon color                                                                      |
 
 If layer icon is on, the icon be moved around the base icon by clicking and dragging, to customize where the icon is layered. If <kbd>Shift</kbd> is held while moving the icon, it will snap to the midlines.
 
 # Version History
 
-## 3.0.0
-
-### New Features
-
--   Map IDs are now required.
-    -   A map that does not have an id will **not render**
-    -   The plugin will try to load previously defined marker data once an id has been given to the map.
-    -   This means marker definitions are no longer tied to maps - giving a map on a different note the same ID will load the same marker data
--   Marker data that is not associated with a file will now be deleted after 7 days to prevent data accumulation
--   Map data is now only saved if the map has defined markers
--   Image files can now be linked using an Obsidian wikilink (e.g., [[Image Name.jpg]])
--   New `markerFile` and `markerFolder` parameters in maps
-    -   `markerFile` will read a note file's frontmatter and create a marker based on the `marker` and `location` tags
-        -   `marker` should be a defined marker type (will default to `default` if not provided)
-        -   `location` should be a array of [latitude, longitude]. **If not provided, the marker will not be created**
-        -   The marker link target will be set to the file
-    -   `markerFolder` will read _all_ of the files in the folder, and try to parse the frontmatter as above.
--   Made display of marker link in tooltip consistent with Obsidian's display style
--   Added data attributes to marker HTML element
-    -   data-type: marker type
-    -   data-link: marker link target, if any
-    -   data-mutable: whether marker data can be edited
-    -   data-type: marker type name (such as default)
--   Switched from uuid to 6 digit nanoid
--   Rendering improvements
-
-### Bug Fixes
-
--   Fixed issue where a new marker type's Layer Icon setting was not respecting the default layer marker setting
--   Fixed issue where clicking a marker could open the context menu
--   Fixed issue where clicking a marker without a link could cause an error
--   Fixed issue with opening a marker link defined with alt-text
--   Fixed issue where resizing the leaf containing a map caused it to calculate marker positions incorrectly
--   Fixed issue where having the same map open in multiple windows was not adding markers correctly
--   Fixed issue where dragging a marker created on a map open in multiple views would not drag correctly on other maps
--   Fixed issue where turning the plugin off would leave map tiles in random locations on open notes
--   Fixed issue where showing the note preview of a note with a map that is already open in the workspace would cause the map to be disassociated
-
-## 2.1.0
-
--   Added marker parameter in code block
--   Fixed issue where importing a CSV file that changed a marker on an open map failed to update the marker information
-
-## 2.0.0
-
--   Added ability to export marker data to a CSV file
--   Added ability to import marker data from a CSV file
--   Added Obsidian-like file chooser to marker link path
-
-## 1.3.0
-
--   Removed requirement for file path in marker target
--   Added ability to target blocks in marker target
-
-## 1.2.0
-
--   Add rudimentary distance calculation between two points on the map
--   Fixed issue where opening the same map in multiple leaves could cause one map to de-render
-
-## 1.1.0
-
--   Maps now recalculate their sizing when the window is resized
-
-## 1.0.0
-
--   Switch to proper semantic versioning
--   Added Note Preview setting
-    -   This setting displays the Obsidian page preview when you hover over a linked marker
--   Map height can now be in provided as a percentage
-
-## 0.3.1
-
--   Added image map layers
-    -   It is now possible to have an arbitrary number of image maps layered on top of each other by supplying multiple images to the code block
-    -   Markers created on a specific layer are only displayed when that layer is active
-    -   Navigation between layers is done using the layer control box in the top right
-
-## 0.2.2
-
--   Added real-world maps
--   Added latitude and longitude options
--   Added zoom delta option
--   Added tooltip display on markers that link to notes
--   Bug fixes
+See [the changelog](CHANGELOG.md).
 
 # Installation
 

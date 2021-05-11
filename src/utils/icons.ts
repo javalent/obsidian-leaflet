@@ -11,9 +11,7 @@ import {
 
 library.add(fas);
 
-const iconNames = Object.values(fas)
-    .map((i) => i.iconName)
-    .join("|");
+export const iconNames = Object.values(fas).map((i) => i.iconName);
 
 export function getIcon(iconName: string): IconDefinition {
     if (!iconName) return null;
@@ -29,7 +27,6 @@ export {
     findIconDefinition,
     IconDefinition,
     IconName,
-    iconNames,
     AbstractElement,
     toHtml
 };

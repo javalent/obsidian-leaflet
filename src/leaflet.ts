@@ -346,17 +346,12 @@ export default class LeafletMap extends Events {
             ]);
         }
         this.markers.forEach((marker) => {
-            console.log(this.map, this.map.getMaxZoom());
-            if (type === "image" && marker.zoom != this.map.getMaxZoom()) {
-                console.log(
-                    marker.zoom,
-                    this.map.project(marker.loc, marker.zoom - 1)
-                );
+            /* if (type === "image" && marker.zoom != this.map.getMaxZoom()) {
                 marker.loc = this.map.unproject(
                     this.map.project(marker.loc, marker.zoom - 1),
                     this.map.getMaxZoom() - 1
                 );
-            }
+            } */
 
             if (marker.layer) {
                 this.mapLayers
@@ -570,12 +565,6 @@ export default class LeafletMap extends Events {
             this.mapLayers = await Promise.all(
                 layers.map(async (layer) => {
                     let { h, w } = await getImageDimensions(layer.data);
-                    console.log(
-                        "🚀 ~ file: leaflet.ts ~ line 562 ~ LeafletMap ~ layers.map ~ h, w",
-                        h,
-                        w,
-                        this.type
-                    );
 
                     let southWest = this.map.unproject(
                         [0, h],

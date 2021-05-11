@@ -22,12 +22,13 @@ import {
     icon,
     toHtml,
     AbstractElement,
-    getIcon
+    getIcon,
+    iconNames
 } from "./icons";
 
 import ObsidianLeaflet from "../main";
 
-import { ILeafletMarker, IMarker } from "../@types/index";
+import { IMarker } from "../@types/index";
 import LeafletMap, { Marker } from "src/leaflet";
 
 class Suggester<T> {
@@ -488,6 +489,89 @@ export class CommandSuggestionModal extends SuggestionModal<Command> {
         return this.commands;
     }
 }
+
+export class IconSuggestionModal extends SuggestionModal<IconName> {
+    icons: IconName[];
+    icon: IconName;
+    text: TextComponent;
+    constructor(app: App, input: TextComponent, items: IconName[]) {
+        super(app, input.inputEl, items);
+        this.icons = [...items];
+        this.text = input;
+        //this.getItem();
+
+        this.createPrompts();
+
+        this.inputEl.addEventListener("input", this.getItem.bind(this));
+    }
+    createPrompts() {}
+    getItem() {
+        const v = this.inputEl.value,
+            icon = this.icons.find((iconName) => iconName === v.trim());
+        if (icon == this.icon) return;
+        this.icon = icon;
+        if (this.icons) this.onInputChanged();
+    }
+    getItemText(item: IconName) {
+        return item;
+    }
+    onChooseItem(item: IconName) {
+        this.text.setValue(item);
+        this.icon = item;
+    }
+    selectSuggestion({ item }: FuzzyMatch<IconName>) {
+        this.text.setValue(item);
+        this.onClose();
+
+        this.close();
+    }
+    renderSuggestion(result: FuzzyMatch<IconName>, el: HTMLElement) {
+        let { item, match: matches } = result || {};
+        let content = el.createDiv({
+            cls: "suggestion-content icon"
+        });
+        if (!item) {
+            content.setText(this.emptyStateText);
+            content.parentElement.addClass("is-selected");
+            return;
+        }
+
+        const matchElements = matches.matches.map((m) => {
+            return createSpan("suggestion-highlight");
+        });
+        for (let i = 0; i < item.length; i++) {
+            let match = matches.matches.find((m) => m[0] === i);
+            if (match) {
+                let element = matchElements[matches.matches.indexOf(match)];
+                content.appendChild(element);
+                element.appendText(item.substring(match[0], match[1]));
+
+                i += match[1] - match[0] - 1;
+                continue;
+            }
+
+            content.appendText(item[i]);
+        }
+
+        const iconDiv = createDiv({
+            cls: "suggestion-flair"
+        });
+        iconDiv.appendChild(
+            icon(
+                findIconDefinition({
+                    iconName: item,
+                    prefix: "fas"
+                })
+            ).node[0]
+        );
+
+        content.prepend(iconDiv);
+    }
+    getItems() {
+        return this.icons;
+    }
+}
+
 export class MarkerContextModal extends Modal {
     plugin: ObsidianLeaflet;
     marker: Marker;
@@ -495,6 +579,7 @@ export class MarkerContextModal extends Modal {
     deleted: boolean = false;
     tempMarker: Marker;
     modal: CommandSuggestionModal | PathSuggestionModal;
+    limit: number = 100;
     constructor(
         app: App,
         plugin: ObsidianLeaflet,
@@ -674,41 +759,51 @@ export class CreateMarkerModal extends Modal {
             .setName("Marker Icon")
             .setDesc("Font Awesome icon name (e.g. map-marker).")
             .addText((text) => {
-                iconTextInput = text
-                    .setPlaceholder("Icon Name")
-                    .setValue(
-                        this.tempMarker.iconName ? this.tempMarker.iconName : ""
-                    )
-                    .onChange(
-                        async (new_value): Promise<void> => {
-                            let icon = findIconDefinition({
-                                iconName: new_value as IconName,
-                                prefix: "fas"
-                            });
+                text.setPlaceholder("Icon Name").setValue(
+                    this.tempMarker.iconName ? this.tempMarker.iconName : ""
+                );
 
-                            if (!icon) {
-                                setValidationError(
-                                    iconTextInput,
-                                    "Invalid icon name."
-                                );
-                                return;
-                            }
+                const validate = async () => {
+                    const new_value = text.inputEl.value;
 
-                            if (new_value.length == 0) {
-                                setValidationError(
-                                    iconTextInput,
-                                    "Icon cannot be empty."
-                                );
-                                return;
-                            }
+                    if (!new_value.length) {
+                        setValidationError(
+                            text,
+                            "A default marker must be defined."
+                        );
+                        return;
+                    }
+                    if (
+                        !findIconDefinition({
+                            iconName: new_value as IconName,
+                            prefix: "fas"
+                        })
+                    ) {
+                        setValidationError(
+                            text,
+                            "The selected icon does not exist in Font Awesome Free."
+                        );
+                        return;
+                    }
 
-                            removeValidationError(iconTextInput);
-                            this.tempMarker.iconName = icon.iconName;
+                    removeValidationError(text);
+                    this.tempMarker.iconName = new_value;
 
-                            this.display("icon_name");
-                        }
-                    );
-                iconTextInput.inputEl.id = "icon_name";
+                    await this.plugin.saveSettings();
+
+                    this.display();
+                };
+
+                const modal = new IconSuggestionModal(
+                    this.app,
+                    text,
+                    iconNames
+                );
+
+                modal.onClose = validate;
+
+                text.inputEl.onblur = validate;
+
                 return iconTextInput;
             });
 
