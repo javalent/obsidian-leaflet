@@ -312,7 +312,7 @@ If layer icon is on, the icon be moved around the base icon by clicking and drag
 
 # Version History
 
-See [the changelog](CHANGELOG.md).
+See [the changelog](https://github.com/valentine195/obsidian-leaflet-plugin/blob/master/CHANGELOG.md).
 
 # Installation
 
