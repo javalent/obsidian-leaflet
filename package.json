@@ -11,7 +11,7 @@
     "author": "",
     "license": "MIT",
     "devDependencies": {
-        "@fortawesome/fontawesome-svg-core": "^1.2.32",
+        "@fortawesome/fontawesome-svg-core": "^1.2.35",
         "@fortawesome/free-regular-svg-icons": "^5.15.2",
         "@fortawesome/free-solid-svg-icons": "^5.15.1",
         "@popperjs/core": "^2.9.2",
