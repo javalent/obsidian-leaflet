@@ -1,5 +1,4 @@
 import {
-    Plugin,
     addIcon,
     Notice,
     MarkdownView,
@@ -12,22 +11,24 @@ import {
     Vault,
     TFolder,
     setIcon,
-    Scope
+    Scope,
+    Plugin
 } from "obsidian";
 import { latLng, LeafletMouseEvent, Point } from "leaflet";
 import { parse as parseCSV } from "papaparse";
-import { getType as lookupMimeType } from "mime/lite";
 
 //Local Imports
 import "./main.css";
 
-import { ObsidianLeafletSettingTab, DEFAULT_SETTINGS } from "./settings";
+import { ObsidianLeafletSettingTab } from "./settings";
 import {
     AbstractElement,
     icon,
     toHtml,
     getIcon,
-    MarkerContextModal
+    MarkerContextModal,
+    DEFAULT_SETTINGS,
+    toDataURL
 } from "./utils";
 import {
     IMapInterface,
@@ -37,9 +38,11 @@ import {
     IObsidianAppData,
     IMarker
 } from "./@types";
-import LeafletMap, { Marker, markerDivIcon } from "./leaflet";
+import { ObsidianLeaflet } from "./@types/main";
+import LeafletMap from "./leaflet";
+import { Marker, markerDivIcon } from "./utils/leaflet";
 
-export default class ObsidianLeaflet extends Plugin {
+export default class ObsidianLeafletPlugin extends Plugin implements ObsidianLeaflet {
     AppData: IObsidianAppData;
     markerIcons: IMarkerIcon[];
     maps: IMapInterface[] = [];
@@ -138,9 +141,9 @@ export default class ObsidianLeaflet extends Plugin {
             );
 
             let image = "real";
-            let layers = (
-                source.match(/^\bimage\b:[\s\S]*?$/gm) || []
-            ).map((p) => p.split(/(?:image):\s?/)[1]?.trim());
+            let layers = (source.match(/^\bimage\b:[\s\S]*?$/gm) || []).map(
+                (p) => p.split(/(?:image):\s?/)[1]?.trim()
+            );
 
             if (!id) {
                 new Notice(
@@ -268,8 +271,9 @@ export default class ObsidianLeaflet extends Plugin {
                     layers.map(async (image) => {
                         return {
                             id: image,
-                            data: await this.toDataURL(
-                                encodeURIComponent(image)
+                            data: await toDataURL(
+                                encodeURIComponent(image),
+                                this.app
                             )
                         };
                     })
@@ -516,9 +520,8 @@ export default class ObsidianLeaflet extends Plugin {
                 );
 
                 for (let path of markerFolders) {
-                    let abstractFile = this.app.vault.getAbstractFileByPath(
-                        path
-                    );
+                    let abstractFile =
+                        this.app.vault.getAbstractFileByPath(path);
                     if (!abstractFile) continue;
                     if (abstractFile instanceof TFile) markerFiles.add(path);
                     if (abstractFile instanceof TFolder) {
@@ -566,15 +569,15 @@ export default class ObsidianLeaflet extends Plugin {
                 }
 
                 for (let path of markerFiles) {
-                    const file = await this.app.metadataCache.getFirstLinkpathDest(
-                        path,
-                        ""
-                    );
+                    const file =
+                        await this.app.metadataCache.getFirstLinkpathDest(
+                            path,
+                            ""
+                        );
                     if (!file || !(file instanceof TFile)) continue;
 
-                    let { frontmatter } = this.app.metadataCache.getFileCache(
-                        file
-                    );
+                    let { frontmatter } =
+                        this.app.metadataCache.getFileCache(file);
 
                     if (
                         !frontmatter ||
@@ -690,19 +693,17 @@ export default class ObsidianLeaflet extends Plugin {
                 lastAccessed: Date.now(),
                 markers: map.map.markers
                     .filter(({ mutable }) => mutable)
-                    .map(
-                        (marker): IMarkerData => {
-                            return {
-                                type: marker.type,
-                                id: marker.id,
-                                loc: [marker.loc.lat, marker.loc.lng],
-                                link: marker.link,
-                                layer: marker.layer,
-                                command: marker.command || false,
-                                zoom: marker.zoom ?? 0
-                            };
-                        }
-                    )
+                    .map((marker): IMarkerData => {
+                        return {
+                            type: marker.type,
+                            id: marker.id,
+                            loc: [marker.loc.lat, marker.loc.lng],
+                            link: marker.link,
+                            layer: marker.layer,
+                            command: marker.command || false,
+                            zoom: marker.zoom ?? 0
+                        };
+                    })
             });
         });
 
@@ -733,49 +734,47 @@ export default class ObsidianLeaflet extends Plugin {
     generateMarkerMarkup(
         markers: IMarker[] = this.AppData.markerIcons
     ): IMarkerIcon[] {
-        let ret: IMarkerIcon[] = markers.map(
-            (marker): IMarkerIcon => {
-                if (!marker.transform) {
-                    marker.transform = this.AppData.defaultMarker.transform;
-                }
-                if (!marker.iconName) {
-                    marker.iconName = this.AppData.defaultMarker.iconName;
-                }
-                let html: string, iconNode: AbstractElement;
-
-                if (this.AppData.layerMarkers) {
-                    iconNode = icon(getIcon(marker.iconName), {
-                        transform: marker.transform,
-                        mask: getIcon(this.AppData.defaultMarker.iconName),
-                        classes: ["full-width-height"]
-                    }).abstract[0];
-                } else {
-                    iconNode = icon(getIcon(marker.iconName), {
-                        classes: ["full-width-height"]
-                    }).abstract[0];
-                }
-
-                iconNode.attributes = {
-                    ...iconNode.attributes,
-                    style: `color: ${
-                        marker.color
-                            ? marker.color
-                            : this.AppData.defaultMarker.color
-                    }`
-                };
-
-                html = toHtml(iconNode);
-
-                return {
-                    type: marker.type,
-                    html: html,
-                    icon: markerDivIcon({
-                        html: html,
-                        className: `leaflet-div-icon`
-                    })
-                };
+        let ret: IMarkerIcon[] = markers.map((marker): IMarkerIcon => {
+            if (!marker.transform) {
+                marker.transform = this.AppData.defaultMarker.transform;
             }
-        );
+            if (!marker.iconName) {
+                marker.iconName = this.AppData.defaultMarker.iconName;
+            }
+            let html: string, iconNode: AbstractElement;
+
+            if (this.AppData.layerMarkers) {
+                iconNode = icon(getIcon(marker.iconName), {
+                    transform: marker.transform,
+                    mask: getIcon(this.AppData.defaultMarker.iconName),
+                    classes: ["full-width-height"]
+                }).abstract[0];
+            } else {
+                iconNode = icon(getIcon(marker.iconName), {
+                    classes: ["full-width-height"]
+                }).abstract[0];
+            }
+
+            iconNode.attributes = {
+                ...iconNode.attributes,
+                style: `color: ${
+                    marker.color
+                        ? marker.color
+                        : this.AppData.defaultMarker.color
+                }`
+            };
+
+            html = toHtml(iconNode);
+
+            return {
+                type: marker.type,
+                html: html,
+                icon: markerDivIcon({
+                    html: html,
+                    className: `leaflet-div-icon`
+                })
+            };
+        });
         const defaultHtml = icon(getIcon(this.AppData.defaultMarker.iconName), {
             classes: ["full-width-height"],
             styles: {
@@ -824,14 +823,12 @@ export default class ObsidianLeaflet extends Plugin {
                 const mapEl = bulkModal.contentEl.createDiv({
                     cls: "bulk-edit-map",
                     attr: {
-                        style:
-                            "height: 250px;width: auto;margin: auto;margin-bottom: 1rem; "
+                        style: "height: 250px;width: auto;margin: auto;margin-bottom: 1rem; "
                     }
                 });
 
-                const markersEl = bulkModal.contentEl.createDiv(
-                    "bulk-edit-markers"
-                );
+                const markersEl =
+                    bulkModal.contentEl.createDiv("bulk-edit-markers");
 
                 for (let marker of map.markers) {
                     let markerSetting = new Setting(
@@ -967,10 +964,11 @@ export default class ObsidianLeaflet extends Plugin {
                         }
                         return;
                     }
-                    let internal = await this.app.metadataCache.getFirstLinkpathDest(
-                        link.split(/(\^|\||#)/).shift(),
-                        ""
-                    );
+                    let internal =
+                        await this.app.metadataCache.getFirstLinkpathDest(
+                            link.split(/(\^|\||#)/).shift(),
+                            ""
+                        );
 
                     if (
                         /(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/.test(
@@ -1035,8 +1033,7 @@ export default class ObsidianLeaflet extends Plugin {
                             setIcon(
                                 div.createSpan({
                                     attr: {
-                                        style:
-                                            "margin-right: 0.5em; display: flex; align-items: center;"
+                                        style: "margin-right: 0.5em; display: flex; align-items: center;"
                                     }
                                 }),
                                 "run-command"
@@ -1053,8 +1050,7 @@ export default class ObsidianLeaflet extends Plugin {
                             setIcon(
                                 div.createSpan({
                                     attr: {
-                                        style:
-                                            "margin-right: 0.5em; display: flex; align-items: center;"
+                                        style: "margin-right: 0.5em; display: flex; align-items: center;"
                                     }
                                 }),
                                 "cross"
@@ -1066,10 +1062,11 @@ export default class ObsidianLeaflet extends Plugin {
                         return;
                     }
 
-                    let internal = await this.app.metadataCache.getFirstLinkpathDest(
-                        marker.link.split(/(\^|\||#)/).shift(),
-                        ""
-                    );
+                    let internal =
+                        await this.app.metadataCache.getFirstLinkpathDest(
+                            marker.link.split(/(\^|\||#)/).shift(),
+                            ""
+                        );
 
                     if (
                         /(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/.test(
@@ -1213,66 +1210,5 @@ export default class ObsidianLeaflet extends Plugin {
         };
 
         markerSettingsModal.open();
-    }
-
-    async toDataURL(url: string): Promise<string> {
-        //determine link type
-        try {
-            let response, blob: Blob, mimeType: string;
-            url = decodeURIComponent(url);
-            if (/https?:/.test(url)) {
-                //url
-                response = await fetch(url);
-                blob = await response.blob();
-            } else if (/obsidian:\/\/open/.test(url)) {
-                //obsidian link
-                let [, filePath] = url.match(/\?vault=[\s\S]+?&file=([\s\S]+)/);
-
-                filePath = decodeURIComponent(filePath);
-                let file = this.app.vault.getAbstractFileByPath(filePath);
-                if (!file || !(file instanceof TFile)) throw new Error();
-
-                let buffer = await this.app.vault.readBinary(file);
-                blob = new Blob([new Uint8Array(buffer)]);
-            } else {
-                //file exists on disk
-                let file = this.app.metadataCache.getFirstLinkpathDest(
-                    url.replace(/(\[|\])/g, ""),
-                    ""
-                );
-                if (!file || !(file instanceof TFile)) throw new Error();
-
-                mimeType =
-                    lookupMimeType(file.extension) ||
-                    "application/octet-stream";
-                let buffer = await this.app.vault.readBinary(file);
-                blob = new Blob([new Uint8Array(buffer)]);
-            }
-
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    if (typeof reader.result === "string") {
-                        let base64 =
-                            "data:" +
-                            mimeType +
-                            reader.result.slice(
-                                reader.result.indexOf(";base64,")
-                            );
-                        resolve(base64);
-                    } else {
-                        new Notice(
-                            "There was an error reading the image file."
-                        );
-                        reject();
-                    }
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            });
-        } catch (e) {
-            console.error(e);
-            new Notice(`There was an error reading the image file: ${url}`);
-        }
     }
 }

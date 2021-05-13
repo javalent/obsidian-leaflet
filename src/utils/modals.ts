@@ -29,7 +29,8 @@ import {
 import ObsidianLeaflet from "../main";
 
 import { IMarker } from "../@types/index";
-import LeafletMap, { Marker } from "src/leaflet";
+import LeafletMap from "src/leaflet";
+import { Marker } from "./leaflet";
 
 class Suggester<T> {
     owner: SuggestModal<T>;

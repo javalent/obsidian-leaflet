@@ -5,9 +5,7 @@ import {
     Notice,
     ButtonComponent
 } from "obsidian";
-
 import { parse as parseCSV, unparse as unparseCSV } from "papaparse";
-
 import {
     findIconDefinition,
     IconName,
@@ -21,33 +19,9 @@ import {
     iconNames
 } from "./utils";
 
-import {
-    IMapMarkerData,
-    IMarker,
-    IMarkerData,
-    IObsidianAppData
-} from "./@types/index";
+import { IMapMarkerData, IMarker, IMarkerData } from "./@types/index";
 
-export const DEFAULT_SETTINGS: IObsidianAppData = {
-    mapMarkers: [],
-    defaultMarker: {
-        type: "default",
-        iconName: "map-marker",
-        color: "#dddddd",
-        transform: { size: 6, x: 0, y: -2 }
-    },
-    markerIcons: [],
-    color: "#dddddd",
-    lat: 39.983334,
-    long: -82.98333,
-    notePreview: false,
-    layerMarkers: true,
-    previousVersion: null,
-    warnedAboutMapMarker: false,
-    copyOnClick: false
-};
-
-import ObsidianLeaflet from "./main";
+import { ObsidianLeaflet } from "./@types/main";
 import { latLng } from "leaflet";
 
 export class ObsidianLeafletSettingTab extends PluginSettingTab {
@@ -208,57 +182,53 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             .setDesc(
                 "These markers will be available in the right-click menu on the map."
             )
-            .addButton(
-                (button: ButtonComponent): ButtonComponent => {
-                    let b = button
-                        .setTooltip("Add Additional")
-                        .onClick(async () => {
-                            let newMarkerModal = new CreateMarkerModal(
-                                this.app,
-                                this.plugin,
-                                this.newMarker
-                            );
-                            newMarkerModal.open();
-                            newMarkerModal.onClose = async () => {
-                                if (
-                                    !this.newMarker.type ||
-                                    !this.newMarker.iconName
-                                ) {
-                                    return;
-                                }
-                                this.data.markerIcons.push(this.newMarker);
-                                this.newMarker = {
-                                    type: "",
-                                    iconName: null,
-                                    color: this.data.layerMarkers
-                                        ? this.data.defaultMarker.color
-                                        : this.data.color,
-                                    layer: true,
-                                    transform: this.data.defaultMarker.transform
-                                };
-                                await this.plugin.saveSettings();
-
-                                this.display();
+            .addButton((button: ButtonComponent): ButtonComponent => {
+                let b = button
+                    .setTooltip("Add Additional")
+                    .onClick(async () => {
+                        let newMarkerModal = new CreateMarkerModal(
+                            this.app,
+                            this.plugin,
+                            this.newMarker
+                        );
+                        newMarkerModal.open();
+                        newMarkerModal.onClose = async () => {
+                            if (
+                                !this.newMarker.type ||
+                                !this.newMarker.iconName
+                            ) {
+                                return;
+                            }
+                            this.data.markerIcons.push(this.newMarker);
+                            this.newMarker = {
+                                type: "",
+                                iconName: null,
+                                color: this.data.layerMarkers
+                                    ? this.data.defaultMarker.color
+                                    : this.data.color,
+                                layer: true,
+                                transform: this.data.defaultMarker.transform
                             };
-                        });
-                    b.buttonEl.appendChild(
-                        icon(
-                            findIconDefinition({
-                                iconName: "plus",
-                                prefix: "fas"
-                            })
-                        ).node[0]
-                    );
-                    return b;
-                }
-            );
+                            await this.plugin.saveSettings();
+
+                            this.display();
+                        };
+                    });
+                b.buttonEl.appendChild(
+                    icon(
+                        findIconDefinition({
+                            iconName: "plus",
+                            prefix: "fas"
+                        })
+                    ).node[0]
+                );
+                return b;
+            });
         let markers = additionalMarkers.createDiv({
             cls: "additional-markers"
         });
         this.data.markerIcons.forEach((marker) => {
-            let setting = new Setting(
-                markers
-            ) /* 
+            let setting = new Setting(markers) /* 
                 .setName(marker.type) */
                 .addExtraButton((b) =>
                     b.onClick(() => {
@@ -432,15 +402,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     for (let i = 0; i < parsed.data.length; i++) {
                         let data = parsed.data[i];
                         if (!data || data.length < 6) continue;
-                        let [
-                            map,
-                            type,
-                            lat,
-                            long,
-                            link,
-                            layer,
-                            id
-                        ] = data.map((l) => l.replace(/"/g, ""));
+                        let [map, type, lat, long, link, layer, id] = data.map(
+                            (l) => l.replace(/"/g, "")
+                        );
                         if (!map || !map.length || map === "undefined") {
                             new Notice("Map not specified for line " + i + 1);
                             continue;

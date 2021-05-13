@@ -1,28 +1,7 @@
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import convert, { allUnits, UnitFamilies } from "convert";
+import convert from "convert";
 import "leaflet-fullscreen";
-
-/** Recreate Length Alias Types from "convert" */
-declare type UnitsCombined = typeof allUnits;
-declare type UnitKeys = Exclude<keyof UnitsCombined, "__proto__">;
-declare type AllValues = {
-    [P in UnitKeys]: {
-        key: P;
-        value: UnitsCombined[P][0];
-    };
-}[UnitKeys];
-declare type IdToFamily = {
-    [P in AllValues["value"]]: Extract<
-        AllValues,
-        {
-            value: P;
-        }
-    >["key"];
-};
-declare type GetAliases<X extends UnitFamilies> = IdToFamily[X];
-declare type Length = GetAliases<UnitFamilies.Length>;
-
 import { Events, Notice, moment } from "obsidian";
 
 import {
@@ -31,180 +10,19 @@ import {
     ILeafletMarker,
     IMarkerData,
     IMarkerIcon,
-    IObsidianAppData
+    IObsidianAppData,
+    Length
 } from "./@types";
-import { getId, getImageDimensions, icon } from "./utils";
+import {
+    getId,
+    getImageDimensions,
+    icon,
+    DISTANCE_DECIMALS,
+    LAT_LONG_DECIMALS,
+    DEFAULT_MAP_OPTIONS
+} from "./utils";
 import ObsidianLeaflet from "./main";
-
-interface MarkerDivIconOptions extends L.DivIconOptions {
-    data?: { [key: string]: string };
-}
-
-export class MarkerDivIcon extends L.DivIcon {
-    options: MarkerDivIconOptions;
-    div: HTMLElement;
-    constructor(options: MarkerDivIconOptions) {
-        super(options);
-    }
-    createIcon(oldIcon: HTMLElement) {
-        const div = super.createIcon(oldIcon);
-        for (let item in this.options.data) {
-            div.dataset[item] = this.options.data[item];
-        }
-        this.div = div;
-        return div;
-    }
-    setData(data: { [key: string]: string }) {
-        this.options.data = {
-            ...this.options.data,
-            ...data
-        };
-        if (this.div) {
-            for (let item in data) {
-                this.div.dataset[item] = this.options.data[item];
-            }
-        }
-    }
-}
-
-export const markerDivIcon = function (options: MarkerDivIconOptions) {
-    return new MarkerDivIcon(options);
-};
-
-interface DivIconMarkerOptions extends L.MarkerOptions {
-    icon: MarkerDivIcon;
-}
-export class DivIconMarker extends L.Marker {
-    options: DivIconMarkerOptions;
-    constructor(
-        latlng: L.LatLng,
-        options: L.MarkerOptions,
-        data: { [key: string]: string }
-    ) {
-        super(latlng, options);
-        this.options.icon.options.data = data;
-    }
-}
-
-export class Marker {
-    private _link: string;
-    private _mutable: boolean;
-    private _type: string;
-    private _loc: [number, number];
-    leafletInstance: DivIconMarker;
-    loc: L.LatLng;
-    id: string;
-    layer: string;
-    command: boolean;
-    zoom: number;
-    maxZoom: number;
-    constructor({
-        id,
-        icon,
-        type,
-        loc,
-        link,
-        layer,
-        mutable,
-        command,
-        zoom,
-        maxZoom = zoom
-    }: {
-        id: string;
-        icon: MarkerDivIcon;
-        type: string;
-        loc: L.LatLng;
-        link: string;
-        layer: string;
-        mutable: boolean;
-        command: boolean;
-        zoom: number;
-        maxZoom?: number;
-    }) {
-        this.leafletInstance = divIconMarker(
-            loc,
-            {
-                icon: icon,
-                keyboard: mutable,
-                draggable: mutable,
-                bubblingMouseEvents: true
-            },
-            {
-                link: link,
-                mutable: `${mutable}`,
-                type: type
-            }
-        );
-
-        this.id = id;
-        this.type = type;
-        this.loc = loc;
-        this.link = link;
-        this.layer = layer;
-        this.mutable = mutable;
-        this.command = command;
-
-        this.zoom = zoom;
-        this.maxZoom = maxZoom;
-    }
-    get link() {
-        return this._link;
-    }
-    set link(x: string) {
-        this._link = x;
-        if (this.leafletInstance.options?.icon) {
-            this.leafletInstance.options.icon.setData({
-                link: `${x}`
-            });
-        }
-    }
-    get mutable() {
-        return this._mutable;
-    }
-    set mutable(x: boolean) {
-        this._mutable = x;
-        if (this.leafletInstance.options?.icon) {
-            this.leafletInstance.options.icon.setData({
-                mutable: `${x}`
-            });
-        }
-    }
-
-    get type() {
-        return this._type;
-    }
-    set type(x: string) {
-        this._type = x;
-        if (this.leafletInstance.options?.icon) {
-            this.leafletInstance.options.icon.setData({
-                type: `${x}`
-            });
-        }
-    }
-    set icon(x: IMarkerIcon) {
-        this.type = x.type;
-        this.leafletInstance.setIcon(x.icon);
-    }
-}
-
-const divIconMarker = function (
-    latlng: L.LatLng,
-    options: DivIconMarkerOptions,
-    data: { [key: string]: string }
-) {
-    return new DivIconMarker(latlng, options, data);
-};
-
-const DEFAULT_MAP_OPTIONS: ILeafletMapOptions = {
-    minZoom: 1,
-    maxZoom: 10,
-    defaultZoom: 1,
-    zoomDelta: 1,
-    unit: "m",
-    scale: 1,
-    distanceMultiplier: 1,
-    simple: false
-};
+import { DistanceDisplay, distanceDisplay, Marker } from "./utils/leaflet";
 
 /**
  * LeafletMap Class
@@ -235,13 +53,22 @@ export default class LeafletMap extends Events {
     distanceEvent: L.LatLng | undefined = undefined;
     data: IObsidianAppData;
     plugin: ObsidianLeaflet;
-    distanceLine: L.Polyline;
+    distanceLine: L.Polyline = L.polyline(
+        [
+            [0, 0],
+            [0, 0]
+        ],
+        {
+            color: "blue"
+        }
+    );
     options: ILeafletMapOptions;
     private _rendered: boolean;
     private _timeoutHandler: ReturnType<typeof setTimeout>;
     private _popupTarget: ILeafletMarker | L.LatLng;
     private _scale: number;
     private _hoveringOnMarker: boolean = false;
+    distanceDisplay: DistanceDisplay;
     constructor(
         plugin: ObsidianLeaflet,
         el: HTMLElement,
@@ -363,8 +190,8 @@ export default class LeafletMap extends Events {
         });
         this.handleResize();
 
-        //build control icons
-        //set full screen icon
+        /** Build control icons */
+        //Full screen
         const fsButton = this.contentEl.querySelector(
             ".leaflet-control-fullscreen-button"
         );
@@ -383,12 +210,45 @@ export default class LeafletMap extends Events {
             });
         }
 
+        //Edit markers
+        const editMarkers = L.Control.extend({
+            onAdd: (map: L.Map) => {
+                const controlEl = L.DomUtil.create(
+                    "div",
+                    "leaflet-bar leaflet-control"
+                );
+                controlEl
+                    .createEl("a", {
+                        cls: "leaflet-control-edit-markers"
+                    })
+                    .appendChild(
+                        icon({ prefix: "fas", iconName: "map-marker" }).node[0]
+                    );
+
+                L.DomEvent.on(controlEl, "click", () => {
+                    this.trigger("bulk-edit-markers");
+                });
+
+                return controlEl;
+            }
+        });
+
+        // new editMarkers({ position: "topleft" }).addTo(this.map);
+
+        /** Distance Display */
+
+        this.distanceDisplay = distanceDisplay(
+            {
+                position: "bottomleft"
+            },
+            this.distanceLine
+        ).addTo(this.map);
+
+        /** Map Events */
         this.map.on("contextmenu", (evt) =>
             this.trigger("map-contextmenu", evt)
         );
         this.map.on("click", (evt: L.LeafletMouseEvent) => {
-            this.onHandleDistance(evt);
-
             if (
                 evt.originalEvent.getModifierState("Shift") ||
                 evt.originalEvent.getModifierState("Alt")
@@ -396,96 +256,83 @@ export default class LeafletMap extends Events {
                 this.openPopup(
                     evt.latlng,
                     `[${evt.latlng.lat.toLocaleString("en-US", {
-                        maximumFractionDigits: 4
+                        maximumFractionDigits: LAT_LONG_DECIMALS
                     })}, ${evt.latlng.lng.toLocaleString("en-US", {
-                        maximumFractionDigits: 4
+                        maximumFractionDigits: LAT_LONG_DECIMALS
                     })}]`
                 );
                 if (this.data.copyOnClick) {
                     navigator.clipboard
                         .writeText(
                             `[${evt.latlng.lat.toLocaleString("en-US", {
-                                maximumFractionDigits: 4
+                                maximumFractionDigits: LAT_LONG_DECIMALS
                             })}, ${evt.latlng.lng.toLocaleString("en-US", {
-                                maximumFractionDigits: 4
+                                maximumFractionDigits: LAT_LONG_DECIMALS
                             })}]`
                         )
                         .then(() => {
                             new Notice("Map coordinates copied to clipboard.");
                         });
                 }
+            } else {
+                this.onHandleDistance(evt);
             }
         });
     }
 
     onHandleDistance(evt: L.LeafletMouseEvent) {
-        if (
+        /* if (
             !evt.originalEvent.getModifierState("Shift") &&
             !evt.originalEvent.getModifierState("Alt")
         ) {
             this.removeDistanceLine();
             this.distanceEvent = undefined;
             return;
-        }
+        } */
 
         if (this.distanceEvent != undefined) {
-            const dist = this.map.distance(this.distanceEvent, evt.latlng);
-            this.distanceLine.unbindTooltip();
+            const dist = this.distance(this.distanceEvent, evt.latlng);
 
-            let display = `${(dist * this.scale).toLocaleString(this._locale, {
-                maximumFractionDigits: 3
-            })}`;
-            if (this.distanceMultipler !== 1) {
-                display += ` (${(
-                    dist *
-                    this.scale *
-                    this.distanceMultipler
-                ).toLocaleString(this._locale, {
-                    maximumFractionDigits: 3
-                })})`;
-            }
-            new Notice(`${display} ${this.unit}`);
             this.removeDistanceLine();
+
+            this.distanceDisplay.setText(dist);
+
             this.distanceEvent = undefined;
         } else {
             this.distanceEvent = evt.latlng;
 
             this.trigger("add-escape");
 
-            const originalLatLng = evt.latlng;
-
-            this.map.on("mousemove", (evt: L.LeafletMouseEvent) => {
-                if (!this.distanceLine) {
-                    this.distanceLine = L.polyline([evt.latlng, evt.latlng], {
-                        color: "blue"
-                    }).addTo(this.map);
-                }
+            const distanceTooltip = L.tooltip({
+                permanent: true,
+                direction: "top",
+                sticky: true
+            });
+            this.distanceLine.bindTooltip(distanceTooltip);
+            this.map.on("mousemove", (mvEvt: L.LeafletMouseEvent) => {
                 if (!this._hoveringOnMarker) {
-                    this.distanceLine.setLatLngs([originalLatLng, evt.latlng]);
+                    this.distanceLine.setLatLngs([
+                        this.distanceEvent,
+                        mvEvt.latlng
+                    ]);
                 }
-                const latlngs = this.distanceLine.getLatLngs() as L.LatLngExpression[];
-                const dist = this.map.distance(latlngs[0], latlngs[1]);
-                this.distanceLine.unbindTooltip();
+                this.distanceLine.setStyle({
+                    color: "blue",
+                    dashArray: ""
+                });
+                this.distanceLine.addTo(this.map);
+                const latlngs = this.distanceLine.getLatLngs() as L.LatLng[];
+                const display = this.distance(latlngs[0], latlngs[1]);
+                /* this.distanceLine.unbindTooltip(); */
 
-                let display = `${(dist * this.scale).toLocaleString(
-                    this._locale,
-                    {
-                        maximumFractionDigits: 3
-                    }
-                )}`;
-                if (this.distanceMultipler !== 1) {
-                    display += ` (${(
-                        dist *
-                        this.scale *
-                        this.distanceMultipler
-                    ).toLocaleString(this._locale, {
-                        maximumFractionDigits: 3
-                    })})`;
+                distanceTooltip.setContent(display);
+
+                distanceTooltip.setLatLng(mvEvt.latlng);
+                if (!this.distanceLine.isTooltipOpen()) {
+                    distanceTooltip.openTooltip();
                 }
 
-                this.distanceLine
-                    .bindTooltip(display + ` ${this.unit}`)
-                    .openTooltip();
+                this.distanceDisplay.setText(display);
                 this.distanceLine.redraw();
             });
 
@@ -495,12 +342,28 @@ export default class LeafletMap extends Events {
             });
         }
     }
+    distance(latlng1: L.LatLng, latlng2: L.LatLng): string {
+        const dist = this.map.distance(latlng1, latlng2);
+        let display = `${(dist * this.scale).toLocaleString(this._locale, {
+            maximumFractionDigits: DISTANCE_DECIMALS
+        })}`;
+        if (this.distanceMultipler !== 1) {
+            display += ` (${(
+                dist *
+                this.scale *
+                this.distanceMultipler
+            ).toLocaleString(this._locale, {
+                maximumFractionDigits: DISTANCE_DECIMALS
+            })})`;
+        }
+        return display + ` ${this.unit}`;
+    }
     removeDistanceLine() {
         if (this.distanceLine) {
             this.trigger("remove-escape");
             this.distanceLine.unbindTooltip();
             this.distanceLine.remove();
-            this.distanceLine = undefined;
+            //this.distanceLine = undefined;
             this.map.off("mousemove");
             this.map.off("mouseout");
         }
@@ -624,29 +487,6 @@ export default class LeafletMap extends Events {
 
         this.map.setZoom(this.zoom.default, { animate: false });
 
-        const editMarkers = L.Control.extend({
-            onAdd: (map: L.Map) => {
-                const controlEl = L.DomUtil.create(
-                    "div",
-                    "leaflet-bar leaflet-control"
-                );
-                const innerControlEl = controlEl.createEl("a", {
-                    cls: "leaflet-control-edit-markers"
-                });
-                innerControlEl.appendChild(
-                    icon({ prefix: "fas", iconName: "map-marker" }).node[0]
-                );
-
-                L.DomEvent.on(controlEl, "click", () => {
-                    this.trigger("bulk-edit-markers");
-                });
-
-                return controlEl;
-            }
-        });
-
-        new editMarkers({ position: "topleft" }).addTo(this.map);
-
         this.handleResize();
     }
     handleResize() {
@@ -763,13 +603,12 @@ export default class LeafletMap extends Events {
                     evt.originalEvent.getModifierState("Alt") ||
                     evt.originalEvent.getModifierState("Shift")
                 ) {
-                    this.onHandleDistance(evt);
                     this.openPopup(
                         marker,
                         `[${marker.loc.lat.toLocaleString("en-US", {
-                            maximumFractionDigits: 4
+                            maximumFractionDigits: LAT_LONG_DECIMALS
                         })}, ${marker.loc.lng.toLocaleString("en-US", {
-                            maximumFractionDigits: 4
+                            maximumFractionDigits: LAT_LONG_DECIMALS
                         })}]`
                     );
 
@@ -777,9 +616,9 @@ export default class LeafletMap extends Events {
                         navigator.clipboard
                             .writeText(
                                 `[${marker.loc.lat.toLocaleString("en-US", {
-                                    maximumFractionDigits: 4
+                                    maximumFractionDigits: LAT_LONG_DECIMALS
                                 })}, ${marker.loc.lng.toLocaleString("en-US", {
-                                    maximumFractionDigits: 4
+                                    maximumFractionDigits: LAT_LONG_DECIMALS
                                 })}]`
                             )
                             .then(() => {
@@ -790,6 +629,8 @@ export default class LeafletMap extends Events {
                     }
 
                     return;
+                } else {
+                    this.onHandleDistance(evt);
                 }
 
                 marker.leafletInstance.closeTooltip();

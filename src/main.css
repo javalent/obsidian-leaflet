@@ -183,6 +183,16 @@ input.is-invalid {
     display: flex !important;
 }
 
+.leaflet-distance-control {
+    background-color: #fff;
+    border-radius: 2px;
+    min-width: 30px;
+    width: auto;
+    height: 30px;
+    padding: 5px;
+    cursor: pointer !important;
+}
+
 .use-csv-marker > svg {
     color: yellow;
     margin-right: 8px;

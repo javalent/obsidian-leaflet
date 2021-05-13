@@ -1,18 +1,48 @@
+import { allUnits, UnitFamilies } from "convert";
 import { MarkdownView } from "obsidian";
-import LeafletMap, { DivIconMarker, MarkerDivIcon } from "src/leaflet";
+import LeafletMap from "src/leaflet";
+import { DivIconMarker, MarkerDivIcon } from "src/utils/leaflet";
 
-export interface IObsidianAppData {
-    mapMarkers: IMapMarkerData[];
-    markerIcons: IMarker[];
-    defaultMarker: IMarker;
-    color: string;
-    lat: number;
-    long: number;
-    notePreview: boolean;
-    layerMarkers: boolean;
-    previousVersion: string;
-    warnedAboutMapMarker: boolean;
-    copyOnClick: boolean;
+/** Recreate Length Alias Types from "convert" */
+declare type UnitsCombined = typeof allUnits;
+declare type UnitKeys = Exclude<keyof UnitsCombined, "__proto__">;
+declare type AllValues = {
+    [P in UnitKeys]: {
+        key: P;
+        value: UnitsCombined[P][0];
+    };
+}[UnitKeys];
+declare type IdToFamily = {
+    [P in AllValues["value"]]: Extract<
+        AllValues,
+        {
+            value: P;
+        }
+    >["key"];
+};
+declare type GetAliases<X extends UnitFamilies> = IdToFamily[X];
+export type Length = GetAliases<UnitFamilies.Length>;
+
+/** Leaflet Interfaces */
+
+export interface ILeafletMapOptions {
+    id?: string;
+    minZoom?: number;
+    maxZoom?: number;
+    defaultZoom?: number;
+    zoomDelta?: number;
+    unit?: string;
+    scale?: number;
+    distanceMultiplier?: number;
+    simple?: boolean;
+}
+
+export interface MarkerDivIconOptions extends L.DivIconOptions {
+    data?: { [key: string]: string };
+}
+
+export interface DivIconMarkerOptions extends L.MarkerOptions {
+    icon: MarkerDivIcon;
 }
 
 export interface IMarker {
@@ -32,25 +62,6 @@ export interface ILeafletMarker {
     mutable: boolean;
     command: boolean;
 }
-
-/* export declare class DivMarker implements ILeafletMarker {
-    private _link: string;
-    private _mutable: boolean;
-    private _type: string;
-    leafletInstance: DivIconMarker;
-    loc: L.LatLng;
-    id: string;
-    layer: string;
-    command: boolean;
-    get link(): string;
-    set link(link: string);
-    get type(): string;
-    set type(type: string);
-    get mutable(): boolean;
-    set mutable(mutable: boolean);
-    get icon(): ILeafletMarkerIcon;
-    set icon(icon: ILeafletMarkerIcon);
-} */
 
 export interface IMarkerData {
     type: string;
@@ -91,14 +102,17 @@ export interface ILayerGroup {
     id: string;
 }
 
-export interface ILeafletMapOptions {
-    id?: string;
-    minZoom?: number;
-    maxZoom?: number;
-    defaultZoom?: number;
-    zoomDelta?: number;
-    unit?: string;
-    scale?: number;
-    distanceMultiplier?: number;
-    simple?: boolean;
+/** Settings Interfaces */
+export interface IObsidianAppData {
+    mapMarkers: IMapMarkerData[];
+    markerIcons: IMarker[];
+    defaultMarker: IMarker;
+    color: string;
+    lat: number;
+    long: number;
+    notePreview: boolean;
+    layerMarkers: boolean;
+    previousVersion: string;
+    warnedAboutMapMarker: boolean;
+    copyOnClick: boolean;
 }
