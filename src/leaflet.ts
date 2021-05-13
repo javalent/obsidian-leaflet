@@ -253,6 +253,7 @@ export default class LeafletMap extends Events {
                 evt.originalEvent.getModifierState("Shift") ||
                 evt.originalEvent.getModifierState("Alt")
             ) {
+                this.onHandleDistance(evt);
                 this.openPopup(
                     evt.latlng,
                     `[${evt.latlng.lat.toLocaleString("en-US", {
@@ -274,22 +275,12 @@ export default class LeafletMap extends Events {
                             new Notice("Map coordinates copied to clipboard.");
                         });
                 }
-            } else {
-                this.onHandleDistance(evt);
             }
         });
     }
 
     onHandleDistance(evt: L.LeafletMouseEvent) {
-        /* if (
-            !evt.originalEvent.getModifierState("Shift") &&
-            !evt.originalEvent.getModifierState("Alt")
-        ) {
-            this.removeDistanceLine();
-            this.distanceEvent = undefined;
-            return;
-        } */
-
+        
         if (this.distanceEvent != undefined) {
             const dist = this.distance(this.distanceEvent, evt.latlng);
 
@@ -603,6 +594,7 @@ export default class LeafletMap extends Events {
                     evt.originalEvent.getModifierState("Alt") ||
                     evt.originalEvent.getModifierState("Shift")
                 ) {
+                    this.onHandleDistance(evt);
                     this.openPopup(
                         marker,
                         `[${marker.loc.lat.toLocaleString("en-US", {
@@ -629,8 +621,6 @@ export default class LeafletMap extends Events {
                     }
 
                     return;
-                } else {
-                    this.onHandleDistance(evt);
                 }
 
                 marker.leafletInstance.closeTooltip();

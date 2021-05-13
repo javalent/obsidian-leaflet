@@ -1,5 +1,16 @@
 # Version History
 
+## 3.8.2
+
+- Improved code structure
+- removed requirement to shift-click to start distance drawing
+- removed Notice of distance calculation
+- added control box in bottom-left corner that displays previously measured distance
+  - hovering the control box displays the previous distance line
+  - clicking the control box pans the map to fit the line
+- reduced number of decimals for distance display to 1
+- moved distance line tooltip to mouse cursor position
+- distance line tooltip is now always on top (no longer bounces around)
 ## 3.8.0
 - Added fullscreen map button
 - Distance line now correctly snaps to markers

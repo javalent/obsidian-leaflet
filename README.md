@@ -98,6 +98,8 @@ This setting may seem to not do anything without changing the default zoom level
 
 If provided, the plugin will scale the calculated distance between two points by `scale` and display the result as `xxx unit`.
 
+On real-world maps, only `unit: ` is required. It will attempt to scale the measurement from `meters` to `unit`.
+
 ## Markers
 
 New markers can be added to the map by right clicking.
