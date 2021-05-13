@@ -243,9 +243,11 @@ would search for notes that
 
 ## Distances
 
-<kbd>Shift</kbd>/<kbd>Alt</kbd>-clicking the map or a marker, then <kbd>Shift</kbd>/<kbd>Alt</kbd>-clicking again, will display the distance between the two points.
+<kbd>Shift</kbd> or <kbd>Alt</kbd>-clicking the map or a marker, then <kbd>Shift</kbd> or <kbd>Alt</kbd>-clicking again, will display the distance between the two points.
 
 Distances are displayed in meters, unless a scale factor and/or unit is specified in the map block.
+
+A control box in the bottom-left corner of the map displays the last-calculated distance. Hovering on this will display the distance line on the map, and clicking on it will zoom the map to those coordinates.
 
 ## Settings
 

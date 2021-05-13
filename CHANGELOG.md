@@ -1,9 +1,8 @@
 # Version History
 
-## 3.8.2
+## 3.8.3
 
 - Improved code structure
-- removed requirement to shift-click to start distance drawing
 - removed Notice of distance calculation
 - added control box in bottom-left corner that displays previously measured distance
   - hovering the control box displays the previous distance line
