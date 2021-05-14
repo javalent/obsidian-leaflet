@@ -2,11 +2,8 @@ import {
     addIcon,
     Notice,
     MarkdownView,
-    Modal,
-    Setting,
     TFile,
     MarkdownRenderChild,
-    Menu,
     MarkdownPostProcessorContext,
     Vault,
     TFolder,
@@ -14,7 +11,7 @@ import {
     Scope,
     Plugin
 } from "obsidian";
-import { latLng, LeafletMouseEvent, Point } from "leaflet";
+import { latLng, LeafletMouseEvent } from "leaflet";
 import { parse as parseCSV } from "papaparse";
 
 //Local Imports
@@ -38,11 +35,11 @@ import {
     IObsidianAppData,
     IMarker
 } from "./@types";
-import { ObsidianLeaflet } from "./@types/main";
-import LeafletMap from "./leaflet";
-import { Marker, markerDivIcon } from "./utils/leaflet";
 
-export default class ObsidianLeafletPlugin extends Plugin implements ObsidianLeaflet {
+import LeafletMap from "./leaflet";
+import { Marker, markerDivIcon } from "./utils/map";
+
+export default class ObsidianLeaflet extends Plugin {
     AppData: IObsidianAppData;
     markerIcons: IMarkerIcon[];
     maps: IMapInterface[] = [];
@@ -90,9 +87,8 @@ export default class ObsidianLeafletPlugin extends Plugin implements ObsidianLea
         this.escapeScope = new Scope();
         this.escapeScope.register(undefined, "Escape", () => {
             const map = this.maps.find(({ map }) => map.distanceLine);
-            //@ts-expect-error
             //THIS IS SILLY
-            if (map && !map.map.map.isFullscreen()) {
+            if (map && !map.map.isFullscreen) {
                 map.map.removeDistanceLine();
                 map.map.distanceEvent = undefined;
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -122,7 +118,7 @@ export default class ObsidianLeafletPlugin extends Plugin implements ObsidianLea
         el: HTMLElement,
         ctx: MarkdownPostProcessorContext
     ): Promise<void> {
-        try {
+        /* try { */
             /** Get Parameters from Source */
             let {
                 height = "500px",
@@ -135,7 +131,8 @@ export default class ObsidianLeafletPlugin extends Plugin implements ObsidianLea
                 id = undefined,
                 scale = 1,
                 unit = "m",
-                distanceMultiplier = 1
+                distanceMultiplier = 1,
+                darkMode = "false"
             } = Object.fromEntries(
                 source.split("\n").map((l) => l.split(/:\s?/))
             );
@@ -191,7 +188,8 @@ export default class ObsidianLeafletPlugin extends Plugin implements ObsidianLea
                 unit: unit,
                 scale: scale,
                 distanceMultiplier: distanceMultiplier,
-                id: id
+                id: id,
+                darkMode: darkMode === "true"
             });
 
             let immutableMarkers = await this.getMarkersFromSource(source);
@@ -206,7 +204,7 @@ export default class ObsidianLeafletPlugin extends Plugin implements ObsidianLea
                 map.createMarker(
                     this.markerIcons.find(({ type: t }) => t == type),
                     latLng([Number(lat), Number(long)]),
-                    link.trim(),
+                    link?.trim(),
                     undefined,
                     layer,
                     false,
@@ -364,7 +362,7 @@ export default class ObsidianLeafletPlugin extends Plugin implements ObsidianLea
                 });
             });
             ctx.addChild(markdownRenderChild);
-        } catch (e) {
+        /* } catch (e) {
             console.error(e);
             new Notice("There was an error loading the map.");
             let newPre = createEl("pre");
@@ -372,7 +370,7 @@ export default class ObsidianLeafletPlugin extends Plugin implements ObsidianLea
                 code.innerText = `\`\`\`leaflet\n${source}\`\`\``;
                 el.parentElement.replaceChild(newPre, el);
             });
-        }
+        } */
     }
     async getMarkersFromSource(
         source: string
@@ -815,63 +813,6 @@ export default class ObsidianLeafletPlugin extends Plugin implements ObsidianLea
         });
 
         this.registerEvent(
-            map.on("bulk-edit-markers", () => {
-                let bulkModal = new Modal(this.app);
-
-                bulkModal.titleEl.setText("Bulk Edit Markers");
-
-                const mapEl = bulkModal.contentEl.createDiv({
-                    cls: "bulk-edit-map",
-                    attr: {
-                        style: "height: 250px;width: auto;margin: auto;margin-bottom: 1rem; "
-                    }
-                });
-
-                const markersEl =
-                    bulkModal.contentEl.createDiv("bulk-edit-markers");
-
-                for (let marker of map.markers) {
-                    let markerSetting = new Setting(
-                        markersEl.createDiv("bulk-edit-marker-instance")
-                    );
-                    markerSetting
-                        .addDropdown((d) => {
-                            d.setValue(marker.type);
-                        })
-                        .addText((t) => {
-                            t.setValue(`${marker.loc.lat}`);
-                        })
-                        .addText((t) => {
-                            t.setValue(`${marker.loc.lng}`);
-                        })
-                        .addText((t) => {
-                            t.setValue(`${marker.link}`);
-                        })
-                        .addExtraButton((b) =>
-                            b.setIcon("trash").onClick(() => {})
-                        );
-                    /* markerEl.createSpan({
-                        text:
-                            marker.type == "default"
-                                ? "Default"
-                                : marker.type
-                    });
-                    markerEl.createSpan({
-                        text: `${marker.loc.lat}`
-                    });
-                    markerEl.createSpan({
-                        text: `${marker.loc.lng}`
-                    });
-                    markerEl.createSpan({
-                        text: `${marker.link}`
-                    }); */
-                }
-
-                bulkModal.open();
-            })
-        );
-
-        this.registerEvent(
             map.on("marker-added", async (marker: ILeafletMarker) => {
                 marker.leafletInstance.closeTooltip();
                 marker.leafletInstance.unbindTooltip();
@@ -912,9 +853,6 @@ export default class ObsidianLeafletPlugin extends Plugin implements ObsidianLea
             map.on(
                 "marker-data-updated",
                 async (marker: ILeafletMarker, old: any) => {
-                    marker.leafletInstance.closeTooltip();
-                    marker.leafletInstance.unbindTooltip();
-
                     await this.saveSettings();
                     this.maps
                         .filter(
@@ -1122,47 +1060,7 @@ export default class ObsidianLeafletPlugin extends Plugin implements ObsidianLea
         );
 
         this.registerEvent(
-            map.on("map-contextmenu", (evt: LeafletMouseEvent) => {
-                if (map.markerIcons.length <= 1) {
-                    map.createMarker(map.markerIcons[0], evt.latlng);
-                    return;
-                }
-
-                let contextMenu = new Menu(this.app);
-
-                contextMenu.setNoIcon();
-                map.markerIcons.forEach((marker: IMarkerIcon) => {
-                    if (!marker.type || !marker.html) return;
-                    contextMenu.addItem((item) => {
-                        item.setTitle(
-                            marker.type == "default" ? "Default" : marker.type
-                        );
-                        item.setActive(true);
-                        item.onClick(async () => {
-                            map.createMarker(marker, evt.latlng);
-                            await this.saveSettings();
-                        });
-                    });
-                });
-
-                contextMenu.showAtPosition({
-                    x: evt.originalEvent.clientX,
-                    y: evt.originalEvent.clientY
-                } as Point);
-            })
-        );
-
-        this.registerEvent(
-            map.on("add-escape", () => {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (<any>this.app).keymap.pushScope(this.escapeScope);
-            })
-        );
-        this.registerEvent(
-            map.on("remove-escape", () => {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (<any>this.app).keymap.popScope(this.escapeScope);
-            })
+            map.on("map-contextmenu", (evt: LeafletMouseEvent) => {})
         );
     }
     handleMarkerContext(map: LeafletMap, view: MarkdownView, marker: Marker) {

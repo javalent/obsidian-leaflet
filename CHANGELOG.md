@@ -1,5 +1,9 @@
 # Version History
 
+## 3.9.0
+- Added `darkMode` parameter to invert map colors
+- Added "Bulk Edit Markers" button to maps underneath the fullscreen control
+  - Adds a simple way to change the type, location, and link of all mutable markers defined on the map.
 ## 3.8.3
 
 - Improved code structure

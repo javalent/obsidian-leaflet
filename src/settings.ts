@@ -19,9 +19,13 @@ import {
     iconNames
 } from "./utils";
 
-import { IMapMarkerData, IMarker, IMarkerData } from "./@types/index";
+import {
+    IMapMarkerData,
+    IMarker,
+    IMarkerData,
+    ObsidianLeaflet
+} from "./@types/";
 
-import { ObsidianLeaflet } from "./@types/main";
 import { latLng } from "leaflet";
 
 export class ObsidianLeafletSettingTab extends PluginSettingTab {

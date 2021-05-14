@@ -1,16 +1,18 @@
-/// <reference path='./index.d.ts' />
-
 import {
     MarkdownPostProcessorContext,
     MarkdownView,
     Plugin,
     Scope
 } from "obsidian";
-import { IMapInterface, IMarker, IMarkerIcon, IObsidianAppData } from ".";
-import LeafletMap from "../leaflet";
-import { Marker } from "../utils/leaflet";
+import {
+    IMapInterface,
+    IMarker,
+    IMarkerIcon,
+    IObsidianAppData
+} from ".";
+import { LeafletMap, Marker } from './map';
 
-export declare class ObsidianLeaflet extends Plugin {
+declare class ObsidianLeaflet extends Plugin {
     AppData: IObsidianAppData;
     markerIcons: IMarkerIcon[];
     maps: IMapInterface[];

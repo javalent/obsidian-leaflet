@@ -1,7 +1,10 @@
 import { allUnits, UnitFamilies } from "convert";
 import { MarkdownView } from "obsidian";
-import LeafletMap from "src/leaflet";
-import { DivIconMarker, MarkerDivIcon } from "src/utils/leaflet";
+import { DivIconMarker, MarkerDivIcon } from "./map";
+import { LeafletMap } from "./map";
+
+export { ObsidianLeaflet } from "./main";
+export { LeafletMap, Marker } from "./map";
 
 /** Recreate Length Alias Types from "convert" */
 declare type UnitsCombined = typeof allUnits;
@@ -34,7 +37,8 @@ export interface ILeafletMapOptions {
     unit?: string;
     scale?: number;
     distanceMultiplier?: number;
-    simple?: boolean;
+    darkMode?: boolean;
+    tileServer?: string;
 }
 
 export interface MarkerDivIconOptions extends L.DivIconOptions {
@@ -100,6 +104,7 @@ export interface ILayerGroup {
     group: L.LayerGroup;
     layer: L.TileLayer | L.ImageOverlay;
     id: string;
+    data: string;
 }
 
 /** Settings Interfaces */

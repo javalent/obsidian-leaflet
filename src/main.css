@@ -183,6 +183,10 @@ input.is-invalid {
     display: flex !important;
 }
 
+.leaflet-control-edit-markers {
+    cursor: pointer !important;
+}
+
 .leaflet-distance-control {
     background-color: #fff;
     border-radius: 2px;
@@ -218,4 +222,45 @@ input.is-invalid {
     display: flex;
     white-space: nowrap;
     align-items: center;
+}
+
+/** Bulk Marker Edit Settings */
+.bulk-setting-hover:not(.marker) {
+    box-shadow: 0 0px 8px var(--background-modifier-box-shadow) !important;
+}
+.bulk-setting-hover.marker::before {
+    content: "";
+    width: 120%;
+    height: 120%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 100%;
+    border: 3px solid #00ff00 !important;
+}
+.bulk-edit-markers .setting-item,
+.bulk-edit-markers > .setting-item-control {
+    padding: 8px 2px;
+    margin: 0 8px;
+}
+.bulk-edit-markers > .setting-item:first-child button {
+    margin-right: 0;
+}
+.bulk-edit-markers-holder {
+    height: 250px;
+    overflow-y: auto;
+}
+.bulk-edit-markers-holder::-webkit-scrollbar {
+    width: 2px !important;
+}
+.bulk-edit-marker-instance .setting-item-control {
+    display: grid;
+    grid-template-columns: repeat(5, auto);
+    gap: 0.5rem;
+}
+
+.dark-mode {
+    filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg)
+        saturate(0.3) brightness(0.7);
 }

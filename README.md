@@ -26,6 +26,7 @@ defaultZoom: 5
 unit: meters
 scale: 1
 marker: default, 39.983334, -82.983330, [[Note]]
+darkMode: true
 ```
 ````
 
@@ -48,6 +49,7 @@ marker: default, 39.983334, -82.983330, [[Note]]
 | commandMarker | Create immutable markers that execute commands                                       |                                            |
 | markerFile    | Create immutable marker from a note's frontmatter                                    |                                            |
 | markerFolder  | Create immutable markers from _all_ of the notes in a given folder                   |                                            |
+| darkMode      | Invert map colors                                                                    |                                            |
 
 ## Map IDs
 
@@ -129,6 +131,10 @@ Once linked, a click will open the note (<kbd>Ctrl</kbd>/<kbd>Cmd</kbd>-click to
 Additionally, markers can be created by dragging a note from the file tree and dropping it on the map.
 
 Marker links can also be set to external websites. Clicking the marker will open the website.
+
+### Bulk Editing
+
+As of version 3.9.0, a bulk-edit button has been added to the map. Clicking this button will open a modal allowing for easy editing of all the mutable markers defined on the map.
 
 #### Obsidian Commands as Links
 

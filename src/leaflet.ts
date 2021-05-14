@@ -2,7 +2,7 @@ import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import convert from "convert";
 import "leaflet-fullscreen";
-import { Events, Notice, moment } from "obsidian";
+import { Events, Notice, moment, Menu, Point } from "obsidian";
 
 import {
     ILayerGroup,
@@ -11,7 +11,8 @@ import {
     IMarkerData,
     IMarkerIcon,
     IObsidianAppData,
-    Length
+    Length,
+    ObsidianLeaflet
 } from "./@types";
 import {
     getId,
@@ -21,9 +22,18 @@ import {
     LAT_LONG_DECIMALS,
     DEFAULT_MAP_OPTIONS
 } from "./utils";
-import ObsidianLeaflet from "./main";
-import { DistanceDisplay, distanceDisplay, Marker } from "./utils/leaflet";
 
+import {
+    DistanceDisplay,
+    distanceDisplay,
+    editMarkers,
+    Marker
+} from "./utils/map";
+declare module "leaflet" {
+    interface Map {
+        isFullscreen(): boolean;
+    }
+}
 /**
  * LeafletMap Class
  *
@@ -35,7 +45,7 @@ export default class LeafletMap extends Events {
     id: string;
     contentEl: HTMLElement;
     map: L.Map;
-    markers: Array<Marker> = [];
+    markers: Marker[] = [];
     zoom: { min: number; max: number; default: number; delta: number };
     popup: L.Popup = L.popup({
         className: "leaflet-marker-link-popup",
@@ -46,12 +56,13 @@ export default class LeafletMap extends Events {
     });
     mapLayers: ILayerGroup[];
     layer: L.ImageOverlay | L.TileLayer;
-    resize: ResizeObserver;
     type: "image" | "real";
-    unit: string = "m";
-    distanceMultipler: number = 1;
+
+    private _resize: ResizeObserver;
+    private _unit: string = "m";
+    private _distanceMultipler: number = 1;
     distanceEvent: L.LatLng | undefined = undefined;
-    data: IObsidianAppData;
+    private _data: IObsidianAppData;
     plugin: ObsidianLeaflet;
     distanceLine: L.Polyline = L.polyline(
         [
@@ -68,7 +79,9 @@ export default class LeafletMap extends Events {
     private _popupTarget: ILeafletMarker | L.LatLng;
     private _scale: number;
     private _hoveringOnMarker: boolean = false;
-    distanceDisplay: DistanceDisplay;
+    private _distanceDisplay: DistanceDisplay;
+    initialCoords: [number, number];
+    tileServer: string;
     constructor(
         plugin: ObsidianLeaflet,
         el: HTMLElement,
@@ -77,7 +90,7 @@ export default class LeafletMap extends Events {
         super();
 
         this.plugin = plugin;
-        this.data = plugin.AppData;
+        this._data = plugin.AppData;
 
         this.parentEl = el;
         this.contentEl = this.parentEl.createDiv();
@@ -92,9 +105,266 @@ export default class LeafletMap extends Events {
             default: this.options.defaultZoom,
             delta: this.options.zoomDelta
         };
-        this.unit = this.options.unit;
+        this._unit = this.options.unit;
         this._scale = this.options.scale;
-        this.distanceMultipler = this.options.distanceMultiplier;
+        this._distanceMultipler = this.options.distanceMultiplier;
+
+        this.tileServer = this.options.tileServer;
+    }
+
+    get group() {
+        return this.mapLayers?.find((group) => group.layer == this.layer);
+    }
+    get bounds() {
+        if (this.layer instanceof L.ImageOverlay) {
+            return this.layer.getBounds();
+        }
+        return;
+    }
+
+    get rendered() {
+        return this._rendered;
+    }
+    set rendered(v: boolean) {
+        this._rendered = v;
+        if (v) this.trigger("map-rendered", v);
+    }
+
+    get markerIcons() {
+        return this.plugin.markerIcons;
+    }
+
+    get scale() {
+        if (this.type !== "real") return this._scale;
+
+        return convert(1)
+            .from("m")
+            .to(this._unit as Length);
+    }
+
+    private get _locale() {
+        return moment.locale();
+    }
+
+    private get _coordMult(): [number, number] {
+        let mult: [number, number] = [1, 1];
+        if (this.type == "image") {
+            mult = [
+                this.bounds.getSouthEast().lat / 100,
+                this.bounds.getSouthEast().lng / 100
+            ];
+        }
+        return mult;
+    }
+
+    get CRS() {
+        if (this.type === "image") {
+            return L.CRS.Simple;
+        }
+        return L.CRS.EPSG3857;
+    }
+
+    async render(
+        type: "real" | "image",
+        options: {
+            coords: [number, number];
+            layers: { data: string; id: string }[];
+        }
+    ) {
+        this.type = type;
+
+        this.map = L.map(this.contentEl, {
+            crs: this.CRS,
+            maxZoom: this.zoom.max,
+            minZoom: this.zoom.min,
+            zoomDelta: this.zoom.delta,
+            zoomSnap: this.zoom.delta,
+            worldCopyJump: this.type === "real",
+            fullscreenControl: true
+        });
+
+        /** Get layers
+         *  Returns TileLayer (real) or ImageOverlay (image)
+         */
+        this.layer = await this._buildLayersForType(type, options.layers);
+
+        /** Render map */
+        switch (this.type) {
+            case "real": {
+                this._renderReal();
+                break;
+            }
+            case "image": {
+                this._renderImage();
+                break;
+            }
+        }
+        /** Move to supplied coordinates */
+        this.initialCoords = [
+            options.coords[0] * this._coordMult[0],
+            options.coords[1] * this._coordMult[1]
+        ];
+        this.map.panTo(this.initialCoords);
+
+        /** Add markers to map */
+        this.markers.forEach((marker) => {
+            /* if (type === "image" && marker.zoom != this.map.getMaxZoom()) {
+                marker.loc = this.map.unproject(
+                    this.map.project(marker.loc, marker.zoom - 1),
+                    this.map.getMaxZoom() - 1
+                );
+            } */
+
+            if (marker.layer) {
+                this.mapLayers
+                    .find(({ id }) => id == marker.layer)
+                    ?.group.addLayer(marker.leafletInstance);
+            } else {
+                this.mapLayers[0].group.addLayer(marker.leafletInstance);
+            }
+        });
+
+        /** Register Resize Handler */
+        this._handleResize();
+
+        /** Build control icons */
+        //Full screen
+        const fsButton = this.contentEl.querySelector(
+            ".leaflet-control-fullscreen-button"
+        );
+        if (fsButton) {
+            const expand = icon({ iconName: "expand", prefix: "fas" }).node[0];
+            const compress = icon({ iconName: "compress", prefix: "fas" })
+                .node[0];
+            fsButton.appendChild(expand);
+            this.map.on("fullscreenchange", () => {
+                if (this.isFullscreen) {
+                    fsButton.replaceChild(compress, fsButton.children[0]);
+                } else {
+                    fsButton.replaceChild(expand, fsButton.children[0]);
+                }
+            });
+        }
+
+        //Edit markers
+        const editMarkerControl = editMarkers(
+            { position: "topleft" },
+            this,
+            this.plugin
+        ).addTo(this.map);
+
+        editMarkerControl.onClose = async (markers) => {
+            markers.forEach((marker) => {
+                let m = this.markers.find(({ id }) => id == marker.id);
+                m.remove();
+            });
+            this.markers = [];
+
+            markers.forEach((marker) => {
+                this.createMarker(
+                    this.markerIcons.find(({ type }) => type == marker.type),
+                    marker.loc,
+                    marker.link,
+                    marker.id,
+                    marker.layer,
+                    marker.mutable,
+                    marker.command,
+                    marker.zoom
+                );
+            });
+            await this.plugin.saveSettings();
+        };
+
+        //Distance Display
+        this._distanceDisplay = distanceDisplay(
+            {
+                position: "bottomleft"
+            },
+            this.distanceLine
+        ).addTo(this.map);
+
+        /** Bind Internal Map Events */
+        this.map.on("contextmenu", this._handleMapContext.bind(this));
+        this.map.on("click", this._handleMapClick.bind(this));
+    }
+
+    updateMarkerIcons() {
+        this.markers.forEach((marker) => {
+            marker.leafletInstance.setIcon(
+                this.markerIcons.find((icon) => icon.type == marker.type).icon
+            );
+        });
+    }
+
+    addMarker(markerToBeAdded: ILeafletMarker) {
+        const mapIcon = this.markerIcons.find(
+            ({ type }) => type == markerToBeAdded.type
+        ).icon;
+
+        const marker = new Marker({
+            id: markerToBeAdded.id,
+            type: markerToBeAdded.type,
+            loc: markerToBeAdded.loc,
+            link: markerToBeAdded.link,
+            icon: mapIcon,
+            layer: markerToBeAdded.layer
+                ? markerToBeAdded.layer
+                : this.group?.id,
+            mutable: markerToBeAdded.mutable,
+            command: markerToBeAdded.command || false,
+            zoom: this.map.getMaxZoom()
+        });
+
+        this._bindMarkerEvents(marker);
+
+        if (this.rendered) {
+            this.group.group.addLayer(marker.leafletInstance);
+            marker.leafletInstance.closeTooltip();
+        }
+
+        this.markers.push(marker);
+    }
+
+    createMarker(
+        markerIcon: IMarkerIcon,
+        loc: L.LatLng,
+        link: string | undefined = undefined,
+        id: string = getId(),
+        layer: string | undefined = undefined,
+        mutable: boolean = true,
+        command: boolean = false,
+        zoom: number = this.zoom.max
+    ): ILeafletMarker {
+        const mapIcon = this.markerIcons.find(
+            ({ type }) => type == markerIcon?.type || "default"
+        ).icon;
+
+        const marker = new Marker({
+            id: id,
+            type: markerIcon?.type || "default",
+            loc: loc,
+            link: link,
+            icon: mapIcon,
+            layer: layer ? layer : this.group?.id,
+            mutable: mutable,
+            command: command,
+            zoom: zoom ?? this.zoom.max
+        });
+
+        this._bindMarkerEvents(marker, mutable);
+
+        if (this.rendered) {
+            //marker.leafletInstance.addTo(this.map);
+            this.group.group.addLayer(marker.leafletInstance);
+
+            marker.leafletInstance.closeTooltip();
+        }
+
+        this.markers.push(marker);
+        if (mutable) {
+            this.trigger("marker-added", marker);
+        }
+        return marker;
     }
 
     loadData(data: any): Promise<void> {
@@ -118,181 +388,112 @@ export default class LeafletMap extends Events {
         });
     }
 
-    get markerIcons() {
-        return this.plugin.markerIcons;
-    }
-
-    get scale() {
-        if (this.type !== "real") return this._scale;
-
-        return convert(1)
-            .from("m")
-            .to(this.unit as Length);
-    }
-
-    private get _locale() {
-        return moment.locale();
-    }
-
-    get coordMult() {
-        let mult = [1, 1];
-        if (this.type == "image") {
-            mult = [
-                this.bounds.getSouthEast().lat / 100,
-                this.bounds.getSouthEast().lng / 100
-            ];
+    distance(latlng1: L.LatLng, latlng2: L.LatLng): string {
+        const dist = this.map.distance(latlng1, latlng2);
+        let display = `${(dist * this.scale).toLocaleString(this._locale, {
+            maximumFractionDigits: DISTANCE_DECIMALS
+        })}`;
+        if (this._distanceMultipler !== 1) {
+            display += ` (${(
+                dist *
+                this.scale *
+                this._distanceMultipler
+            ).toLocaleString(this._locale, {
+                maximumFractionDigits: DISTANCE_DECIMALS
+            })})`;
         }
-        return mult;
+        return display + ` ${this._unit}`;
     }
 
-    async render(
-        type: "real" | "image",
-        options?: {
-            coords?: [number, number];
-            layers?: { data: string; id: string }[];
+    removeDistanceLine() {
+        if (this.distanceLine) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (<any>this.plugin.app).keymap.popScope(this.plugin.escapeScope);
+            this.distanceLine.unbindTooltip();
+            this.distanceLine.remove();
+            //this.distanceLine = undefined;
+            this.map.off("mousemove");
+            this.map.off("mouseout");
         }
-    ) {
-        this.type = type;
-        this.map = this.getMapForType(type);
-        this.layer = await this.buildLayersForType(type, options.layers);
+    }
 
-        switch (this.type) {
-            case "real": {
-                this.renderReal();
-                break;
+    get isFullscreen(): boolean {
+        return this.map.isFullscreen();
+    }
+
+    private _handleMapClick(evt: L.LeafletMouseEvent) {
+        if (
+            evt.originalEvent.getModifierState("Shift") ||
+            evt.originalEvent.getModifierState("Alt")
+        ) {
+            this._onHandleDistance(evt);
+            this.openPopup(
+                evt.latlng,
+                `[${evt.latlng.lat.toLocaleString("en-US", {
+                    maximumFractionDigits: LAT_LONG_DECIMALS
+                })}, ${evt.latlng.lng.toLocaleString("en-US", {
+                    maximumFractionDigits: LAT_LONG_DECIMALS
+                })}]`
+            );
+            if (this._data.copyOnClick) {
+                navigator.clipboard
+                    .writeText(
+                        `[${evt.latlng.lat.toLocaleString("en-US", {
+                            maximumFractionDigits: LAT_LONG_DECIMALS
+                        })}, ${evt.latlng.lng.toLocaleString("en-US", {
+                            maximumFractionDigits: LAT_LONG_DECIMALS
+                        })}]`
+                    )
+                    .then(() => {
+                        new Notice("Map coordinates copied to clipboard.");
+                    });
             }
-            case "image": {
-                this.renderImage();
-                break;
-            }
         }
-        if (options.coords) {
-            this.map.panTo([
-                options.coords[0] * this.coordMult[0],
-                options.coords[1] * this.coordMult[1]
-            ]);
+    }
+
+    private _handleMapContext(evt: L.LeafletMouseEvent) {
+        if (this.markerIcons.length <= 1) {
+            this.createMarker(this.markerIcons[0], evt.latlng);
+            return;
         }
-        this.markers.forEach((marker) => {
-            /* if (type === "image" && marker.zoom != this.map.getMaxZoom()) {
-                marker.loc = this.map.unproject(
-                    this.map.project(marker.loc, marker.zoom - 1),
-                    this.map.getMaxZoom() - 1
+
+        let contextMenu = new Menu(this.plugin.app);
+
+        contextMenu.setNoIcon();
+        this.markerIcons.forEach((marker: IMarkerIcon) => {
+            if (!marker.type || !marker.html) return;
+            contextMenu.addItem((item) => {
+                item.setTitle(
+                    marker.type == "default" ? "Default" : marker.type
                 );
-            } */
-
-            if (marker.layer) {
-                this.mapLayers
-                    .find(({ id }) => id == marker.layer)
-                    ?.group.addLayer(marker.leafletInstance);
-            } else {
-                this.mapLayers[0].group.addLayer(marker.leafletInstance);
-            }
-        });
-        this.handleResize();
-
-        /** Build control icons */
-        //Full screen
-        const fsButton = this.contentEl.querySelector(
-            ".leaflet-control-fullscreen-button"
-        );
-        if (fsButton) {
-            const expand = icon({ iconName: "expand", prefix: "fas" }).node[0];
-            const compress = icon({ iconName: "compress", prefix: "fas" })
-                .node[0];
-            fsButton.appendChild(expand);
-            this.map.on("fullscreenchange", () => {
-                //@ts-expect-error
-                if (this.map.isFullscreen()) {
-                    fsButton.replaceChild(compress, fsButton.children[0]);
-                } else {
-                    fsButton.replaceChild(expand, fsButton.children[0]);
-                }
-            });
-        }
-
-        //Edit markers
-        const editMarkers = L.Control.extend({
-            onAdd: (map: L.Map) => {
-                const controlEl = L.DomUtil.create(
-                    "div",
-                    "leaflet-bar leaflet-control"
-                );
-                controlEl
-                    .createEl("a", {
-                        cls: "leaflet-control-edit-markers"
-                    })
-                    .appendChild(
-                        icon({ prefix: "fas", iconName: "map-marker" }).node[0]
-                    );
-
-                L.DomEvent.on(controlEl, "click", () => {
-                    this.trigger("bulk-edit-markers");
+                item.setActive(true);
+                item.onClick(async () => {
+                    this.createMarker(marker, evt.latlng);
+                    await this.plugin.saveSettings();
                 });
-
-                return controlEl;
-            }
+            });
         });
 
-        // new editMarkers({ position: "topleft" }).addTo(this.map);
-
-        /** Distance Display */
-
-        this.distanceDisplay = distanceDisplay(
-            {
-                position: "bottomleft"
-            },
-            this.distanceLine
-        ).addTo(this.map);
-
-        /** Map Events */
-        this.map.on("contextmenu", (evt) =>
-            this.trigger("map-contextmenu", evt)
-        );
-        this.map.on("click", (evt: L.LeafletMouseEvent) => {
-            if (
-                evt.originalEvent.getModifierState("Shift") ||
-                evt.originalEvent.getModifierState("Alt")
-            ) {
-                this.onHandleDistance(evt);
-                this.openPopup(
-                    evt.latlng,
-                    `[${evt.latlng.lat.toLocaleString("en-US", {
-                        maximumFractionDigits: LAT_LONG_DECIMALS
-                    })}, ${evt.latlng.lng.toLocaleString("en-US", {
-                        maximumFractionDigits: LAT_LONG_DECIMALS
-                    })}]`
-                );
-                if (this.data.copyOnClick) {
-                    navigator.clipboard
-                        .writeText(
-                            `[${evt.latlng.lat.toLocaleString("en-US", {
-                                maximumFractionDigits: LAT_LONG_DECIMALS
-                            })}, ${evt.latlng.lng.toLocaleString("en-US", {
-                                maximumFractionDigits: LAT_LONG_DECIMALS
-                            })}]`
-                        )
-                        .then(() => {
-                            new Notice("Map coordinates copied to clipboard.");
-                        });
-                }
-            }
-        });
+        contextMenu.showAtPosition({
+            x: evt.originalEvent.clientX,
+            y: evt.originalEvent.clientY
+        } as Point);
     }
 
-    onHandleDistance(evt: L.LeafletMouseEvent) {
-        
+    private _onHandleDistance(evt: L.LeafletMouseEvent) {
         if (this.distanceEvent != undefined) {
             const dist = this.distance(this.distanceEvent, evt.latlng);
 
             this.removeDistanceLine();
 
-            this.distanceDisplay.setText(dist);
+            this._distanceDisplay.setText(dist);
 
             this.distanceEvent = undefined;
         } else {
             this.distanceEvent = evt.latlng;
 
-            this.trigger("add-escape");
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (<any>this.plugin.app).keymap.pushScope(this.plugin.escapeScope);
 
             const distanceTooltip = L.tooltip({
                 permanent: true,
@@ -323,7 +524,7 @@ export default class LeafletMap extends Events {
                     distanceTooltip.openTooltip();
                 }
 
-                this.distanceDisplay.setText(display);
+                this._distanceDisplay.setText(display);
                 this.distanceLine.redraw();
             });
 
@@ -333,76 +534,25 @@ export default class LeafletMap extends Events {
             });
         }
     }
-    distance(latlng1: L.LatLng, latlng2: L.LatLng): string {
-        const dist = this.map.distance(latlng1, latlng2);
-        let display = `${(dist * this.scale).toLocaleString(this._locale, {
-            maximumFractionDigits: DISTANCE_DECIMALS
-        })}`;
-        if (this.distanceMultipler !== 1) {
-            display += ` (${(
-                dist *
-                this.scale *
-                this.distanceMultipler
-            ).toLocaleString(this._locale, {
-                maximumFractionDigits: DISTANCE_DECIMALS
-            })})`;
-        }
-        return display + ` ${this.unit}`;
-    }
-    removeDistanceLine() {
-        if (this.distanceLine) {
-            this.trigger("remove-escape");
-            this.distanceLine.unbindTooltip();
-            this.distanceLine.remove();
-            //this.distanceLine = undefined;
-            this.map.off("mousemove");
-            this.map.off("mouseout");
-        }
-    }
-    getMapForType(type: string): L.Map {
-        let map: L.Map;
-        if (type === "image") {
-            map = L.map(this.contentEl, {
-                crs: L.CRS.Simple,
-                maxZoom: this.zoom.max,
-                minZoom: this.zoom.min,
-                zoomDelta: this.zoom.delta,
-                zoomSnap: this.zoom.delta,
-                fullscreenControl: true
-            });
-        } else if (type === "real") {
-            map = L.map(this.contentEl, {
-                maxZoom: this.zoom.max,
-                minZoom: this.zoom.min,
-                worldCopyJump: true,
-                zoomDelta: this.zoom.delta,
-                zoomSnap: this.zoom.delta,
 
-                fullscreenControl: true
-            });
-        }
-
-        return map;
-    }
-    async buildLayersForType(
+    private async _buildLayersForType(
         type: string,
         layers?: { data: string; id: string }[]
     ): Promise<L.TileLayer | L.ImageOverlay> {
         if (type === "real") {
-            this.layer = L.tileLayer(
-                "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                {
-                    attribution:
-                        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                }
-            );
+            this.layer = L.tileLayer(this.tileServer, {
+                attribution:
+                    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                className: this.options.darkMode ? "dark-mode" : ""
+            });
             const group = L.layerGroup([this.layer]);
 
             this.mapLayers = [
                 {
                     group: group,
                     layer: this.layer,
-                    id: "real"
+                    id: "real",
+                    data: "real"
                 }
             ];
         } else if (type === "image") {
@@ -431,12 +581,16 @@ export default class LeafletMap extends Events {
 
                     let mapLayer = L.imageOverlay(
                         layer.data,
-                        new L.LatLngBounds(southWest, northEast)
+                        new L.LatLngBounds(southWest, northEast),
+                        {
+                            className: this.options.darkMode ? "dark-mode" : ""
+                        }
                     );
                     return {
                         group: L.layerGroup([mapLayer]),
                         layer: mapLayer,
-                        id: layer.id
+                        id: layer.id,
+                        data: layer.data
                     };
                 })
             );
@@ -450,7 +604,7 @@ export default class LeafletMap extends Events {
 
         return this.layer;
     }
-    renderImage() {
+    private async _renderImage() {
         this.map.addLayer(this.mapLayers[0].group);
         this.map.fitBounds(this.bounds);
         this.map.panTo(this.bounds.getCenter(), {
@@ -473,109 +627,23 @@ export default class LeafletMap extends Events {
             control.getContainer().children[0].appendChild(layerIcon);
         }
     }
-    async renderReal() {
+    private async _renderReal() {
         this.mapLayers[0].group.addTo(this.map);
 
         this.map.setZoom(this.zoom.default, { animate: false });
 
-        this.handleResize();
+        this._handleResize();
     }
-    handleResize() {
-        this.resize = new ResizeObserver(() => {
+    private _handleResize() {
+        this._resize = new ResizeObserver(() => {
             if (this.rendered) {
                 this.map.invalidateSize();
             }
         });
-        this.resize.observe(this.contentEl);
-    }
-    get group() {
-        return this.mapLayers?.find((group) => group.layer == this.layer);
-    }
-    get bounds() {
-        if (this.layer instanceof L.ImageOverlay) {
-            return this.layer.getBounds();
-        }
-        return;
-    }
-    get rendered() {
-        return this._rendered;
-    }
-    set rendered(v: boolean) {
-        this._rendered = v;
-        if (v) this.trigger("map-rendered", v);
+        this._resize.observe(this.contentEl);
     }
 
-    addMarker(markerToBeAdded: ILeafletMarker) {
-        const mapIcon = this.markerIcons.find(
-            ({ type }) => type == markerToBeAdded.type
-        ).icon;
-
-        const marker = new Marker({
-            id: markerToBeAdded.id,
-            type: markerToBeAdded.type,
-            loc: markerToBeAdded.loc,
-            link: markerToBeAdded.link,
-            icon: mapIcon,
-            layer: markerToBeAdded.layer
-                ? markerToBeAdded.layer
-                : this.group?.id,
-            mutable: markerToBeAdded.mutable,
-            command: markerToBeAdded.command || false,
-            zoom: this.map.getMaxZoom()
-        });
-
-        this.bindMarkerEvents(marker);
-
-        if (this.rendered) {
-            this.group.group.addLayer(marker.leafletInstance);
-            marker.leafletInstance.closeTooltip();
-        }
-
-        this.markers.push(marker);
-    }
-    createMarker(
-        markerIcon: IMarkerIcon,
-        loc: L.LatLng,
-        link: string | undefined = undefined,
-        id: string = getId(),
-        layer: string | undefined = undefined,
-        mutable: boolean = true,
-        command: boolean = false,
-        zoom: number = this.zoom.max
-    ): ILeafletMarker {
-        const mapIcon = this.markerIcons.find(
-            ({ type }) => type == markerIcon?.type || "default"
-        ).icon;
-
-        const marker = new Marker({
-            id: id,
-            type: markerIcon?.type || "default",
-            loc: loc,
-            link: link,
-            icon: mapIcon,
-            layer: layer ? layer : this.group?.id,
-            mutable: mutable,
-            command: command,
-            zoom: zoom ?? this.zoom.max
-        });
-
-        this.bindMarkerEvents(marker, mutable);
-
-        if (this.rendered) {
-            //marker.leafletInstance.addTo(this.map);
-            this.group.group.addLayer(marker.leafletInstance);
-
-            marker.leafletInstance.closeTooltip();
-        }
-
-        this.markers.push(marker);
-        if (mutable) {
-            this.trigger("marker-added", marker);
-        }
-        return marker;
-    }
-
-    bindMarkerEvents(marker: ILeafletMarker, mutable: boolean = true) {
+    private _bindMarkerEvents(marker: ILeafletMarker, mutable: boolean = true) {
         marker.leafletInstance
             .on("contextmenu", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
@@ -594,7 +662,7 @@ export default class LeafletMap extends Events {
                     evt.originalEvent.getModifierState("Alt") ||
                     evt.originalEvent.getModifierState("Shift")
                 ) {
-                    this.onHandleDistance(evt);
+                    this._onHandleDistance(evt);
                     this.openPopup(
                         marker,
                         `[${marker.loc.lat.toLocaleString("en-US", {
@@ -604,7 +672,7 @@ export default class LeafletMap extends Events {
                         })}]`
                     );
 
-                    if (this.data.copyOnClick) {
+                    if (this._data.copyOnClick) {
                         navigator.clipboard
                             .writeText(
                                 `[${marker.loc.lat.toLocaleString("en-US", {
@@ -622,9 +690,6 @@ export default class LeafletMap extends Events {
 
                     return;
                 }
-
-                marker.leafletInstance.closeTooltip();
-
                 if (marker.link) {
                     this.trigger(
                         "marker-click",
@@ -642,16 +707,17 @@ export default class LeafletMap extends Events {
             })
             .on("dragstart", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
-                if (mutable) marker.leafletInstance.closeTooltip();
             })
-            .on("drag", () => {
+            .on("drag", (evt: L.LeafletMouseEvent) => {
                 this.trigger("marker-dragging", marker);
+                if (this.popup.isOpen()) {
+                    this.popup.setLatLng(evt.latlng);
+                }
             })
             .on("dragend", (evt: L.LeafletMouseEvent) => {
                 const old = marker.loc;
                 marker.loc = marker.leafletInstance.getLatLng();
                 this.trigger("marker-data-updated", marker, old);
-                marker.leafletInstance.closeTooltip();
             })
             .on("mouseover", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
@@ -671,6 +737,7 @@ export default class LeafletMap extends Events {
                 this._hoveringOnMarker = false;
             });
     }
+
     openPopup(
         target: ILeafletMarker | L.LatLng,
         content: ((source: L.Layer) => L.Content) | L.Content
@@ -689,7 +756,7 @@ export default class LeafletMap extends Events {
             this.map.closePopup(this.popup);
         }
 
-        this.popup = this.getPopup(target).setContent(content);
+        this.popup = this._getPopup(target).setContent(content);
         this.map.openPopup(this.popup);
 
         const popupElement = this.popup.getElement();
@@ -731,7 +798,7 @@ export default class LeafletMap extends Events {
         popupElement.addEventListener("mouseenter", mouseOverHandler);
         popupElement.addEventListener("mouseleave", mouseOutHandler);
     }
-    getPopup(target: ILeafletMarker | L.LatLng): L.Popup {
+    private _getPopup(target: ILeafletMarker | L.LatLng): L.Popup {
         if (this.popup.isOpen() && this._popupTarget == target) {
             return this.popup;
         }
@@ -767,19 +834,15 @@ export default class LeafletMap extends Events {
             }).setLatLng(target.loc);
         }
     }
+    /* private _movePopup(target: ILeafletMarker) {
+        let popup = this._getPopup(target);
+        popup.setLatLng(target.loc);
+    } */
 
-    updateMarkerIcons() {
-        this.markers.forEach((marker) => {
-            marker.leafletInstance.setIcon(
-                this.markerIcons.find((icon) => icon.type == marker.type).icon
-            );
-        });
-    }
-
-    remove(): void {
+    remove() {
         this.map?.remove();
 
-        this.resize?.disconnect();
+        this._resize?.disconnect();
 
         this.rendered = false;
     }
