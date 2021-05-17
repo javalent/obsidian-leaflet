@@ -451,10 +451,10 @@ export class CommandSuggestionModal extends SuggestionModal<Command> {
         this.command = item;
     }
     selectSuggestion({ item }: FuzzyMatch<Command>) {
-        let link = item.name;
+        let link = item.id;
 
-        this.text.setValue(link);
-        this.onClose();
+        this.text.setValue(item.name);
+        this.onClose(item);
 
         this.close();
     }
@@ -489,6 +489,7 @@ export class CommandSuggestionModal extends SuggestionModal<Command> {
     getItems() {
         return this.commands;
     }
+    onClose(item?: Command) {}
 }
 
 export class IconSuggestionModal extends SuggestionModal<IconName> {
@@ -616,20 +617,26 @@ export class MarkerContextModal extends Modal {
                 .setName("Command to Execute")
                 .setDesc("Name of Obsidian Command to execute")
                 .addText((text) => {
-                    //@ts-expect-error
-                    let { commands } = this.app.commands;
+                    let commands = this.app.commands.listCommands();
 
-                    text.setPlaceholder("Command").setValue(this.marker.link);
+                    let value =
+                        commands.find(({ id }) => id == this.marker.link)
+                            ?.name ?? this.marker.link;
+
+                    text.setPlaceholder("Command").setValue(value);
                     this.modal = new CommandSuggestionModal(this.app, text, [
-                        ...(Object.values(commands) as Command[])
+                        ...commands
                     ]);
 
-                    this.modal.onClose = async () => {
-                        this.tempMarker.link = text.inputEl.value;
+                    this.modal.onClose = async (item) => {
+                        this.tempMarker.link = item.id;
                     };
 
                     text.inputEl.onblur = async () => {
-                        this.tempMarker.link = text.inputEl.value;
+                        this.tempMarker.link =
+                            commands.find(
+                                ({ name }) => name == text.inputEl.value
+                            )?.id ?? text.inputEl.value;
                     };
                 });
         } else {
@@ -885,7 +892,7 @@ export class CreateMarkerModal extends Modal {
                     transform: SVGTransform;
 
                 this.plugin.registerDomEvent(
-                    (iconOverlay as unknown) as HTMLElement,
+                    iconOverlay as unknown as HTMLElement,
                     "mousedown",
                     (evt) => {
                         let CTM = svgElement.getScreenCTM();
@@ -927,7 +934,7 @@ export class CreateMarkerModal extends Modal {
                     }
                 );
                 this.plugin.registerDomEvent(
-                    (iconOverlay as unknown) as HTMLElement,
+                    iconOverlay as unknown as HTMLElement,
                     "mousemove",
                     (evt) => {
                         if (clickedOn) {
@@ -1005,72 +1012,67 @@ export class CreateMarkerModal extends Modal {
 
         let add = new Setting(createNewMarker);
 
-        add.addButton(
-            (button: ButtonComponent): ButtonComponent => {
-                let b = button.setTooltip("Save").onClick(async () => {
-                    // Force refresh
-                    let error = false;
-                    if (
-                        this.data.markerIcons.find(
-                            (marker) => marker.type == this.tempMarker.type
-                        ) &&
-                        this.tempMarker.type != this.marker.type
-                    ) {
-                        setValidationError(
-                            typeTextInput,
-                            "Marker type already exists."
-                        );
-                        error = true;
-                    }
+        add.addButton((button: ButtonComponent): ButtonComponent => {
+            let b = button.setTooltip("Save").onClick(async () => {
+                // Force refresh
+                let error = false;
+                if (
+                    this.data.markerIcons.find(
+                        (marker) => marker.type == this.tempMarker.type
+                    ) &&
+                    this.tempMarker.type != this.marker.type
+                ) {
+                    setValidationError(
+                        typeTextInput,
+                        "Marker type already exists."
+                    );
+                    error = true;
+                }
 
-                    if (this.tempMarker.type.length == 0) {
-                        setValidationError(
-                            typeTextInput,
-                            "Marker name cannot be empty."
-                        );
-                        error = true;
-                    }
-                    if (
-                        !findIconDefinition({
-                            iconName: iconTextInput.inputEl.value as IconName,
-                            prefix: "fas"
-                        })
-                    ) {
-                        setValidationError(iconTextInput, "Invalid icon name.");
-                        error = true;
-                    }
+                if (this.tempMarker.type.length == 0) {
+                    setValidationError(
+                        typeTextInput,
+                        "Marker name cannot be empty."
+                    );
+                    error = true;
+                }
+                if (
+                    !findIconDefinition({
+                        iconName: iconTextInput.inputEl.value as IconName,
+                        prefix: "fas"
+                    })
+                ) {
+                    setValidationError(iconTextInput, "Invalid icon name.");
+                    error = true;
+                }
 
-                    if (!this.tempMarker.iconName) {
-                        setValidationError(
-                            iconTextInput,
-                            "Icon cannot be empty."
-                        );
-                        error = true;
-                    }
+                if (!this.tempMarker.iconName) {
+                    setValidationError(iconTextInput, "Icon cannot be empty.");
+                    error = true;
+                }
 
-                    if (error) {
-                        return;
-                    }
+                if (error) {
+                    return;
+                }
 
-                    this.marker.type = this.tempMarker.type;
-                    this.marker.iconName = this.tempMarker.iconName;
-                    this.marker.color = this.tempMarker.color;
-                    this.marker.layer = this.tempMarker.layer;
-                    this.marker.transform = this.tempMarker.transform;
+                this.marker.type = this.tempMarker.type;
+                this.marker.iconName = this.tempMarker.iconName;
+                this.marker.color = this.tempMarker.color;
+                this.marker.layer = this.tempMarker.layer;
+                this.marker.transform = this.tempMarker.transform;
 
-                    this.close();
-                });
-                b.buttonEl.appendChild(
-                    icon(
-                        findIconDefinition({
-                            iconName: "save",
-                            prefix: "fas"
-                        })
-                    ).node[0]
-                );
-                return b;
-            }
-        );
+                this.close();
+            });
+            b.buttonEl.appendChild(
+                icon(
+                    findIconDefinition({
+                        iconName: "save",
+                        prefix: "fas"
+                    })
+                ).node[0]
+            );
+            return b;
+        });
         add.addExtraButton((b) => {
             b.setIcon("cross")
                 .setTooltip("Cancel")
@@ -1080,9 +1082,9 @@ export class CreateMarkerModal extends Modal {
         });
 
         if (focusEl) {
-            (this.contentEl.querySelector(
-                `#${focusEl}`
-            ) as HTMLInputElement).focus();
+            (
+                this.contentEl.querySelector(`#${focusEl}`) as HTMLInputElement
+            ).focus();
         }
     }
 

@@ -123,6 +123,13 @@ input.is-invalid {
 .leaflet-bar a {
     font-style: unset;
 }
+.leaflet-bar.disabled {
+    cursor: not-allowed;
+}
+.leaflet-bar.disabled > a {
+    background-color: lightgrey;
+    pointer-events: none;
+}
 
 /* immutable leaflet markers */
 /* .leaflet-marker-icon:not(.leaflet-marker-draggable) {
@@ -239,6 +246,9 @@ input.is-invalid {
     border-radius: 100%;
     border: 3px solid #00ff00 !important;
 }
+/* .bulk-edit-markers {
+    width: 675px;
+} */
 .bulk-edit-markers .setting-item,
 .bulk-edit-markers > .setting-item-control {
     padding: 8px 2px;
@@ -255,9 +265,12 @@ input.is-invalid {
     width: 2px !important;
 }
 .bulk-edit-marker-instance .setting-item-control {
-    display: grid;
-    grid-template-columns: repeat(5, auto);
-    gap: 0.5rem;
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: space-between;
+}
+.bulk-edit-marker-instance .setting-item-control > *:not(:last-child) {
+    margin-right: 0.5rem;
 }
 
 .dark-mode {

@@ -39,6 +39,17 @@ import {
 import LeafletMap from "./leaflet";
 import { Marker, markerDivIcon } from "./utils/map";
 
+//add commands to app
+declare module "obsidian" {
+    interface App {
+        commands: {
+            listCommands(): Command[];
+            executeCommandById(id: string): void;
+            commands: { [id: string]: Command };
+        };
+    }
+}
+
 export default class ObsidianLeaflet extends Plugin {
     AppData: IObsidianAppData;
     markerIcons: IMarkerIcon[];
@@ -119,249 +130,247 @@ export default class ObsidianLeaflet extends Plugin {
         ctx: MarkdownPostProcessorContext
     ): Promise<void> {
         /* try { */
-            /** Get Parameters from Source */
-            let {
-                height = "500px",
-                minZoom = 1,
-                maxZoom = 10,
-                defaultZoom = 5,
-                zoomDelta = 1,
-                lat = `${this.AppData.lat}`,
-                long = `${this.AppData.long}`,
-                id = undefined,
-                scale = 1,
-                unit = "m",
-                distanceMultiplier = 1,
-                darkMode = "false"
-            } = Object.fromEntries(
-                source.split("\n").map((l) => l.split(/:\s?/))
+        /** Get Parameters from Source */
+        let {
+            height = "500px",
+            minZoom = 1,
+            maxZoom = 10,
+            defaultZoom = 5,
+            zoomDelta = 1,
+            lat = `${this.AppData.lat}`,
+            long = `${this.AppData.long}`,
+            id = undefined,
+            scale = 1,
+            unit = "m",
+            distanceMultiplier = 1,
+            darkMode = "false"
+        } = Object.fromEntries(source.split("\n").map((l) => l.split(/:\s?/)));
+
+        let image = "real";
+        let layers = (source.match(/^\bimage\b:[\s\S]*?$/gm) || []).map((p) =>
+            p.split(/(?:image):\s?/)[1]?.trim()
+        );
+
+        if (!id) {
+            new Notice(
+                "As of version 3.0.0, Obsidian Leaflet maps must have an ID."
+            );
+            new Notice(
+                "All marker data associated with this map will sync to the new ID."
+            );
+            throw new Error("ID required");
+        }
+
+        if (layers.length) {
+            image = layers[0];
+        }
+
+        if (
+            this.AppData.mapMarkers.find(
+                ({ path, id: mapId }) =>
+                    (path == `${ctx.sourcePath}/${image}` && !mapId) ||
+                    path == `${ctx.sourcePath}/${id}`
+            )
+        ) {
+            let data = this.AppData.mapMarkers.find(
+                ({ path }) =>
+                    path == `${ctx.sourcePath}/${image}` ||
+                    path == `${ctx.sourcePath}/${id}`
+            );
+            this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
+                (d) => d != data
             );
 
-            let image = "real";
-            let layers = (source.match(/^\bimage\b:[\s\S]*?$/gm) || []).map(
-                (p) => p.split(/(?:image):\s?/)[1]?.trim()
-            );
-
-            if (!id) {
-                new Notice(
-                    "As of version 3.0.0, Obsidian Leaflet maps must have an ID."
-                );
-                new Notice(
-                    "All marker data associated with this map will sync to the new ID."
-                );
-                throw new Error("ID required");
-            }
-
-            if (layers.length) {
-                image = layers[0];
-            }
-
-            if (
-                this.AppData.mapMarkers.find(
-                    ({ path, id: mapId }) =>
-                        (path == `${ctx.sourcePath}/${image}` && !mapId) ||
-                        path == `${ctx.sourcePath}/${id}`
-                )
-            ) {
-                let data = this.AppData.mapMarkers.find(
-                    ({ path }) =>
-                        path == `${ctx.sourcePath}/${image}` ||
-                        path == `${ctx.sourcePath}/${id}`
-                );
-                this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
-                    (d) => d != data
-                );
-
-                data.id = id;
-                this.AppData.mapMarkers.push({
-                    id: data.id,
-                    markers: data.markers,
-                    files: [ctx.sourcePath],
-                    lastAccessed: Date.now()
-                });
-            }
-            let map = new LeafletMap(this, el, {
-                minZoom: +minZoom,
-                maxZoom: +maxZoom,
-                defaultZoom: +defaultZoom,
-                zoomDelta: +zoomDelta,
-                unit: unit,
-                scale: scale,
-                distanceMultiplier: distanceMultiplier,
-                id: id,
-                darkMode: darkMode === "true"
+            data.id = id;
+            this.AppData.mapMarkers.push({
+                id: data.id,
+                markers: data.markers,
+                files: [ctx.sourcePath],
+                lastAccessed: Date.now()
             });
+        }
+        let map = new LeafletMap(this, el, {
+            minZoom: +minZoom,
+            maxZoom: +maxZoom,
+            defaultZoom: +defaultZoom,
+            zoomDelta: +zoomDelta,
+            unit: unit,
+            scale: scale,
+            distanceMultiplier: distanceMultiplier,
+            id: id,
+            darkMode: darkMode === "true"
+        });
 
-            let immutableMarkers = await this.getMarkersFromSource(source);
-            for (let [
-                type,
-                lat,
-                long,
-                link,
-                layer = layers[0],
-                command = false
-            ] of immutableMarkers) {
-                map.createMarker(
-                    this.markerIcons.find(({ type: t }) => t == type),
-                    latLng([Number(lat), Number(long)]),
-                    link?.trim(),
-                    undefined,
-                    layer,
-                    false,
-                    command
-                );
+        let immutableMarkers = await this.getMarkersFromSource(source);
+        for (let [
+            type,
+            lat,
+            long,
+            link,
+            layer = layers[0],
+            command = false
+        ] of immutableMarkers) {
+            map.createMarker(
+                this.markerIcons.find(({ type: t }) => t == type),
+                latLng([Number(lat), Number(long)]),
+                link?.trim(),
+                undefined,
+                layer,
+                false,
+                command
+            );
+        }
+
+        /**
+         * Set height of map element in pixels.
+         */
+        map.contentEl.style.height = this.getHeight(height);
+        map.contentEl.style.width = "100%";
+
+        let view = this.app.workspace.getActiveViewOfType(MarkdownView);
+
+        if (view && view instanceof MarkdownView) {
+            view.onunload = () => {
+                this.maps = this.maps.filter((map) => map.view !== view);
+            };
+        } else {
+            let newPre = createEl("pre");
+            newPre.createEl("code", {}, (code) => {
+                code.innerText = `\`\`\`leaflet\n${source}\`\`\``;
+                el.parentElement.replaceChild(newPre, el);
+            });
+            return;
+        }
+
+        let coords: [number, number];
+        let err: boolean = false;
+        try {
+            lat = Number(lat?.split("%").shift());
+            long = Number(long?.split("%").shift());
+        } catch (e) {
+            err = true;
+        }
+        if (err || isNaN(lat) || isNaN(long)) {
+            new Notice(
+                "There was an error with the provided latitude and longitude. Using defaults."
+            );
+        }
+
+        let mapMarkers = this.AppData.mapMarkers.find(
+            ({ id: mapId }) => mapId == id
+        );
+
+        await map.loadData(mapMarkers);
+        let layerData: {
+            data: string;
+            id: string;
+        }[];
+
+        if (image != "real") {
+            if (!lat || isNaN(lat)) {
+                lat = 50;
             }
+            if (!long || isNaN(lat)) {
+                long = 50;
+            }
+            coords = [+lat, +long];
+            layerData = await Promise.all(
+                layers.map(async (image) => {
+                    return {
+                        id: image,
+                        data: await toDataURL(
+                            encodeURIComponent(image),
+                            this.app
+                        )
+                    };
+                })
+            );
+            if (layerData.filter((d) => !d.data).length) {
+                throw new Error();
+            }
+        } else {
+            if (!lat || isNaN(lat)) {
+                lat = this.AppData.lat;
+            }
+            if (!long || isNaN(lat)) {
+                long = this.AppData.long;
+            }
+            coords = [lat, long];
+        }
 
-            /**
-             * Set height of map element in pixels.
-             */
-            map.contentEl.style.height = this.getHeight(height);
-            map.contentEl.style.width = "100%";
+        this.registerMapEvents(map, view);
 
-            let view = this.app.workspace.getActiveViewOfType(MarkdownView);
+        map.render(image != "real" ? "image" : "real", {
+            coords: coords,
+            layers: layerData
+        });
 
-            if (view && view instanceof MarkdownView) {
-                view.onunload = () => {
-                    this.maps = this.maps.filter((map) => map.view !== view);
-                };
-            } else {
-                let newPre = createEl("pre");
-                newPre.createEl("code", {}, (code) => {
-                    code.innerText = `\`\`\`leaflet\n${source}\`\`\``;
-                    el.parentElement.replaceChild(newPre, el);
-                });
+        this.maps = this.maps.filter((m) => m.el != el);
+        this.maps.push({
+            map: map,
+            view: view,
+            source: source,
+            el: el,
+            id: id
+        });
+
+        if (this.mapFiles.find(({ file }) => file == ctx.sourcePath)) {
+            this.mapFiles
+                .find(({ file }) => file == ctx.sourcePath)
+                .maps.push(id);
+        } else {
+            this.mapFiles.push({
+                file: ctx.sourcePath,
+                maps: [id]
+            });
+        }
+
+        await this.saveSettings();
+
+        /**
+         * Markdown Block has been unloaded.
+         *
+         * First, remove the map element and its associated resize handler.
+         *
+         * Then check to see if the markdown block was deleted. If so, remove the map from the maps object.
+         */
+        let markdownRenderChild = new MarkdownRenderChild(el);
+        //support for Obsidian < 0.12.0
+        markdownRenderChild.containerEl = el;
+
+        markdownRenderChild.register(async () => {
+            try {
+                map.remove();
+            } catch (e) {}
+
+            let file = this.app.vault.getAbstractFileByPath(ctx.sourcePath);
+            if (!file || !(file instanceof TFile)) {
                 return;
             }
+            let fileContent = await this.app.vault.read(file);
 
-            let coords: [number, number];
-            let err: boolean = false;
-            try {
-                lat = Number(lat?.split("%").shift());
-                long = Number(long?.split("%").shift());
-            } catch (e) {
-                err = true;
-            }
-            if (err || isNaN(lat) || isNaN(long)) {
-                new Notice(
-                    "There was an error with the provided latitude and longitude. Using defaults."
+            let containsThisMap: boolean = false,
+                r = new RegExp(
+                    `\`\`\`leaflet[\\s\\S]*?\\bid:(\\s?${id})\\b\\s*\\n[\\s\\S]*?\`\`\``,
+                    "g"
                 );
-            }
+            containsThisMap = fileContent.match(r)?.length > 0 || false;
 
-            let mapMarkers = this.AppData.mapMarkers.find(
-                ({ id: mapId }) => mapId == id
-            );
+            if (!containsThisMap) {
+                //Block was deleted or id was changed
 
-            await map.loadData(mapMarkers);
-            let layerData: {
-                data: string;
-                id: string;
-            }[];
-
-            if (image != "real") {
-                if (!lat || isNaN(lat)) {
-                    lat = 50;
-                }
-                if (!long || isNaN(lat)) {
-                    long = 50;
-                }
-                coords = [+lat, +long];
-                layerData = await Promise.all(
-                    layers.map(async (image) => {
-                        return {
-                            id: image,
-                            data: await toDataURL(
-                                encodeURIComponent(image),
-                                this.app
-                            )
-                        };
-                    })
+                let mapFile = this.mapFiles.find(
+                    ({ file: f }) => f === ctx.sourcePath
                 );
-                if (layerData.filter((d) => !d.data).length) {
-                    throw new Error();
-                }
-            } else {
-                if (!lat || isNaN(lat)) {
-                    lat = this.AppData.lat;
-                }
-                if (!long || isNaN(lat)) {
-                    long = this.AppData.long;
-                }
-                coords = [lat, long];
-            }
-
-            this.registerMapEvents(map, view);
-
-            map.render(image != "real" ? "image" : "real", {
-                coords: coords,
-                layers: layerData
-            });
-
-            this.maps = this.maps.filter((m) => m.el != el);
-            this.maps.push({
-                map: map,
-                view: view,
-                source: source,
-                el: el,
-                id: id
-            });
-
-            if (this.mapFiles.find(({ file }) => file == ctx.sourcePath)) {
-                this.mapFiles
-                    .find(({ file }) => file == ctx.sourcePath)
-                    .maps.push(id);
-            } else {
-                this.mapFiles.push({
-                    file: ctx.sourcePath,
-                    maps: [id]
-                });
+                mapFile.maps = mapFile.maps.filter((mapId) => mapId != id);
             }
 
             await this.saveSettings();
-
-            /**
-             * Markdown Block has been unloaded.
-             *
-             * First, remove the map element and its associated resize handler.
-             *
-             * Then check to see if the markdown block was deleted. If so, remove the map from the maps object.
-             */
-            let markdownRenderChild = new MarkdownRenderChild(el);
-            //support for Obsidian < 0.12.0
-            markdownRenderChild.containerEl = el;
-
-            markdownRenderChild.register(async () => {
-                try {
-                    map.remove();
-                } catch (e) {}
-
-                let file = this.app.vault.getAbstractFileByPath(ctx.sourcePath);
-                if (!file || !(file instanceof TFile)) {
-                    return;
-                }
-                let fileContent = await this.app.vault.read(file);
-
-                let containsThisMap: boolean = false,
-                    r = new RegExp(
-                        `\`\`\`leaflet[\\s\\S]*?\\bid:(\\s?${id})\\b\\s*\\n[\\s\\S]*?\`\`\``,
-                        "g"
-                    );
-                containsThisMap = fileContent.match(r)?.length > 0 || false;
-
-                if (!containsThisMap) {
-                    //Block was deleted or id was changed
-
-                    let mapFile = this.mapFiles.find(
-                        ({ file: f }) => f === ctx.sourcePath
-                    );
-                    mapFile.maps = mapFile.maps.filter((mapId) => mapId != id);
-                }
-
-                await this.saveSettings();
-                this.maps = this.maps.filter((m) => {
-                    return m.el != el;
-                });
+            this.maps = this.maps.filter((m) => {
+                return m.el != el;
             });
-            ctx.addChild(markdownRenderChild);
+        });
+        ctx.addChild(markdownRenderChild);
         /* } catch (e) {
             console.error(e);
             new Notice("There was an error loading the map.");
@@ -475,6 +484,10 @@ export default class ObsidianLeaflet extends Plugin {
                     [, link] = link.match(/\[\[([\s\S]+)\]\]/);
                 }
 
+                //find command id
+                const commands = this.app.commands.listCommands();
+                const { id } = commands.find(({ name: n }) => n == link);
+
                 if (!layer || !layer.length || layer === "undefined") {
                     layer = undefined;
                 }
@@ -482,7 +495,7 @@ export default class ObsidianLeaflet extends Plugin {
                     type,
                     Number(lat),
                     Number(long),
-                    link,
+                    id,
                     layer,
                     true
                 ]);
@@ -879,24 +892,16 @@ export default class ObsidianLeaflet extends Plugin {
                 "marker-click",
                 async (link: string, newWindow: boolean, command: boolean) => {
                     if (command) {
-                        //@ts-expect-error
                         const commands = this.app.commands.listCommands();
 
                         if (
                             commands.find(
-                                ({ name }: { name: string }) =>
-                                    name.toLowerCase() ===
+                                ({ id }) =>
+                                    id.toLowerCase() ===
                                     link.toLowerCase().trim()
                             )
                         ) {
-                            const command = commands.find(
-                                ({ name }: { name: string }) =>
-                                    name.toLowerCase() ===
-                                    link.toLowerCase().trim()
-                            );
-
-                            //@ts-expect-error
-                            this.app.commands.executeCommandById(command.id);
+                            this.app.commands.executeCommandById(link);
                         } else {
                             new Notice(`Command ${link} could not be found.`);
                         }
@@ -947,22 +952,20 @@ export default class ObsidianLeaflet extends Plugin {
                 "marker-mouseover",
                 async (evt: L.LeafletMouseEvent, marker: ILeafletMarker) => {
                     if (marker.command) {
-                        //@ts-expect-error
                         const commands = this.app.commands.listCommands();
 
                         if (
                             commands.find(
-                                ({ name }: { name: string }) =>
-                                    name.toLowerCase() ===
+                                ({ id }) =>
+                                    id.toLowerCase() ===
                                     marker.link.toLowerCase().trim()
                             )
                         ) {
                             const command = commands.find(
-                                ({ name }: { name: string }) =>
-                                    name.toLowerCase() ===
+                                ({ id }) =>
+                                    id.toLowerCase() ===
                                     marker.link.toLowerCase().trim()
                             );
-
                             const div = createDiv({
                                 attr: {
                                     style: "display: flex; align-items: center;"

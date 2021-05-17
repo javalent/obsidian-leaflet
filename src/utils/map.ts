@@ -298,6 +298,7 @@ class EditMarkerControl extends L.Control {
     controlEl: HTMLElement;
     plugin: ObsidianLeaflet;
     simple: SimpleLeafletMap;
+    isOpen: boolean = false;
     constructor(
         opts: L.ControlOptions,
         map: LeafletMap,
@@ -312,22 +313,26 @@ class EditMarkerControl extends L.Control {
         this.controlEl
             .createEl("a", {
                 cls: "leaflet-control-edit-markers",
-                href: "#"
+                href: "#",
+                title: "Bulk Edit Markers"
             })
             .appendChild(
                 icon({ prefix: "fas", iconName: "map-marker" }).node[0]
             );
-
+        this.controlEl.children[0].setAttrs({
+            "aria-label": "Bulk Edit Markers"
+        });
         L.DomEvent.on(this.controlEl, "click", this.onClick.bind(this));
 
         return this.controlEl;
     }
     async onClick(evt: MouseEvent) {
-        let bulkModal = new Modal(this.plugin.app);
+        if (this.isOpen) return;
+        const modal = new Modal(this.plugin.app);
+        modal.contentEl.empty();
+        modal.titleEl.setText("Bulk Edit Markers");
 
-        bulkModal.titleEl.setText("Bulk Edit Markers");
-
-        const mapEl = bulkModal.contentEl.createDiv({
+        const mapEl = modal.contentEl.createDiv({
             cls: "bulk-edit-map",
             attr: {
                 style: "height: 250px;width: auto;margin: auto;margin-bottom: 1rem; "
@@ -338,9 +343,64 @@ class EditMarkerControl extends L.Control {
 
         await this.simple.render();
 
-        const markersEl = bulkModal.contentEl.createDiv("bulk-edit-markers");
+        const markersEl = modal.contentEl.createDiv("bulk-edit-markers");
+        let internalMarkersEl = markersEl.createDiv("bulk-edit-markers");
+        this.display(internalMarkersEl);
 
-        const add = new Setting(markersEl)
+        //
+
+        const save = new Setting(createDiv())
+            .addButton((button) => {
+                button
+                    .setTooltip("Save")
+                    .setIcon("checkmark")
+                    .onClick(() => {
+                        this.onClose(this.simple.markers);
+                        modal.close();
+                    });
+            })
+            .addExtraButton((b) => {
+                b.setIcon("cross")
+                    .setTooltip("Cancel")
+                    .onClick(() => {
+                        modal.close();
+                    });
+            });
+        const deleteAll = new Setting(createDiv()).addButton((button) => {
+            button.setButtonText("Delete All").onClick(() => {
+                this.simple.markers.forEach((marker) => marker.remove());
+                this.simple.markers = [];
+                this.display(internalMarkersEl);
+            });
+        });
+        save.infoEl.appendChild(deleteAll.controlEl.children[0]);
+        markersEl.appendChild(save.settingEl);
+
+        modal.open();
+        this.isOpen = true;
+        modal.onClose = () => {
+            this.isOpen = false;
+            if (this.simple) {
+                this.simple.remove();
+            }
+            delete this.simple;
+        };
+
+        this.simple.map.invalidateSize();
+
+        this.simple.fit(...this.simple.markers);
+    }
+    onClose(markers: Marker[]) {
+        return;
+    }
+    display(markersEl: HTMLElement) {
+        markersEl.empty();
+        new Setting(markersEl)
+            .setName(
+                `${this.simple.markers.length} marker${
+                    this.simple.markers.length != 1 ? "s" : ""
+                }`
+            )
             .addButton((b) => {
                 b.setIcon("plus-with-circle")
                     .setTooltip("Add New")
@@ -356,50 +416,13 @@ class EditMarkerControl extends L.Control {
                             this.map.mapLayers[0].id,
                             true
                         );
-                        this.display(markersHolder);
-                    });
-            })
-            .infoEl.detach();
-
-        const markersHolder = markersEl.createDiv("bulk-edit-markers-holder");
-        this.display(markersHolder);
-
-        const save = new Setting(createDiv())
-            .addButton((button) => {
-                let b = button.setTooltip("Save").setIcon("checkmark");
-                b.onClick(() => {
-                    bulkModal.close();
-                    this.onClose(this.simple.markers);
-                });
-            })
-            .addExtraButton((b) => {
-                b.setIcon("cross")
-                    .setTooltip("Cancel")
-                    .onClick(() => {
-                        bulkModal.close();
+                        this.display(markersEl);
                     });
             });
-
-        markersEl.appendChild(save.controlEl);
-
-        bulkModal.open();
-
-        bulkModal.onClose = () => {
-            this.simple.remove();
-        };
-
-        this.simple.map.invalidateSize();
-
-        this.simple.fit(...this.simple.markers);
-    }
-    onClose(markers: Marker[]) {
-        return;
-    }
-    display(markersEl: HTMLElement) {
-        markersEl.empty();
+        const markersHolder = markersEl.createDiv("bulk-edit-markers-holder");
         for (let marker of this.simple.markers) {
             let markerSetting = new Setting(
-                markersEl.createDiv("bulk-edit-marker-instance")
+                markersHolder.createDiv("bulk-edit-marker-instance")
             );
 
             let lat: TextComponent, long: TextComponent;
@@ -502,6 +525,14 @@ class EditMarkerControl extends L.Control {
                     .removeClasses(["bulk-setting-hover", "marker"]);
             });
         }
+    }
+    disable() {
+        this.controlEl.addClass("disabled");
+        this.controlEl.detach();
+    }
+    enable() {
+        this.controlEl.removeClass("disabled");
+        this.addTo(this.map.map);
     }
 }
 
@@ -665,6 +696,10 @@ class SimpleLeafletMap extends Events {
     }
 
     fit(...markers: Marker[]) {
+        if (!markers.length) {
+            this.map.fitWorld();
+            return;
+        }
         const group = L.featureGroup(
             markers.map(({ leafletInstance }) => leafletInstance)
         );

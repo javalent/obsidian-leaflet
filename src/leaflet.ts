@@ -163,6 +163,9 @@ export default class LeafletMap extends Events {
         }
         return L.CRS.EPSG3857;
     }
+    get mutableMarkers() {
+        return this.markers.filter(({ mutable }) => mutable);
+    }
 
     async render(
         type: "real" | "image",
@@ -233,6 +236,7 @@ export default class LeafletMap extends Events {
             ".leaflet-control-fullscreen-button"
         );
         if (fsButton) {
+            fsButton.setAttr("aria-label", "Toggle Full Screen");
             const expand = icon({ iconName: "expand", prefix: "fas" }).node[0];
             const compress = icon({ iconName: "compress", prefix: "fas" })
                 .node[0];
@@ -240,8 +244,13 @@ export default class LeafletMap extends Events {
             this.map.on("fullscreenchange", () => {
                 if (this.isFullscreen) {
                     fsButton.replaceChild(compress, fsButton.children[0]);
+                    editMarkerControl.disable();
+
                 } else {
+
                     fsButton.replaceChild(expand, fsButton.children[0]);
+                    editMarkerControl.enable();
+                    
                 }
             });
         }
@@ -254,11 +263,9 @@ export default class LeafletMap extends Events {
         ).addTo(this.map);
 
         editMarkerControl.onClose = async (markers) => {
-            markers.forEach((marker) => {
-                let m = this.markers.find(({ id }) => id == marker.id);
-                m.remove();
+            this.mutableMarkers.forEach((marker) => {
+                this.removeMarker(marker);
             });
-            this.markers = [];
 
             markers.forEach((marker) => {
                 this.createMarker(
@@ -286,6 +293,11 @@ export default class LeafletMap extends Events {
         /** Bind Internal Map Events */
         this.map.on("contextmenu", this._handleMapContext.bind(this));
         this.map.on("click", this._handleMapClick.bind(this));
+    }
+    removeMarker(marker: Marker) {
+        if (!marker) return;
+        marker.remove();
+        this.markers = this.markers.filter(({ id }) => id != marker.id);
     }
 
     updateMarkerIcons() {
