@@ -521,8 +521,9 @@ export default class LeafletMap extends Events {
 
     private _onHandleDistance(evt: L.LeafletMouseEvent) {
         if (
-            !evt.originalEvent.getModifierState("Shift") &&
-            !evt.originalEvent.getModifierState("Alt")
+            (!evt.originalEvent.getModifierState("Shift") &&
+                !evt.originalEvent.getModifierState("Alt")) ||
+            evt.originalEvent.getModifierState("Control")
         ) {
             if (this._distanceEvent != undefined) {
                 this.removeDistanceLine();
