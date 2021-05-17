@@ -47,6 +47,10 @@ declare module "obsidian" {
             executeCommandById(id: string): void;
             commands: { [id: string]: Command };
         };
+        keymap: {
+            pushScope(scope: Scope): void;
+            popScope(scope: Scope): void;
+        };
     }
 }
 
@@ -97,13 +101,12 @@ export default class ObsidianLeaflet extends Plugin {
 
         this.escapeScope = new Scope();
         this.escapeScope.register(undefined, "Escape", () => {
-            const map = this.maps.find(({ map }) => map.distanceLine);
-            //THIS IS SILLY
-            if (map && !map.map.isFullscreen) {
-                map.map.removeDistanceLine();
-                map.map.distanceEvent = undefined;
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (<any>this.app).keymap.popScope(this.escapeScope);
+            const { map } =
+                this.maps.find(({ map }) => map.isDrawingDistance) ?? {};
+
+            if (map && !map.isFullscreen) {
+                map.removeDistanceLine();
+                this.app.keymap.popScope(this.escapeScope);
             }
         });
     }
@@ -120,8 +123,7 @@ export default class ObsidianLeaflet extends Plugin {
         });
         this.maps = [];
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (<any>this.app).keymap.popScope(this.escapeScope);
+        this.app.keymap.popScope(this.escapeScope);
     }
 
     async postprocessor(

@@ -41,12 +41,19 @@ declare module "leaflet" {
  *
  */
 export default class LeafletMap extends Events {
+    plugin: ObsidianLeaflet;
+    options: ILeafletMapOptions;
+
     parentEl: HTMLElement;
-    id: string;
     contentEl: HTMLElement;
+
+    id: string;
+
     map: L.Map;
     markers: Marker[] = [];
+
     zoom: { min: number; max: number; default: number; delta: number };
+
     popup: L.Popup = L.popup({
         className: "leaflet-marker-link-popup",
         autoClose: false,
@@ -54,17 +61,19 @@ export default class LeafletMap extends Events {
         closeOnClick: false,
         autoPan: false
     });
+
     mapLayers: ILayerGroup[];
     layer: L.ImageOverlay | L.TileLayer;
     type: "image" | "real";
+    initialCoords: [number, number];
+    tileServer: string;
 
     private _resize: ResizeObserver;
     private _unit: string = "m";
     private _distanceMultipler: number = 1;
-    distanceEvent: L.LatLng | undefined = undefined;
+    private _distanceEvent: L.LatLng | undefined = undefined;
     private _data: IObsidianAppData;
-    plugin: ObsidianLeaflet;
-    distanceLine: L.Polyline = L.polyline(
+    private _distanceLine: L.Polyline = L.polyline(
         [
             [0, 0],
             [0, 0]
@@ -73,15 +82,21 @@ export default class LeafletMap extends Events {
             color: "blue"
         }
     );
-    options: ILeafletMapOptions;
+    private _previousDistanceLine: L.Polyline = L.polyline(
+        [
+            [0, 0],
+            [0, 0]
+        ],
+        {
+            color: "blue"
+        }
+    );
     private _rendered: boolean;
     private _timeoutHandler: ReturnType<typeof setTimeout>;
     private _popupTarget: ILeafletMarker | L.LatLng;
     private _scale: number;
     private _hoveringOnMarker: boolean = false;
     private _distanceDisplay: DistanceDisplay;
-    initialCoords: [number, number];
-    tileServer: string;
     constructor(
         plugin: ObsidianLeaflet,
         el: HTMLElement,
@@ -140,6 +155,10 @@ export default class LeafletMap extends Events {
         return convert(1)
             .from("m")
             .to(this._unit as Length);
+    }
+
+    get isDrawingDistance() {
+        return this._distanceEvent != undefined;
     }
 
     private get _locale() {
@@ -245,12 +264,9 @@ export default class LeafletMap extends Events {
                 if (this.isFullscreen) {
                     fsButton.replaceChild(compress, fsButton.children[0]);
                     editMarkerControl.disable();
-
                 } else {
-
                     fsButton.replaceChild(expand, fsButton.children[0]);
                     editMarkerControl.enable();
-                    
                 }
             });
         }
@@ -287,7 +303,7 @@ export default class LeafletMap extends Events {
             {
                 position: "bottomleft"
             },
-            this.distanceLine
+            this._previousDistanceLine
         ).addTo(this.map);
 
         /** Bind Internal Map Events */
@@ -418,12 +434,20 @@ export default class LeafletMap extends Events {
     }
 
     removeDistanceLine() {
-        if (this.distanceLine) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (<any>this.plugin.app).keymap.popScope(this.plugin.escapeScope);
-            this.distanceLine.unbindTooltip();
-            this.distanceLine.remove();
-            //this.distanceLine = undefined;
+        if (this._distanceLine) {
+            this.plugin.app.keymap.popScope(this.plugin.escapeScope);
+
+            this._distanceEvent = undefined;
+
+            this._distanceLine.unbindTooltip();
+            this._distanceLine.remove();
+
+            /** Get Last Distance */
+            const latlngs =
+                this._previousDistanceLine.getLatLngs() as L.LatLng[];
+            const display = this.distance(latlngs[0], latlngs[1]);
+            this._distanceDisplay.setText(display);
+
             this.map.off("mousemove");
             this.map.off("mouseout");
         }
@@ -434,11 +458,11 @@ export default class LeafletMap extends Events {
     }
 
     private _handleMapClick(evt: L.LeafletMouseEvent) {
+        this._onHandleDistance(evt);
         if (
             evt.originalEvent.getModifierState("Shift") ||
             evt.originalEvent.getModifierState("Alt")
         ) {
-            this._onHandleDistance(evt);
             this.openPopup(
                 evt.latlng,
                 `[${evt.latlng.lat.toLocaleString("en-US", {
@@ -447,7 +471,10 @@ export default class LeafletMap extends Events {
                     maximumFractionDigits: LAT_LONG_DECIMALS
                 })}]`
             );
-            if (this._data.copyOnClick) {
+            if (
+                this._data.copyOnClick &&
+                evt.originalEvent.getModifierState("Control")
+            ) {
                 navigator.clipboard
                     .writeText(
                         `[${evt.latlng.lat.toLocaleString("en-US", {
@@ -493,56 +520,60 @@ export default class LeafletMap extends Events {
     }
 
     private _onHandleDistance(evt: L.LeafletMouseEvent) {
-        if (this.distanceEvent != undefined) {
-            const dist = this.distance(this.distanceEvent, evt.latlng);
-
+        if (
+            !evt.originalEvent.getModifierState("Shift") &&
+            !evt.originalEvent.getModifierState("Alt")
+        ) {
+            if (this._distanceEvent != undefined) {
+                this.removeDistanceLine();
+            }
+            return;
+        }
+        if (this._distanceEvent != undefined) {
+            this._previousDistanceLine.setLatLngs(
+                this._distanceLine.getLatLngs()
+            );
             this.removeDistanceLine();
-
-            this._distanceDisplay.setText(dist);
-
-            this.distanceEvent = undefined;
         } else {
-            this.distanceEvent = evt.latlng;
+            this._distanceEvent = evt.latlng;
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (<any>this.plugin.app).keymap.pushScope(this.plugin.escapeScope);
+            this.plugin.app.keymap.pushScope(this.plugin.escapeScope);
 
             const distanceTooltip = L.tooltip({
                 permanent: true,
                 direction: "top",
                 sticky: true
             });
-            this.distanceLine.bindTooltip(distanceTooltip);
+            this._distanceLine.setLatLngs([this._distanceEvent, evt.latlng]);
+            this._distanceLine.bindTooltip(distanceTooltip);
             this.map.on("mousemove", (mvEvt: L.LeafletMouseEvent) => {
                 if (!this._hoveringOnMarker) {
-                    this.distanceLine.setLatLngs([
-                        this.distanceEvent,
+                    this._distanceLine.setLatLngs([
+                        this._distanceEvent,
                         mvEvt.latlng
                     ]);
                 }
-                this.distanceLine.setStyle({
-                    color: "blue",
-                    dashArray: ""
-                });
-                this.distanceLine.addTo(this.map);
-                const latlngs = this.distanceLine.getLatLngs() as L.LatLng[];
+                this._distanceLine.addTo(this.map);
+
+                /** Get New Distance */
+                const latlngs = this._distanceLine.getLatLngs() as L.LatLng[];
                 const display = this.distance(latlngs[0], latlngs[1]);
-                /* this.distanceLine.unbindTooltip(); */
 
+                /** Update Distance Line Tooltip */
                 distanceTooltip.setContent(display);
-
                 distanceTooltip.setLatLng(mvEvt.latlng);
-                if (!this.distanceLine.isTooltipOpen()) {
+
+                if (!this._distanceLine.isTooltipOpen()) {
                     distanceTooltip.openTooltip();
                 }
 
                 this._distanceDisplay.setText(display);
-                this.distanceLine.redraw();
+                this._distanceLine.redraw();
             });
 
             this.map.on("mouseout", () => {
                 this.removeDistanceLine();
-                this.distanceEvent = undefined;
+                this._distanceEvent = undefined;
             });
         }
     }
@@ -670,11 +701,11 @@ export default class LeafletMap extends Events {
             .on("click", async (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
 
+                this._onHandleDistance(evt);
                 if (
                     evt.originalEvent.getModifierState("Alt") ||
                     evt.originalEvent.getModifierState("Shift")
                 ) {
-                    this._onHandleDistance(evt);
                     this.openPopup(
                         marker,
                         `[${marker.loc.lat.toLocaleString("en-US", {
@@ -684,7 +715,10 @@ export default class LeafletMap extends Events {
                         })}]`
                     );
 
-                    if (this._data.copyOnClick) {
+                    if (
+                        this._data.copyOnClick &&
+                        evt.originalEvent.getModifierState("Control")
+                    ) {
                         navigator.clipboard
                             .writeText(
                                 `[${marker.loc.lat.toLocaleString("en-US", {
@@ -737,9 +771,9 @@ export default class LeafletMap extends Events {
                     this.trigger("marker-mouseover", evt, marker);
                 }
                 this._hoveringOnMarker = true;
-                if (this.distanceLine) {
-                    this.distanceLine.setLatLngs([
-                        this.distanceLine.getLatLngs()[0] as L.LatLngExpression,
+                if (this._distanceLine) {
+                    this._distanceLine.setLatLngs([
+                        this._distanceLine.getLatLngs()[0] as L.LatLngExpression,
                         marker.loc
                     ]);
                 }

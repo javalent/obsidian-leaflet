@@ -1,4 +1,6 @@
 # Version History
+## 3.9.2
+-  In an effort to reduce notice spam, copying map/marker coordinates now must be done by <kbd>Ctrl</kbd> + <kbd>Shift</kbd>/<kbd>Alt</kbd>-clicking
 
 ## 3.9.0
 - Added `darkMode` parameter to invert map colors

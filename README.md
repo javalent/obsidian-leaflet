@@ -281,7 +281,7 @@ Use Obsidian's note preview when hovering a linked marker.
 
 ### Copy Coordinates on Shift-Click
 
-Turning this setting on will copy the latitude and longitude coordinates to the clipboard when <kbd>Shift</kbd>-clicking anywhere on the map.
+Turning this setting on will copy the latitude and longitude coordinates to the clipboard when <kbd>Ctrl</kbd> + <kbd>Shift</kbd>-clicking anywhere on the map.
 
 ### Latitude and Longitude
 

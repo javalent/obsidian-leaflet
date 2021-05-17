@@ -256,12 +256,19 @@ export class DistanceDisplay extends L.Control {
                     this.line.getLatLngs()[0] as L.LatLng,
                     this.line.getLatLngs()[1] as L.LatLng
                 ),
-                { duration: 0.5, easeLinearity: 0.1, animate: true }
+                {
+                    duration: 0.5,
+                    easeLinearity: 0.1,
+                    animate: true,
+                    padding: [3, 3]
+                }
             );
         }
     }
     onMouseLeave() {
-        this.line.remove();
+        if (this.line) {
+            this.line.remove();
+        }
         this.map.closePopup(this.popups[0]);
         this.map.closePopup(this.popups[1]);
     }
@@ -280,9 +287,7 @@ export class DistanceDisplay extends L.Control {
     }
     setText(text: string) {
         this.textEl.setText(text);
-    }
-    setLine(line: L.Polyline) {
-        this.line = line;
+        return this;
     }
 }
 

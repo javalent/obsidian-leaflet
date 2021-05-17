@@ -199,8 +199,7 @@ export abstract class SuggestionModal<T> extends FuzzySuggestModal<T> {
     }
     open(): void {
         // TODO: Figure out a better way to do this. Idea from Periodic Notes plugin
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (<any>this.app).keymap.pushScope(this.scope);
+        this.app.keymap.pushScope(this.scope);
 
         document.body.appendChild(this.suggestEl);
         this.popper = createPopper(this.inputEl, this.suggestEl, {
@@ -224,8 +223,7 @@ export abstract class SuggestionModal<T> extends FuzzySuggestModal<T> {
 
     close(): void {
         // TODO: Figure out a better way to do this. Idea from Periodic Notes plugin
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (<any>this.app).keymap.popScope(this.scope);
+        this.app.keymap.popScope(this.scope);
 
         this.suggester.setSuggestions([]);
         if (this.popper) {

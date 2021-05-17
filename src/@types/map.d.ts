@@ -21,9 +21,9 @@ declare class LeafletMap {
     mapLayers: ILayerGroup[];
     layer: L.ImageOverlay | L.TileLayer;
     type: "image" | "real";
-    distanceEvent: L.LatLng | undefined;
+    /* distanceEvent: L.LatLng | undefined;
+    distanceLine: L.Polyline; */
     plugin: ObsidianLeaflet;
-    distanceLine: L.Polyline;
     options: ILeafletMapOptions;
     initialCoords: [number, number];
     constructor(
@@ -43,6 +43,10 @@ declare class LeafletMap {
     get scale(): number;
 
     get CRS(): L.CRS;
+
+    get isFullscreen(): boolean;
+
+    get isDrawingDistance(): boolean;
 
     render(
         type: "real" | "image",
@@ -72,8 +76,6 @@ declare class LeafletMap {
     distance(latlng1: L.LatLng, latlng2: L.LatLng): string;
 
     removeDistanceLine(): void;
-
-    get isFullscreen(): boolean;
 
     openPopup(
         target: ILeafletMarker | L.LatLng,
