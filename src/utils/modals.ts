@@ -810,7 +810,7 @@ export class CreateMarkerModal extends Modal {
 
                 text.inputEl.onblur = validate;
 
-                return iconTextInput;
+                iconTextInput = text;
             });
 
         if (this.tempMarker.iconName) {
