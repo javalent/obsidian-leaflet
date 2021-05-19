@@ -1,6 +1,6 @@
 {
     "name": "obsidian-leaflet-plugin",
-    "version": "3.9.4",
+    "version": "3.9.5",
     "description": "Leaflet integration for Obsidian.md",
     "main": "main.js",
     "scripts": {

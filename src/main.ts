@@ -1036,7 +1036,7 @@ export default class ObsidianLeaflet extends Plugin {
 
                         map.openPopup(marker, a);
                     } else {
-                        if (this.AppData.notePreview) {
+                        if (this.AppData.notePreview && !map.isFullscreen) {
                             marker.leafletInstance.unbindTooltip();
 
                             this.app.workspace.trigger(
