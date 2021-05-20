@@ -1,3 +1,4 @@
+import { IconName } from "@fortawesome/free-solid-svg-icons";
 import L, { latLng } from "leaflet";
 import { DivIcon } from "leaflet";
 import { Events, Modal, Notice, Setting, TextComponent } from "obsidian";
@@ -290,7 +291,6 @@ export class DistanceDisplay extends L.Control {
         return this;
     }
 }
-
 export const distanceDisplay = function (
     opts: L.ControlOptions,
     line: L.Polyline
@@ -298,14 +298,59 @@ export const distanceDisplay = function (
     return new DistanceDisplay(opts, line);
 };
 
-class EditMarkerControl extends L.Control {
+interface FontAwesomeControlOptions extends L.ControlOptions {
+    icon: IconName;
+    cls: string;
+    tooltip: string;
+}
+abstract class FontAwesomeControl extends L.Control {
+    icon: IconName;
+    controlEl: HTMLElement;
+    cls: string;
+    tooltip: string;
+    leafletInstance: L.Map;
+    link: HTMLElement;
+    constructor(opts: FontAwesomeControlOptions) {
+        super(opts);
+        this.icon = opts.icon;
+        this.cls = opts.cls;
+        this.tooltip = opts.tooltip;
+    }
+    onAdd(leafletMap: L.Map) {
+        this.leafletInstance = leafletMap;
+        this.controlEl = L.DomUtil.create(
+            "div",
+            "leaflet-bar leaflet-control " + this.cls
+        );
+        this.link = this.controlEl.createEl("a", {
+            cls: this.cls + "-icon",
+            href: "#",
+            title: this.tooltip
+        });
+        this.link.appendChild(
+            icon({ prefix: "fas", iconName: this.icon }).node[0]
+        );
+        this.controlEl.children[0].setAttrs({
+            "aria-label": this.tooltip
+        });
+        L.DomEvent.on(this.controlEl, "click", this.onClick.bind(this));
+
+        this.added();
+
+        return this.controlEl;
+    }
+    abstract onClick(evt: MouseEvent): void;
+    added() {}
+}
+
+class EditMarkerControl extends FontAwesomeControl {
     map: LeafletMap;
     controlEl: HTMLElement;
     plugin: ObsidianLeaflet;
     simple: SimpleLeafletMap;
     isOpen: boolean = false;
     constructor(
-        opts: L.ControlOptions,
+        opts: FontAwesomeControlOptions,
         map: LeafletMap,
         plugin: ObsidianLeaflet
     ) {
@@ -313,24 +358,7 @@ class EditMarkerControl extends L.Control {
         this.map = map;
         this.plugin = plugin;
     }
-    onAdd(leafletMap: L.Map) {
-        this.controlEl = L.DomUtil.create("div", "leaflet-bar leaflet-control");
-        this.controlEl
-            .createEl("a", {
-                cls: "leaflet-control-edit-markers",
-                href: "#",
-                title: "Bulk Edit Markers"
-            })
-            .appendChild(
-                icon({ prefix: "fas", iconName: "map-marker" }).node[0]
-            );
-        this.controlEl.children[0].setAttrs({
-            "aria-label": "Bulk Edit Markers"
-        });
-        L.DomEvent.on(this.controlEl, "click", this.onClick.bind(this));
 
-        return this.controlEl;
-    }
     async onClick(evt: MouseEvent) {
         if (this.isOpen) return;
         const modal = new Modal(this.plugin.app);
@@ -546,7 +574,13 @@ export function editMarkers(
     map: LeafletMap,
     plugin: ObsidianLeaflet
 ) {
-    return new EditMarkerControl(opts, map, plugin);
+    const options: FontAwesomeControlOptions = {
+        ...opts,
+        icon: "map-marker",
+        cls: "leaflet-control-edit-markers",
+        tooltip: "Bulk Edit Markers"
+    };
+    return new EditMarkerControl(options, map, plugin);
 }
 
 class SimpleLeafletMap extends Events {
@@ -717,4 +751,180 @@ class SimpleLeafletMap extends Events {
     remove() {
         this.map.remove();
     }
+}
+
+class ZoomControl extends FontAwesomeControl {
+    controlEl: any;
+    map: LeafletMap;
+    constructor(opts: FontAwesomeControlOptions, map: LeafletMap) {
+        super(opts);
+        this.map = map;
+    }
+    onClick(evt: MouseEvent) {
+        const group = L.featureGroup(
+            this.map.displayedMarkers.map(
+                ({ leafletInstance }) => leafletInstance
+            )
+        );
+
+        this.leafletInstance.fitBounds(group.getBounds().pad(0.5), {
+            maxZoom: this.map.zoom.default
+        });
+    }
+}
+
+export function zoomControl(opts: L.ControlOptions, map: LeafletMap) {
+    const options: FontAwesomeControlOptions = {
+        ...opts,
+        icon: "map-marked-alt",
+        cls: "leaflet-control-zoom-markers",
+        tooltip: "Show All Markers"
+    };
+    return new ZoomControl(options, map);
+}
+
+class ResetZoomControl extends FontAwesomeControl {
+    map: LeafletMap;
+    constructor(opts: FontAwesomeControlOptions, map: LeafletMap) {
+        super(opts);
+        this.map = map;
+    }
+    onClick(evt: MouseEvent) {
+        this.leafletInstance.setView(
+            this.map.initialCoords,
+            this.map.zoom.default
+        );
+    }
+}
+
+export function resetZoomControl(opts: L.ControlOptions, map: LeafletMap) {
+    const options: FontAwesomeControlOptions = {
+        ...opts,
+        icon: "bullseye",
+        cls: "leaflet-control-reset-zoom",
+        tooltip: "Reset View"
+    };
+    return new ResetZoomControl(options, map);
+}
+
+class FilterMarkers extends FontAwesomeControl {
+    map: LeafletMap;
+    section: HTMLElement;
+    inputs: HTMLInputElement[];
+    constructor(opts: FontAwesomeControlOptions, map: LeafletMap) {
+        super(opts);
+        this.map = map;
+    }
+    onClick(evt: MouseEvent) {}
+    added() {
+        //add hidden filter objects
+
+        this.section = L.DomUtil.create(
+            "section",
+            this.cls + "-list",
+            this.controlEl
+        );
+
+        L.DomEvent.disableClickPropagation(this.controlEl);
+        L.DomEvent.disableScrollPropagation(this.controlEl);
+
+        L.DomEvent.on(this.link, "click", this.expand, this);
+        L.DomEvent.on(
+            this.controlEl,
+            {
+                mouseleave: this.collapse
+            },
+            this
+        );
+    }
+    expand() {
+        this.update();
+
+        L.DomUtil.addClass(this.controlEl, "expanded");
+        this.section.style.height = null;
+        var acceptableHeight =
+            this.leafletInstance.getSize().y - (this.controlEl.offsetTop + 50);
+
+        if (acceptableHeight < this.section.clientHeight) {
+            L.DomUtil.addClass(
+                this.section,
+                "leaflet-control-layers-scrollbar"
+            );
+            this.section.style.height = acceptableHeight + "px";
+        } else {
+            L.DomUtil.removeClass(
+                this.section,
+                "leaflet-control-layers-scrollbar"
+            );
+        }
+
+        return this;
+    }
+
+    collapse() {
+        L.DomUtil.removeClass(this.controlEl, "expanded");
+        return this;
+    }
+    update() {
+        this.section.empty();
+
+        const ul = this.section.createEl("ul", "contains-task-list");
+
+        for (let i = 0; i < this.map.markerIcons.length; i++) {
+            const type = this.map.markerIcons[i].type;
+            if (
+                this.map.group.markers[type] &&
+                this.map.group.markers[type].getLayers().length
+            ) {
+                const li = ul.createEl("li", "task-list-item");
+                const id = getId();
+                const input = li.createEl("input", {
+                    attr: {
+                        id: "leaflet-control-filter-item-label-" + id,
+                        ...(this.map.displaying.has(type) && {
+                            checked: true
+                        })
+                    },
+                    type: "checkbox",
+                    cls: "task-list-item-checkbox"
+                });
+
+                li.createEl("label", {
+                    text: type[0].toUpperCase() + type.slice(1).toLowerCase(),
+                    attr: { for: "leaflet-control-filter-item-label-" + id }
+                });
+
+                L.DomEvent.on(
+                    input,
+                    "click",
+                    this._onInputClick.bind(this, type)
+                );
+            }
+        }
+    }
+    private _onInputClick(
+        type: string,
+        { target }: { target: HTMLInputElement }
+    ) {
+        if (!target.checked) {
+            //remove
+            this.map.displaying.delete(type);
+            this.map.group.markers[type].remove();
+        } else {
+            this.map.displaying.add(type);
+            this.map.group.markers[type].addTo(this.leafletInstance);
+        }
+
+        this.update();
+    }
+}
+
+export function filterMarkerControl(opts: L.ControlOptions, map: LeafletMap) {
+    const options: FontAwesomeControlOptions = {
+        ...opts,
+        icon: "filter",
+        cls: "leaflet-control-filter",
+        tooltip: "Filter Markers"
+    };
+    return new FilterMarkers(options, map);
 }

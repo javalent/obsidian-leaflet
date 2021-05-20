@@ -26,6 +26,8 @@ declare class LeafletMap {
     plugin: ObsidianLeaflet;
     options: ILeafletMapOptions;
     initialCoords: [number, number];
+    displaying: Set<string>;
+
     constructor(
         plugin: ObsidianLeaflet,
         el: HTMLElement,
@@ -39,6 +41,7 @@ declare class LeafletMap {
     set rendered(v: boolean);
 
     get markerIcons(): IMarkerIcon[];
+    get displayedMarkers(): Marker[];
 
     get scale(): number;
 

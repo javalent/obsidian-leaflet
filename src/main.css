@@ -189,6 +189,14 @@ input.is-invalid {
     background-image: unset !important;
     display: flex !important;
 }
+.leaflet-control-layers:not(.leaflet-control-layers-expanded) {
+    width: unset;
+    height: unset;
+}
+.leaflet-control-layers-toggle {
+    width: 30px !important;
+    height: 30px !important;
+}
 
 .leaflet-control-edit-markers {
     cursor: pointer !important;
@@ -276,4 +284,23 @@ input.is-invalid {
 .dark-mode {
     filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg)
         saturate(0.3) brightness(0.7);
+}
+.leaflet-control-filter {
+    background: #fff;
+}
+.leaflet-control-filter.expanded {
+    padding: 6px 10px 6px 6px;
+}
+.leaflet-control-filter:not(.expanded) > .leaflet-control-filter-list {
+    display: none;
+}
+.leaflet-control-filter.expanded > .leaflet-control-filter-icon {
+    display: none;
+}
+.leaflet-control-filter .task-list-item > * {
+    cursor: pointer;
+}
+
+.leaflet-control-filter ul {
+    margin: 0;
 }

@@ -101,9 +101,19 @@ export interface IMarkerIcon {
 }
 
 export interface ILayerGroup {
+    /** Layer group containing the marker layer groups */
     group: L.LayerGroup;
+
+    /** Marker type layer groups (used to filter out marker types) */
+    markers: { [type: string]: L.LayerGroup };
+
+    /** Actual rendered map layer */
     layer: L.TileLayer | L.ImageOverlay;
+
+    /** Reference ID */
     id: string;
+
+    /** Only used for image maps -> actual image map data as base64 */
     data: string;
 }
 

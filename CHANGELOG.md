@@ -1,57 +1,85 @@
 # Version History
+
+## 3.10.0
+
+-   Changed coordinate copy-to-clipboard from `[lat, lng]` to `lat, lng`
+-   Added "Show All Markers" and "Reset View" control buttons
+-   Added Filter Markers button that allows filtering by marker type (more filters to come, possibly)
+-   Moved Bulk Edit Markers to Top Right
+    -   Top Left -> View Controls
+    -   Top Right -> Layer controls (incl. markers)
+    -   Bottom Left -> Distance controls
+
 ## 3.9.2
--  In an effort to reduce notice spam, copying map/marker coordinates now must be done by <kbd>Ctrl</kbd> + <kbd>Shift</kbd>/<kbd>Alt</kbd>-clicking
+
+-   In an effort to reduce notice spam, copying map/marker coordinates now must be done by <kbd>Ctrl</kbd> + <kbd>Shift</kbd>/<kbd>Alt</kbd>-clicking
 
 ## 3.9.0
-- Added `darkMode` parameter to invert map colors
-- Added "Bulk Edit Markers" button to maps underneath the fullscreen control
-  - Adds a simple way to change the type, location, and link of all mutable markers defined on the map.
+
+-   Added `darkMode` parameter to invert map colors
+-   Added "Bulk Edit Markers" button to maps underneath the fullscreen control
+    -   Adds a simple way to change the type, location, and link of all mutable markers defined on the map.
+
 ## 3.8.3
 
-- Improved code structure
-- removed Notice of distance calculation
-- added control box in bottom-left corner that displays previously measured distance
-  - hovering the control box displays the previous distance line
-  - clicking the control box pans the map to fit the line
-- reduced number of decimals for distance display to 1
-- moved distance line tooltip to mouse cursor position
-- distance line tooltip is now always on top (no longer bounces around)
+-   Improved code structure
+-   removed Notice of distance calculation
+-   added control box in bottom-left corner that displays previously measured distance
+    -   hovering the control box displays the previous distance line
+    -   clicking the control box pans the map to fit the line
+-   reduced number of decimals for distance display to 1
+-   moved distance line tooltip to mouse cursor position
+-   distance line tooltip is now always on top (no longer bounces around)
+
 ## 3.8.0
-- Added fullscreen map button
-- Distance line now correctly snaps to markers
-- Fixed some issues related to escaping from the distance line
+
+-   Added fullscreen map button
+-   Distance line now correctly snaps to markers
+-   Fixed some issues related to escaping from the distance line
 
 ## 3.7.0
-- Removed some unnecessary map events
-- Removed requirement for `scale` parameter on real world maps. Supplying a unit will try to auto-convert.
-- Added `distanceMultiplier` parameter that will display an additional, multiplied distance value when calculating distance
-- Fixed issue where clicking on the map without a modifier key was displaying click coordinates
-- added distance line display to map, from original click -> mouse cursor, with real-time distance tooltip
-- distances are now displayed according to user's locale
-- distance lines can be aborted by pressing <kbd>Escape</kbd>
+
+-   Removed some unnecessary map events
+-   Removed requirement for `scale` parameter on real world maps. Supplying a unit will try to auto-convert.
+-   Added `distanceMultiplier` parameter that will display an additional, multiplied distance value when calculating distance
+-   Fixed issue where clicking on the map without a modifier key was displaying click coordinates
+-   added distance line display to map, from original click -> mouse cursor, with real-time distance tooltip
+-   distances are now displayed according to user's locale
+-   distance lines can be aborted by pressing <kbd>Escape</kbd>
+
 ## 3.6.0
-- Marker tooltips are now fully interactable (copy/paste, click)
-- Added ability to shift/alt click on map to display coordinates
-- Added setting toggle to copy location to clipboard on shift/alt click
+
+-   Marker tooltips are now fully interactable (copy/paste, click)
+-   Added ability to shift/alt click on map to display coordinates
+-   Added setting toggle to copy location to clipboard on shift/alt click
 
 ## 3.5.0
-- Added ability to <kbd>Shift</kbd>-click to display marker coordinates along with existing <kbd>Alt</kbd>-click functionality
-- Changed distance feature to use <kbd>Shift</kbd> or <kbd>Alt</kbd> instead of <kbd>Ctrl</kbd>
-- Added ability to calculate distances using markers
+
+-   Added ability to <kbd>Shift</kbd>-click to display marker coordinates along with existing <kbd>Alt</kbd>-click functionality
+-   Changed distance feature to use <kbd>Shift</kbd> or <kbd>Alt</kbd> instead of <kbd>Ctrl</kbd>
+-   Added ability to calculate distances using markers
 
 ## 3.4.0
-- Added explicit `commandMarker` and Command Marker toggles
-  - These are **required** if the marker is to execute a command
+
+-   Added explicit `commandMarker` and Command Marker toggles
+    -   These are **required** if the marker is to execute a command
+
 ## 3.3.0
-- Marker links may now be Obsidian commands
+
+-   Marker links may now be Obsidian commands
+
 ## 3.2.0
-- Added <kbd>Alt<kbd>-click on marker to reveal coordinates
+
+-   Added <kbd>Alt<kbd>-click on marker to reveal coordinates
+
 ## 3.1.0
-- Changed from `marker` to `mapmarker` for frontmatter tag
-  - `marker` will continue to work for a few releases
-  - Added change notice warning
-- Added `markerTag` parameter
-  - requires Dataview plugin
+
+-   Changed from `marker` to `mapmarker` for frontmatter tag
+    -   `marker` will continue to work for a few releases
+    -   Added change notice warning
+-   Added `markerTag` parameter
+    -   requires Dataview plugin
+
 ## 3.0.0
 
 ### New Features
