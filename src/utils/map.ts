@@ -766,7 +766,10 @@ class ZoomControl extends FontAwesomeControl {
                 ({ leafletInstance }) => leafletInstance
             )
         );
-
+        if (!group || !group.getLayers().length) {
+			this.leafletInstance.fitWorld();
+			return;
+		}
         this.leafletInstance.fitBounds(group.getBounds().pad(0.5), {
             maxZoom: this.map.zoom.default
         });
