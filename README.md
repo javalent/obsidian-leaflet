@@ -132,10 +132,6 @@ Additionally, markers can be created by dragging a note from the file tree and d
 
 Marker links can also be set to external websites. Clicking the marker will open the website.
 
-### Bulk Editing
-
-As of version 3.9.0, a bulk-edit button has been added to the map. Clicking this button will open a modal allowing for easy editing of all the mutable markers defined on the map.
-
 #### Obsidian Commands as Links
 
 Markers links can also be set to a defined Obsidian command from the command palette one of two ways.
@@ -157,6 +153,10 @@ Use `commandMarker:` instead of `marker:`
 ##### Created on Map
 
 Turning on the `Command Marker` toggle.
+
+### Bulk Editing
+
+As of version 3.9.0, a bulk-edit button has been added to the map. Clicking this button will open a modal allowing for easy editing of all the mutable markers defined on the map.
 
 ### Markers Defined in the Code Block
 
