@@ -2,7 +2,7 @@ import { LAT_LONG_DECIMALS } from "../utils/constants";
 import { icon } from "../utils/icons";
 import { getId, getImageDimensions } from "../utils";
 
-import { PathSuggestionModal } from "../modals";
+import { CommandSuggestionModal, PathSuggestionModal } from "../modals";
 
 import { Events, Modal, Notice, Setting, TextComponent } from "obsidian";
 import { IconName } from "@fortawesome/free-solid-svg-icons";
@@ -83,7 +83,7 @@ export class DistanceDisplay extends L.Control {
                     duration: 0.5,
                     easeLinearity: 0.1,
                     animate: true,
-                    padding: [3, 3]
+                    padding: [5, 5]
                 }
             );
         }
@@ -269,7 +269,8 @@ class EditMarkerControl extends FontAwesomeControl {
                             "",
                             getId(),
                             this.map.mapLayers[0].id,
-                            true
+                            true,
+                            false
                         );
                         this.display(markersEl);
                     });
@@ -330,12 +331,25 @@ class EditMarkerControl extends FontAwesomeControl {
                     };
                 })
                 .addText((t) => {
-                    let files = this.plugin.app.vault.getFiles();
-
-                    t.setPlaceholder("Path").setValue(marker.link);
-                    const modal = new PathSuggestionModal(this.plugin.app, t, [
-                        ...files
-                    ]);
+                    t.setPlaceholder("Path");
+                    let modal;
+                    if (marker.command) {
+                        const commands =
+                            this.plugin.app.commands.listCommands();
+                        t.setValue(
+                            this.plugin.app.commands.findCommand(marker.link)
+                                ?.name ?? "Command not found!"
+                        );
+                        modal = new CommandSuggestionModal(this.plugin.app, t, [
+                            ...commands
+                        ]);
+                    } else {
+                        t.setValue(marker.link);
+                        const files = this.plugin.app.vault.getFiles();
+                        modal = new PathSuggestionModal(this.plugin.app, t, [
+                            ...files
+                        ]);
+                    }
                     modal.onClose = () => {
                         marker.link = t.getValue();
                     };
@@ -468,7 +482,8 @@ class SimpleLeafletMap extends Events {
                 oldMarker.link,
                 oldMarker.id,
                 oldMarker.layer,
-                oldMarker.mutable
+                oldMarker.mutable,
+                oldMarker.command
             );
         }
     }
@@ -478,7 +493,8 @@ class SimpleLeafletMap extends Events {
         link: string | undefined = undefined,
         id: string,
         layer: string | undefined = undefined,
-        mutable: boolean
+        mutable: boolean,
+        command: boolean
     ) {
         const mapIcon = this.original.markerIcons.find(
             ({ type: t }) => t == type
@@ -492,7 +508,7 @@ class SimpleLeafletMap extends Events {
             icon: mapIcon,
             layer: layer,
             mutable: mutable,
-            command: false,
+            command: command,
             zoom: this.original.zoom.max
         });
 
@@ -592,9 +608,17 @@ class ZoomControl extends FontAwesomeControl {
             this.leafletInstance.fitWorld();
             return;
         }
-        this.leafletInstance.fitBounds(group.getBounds().pad(0.5), {
-            maxZoom: this.map.zoom.default
-        });
+        this.leafletInstance.fitBounds(
+            group.getBounds(),
+            {
+                maxZoom: this.leafletInstance.getBoundsZoom(group.getBounds())
+            } /* {
+            duration: 0.5,
+            easeLinearity: 0.1,
+            animate: true,
+            padding: [50, 50]
+        } */
+        );
     }
 }
 

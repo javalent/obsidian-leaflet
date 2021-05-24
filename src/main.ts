@@ -44,6 +44,7 @@ declare module "obsidian" {
         commands: {
             listCommands(): Command[];
             executeCommandById(id: string): void;
+            findCommand(id: string): Command;
             commands: { [id: string]: Command };
         };
         keymap: {

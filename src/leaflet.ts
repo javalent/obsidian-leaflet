@@ -395,14 +395,20 @@ class LeafletMap extends Events {
         command: boolean = false,
         zoom: number = this.zoom.max
     ): ILeafletMarker {
-        const mapIcon =
-            this.markerIcons.find(({ type }) => type == markerIcon?.type || "")
-                ?.icon ??
-            this.markerIcons.find(({ type }) => type === "default").icon;
+        let mapIcon = this.markerIcons.find(
+                ({ type }) => type === "default"
+            ).icon,
+            type = "default";
+        if (markerIcon && markerIcon.type) {
+            mapIcon = this.markerIcons.find(
+                ({ type }) => type == markerIcon.type ?? "default"
+            )?.icon;
+            type = markerIcon.type;
+        }
 
         const marker = new Marker({
             id: id,
-            type: markerIcon.type ?? "default",
+            type: type,
             loc: loc,
             link: link,
             icon: mapIcon,
