@@ -1,18 +1,20 @@
 import L from "leaflet";
 import { DivIcon } from "leaflet";
+import { Events } from "obsidian";
 import {
     DivIconMarkerOptions,
     ILayerGroup,
     ILeafletMapOptions,
     ILeafletMarker,
     IMarkerIcon,
+    ILeafletOverlay,
     MarkerDivIconOptions
 } from ".";
 import { ObsidianLeaflet } from "./main";
 
-declare class LeafletMap {
-    parentEl: HTMLElement;
+declare class LeafletMap extends Events {
     id: string;
+    /* containerEl: HTMLElement; */
     contentEl: HTMLElement;
     map: L.Map;
     markers: Marker[];
@@ -21,12 +23,15 @@ declare class LeafletMap {
     mapLayers: ILayerGroup[];
     layer: L.ImageOverlay | L.TileLayer;
     type: "image" | "real";
-    /* distanceEvent: L.LatLng | undefined;
-    distanceLine: L.Polyline; */
+
     plugin: ObsidianLeaflet;
     options: ILeafletMapOptions;
     initialCoords: [number, number];
     displaying: Set<string>;
+
+    isDrawing: boolean;
+
+    overlays: ILeafletOverlay[];
 
     constructor(
         plugin: ObsidianLeaflet,
@@ -46,10 +51,10 @@ declare class LeafletMap {
     get scale(): number;
 
     get CRS(): L.CRS;
-
+    get mutableMarkers(): Marker[];
     get isFullscreen(): boolean;
 
-    get isDrawingDistance(): boolean;
+    get defaultIcon(): IMarkerIcon;
 
     render(
         type: "real" | "image",
@@ -57,7 +62,7 @@ declare class LeafletMap {
             coords?: [number, number];
             layers?: { data: string; id: string }[];
         }
-    ): void;
+    ): Promise<void>;
 
     updateMarkerIcons(): void;
 
@@ -74,11 +79,14 @@ declare class LeafletMap {
         zoom?: number
     ): ILeafletMarker;
 
+    removeMarker(marker: Marker): void;
+
     loadData(data: any): Promise<void>;
 
     distance(latlng1: L.LatLng, latlng2: L.LatLng): string;
 
-    removeDistanceLine(): void;
+    stopDrawing(): void;
+    copyLatLngToClipboard(loc: L.LatLng): Promise<void>;
 
     openPopup(
         target: ILeafletMarker | L.LatLng,
@@ -128,7 +136,8 @@ declare class Marker {
     get type(): string;
     set type(x: string);
     set icon(x: IMarkerIcon);
-    static from(marker: Marker): Marker;
+    setLatLng(latlng: L.LatLng): void;
+    remove(): void;
 }
 
 declare class MarkerDivIcon extends DivIcon {

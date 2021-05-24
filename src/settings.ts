@@ -6,18 +6,18 @@ import {
     ButtonComponent
 } from "obsidian";
 import { parse as parseCSV, unparse as unparseCSV } from "papaparse";
+
 import {
     findIconDefinition,
     IconName,
     icon,
     getIcon,
     getId,
-    CreateMarkerModal,
+    iconNames,
     removeValidationError,
-    setValidationError,
-    IconSuggestionModal,
-    iconNames
+    setValidationError
 } from "./utils";
+import { CreateMarkerModal, IconSuggestionModal } from "./modals";
 
 import {
     IMapMarkerData,
@@ -468,7 +468,8 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                                 id: id,
                                 files: [],
                                 lastAccessed: Date.now(),
-                                markers: []
+                                markers: [],
+                                overlays: []
                             };
                             this.data.mapMarkers.push(map);
                         }

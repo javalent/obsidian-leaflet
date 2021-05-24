@@ -50,6 +50,31 @@ darkMode: true
 | markerFile    | Create immutable marker from a note's frontmatter                                    |                                            |
 | markerFolder  | Create immutable markers from _all_ of the notes in a given folder                   |                                            |
 | darkMode      | Invert map colors                                                                    |                                            |
+| overlay       | Add a circle overlay to the map                                                      |                                            |
+
+### YAML syntax
+
+As of version **3.11.0**, all parameters may be defined using YAML syntax instead of using multiple of the same tag. The original syntax will still work, but the two cannot be combined.
+
+For example:
+
+````
+```leaflet
+image:
+    - [[Image 1]]
+    - [[Image 2]]
+    - [[Image 3]]
+marker:
+    - [<type>, <lat>, <long>, <link>]
+    - [<type>, <lat>, <long>, <link>]
+```
+````
+
+#### Marker Tags in YAML
+
+YAML considers the `#` symbol to be a comment, so the `markerTag` parameter **cannot be defined using #**. Only the *name* of the tag may be specified.
+
+Additionally, `markerTag` groups are specified the same way as before - an *array* of tags means the note **must match both tags**, while *multiple `markerTag` parameters will match notes with any tag*. Please see [Marker Tags](README.md#Marker Tags) for more information.
 
 ## Map IDs
 
@@ -67,7 +92,7 @@ Image maps can be loaded one of three ways:
 
 1. Direct URL (e.g., https://i.imgur.com/jH8j3mJ.jpg)
 2. Obsidian URL (e.g., obsidian://open?vault=VaultName&file=Path/To/Image.jpg)
-3. Direct path to image (e.g., Path/To/Image.jpg)
+3. Obsidian wikilink of image (e.g., [[Image.jpg]])
 
 ### Multi-Image Maps
 
@@ -76,9 +101,10 @@ Images can be layered on top of each other by providing multiple images to the p
 ````markdown
 ```leaflet
 id: Map With Layered Images
-image: Image1.jpg
-image: Image2.jpg
-image: Image3.jpg
+image:
+    - [[Image1.jpg]]
+    - [[Image2.jpg]]
+    - [[Image3.jpg]]
 ```
 ````
 
@@ -246,6 +272,40 @@ would search for notes that
 
 1. Are in the folders People and Locations OR Interests/Maps of the World, AND
 2. Contain both tags #people AND #friends OR the tag #Paris
+
+## Overlays
+
+Overlays may be added to the map by <kbd>Shift</kbd>-right clicking, dragging the mouse to set the radius, and clicking again. Hitting <kbd>Escape</kbd> will cancel the drawing and remove the overlay.
+
+Additionally, overlays may be specified in the source block using the `overlay` parameter, as so:
+
+`overlay: [<color>, [<lat>, <long>], <radius>, <unit>]`
+OR
+`overlay: [<color>, [<lat>, <long>], <radius>, <unit>]`
+
+This will create a `<color>`-overlay circle centered at `<lat>, <long>`, with a radius `<radius>` in `<unit>`.
+
+Examples:
+
+````
+```leaflet
+overlay: [blue, [32, -89], 25, mi]
+```
+````
+
+````
+```leaflet
+overlay:
+  - [blue, [32, -89], 25, mi]
+  - [green, [32, -89], 50, mi]
+```
+````
+
+### Overlays using Note frontmatter
+
+Similarly to markers, overlays may be created from notes found using the `markerFile`, `markerFolder`, and `markerTag` parameters.
+
+The plugin will scan the frontmatter of the notes and generate an overlay from a frontmatter `mapoverlay` parameter, defined using the same syntax as above.
 
 ## Distances
 

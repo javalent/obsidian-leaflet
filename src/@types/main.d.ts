@@ -4,20 +4,15 @@ import {
     Plugin,
     Scope
 } from "obsidian";
-import {
-    IMapInterface,
-    IMarker,
-    IMarkerIcon,
-    IObsidianAppData
-} from ".";
-import { LeafletMap, Marker } from './map';
+import { IMapInterface, IMarker, IMarkerIcon, IObsidianAppData } from ".";
+import { LeafletMap, Marker } from "./map";
 
 declare class ObsidianLeaflet extends Plugin {
     AppData: IObsidianAppData;
     markerIcons: IMarkerIcon[];
     maps: IMapInterface[];
     mapFiles: { file: string; maps: string[] }[];
-    escapeScope: Scope;
+    /* escapeScope: Scope; */
     onload(): Promise<void>;
     onunload(): Promise<void>;
     postprocessor(
@@ -26,22 +21,20 @@ declare class ObsidianLeaflet extends Plugin {
         ctx: MarkdownPostProcessorContext
     ): Promise<void>;
 
-    getMarkersFromSource(
-        source: string
-    ): Promise<[string, number, number, string, string, boolean][]>;
-
-    getHeight(height: string): string;
+    /* getImmutableMarkers(
+        markers: string[],
+        commandMarkers: string[],
+        markerTags: string[][],
+        markerFiles: string[],
+        markerFolders: string[]
+    ): Promise<[string, number, number, string, string, boolean][]>; */
 
     loadSettings(): Promise<void>;
     saveSettings(): Promise<void>;
 
     generateMarkerMarkup(markers: IMarker[]): IMarkerIcon[];
 
-    registerMapEvents(map: LeafletMap, view: MarkdownView): void;
+    registerMapEvents(map: LeafletMap): void;
 
-    handleMarkerContext(
-        map: LeafletMap,
-        view: MarkdownView,
-        marker: Marker
-    ): void;
+    handleMarkerContext(map: LeafletMap, marker: Marker): void;
 }

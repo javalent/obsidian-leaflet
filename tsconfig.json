@@ -13,5 +13,5 @@
         "allowSyntheticDefaultImports": true,
         "lib": ["dom", "es5", "scripthost", "es2019"]
     },
-    "include": ["**/src/*", "**/utils/*"]
+    "include": ["**/src/*", "**/modals/*", "**/utils/*", "**/map/*"]
 }

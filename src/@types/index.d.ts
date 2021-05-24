@@ -41,6 +41,42 @@ export interface ILeafletMapOptions {
     tileServer?: string;
 }
 
+export interface IBlockParameters {
+    id?: string;
+    image?: string | string[];
+    layers?: string[];
+    marker?: string | string[];
+    commandMarker?: string | string[];
+    markerFolder?: string | string[];
+    markerFile?: string | string[];
+    markerTag?: string | string[][];
+    overlay?: Array<[string, [number, number], number, string]>;
+    height?: string;
+    minZoom?: number;
+    maxZoom?: number;
+    defaultZoom?: number;
+    zoomDelta?: number;
+    lat?: string;
+    long?: string;
+    scale?: number;
+    unit?: string;
+    distanceMultiplier?: number;
+    darkMode?: string;
+}
+export interface ILeafletOverlay {
+    leafletInstance: L.Circle;
+    layer: string;
+    data: IOverlayData;
+    mutable: boolean;
+}
+export interface IOverlayData {
+    radius: number;
+    loc: [number, number];
+    color: string;
+    layer: string;
+    unit: string;
+}
+
 export interface MarkerDivIconOptions extends L.DivIconOptions {
     data?: { [key: string]: string };
 }
@@ -79,20 +115,17 @@ export interface IMarkerData {
 
 export interface IMapInterface {
     map: LeafletMap;
-    path?: string;
-    file?: string;
-    view: MarkdownView;
     source: string;
     el: HTMLElement;
     id: string;
 }
 export interface IMapMarkerData {
     path?: string;
-    file?: string;
     files: string[];
     lastAccessed: number;
     id: string;
     markers: IMarkerData[];
+    overlays: IOverlayData[];
 }
 export interface IMarkerIcon {
     readonly type: string;
