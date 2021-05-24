@@ -275,7 +275,7 @@ would search for notes that
 
 ## Overlays
 
-Overlays may be added to the map by <kbd>Shift</kbd>-right clicking, dragging the mouse to set the radius, and clicking again. Hitting <kbd>Escape</kbd> will cancel the drawing and remove the overlay.
+Overlays may be added to the map by <kbd>Shift</kbd>-right clicking, dragging the mouse to set the radius, and clicking again. Hitting <kbd>Escape</kbd> will cancel the drawing and remove the overlay. Overlays added to the map in this manner are saved to the map instance just like the markers, and will be recreated when the map is re-opened.
 
 Additionally, overlays may be specified in the source block using the `overlay` parameter, as so:
 
@@ -300,6 +300,9 @@ overlay:
   - [green, [32, -89], 50, mi]
 ```
 ````
+### Editing the Overlay
+
+The overlay radius and color may be changed, or the overlay removed, by right-clicking on the overlay.
 
 ### Overlays using Note frontmatter
 
