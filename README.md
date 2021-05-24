@@ -74,7 +74,7 @@ marker:
 
 YAML considers the `#` symbol to be a comment, so the `markerTag` parameter **cannot be defined using #**. Only the *name* of the tag may be specified.
 
-Additionally, `markerTag` groups are specified the same way as before - an *array* of tags means the note **must match both tags**, while *multiple `markerTag` parameters will match notes with any tag*. Please see [Marker Tags](README.md#Marker Tags) for more information.
+Additionally, `markerTag` groups are specified the same way as before - an *array* of tags means the note **must match both tags**, while *multiple `markerTag` parameters will match notes with any tag*. Please see [Marker Tags](https://github.com/valentine195/obsidian-leaflet-plugin#marker-tags) for more information.
 
 ## Map IDs
 
@@ -275,7 +275,7 @@ would search for notes that
 
 ## Overlays
 
-Overlays may be added to the map by <kbd>Shift</kbd>-right clicking, dragging the mouse to set the radius, and clicking again. Hitting <kbd>Escape</kbd> will cancel the drawing and remove the overlay.
+Overlays may be added to the map by <kbd>Shift</kbd>-right clicking, dragging the mouse to set the radius, and clicking again. Hitting <kbd>Escape</kbd> will cancel the drawing and remove the overlay. Overlays added to the map in this manner are saved to the map instance just like the markers, and will be recreated when the map is re-opened.
 
 Additionally, overlays may be specified in the source block using the `overlay` parameter, as so:
 
@@ -300,6 +300,9 @@ overlay:
   - [green, [32, -89], 50, mi]
 ```
 ````
+### Editing the Overlay
+
+The overlay radius and color may be changed, or the overlay removed, by right-clicking on the overlay.
 
 ### Overlays using Note frontmatter
 
