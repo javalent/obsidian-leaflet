@@ -74,7 +74,7 @@ marker:
 
 YAML considers the `#` symbol to be a comment, so the `markerTag` parameter **cannot be defined using #**. Only the *name* of the tag may be specified.
 
-Additionally, `markerTag` groups are specified the same way as before - an *array* of tags means the note **must match both tags**, while *multiple `markerTag` parameters will match notes with any tag*. Please see [Marker Tags](README.md#Marker Tags) for more information.
+Additionally, `markerTag` groups are specified the same way as before - an *array* of tags means the note **must match both tags**, while *multiple `markerTag` parameters will match notes with any tag*. Please see [Marker Tags](#Marker Tags) for more information.
 
 ## Map IDs
 
