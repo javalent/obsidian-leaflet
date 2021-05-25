@@ -258,7 +258,7 @@ export default class ObsidianLeaflet extends Plugin {
         } catch (e) {
             err = true;
         }
-        
+
         if (err || isNaN(coords[0]) || isNaN(coords[1])) {
             new Notice(
                 "There was an error with the provided latitude and longitude. Using defaults."
@@ -283,7 +283,7 @@ export default class ObsidianLeaflet extends Plugin {
             if (!long || isNaN(coords[1])) {
                 coords[1] = 50;
             }
-    
+
             layerData = await Promise.all(
                 layers.map(async (image) => {
                     return {
@@ -305,7 +305,6 @@ export default class ObsidianLeaflet extends Plugin {
             if (!long || isNaN(coords[1])) {
                 coords[1] = this.AppData.long;
             }
-            
         }
 
         this.registerMapEvents(map);
