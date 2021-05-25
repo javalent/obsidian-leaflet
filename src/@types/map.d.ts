@@ -57,8 +57,8 @@ declare class LeafletMap extends Events {
     get defaultIcon(): IMarkerIcon;
 
     render(
-        type: "real" | "image",
-        options?: {
+        /* type: "real" | "image",
+         */options?: {
             coords?: [number, number];
             layers?: { data: string; id: string }[];
         }

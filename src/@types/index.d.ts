@@ -29,6 +29,7 @@ export type Length = GetAliases<UnitFamilies.Length>;
 /** Leaflet Interfaces */
 
 export interface ILeafletMapOptions {
+    type?: "image" | "real";
     id?: string;
     minZoom?: number;
     maxZoom?: number;

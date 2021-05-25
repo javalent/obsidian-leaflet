@@ -125,7 +125,7 @@ export default class ObsidianLeaflet extends Plugin {
         el: HTMLElement,
         ctx: MarkdownPostProcessorContext
     ): Promise<void> {
-        /* try { */
+        try {
         /** Get Parameters from Source */
         let params = getParamsFromSource(source);
         let {
@@ -186,6 +186,7 @@ export default class ObsidianLeaflet extends Plugin {
             });
         }
         const renderer = new LeafletRenderer(this, ctx.sourcePath, el, {
+            type: image != "real" ? "image" : "real",
             minZoom: +minZoom,
             maxZoom: +maxZoom,
             defaultZoom: +defaultZoom,
@@ -309,7 +310,7 @@ export default class ObsidianLeaflet extends Plugin {
 
         this.registerMapEvents(map);
 
-        map.render(image != "real" ? "image" : "real", {
+        map.render({
             coords: coords,
             layer: layerData[0],
             hasAdditional: layerData.length > 1
@@ -343,7 +344,7 @@ export default class ObsidianLeaflet extends Plugin {
 
         await this.saveSettings();
 
-        /* } catch (e) {
+        } catch (e) {
             console.error(e);
             new Notice("There was an error loading the map.");
             let newPre = createEl("pre");
@@ -351,7 +352,7 @@ export default class ObsidianLeaflet extends Plugin {
                 code.innerText = `\`\`\`leaflet\n${e.message}\n${source}\`\`\``;
                 el.parentElement.replaceChild(newPre, el);
             });
-        } */
+        }
     }
 
     async loadSettings() {

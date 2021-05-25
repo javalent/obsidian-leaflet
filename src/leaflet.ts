@@ -3,104 +3,104 @@ import "leaflet/dist/leaflet.css";
 import convert from "convert";
 import "leaflet-fullscreen";
 import {
-	Events,
-	Notice,
-	moment,
-	Menu,
-	Point,
-	MarkdownRenderChild,
-	TFile,
-	Scope,
+    Events,
+    Notice,
+    moment,
+    Menu,
+    Point,
+    MarkdownRenderChild,
+    TFile,
+    Scope
 } from "obsidian";
 
 import {
-	ILayerGroup,
-	ILeafletMapOptions,
-	ILeafletMarker,
-	IMarkerData,
-	IMarkerIcon,
-	IObsidianAppData,
-	Length,
-	ObsidianLeaflet,
-	Marker as MarkerDefinition,
-	IOverlayData,
+    ILayerGroup,
+    ILeafletMapOptions,
+    ILeafletMarker,
+    IMarkerData,
+    IMarkerIcon,
+    IObsidianAppData,
+    Length,
+    ObsidianLeaflet,
+    Marker as MarkerDefinition,
+    IOverlayData
 } from "./@types";
 import {
-	getId,
-	getImageDimensions,
-	icon,
-	DISTANCE_DECIMALS,
-	LAT_LONG_DECIMALS,
-	DEFAULT_MAP_OPTIONS,
+    getId,
+    getImageDimensions,
+    icon,
+    DISTANCE_DECIMALS,
+    LAT_LONG_DECIMALS,
+    DEFAULT_MAP_OPTIONS
 } from "./utils";
 
 import {
-	DistanceDisplay,
-	distanceDisplay,
-	editMarkers,
-	filterMarkerControl,
-	Marker,
-	resetZoomControl,
-	zoomControl,
+    DistanceDisplay,
+    distanceDisplay,
+    editMarkers,
+    filterMarkerControl,
+    Marker,
+    resetZoomControl,
+    zoomControl
 } from "./map";
 import { ILeafletOverlay } from "./@types/";
 import { OverlayContextModal } from "./modals/context";
 declare module "leaflet" {
-	interface Map {
-		isFullscreen(): boolean;
-	}
+    interface Map {
+        isFullscreen(): boolean;
+    }
 }
 
 export class LeafletRenderer extends MarkdownRenderChild {
-	map: LeafletMap;
-	constructor(
-		public plugin: ObsidianLeaflet,
-		sourcePath: string,
-		container: HTMLElement,
-		options: ILeafletMapOptions = {}
-	) {
-		super(container);
-		this.map = new LeafletMap(plugin, options);
+    map: LeafletMap;
+    constructor(
+        public plugin: ObsidianLeaflet,
+        sourcePath: string,
+        container: HTMLElement,
+        options: ILeafletMapOptions = {}
+    ) {
+        super(container);
+        this.map = new LeafletMap(plugin, options);
 
-		this.register(async () => {
-			try {
-				this.map.remove();
-			} catch (e) {}
+        this.register(async () => {
+            try {
+                this.map.remove();
+            } catch (e) {}
 
-			let file = this.plugin.app.vault.getAbstractFileByPath(sourcePath);
-			if (!file || !(file instanceof TFile)) {
-				return;
-			}
-			let fileContent = await this.plugin.app.vault.read(file);
+            let file = this.plugin.app.vault.getAbstractFileByPath(sourcePath);
+            if (!file || !(file instanceof TFile)) {
+                return;
+            }
+            let fileContent = await this.plugin.app.vault.read(file);
 
-			let containsThisMap: boolean = false,
-				r = new RegExp(
-					`\`\`\`leaflet[\\s\\S]*?\\bid:(\\s?${this.map.id})\\b\\s*\\n[\\s\\S]*?\`\`\``,
-					"g"
-				);
-			containsThisMap = fileContent.match(r)?.length > 0 || false;
+            let containsThisMap: boolean = false,
+                r = new RegExp(
+                    `\`\`\`leaflet[\\s\\S]*?\\bid:(\\s?${this.map.id})\\b\\s*\\n[\\s\\S]*?\`\`\``,
+                    "g"
+                );
+            containsThisMap = fileContent.match(r)?.length > 0 || false;
 
-			if (!containsThisMap) {
-				//Block was deleted or id was changed
+            if (!containsThisMap) {
+                //Block was deleted or id was changed
 
-				let mapFile = this.plugin.mapFiles.find(
-					({ file: f }) => f === sourcePath
-				);
-				mapFile.maps = mapFile.maps.filter(
-					(mapId) => mapId != this.map.id
-				);
-			}
+                let mapFile = this.plugin.mapFiles.find(
+                    ({ file: f }) => f === sourcePath
+                );
+                mapFile.maps = mapFile.maps.filter(
+                    (mapId) => mapId != this.map.id
+                );
+            }
 
-			await this.plugin.saveSettings();
+            await this.plugin.saveSettings();
 
-			this.plugin.maps = this.plugin.maps.filter((m) => {
-				return m.map != this.map;
-			});
-		});
-	}
-	async onload() {
-		this.containerEl.appendChild(this.map.contentEl);
-	}
+            this.plugin.maps = this.plugin.maps.filter((m) => {
+                return m.map != this.map;
+            });
+        });
+    }
+    async onload() {
+        this.containerEl.appendChild(this.map.contentEl);
+    }
 }
 
 /**
@@ -180,6 +180,7 @@ class LeafletMap extends Events {
         this.options = Object.assign({}, DEFAULT_MAP_OPTIONS, options);
 
         this.id = this.options.id;
+        this.type = this.options.type;
 
         this.zoom = {
             min: this.options.minZoom,
@@ -264,16 +265,11 @@ class LeafletMap extends Events {
         return mult;
     }
 
-    async render(
-        type: "real" | "image",
-        options: {
-            coords: [number, number];
-            layer: { data: string; id: string };
-            hasAdditional?: boolean;
-        }
-    ) {
-        this.type = type;
-
+    async render(options: {
+        coords: [number, number];
+        layer: { data: string; id: string };
+        hasAdditional?: boolean;
+    }) {
         this.map = L.map(this.contentEl, {
             crs: this.CRS,
             maxZoom: this.zoom.max,
@@ -287,7 +283,9 @@ class LeafletMap extends Events {
         /** Get layers
          *  Returns TileLayer (real) or ImageOverlay (image)
          */
-        this.layer = await this._buildLayersForType(type, options.layer);
+        this.layer = await this._buildLayersForType(
+            /* this.type,  */ options.layer
+        );
 
         /** Render map */
         switch (this.type) {
@@ -625,11 +623,12 @@ class LeafletMap extends Events {
     }
 
     addOverlay(circle: IOverlayData, mutable = true) {
-        const radius =
-            convert(circle.radius)
-                .from((circle.unit as Length) ?? "m")
-                .to(this._unit as Length) / this.scale;
-
+        let radius = convert(circle.radius)
+            .from((circle.unit as Length) ?? "m")
+            .to(this.type == "image" ? this._unit : "m");
+        if (this.type == "image") {
+            radius = radius / this.scale;
+        }
         const leafletInstance = L.circle(L.latLng(circle.loc), {
             radius: radius,
             color: circle.color
@@ -784,10 +783,10 @@ class LeafletMap extends Events {
     }
 
     private async _buildLayersForType(
-        type: string,
+        /* type: string, */
         layer?: { data: string; id: string }
     ): Promise<L.TileLayer | L.ImageOverlay> {
-        if (type === "real") {
+        if (this.type === "real") {
             this.layer = L.tileLayer(this.tileServer, {
                 attribution:
                     '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -811,7 +810,7 @@ class LeafletMap extends Events {
                     markers: markerGroups
                 }
             ];
-        } else if (type === "image") {
+        } else if (this.type === "image") {
             this.map.on("baselayerchange", ({ layer }) => {
                 // need to do this to prevent panning animation for some reason
                 this.map.setMaxBounds([undefined, undefined]);

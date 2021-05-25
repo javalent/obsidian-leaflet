@@ -3,6 +3,7 @@ import { ILeafletMapOptions, IObsidianAppData } from "src/@types";
 export const LAT_LONG_DECIMALS = 4;
 export const DISTANCE_DECIMALS = 1;
 export const DEFAULT_MAP_OPTIONS: ILeafletMapOptions = {
+    type: "real",
     minZoom: 1,
     maxZoom: 10,
     defaultZoom: 1,
