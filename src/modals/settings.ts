@@ -1,15 +1,14 @@
 import { App, ButtonComponent, Modal, Setting, TextComponent } from "obsidian";
 import { IMarker, ObsidianLeaflet } from "../@types";
 import {
-    AbstractElement,
     findIconDefinition,
     getIcon,
+    getMarkerIcon,
     icon,
     IconName,
     iconNames,
     removeValidationError,
     setValidationError,
-    toHtml
 } from "../utils";
 import { IconSuggestionModal } from "./icon";
 
@@ -17,6 +16,7 @@ export class CreateMarkerModal extends Modal {
     marker: IMarker;
     tempMarker: IMarker;
     plugin: ObsidianLeaflet;
+    canvas: HTMLCanvasElement;
     constructor(app: App, plugin: ObsidianLeaflet, marker: IMarker) {
         super(app);
         this.marker = marker;
@@ -42,7 +42,9 @@ export class CreateMarkerModal extends Modal {
         let iconDisplay = iconDisplayAndSettings.createDiv();
 
         let typeTextInput: TextComponent;
-        let markerName = new Setting(iconSettings)
+        let markerName = new Setting(
+            this.tempMarker.isImage ? createNewMarker : iconSettings
+        )
             .setName("Marker Name")
             .addText((text) => {
                 typeTextInput = text
@@ -77,12 +79,14 @@ export class CreateMarkerModal extends Modal {
             });
 
         let iconTextInput: TextComponent;
-        let iconName = new Setting(iconSettings)
+        let iconName = new Setting(
+            this.tempMarker.isImage ? createNewMarker : iconSettings
+        )
             .setName("Marker Icon")
             .setDesc("Font Awesome icon name (e.g. map-marker).")
             .addText((text) => {
                 text.setPlaceholder("Icon Name").setValue(
-                    this.tempMarker.iconName ? this.tempMarker.iconName : ""
+                    !this.tempMarker.isImage ? this.tempMarker.iconName : ""
                 );
 
                 const validate = async () => {
@@ -110,6 +114,8 @@ export class CreateMarkerModal extends Modal {
 
                     removeValidationError(text);
                     this.tempMarker.iconName = new_value;
+                    this.tempMarker.isImage = false;
+                    delete this.tempMarker.imageUrl;
 
                     await this.plugin.saveSettings();
 
@@ -129,202 +135,282 @@ export class CreateMarkerModal extends Modal {
                 iconTextInput = text;
             });
 
-        if (this.tempMarker.iconName) {
-            let iconNode: AbstractElement = icon(
-                getIcon(
-                    this.tempMarker.layer
-                        ? this.data.defaultMarker.iconName
-                        : this.tempMarker.iconName
-                ),
-                {
-                    classes: ["full-width-height"]
-                }
-            ).abstract[0];
+        const input = createEl("input", {
+            attr: {
+                type: "file",
+                name: "image",
+                accept: "image/*"
+            }
+        });
+        new Setting(this.tempMarker.isImage ? createNewMarker : iconSettings)
+            .setName("Use Image for Icon")
+            .addButton((b) => {
+                b.setButtonText("Upload Image").setTooltip("Upload Image");
+                b.buttonEl.addClass("leaflet-file-upload");
+                b.buttonEl.appendChild(input);
+                b.onClick(() => input.click());
+            });
 
-            iconNode.attributes = {
-                ...iconNode.attributes,
-                style: `color: ${this.tempMarker.color}`
-            };
-            //let marker = iconDisplay;
-            let iconDisplayHeight =
-                markerName.settingEl.getBoundingClientRect().height +
-                iconName.settingEl.getBoundingClientRect().height;
-            iconDisplay.setAttribute(
-                "style",
-                `height: ${iconDisplayHeight}px; padding: 1rem; position: relative;`
-            );
-            iconDisplay.innerHTML = toHtml(iconNode);
+        /** Image Uploader */
+        input.onchange = async () => {
+            const { files } = input;
 
-            if (this.tempMarker.layer) {
-                let iconOverlay = icon(getIcon(this.tempMarker.iconName), {
-                    transform: this.tempMarker.transform
-                }).node[0].children[0] as SVGGraphicsElement;
-                let iconPath = iconOverlay.getElementsByTagName("path")[0];
+            if (!files.length) return;
 
-                let fill = this.getFillColor(this.modalEl);
-
-                iconPath.setAttribute("fill", fill[0]);
-                iconPath.setAttribute("fill-opacity", `1`);
-                iconPath.setAttribute("stroke-width", "1px");
-                iconPath.setAttribute("stroke", "black");
-                iconPath.setAttribute("stroke-dasharray", "50,50");
-
-                let transformSource = iconOverlay
-                    .children[0] as SVGGraphicsElement;
-                let svgElement = iconDisplay.getElementsByTagName("svg")[0],
-                    xPath = document.createElementNS(
-                        "http://www.w3.org/2000/svg",
-                        "path"
-                    ),
-                    yPath = document.createElementNS(
-                        "http://www.w3.org/2000/svg",
-                        "path"
-                    );
-
-                xPath.setAttribute("stroke", "red");
-                xPath.setAttribute("stroke-width", "0");
-                xPath.setAttribute("d", "M192,0 L192,512");
-
-                yPath.setAttribute("stroke", "red");
-                yPath.setAttribute("stroke-width", "0");
-                yPath.setAttribute("d", "M0,256 L384,256");
-
-                svgElement.appendChild(xPath);
-                svgElement.appendChild(yPath);
-                let units = {
-                    width: 512 / 16,
-                    height: 512 / 16
-                };
-
-                svgElement.appendChild(iconOverlay);
-
-                /** Fix x/y positioning due to different icon sizes */
-                iconOverlay.transform.baseVal.getItem(0).setTranslate(192, 256);
-
-                let clickedOn: boolean = false,
-                    offset: { x: number; y: number } = { x: 0, y: 0 },
-                    transform: SVGTransform;
-
-                this.plugin.registerDomEvent(
-                    iconOverlay as unknown as HTMLElement,
-                    "mousedown",
-                    (evt) => {
-                        let CTM = svgElement.getScreenCTM();
-                        offset = {
-                            x: (evt.clientX - CTM.e) / CTM.a,
-                            y: (evt.clientY - CTM.f) / CTM.d
-                        };
-
-                        let transforms = transformSource.transform.baseVal;
-                        if (
-                            transforms.numberOfItems === 0 ||
-                            transforms.getItem(0).type !=
-                                SVGTransform.SVG_TRANSFORM_TRANSLATE
-                        ) {
-                            let translate = svgElement.createSVGTransform();
-                            translate.setTranslate(0, 0);
-                            // Add the translation to the front of the transforms list
-                            transformSource.transform.baseVal.insertItemBefore(
-                                translate,
-                                0
-                            );
+            const image = files[0];
+            const reader = new FileReader();
+            reader.onloadend = (evt) => {
+                var image = new Image();
+                image.onload = () => {
+                    // Resize the image
+                    const canvas = (this.canvas = createEl("canvas")),
+                        max_size = 24;
+                    let width = image.width,
+                        height = image.height;
+                    if (width > height) {
+                        if (width > max_size) {
+                            height *= max_size / width;
+                            width = max_size;
                         }
-
-                        transform = transforms.getItem(0);
-                        offset.x -= transform.matrix.e;
-                        offset.y -= transform.matrix.f;
-
-                        clickedOn = true;
+                    } else {
+                        if (height > max_size) {
+                            width *= max_size / height;
+                            height = max_size;
+                        }
                     }
+                    canvas.width = width;
+                    canvas.height = height;
+                    canvas
+                        .getContext("2d")
+                        .drawImage(image, 0, 0, width, height);
+
+                    this.tempMarker.isImage = true;
+                    this.tempMarker.imageUrl = canvas.toDataURL("image/jpeg");
+
+                    this.display();
+                };
+                image.src = evt.target.result.toString();
+            };
+            reader.readAsDataURL(image);
+
+            input.value = null;
+        };
+
+        if (!this.tempMarker.isImage) {
+            if (this.tempMarker.iconName) {
+                
+                const params =
+                    this.tempMarker.layer && !this.data.defaultMarker.isImage
+                        ? {
+                              transform: this.tempMarker.transform,
+                              mask: getIcon(this.data.defaultMarker.iconName),
+                              classes: ["full-width-height"]
+                          }
+                        : { classes: ["full-width-height"] };
+                let node = getMarkerIcon(this.tempMarker, params)
+                    .node as HTMLElement;
+                node.style.color = this.tempMarker.color
+                    ? this.tempMarker.color
+                    : this.data.defaultMarker.color;
+                //let marker = iconDisplay;
+                let iconDisplayHeight =
+                    markerName.settingEl.getBoundingClientRect().height +
+                    iconName.settingEl.getBoundingClientRect().height;
+                iconDisplay.setAttribute(
+                    "style",
+                    `height: ${iconDisplayHeight}px; padding: 1rem; position: relative;`
                 );
-                this.plugin.registerDomEvent(
-                    this.containerEl,
-                    "mouseup",
-                    (evt) => {
-                        offset = { x: 0, y: 0 };
-                        xPath.setAttribute("stroke-width", "0");
-                        yPath.setAttribute("stroke-width", "0");
-                        clickedOn = false;
-                    }
-                );
-                this.plugin.registerDomEvent(
-                    iconOverlay as unknown as HTMLElement,
-                    "mousemove",
-                    (evt) => {
-                        if (clickedOn) {
-                            evt.preventDefault();
+                iconDisplay.appendChild(node);
+
+                if (this.tempMarker.layer) {
+                    let iconOverlay = icon(getIcon(this.tempMarker.iconName), {
+                        transform: this.tempMarker.transform
+                    }).node[0].children[0] as SVGGraphicsElement;
+                    let iconPath = iconOverlay.getElementsByTagName("path")[0];
+
+                    let fill = this.getFillColor(this.modalEl);
+
+                    iconPath.setAttribute("fill", fill[0]);
+                    iconPath.setAttribute("fill-opacity", `1`);
+                    iconPath.setAttribute("stroke-width", "1px");
+                    iconPath.setAttribute("stroke", "black");
+                    iconPath.setAttribute("stroke-dasharray", "50,50");
+
+                    let transformSource = iconOverlay
+                        .children[0] as SVGGraphicsElement;
+                    let svgElement = iconDisplay.getElementsByTagName("svg")[0],
+                        xPath = document.createElementNS(
+                            "http://www.w3.org/2000/svg",
+                            "path"
+                        ),
+                        yPath = document.createElementNS(
+                            "http://www.w3.org/2000/svg",
+                            "path"
+                        );
+
+                    xPath.setAttribute("stroke", "red");
+                    xPath.setAttribute("stroke-width", "0");
+                    xPath.setAttribute("d", "M192,0 L192,512");
+
+                    yPath.setAttribute("stroke", "red");
+                    yPath.setAttribute("stroke-width", "0");
+                    yPath.setAttribute("d", "M0,256 L384,256");
+
+                    svgElement.appendChild(xPath);
+                    svgElement.appendChild(yPath);
+                    let units = {
+                        width: 512 / 16,
+                        height: 512 / 16
+                    };
+
+                    svgElement.appendChild(iconOverlay);
+
+                    /** Fix x/y positioning due to different icon sizes */
+                    iconOverlay.transform.baseVal
+                        .getItem(0)
+                        .setTranslate(192, 256);
+
+                    let clickedOn: boolean = false,
+                        offset: { x: number; y: number } = { x: 0, y: 0 },
+                        transform: SVGTransform;
+
+                    this.plugin.registerDomEvent(
+                        iconOverlay as unknown as HTMLElement,
+                        "mousedown",
+                        (evt) => {
                             let CTM = svgElement.getScreenCTM();
-                            let coords = {
+                            offset = {
                                 x: (evt.clientX - CTM.e) / CTM.a,
                                 y: (evt.clientY - CTM.f) / CTM.d
                             };
 
-                            //snap to x/y
-                            let x = coords.x - offset.x,
-                                y = coords.y - offset.y;
-                            if (Math.abs(x) <= 32 && evt.shiftKey) {
-                                xPath.setAttribute("stroke-width", "8");
-                                x = 0;
-                            } else {
-                                xPath.setAttribute("stroke-width", "0");
-                            }
-                            if (Math.abs(y) <= 32 && evt.shiftKey) {
-                                yPath.setAttribute("stroke-width", "8");
-                                y = 0;
-                            } else {
-                                yPath.setAttribute("stroke-width", "0");
+                            let transforms = transformSource.transform.baseVal;
+                            if (
+                                transforms.numberOfItems === 0 ||
+                                transforms.getItem(0).type !=
+                                    SVGTransform.SVG_TRANSFORM_TRANSLATE
+                            ) {
+                                let translate = svgElement.createSVGTransform();
+                                translate.setTranslate(0, 0);
+                                // Add the translation to the front of the transforms list
+                                transformSource.transform.baseVal.insertItemBefore(
+                                    translate,
+                                    0
+                                );
                             }
 
-                            transform.setTranslate(x, y);
+                            transform = transforms.getItem(0);
+                            offset.x -= transform.matrix.e;
+                            offset.y -= transform.matrix.f;
 
-                            this.tempMarker.transform.x =
-                                transform.matrix.e / units.width;
-                            this.tempMarker.transform.y =
-                                transform.matrix.f / units.height;
+                            clickedOn = true;
                         }
-                    }
-                );
-            }
-        }
+                    );
+                    this.plugin.registerDomEvent(
+                        this.containerEl,
+                        "mouseup",
+                        (evt) => {
+                            offset = { x: 0, y: 0 };
+                            xPath.setAttribute("stroke-width", "0");
+                            yPath.setAttribute("stroke-width", "0");
+                            clickedOn = false;
+                        }
+                    );
+                    this.plugin.registerDomEvent(
+                        iconOverlay as unknown as HTMLElement,
+                        "mousemove",
+                        (evt) => {
+                            if (clickedOn) {
+                                evt.preventDefault();
+                                let CTM = svgElement.getScreenCTM();
+                                let coords = {
+                                    x: (evt.clientX - CTM.e) / CTM.a,
+                                    y: (evt.clientY - CTM.f) / CTM.d
+                                };
 
-        new Setting(createNewMarker)
-            .setName("Layer Icon")
-            .setDesc("The icon will be layered on the base icon, if any.")
-            .addToggle((toggle) => {
-                toggle.setValue(this.tempMarker.layer).onChange((v) => {
-                    this.tempMarker.layer = v;
-                    this.display();
+                                //snap to x/y
+                                let x = coords.x - offset.x,
+                                    y = coords.y - offset.y;
+                                if (Math.abs(x) <= 32 && evt.shiftKey) {
+                                    xPath.setAttribute("stroke-width", "8");
+                                    x = 0;
+                                } else {
+                                    xPath.setAttribute("stroke-width", "0");
+                                }
+                                if (Math.abs(y) <= 32 && evt.shiftKey) {
+                                    yPath.setAttribute("stroke-width", "8");
+                                    y = 0;
+                                } else {
+                                    yPath.setAttribute("stroke-width", "0");
+                                }
+
+                                transform.setTranslate(x, y);
+
+                                this.tempMarker.transform.x =
+                                    transform.matrix.e / units.width;
+                                this.tempMarker.transform.y =
+                                    transform.matrix.f / units.height;
+                            }
+                        }
+                    );
+                }
+            }
+
+            new Setting(createNewMarker)
+                .setName("Layer Icon")
+                .setDesc("The icon will be layered on the base icon, if any.")
+                .addToggle((toggle) => {
+                    toggle.setValue(this.tempMarker.layer).onChange((v) => {
+                        this.tempMarker.layer = v;
+                        this.display();
+                    });
+                    if (this.data.defaultMarker.iconName == null) {
+                        toggle
+                            .setDisabled(true)
+                            .setTooltip(
+                                "Add a base marker to layer this icon."
+                            );
+                    }
                 });
-                if (this.data.defaultMarker.iconName == null) {
-                    toggle
-                        .setDisabled(true)
-                        .setTooltip("Add a base marker to layer this icon.");
+            let colorInput = new Setting(createNewMarker)
+                .setName("Icon Color")
+                .setDesc("Override default icon color.");
+            let colorInputNode = colorInput.controlEl.createEl("input", {
+                attr: {
+                    type: "color",
+                    value: this.tempMarker.color
                 }
             });
-        let colorInput = new Setting(createNewMarker)
-            .setName("Icon Color")
-            .setDesc("Override default icon color.");
-        let colorInputNode = colorInput.controlEl.createEl("input", {
-            attr: {
-                type: "color",
-                value: this.tempMarker.color
-            }
-        });
-        colorInputNode.oninput = (evt) => {
-            this.tempMarker.color = (evt.target as HTMLInputElement).value;
+            colorInputNode.oninput = (evt) => {
+                this.tempMarker.color = (evt.target as HTMLInputElement).value;
 
-            iconDisplay.children[0].setAttribute(
-                "style",
-                `color: ${this.tempMarker.color}`
-            );
-        };
-        colorInputNode.onchange = async (evt) => {
-            this.tempMarker.color = (evt.target as HTMLInputElement).value;
+                iconDisplay.children[0].setAttribute(
+                    "style",
+                    `color: ${this.tempMarker.color}`
+                );
+            };
+            colorInputNode.onchange = async (evt) => {
+                this.tempMarker.color = (evt.target as HTMLInputElement).value;
 
-            this.display();
-        };
+                this.display();
+            };
+        }
 
         let add = new Setting(createNewMarker);
+
+        if (this.tempMarker.isImage) {
+            if (!this.canvas) {
+                this.canvas = createEl("canvas");
+                let image = new Image();
+                image.src = this.tempMarker.imageUrl;
+                this.canvas.width = image.width;
+                this.canvas.height = image.height;
+                this.canvas
+                    .getContext("2d")
+                    .drawImage(image, 0, 0, image.width, image.height);
+            }
+            add.infoEl.appendChild(this.canvas);
+        }
 
         add.addButton((button: ButtonComponent): ButtonComponent => {
             let b = button.setTooltip("Save").onClick(async () => {
@@ -354,13 +440,14 @@ export class CreateMarkerModal extends Modal {
                     !findIconDefinition({
                         iconName: iconTextInput.inputEl.value as IconName,
                         prefix: "fas"
-                    })
+                    }) &&
+                    !this.tempMarker.isImage
                 ) {
                     setValidationError(iconTextInput, "Invalid icon name.");
                     error = true;
                 }
 
-                if (!this.tempMarker.iconName) {
+                if (!this.tempMarker.iconName && !this.tempMarker.isImage) {
                     setValidationError(iconTextInput, "Icon cannot be empty.");
                     error = true;
                 }
@@ -374,6 +461,8 @@ export class CreateMarkerModal extends Modal {
                 this.marker.color = this.tempMarker.color;
                 this.marker.layer = this.tempMarker.layer;
                 this.marker.transform = this.tempMarker.transform;
+                this.marker.isImage = this.tempMarker.isImage;
+                this.marker.imageUrl = this.tempMarker.imageUrl;
 
                 this.close();
             });

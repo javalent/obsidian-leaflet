@@ -27,7 +27,7 @@ declare class LeafletMap extends Events {
     plugin: ObsidianLeaflet;
     options: ILeafletMapOptions;
     initialCoords: [number, number];
-    displaying: Set<string>;
+    displaying: Map<string, boolean>;
 
     isDrawing: boolean;
 
@@ -64,7 +64,7 @@ declare class LeafletMap extends Events {
         }
     ): Promise<void>;
 
-    updateMarkerIcons(): void;
+    updateMarkerIcons(newIcons: IMarkerIcon[]): void;
 
     addMarker(markerToBeAdded: ILeafletMarker): void;
 

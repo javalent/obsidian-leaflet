@@ -87,7 +87,9 @@ export interface DivIconMarkerOptions extends L.MarkerOptions {
 
 export interface IMarker {
     type: string;
-    iconName: string;
+    iconName?: string;
+    isImage?: boolean;
+    imageUrl?: string;
     color?: string;
     layer?: boolean;
     transform?: { size: number; x: number; y: number };

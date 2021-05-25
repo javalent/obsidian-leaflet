@@ -1,5 +1,4 @@
 import {
-    addIcon,
     Notice,
     MarkdownView,
     MarkdownPostProcessorContext,
@@ -13,15 +12,13 @@ import "./main.css";
 
 import { ObsidianLeafletSettingTab } from "./settings";
 import {
-    AbstractElement,
-    icon,
-    toHtml,
     getIcon,
     DEFAULT_SETTINGS,
     toDataURL,
     getHeight,
     getParamsFromSource,
-    getImmutableMarkers
+    getImmutableMarkers,
+    getMarkerIcon
 } from "./utils";
 import {
     IMapInterface,
@@ -35,10 +32,10 @@ import {
 } from "./@types";
 import { MarkerContextModal } from "./modals";
 
-import { /* LeafletMap, */ LeafletRenderer } from "./leaflet";
+import { LeafletRenderer } from "./leaflet";
 import { markerDivIcon } from "./map";
 
-//add commands to app
+//add commands to app interface
 declare module "obsidian" {
     interface App {
         commands: {
@@ -430,14 +427,10 @@ export default class ObsidianLeaflet extends Plugin {
 
         await this.saveData(this.AppData);
 
-        this.AppData.markerIcons.forEach((marker) => {
-            addIcon(marker.type, icon(getIcon(marker.iconName)).html[0]);
-        });
-
         this.markerIcons = this.generateMarkerMarkup(this.AppData.markerIcons);
 
         this.maps.forEach((map) => {
-            map.map.updateMarkerIcons();
+            map.map.updateMarkerIcons(this.markerIcons);
         });
     }
 
@@ -451,46 +444,34 @@ export default class ObsidianLeaflet extends Plugin {
             if (!marker.iconName) {
                 marker.iconName = this.AppData.defaultMarker.iconName;
             }
-            let html: string, iconNode: AbstractElement;
-
-            if (this.AppData.layerMarkers && marker.layer) {
-                iconNode = icon(getIcon(marker.iconName), {
-                    transform: marker.transform,
-                    mask: getIcon(this.AppData.defaultMarker.iconName),
-                    classes: ["full-width-height"]
-                }).abstract[0];
-            } else {
-                iconNode = icon(getIcon(marker.iconName), {
-                    classes: ["full-width-height"]
-                }).abstract[0];
-            }
-
-            iconNode.attributes = {
-                ...iconNode.attributes,
-                style: `color: ${
-                    marker.color
-                        ? marker.color
-                        : this.AppData.defaultMarker.color
-                }`
-            };
-
-            html = toHtml(iconNode);
+            const params =
+                marker.layer && !this.AppData.defaultMarker.isImage
+                    ? {
+                          transform: marker.transform,
+                          mask: getIcon(this.AppData.defaultMarker.iconName),
+                          classes: ["full-width-height"]
+                      }
+                    : {};
+            let node = getMarkerIcon(marker, params).node as HTMLElement;
+            node.style.color = marker.color
+                ? marker.color
+                : this.AppData.defaultMarker.color;
 
             return {
                 type: marker.type,
-                html: html,
+                html: node.outerHTML,
                 icon: markerDivIcon({
-                    html: html,
+                    html: node.outerHTML,
                     className: `leaflet-div-icon`
                 })
             };
         });
-        const defaultHtml = icon(getIcon(this.AppData.defaultMarker.iconName), {
+        const defaultHtml = getMarkerIcon(this.AppData.defaultMarker, {
             classes: ["full-width-height"],
             styles: {
                 color: this.AppData.defaultMarker.color
             }
-        }).html[0];
+        }).html;
         ret.unshift({
             type: "default",
             html: defaultHtml,
@@ -785,7 +766,10 @@ export default class ObsidianLeaflet extends Plugin {
             } else {
                 [map, ...otherMaps.map((m) => m.map)].forEach((map) => {
                     map.displaying.delete(marker.type);
-                    map.displaying.add(markerSettingsModal.tempMarker.type);
+                    map.displaying.set(
+                        markerSettingsModal.tempMarker.type,
+                        true
+                    );
                 });
                 markersToUpdate.forEach((m) => {
                     m.link = markerSettingsModal.tempMarker.link;

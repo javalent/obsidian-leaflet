@@ -1,16 +1,10 @@
-import { Modal, App, Setting, TextComponent } from "obsidian";
+import { Modal, Setting, TextComponent } from "obsidian";
 
-import { ObsidianLeaflet, LeafletMap, IOverlayData } from "../@types";
-import { Marker } from "../@types";
+import { ObsidianLeaflet, LeafletMap, IOverlayData, Marker } from "../@types";
 
 import { PathSuggestionModal } from "./path";
 import { CommandSuggestionModal } from "./command";
-import {
-    findIconDefinition,
-    icon,
-    removeValidationError,
-    setValidationError
-} from "src/utils";
+import { removeValidationError, setValidationError } from "src/utils";
 
 export class MarkerContextModal extends Modal {
     deleted: boolean = false;

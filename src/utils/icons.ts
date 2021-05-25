@@ -5,9 +5,9 @@ import {
     findIconDefinition,
     icon,
     library,
-    AbstractElement,
-    toHtml
+    IconParams
 } from "@fortawesome/fontawesome-svg-core";
+import { IMarker } from "src/@types";
 
 library.add(fas);
 
@@ -21,12 +21,34 @@ export function getIcon(iconName: string): IconDefinition {
     });
 }
 
-export {
-    fas,
-    icon,
-    findIconDefinition,
-    IconDefinition,
-    IconName,
-    AbstractElement,
-    toHtml
-};
+interface IInternalMarkerIcon {
+    html: string;
+    node: Element;
+}
+
+export function getMarkerIcon(
+    marker: IMarker,
+    params?: IconParams
+): IInternalMarkerIcon {
+    if (!marker) return null;
+
+    if (marker.isImage) {
+        let element = new Image();
+        element.src = marker.imageUrl;
+
+        const ret = {
+            html: element.outerHTML,
+            node: element
+        };
+
+        return ret;
+    }
+
+    const i = icon(getIcon(marker.iconName), params);
+    return {
+        html: i.html[0],
+        node: i.node[0]
+    };
+}
+
+export { fas, icon, findIconDefinition, IconDefinition, IconName };

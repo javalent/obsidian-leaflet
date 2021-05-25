@@ -128,10 +128,12 @@ class LeafletMap extends Events {
     type: "image" | "real";
     initialCoords: [number, number];
     tileServer: string;
-    displaying: Set<string> = new Set();
+    displaying: Map<string, boolean> = new Map();
     isDrawing: boolean = false;
 
     overlays: ILeafletOverlay[] = [];
+
+    markerIcons: IMarkerIcon[];
 
     private _resize: ResizeObserver;
     private _unit: Length = "m";
@@ -170,6 +172,8 @@ class LeafletMap extends Events {
         super();
 
         this.plugin = plugin;
+
+        this.markerIcons = plugin.markerIcons;
 
         this.contentEl = createDiv();
 
@@ -212,9 +216,9 @@ class LeafletMap extends Events {
         return;
     }
 
-    get markerIcons() {
+    /* get markerIcons() {
         return this.plugin.markerIcons;
-    }
+    } */
     get markerTypes() {
         return this.markerIcons.map(({ type }) => type);
     }
@@ -317,7 +321,7 @@ class LeafletMap extends Events {
                     layer.markers[marker.type] || layer.markers["default"];
                 markerGroup.addLayer(marker.leafletInstance);
 
-                this.displaying.add(marker.type);
+                this.displaying.set(marker.type, true);
             });
 
         /** Add Overlays to map */
@@ -346,22 +350,40 @@ class LeafletMap extends Events {
 
         this.group.markers[marker.type].removeLayer(marker.leafletInstance);
 
-        this.displaying.delete(marker.type);
-
         this.markers = this.markers.filter(({ id }) => id != marker.id);
     }
 
-    updateMarkerIcons() {
+    updateMarkerIcons(newIcons: IMarkerIcon[]) {
+        /** Add New Marker Types To Filter List */
+        newIcons.forEach(({ type }) => {
+            if (!this.markerIcons.find((icon) => icon.type == type)) {
+                this.displaying.set(type, true);
+                this.group.markers[type] = L.layerGroup();
+            }
+        });
+        this.markerIcons = newIcons;
+
         this.markers.forEach((marker) => {
             let icon =
                 this.markerIcons.find((icon) => icon.type == marker.type) ??
                 this.defaultIcon;
             marker.icon = icon;
         });
-        /** Sync Marker Types to Displaying */
-        this.displaying.forEach((type) => {
+        /** Remove Old Marker Types From Filter List */
+        [...this.displaying].forEach(([type]) => {
             if (this.markerTypes.includes(type)) return;
             this.displaying.delete(type);
+
+            if (!this.group.markers.default) {
+                this.group.markers.default = L.layerGroup();
+                this.displaying.set("default", true);
+                this.group.markers.default.addTo(this.group.group);
+            }
+            this.group.markers[type]
+                .getLayers()
+                .forEach((layer) => this.group.markers.default.addLayer(layer));
+
+            delete this.group.markers[type];
         });
     }
     addMarker(markerToBeAdded: ILeafletMarker) {
@@ -399,6 +421,7 @@ class LeafletMap extends Events {
                 ({ type }) => type === "default"
             ).icon,
             type = "default";
+
         if (markerIcon && markerIcon.type) {
             mapIcon = this.markerIcons.find(
                 ({ type }) => type == markerIcon.type ?? "default"
@@ -427,8 +450,8 @@ class LeafletMap extends Events {
     private _pushMarker(marker: Marker) {
         this._bindMarkerEvents(marker);
         if (this.rendered) {
+            this.displaying.set(marker.type, true);
             this.group.markers[marker.type].addLayer(marker.leafletInstance);
-            this.displaying.add(marker.type);
             marker.leafletInstance.closeTooltip();
         }
         this.markers.push(marker);

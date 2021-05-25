@@ -686,7 +686,7 @@ class FilterMarkers extends FontAwesomeControl {
             this
         );
     }
-    expand() {
+    private expand() {
         this.update();
 
         L.DomUtil.addClass(this.controlEl, "expanded");
@@ -710,11 +710,11 @@ class FilterMarkers extends FontAwesomeControl {
         return this;
     }
 
-    collapse() {
+    private collapse() {
         L.DomUtil.removeClass(this.controlEl, "expanded");
         return this;
     }
-    update() {
+    private update() {
         this.section.empty();
 
         const ul = this.section.createEl("ul", "contains-task-list");
@@ -730,7 +730,7 @@ class FilterMarkers extends FontAwesomeControl {
                 const input = li.createEl("input", {
                     attr: {
                         id: "leaflet-control-filter-item-label-" + id,
-                        ...(this.map.displaying.has(type) && {
+                        ...(this.map.displaying.get(type) && {
                             checked: true
                         })
                     },
@@ -757,10 +757,10 @@ class FilterMarkers extends FontAwesomeControl {
     ) {
         if (!target.checked) {
             //remove
-            this.map.displaying.delete(type);
+            this.map.displaying.set(type, false);
             this.map.group.markers[type].remove();
         } else {
-            this.map.displaying.add(type);
+            this.map.displaying.set(type, true);
             this.map.group.markers[type].addTo(this.leafletInstance);
         }
 
