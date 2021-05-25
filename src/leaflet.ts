@@ -3,104 +3,104 @@ import "leaflet/dist/leaflet.css";
 import convert from "convert";
 import "leaflet-fullscreen";
 import {
-    Events,
-    Notice,
-    moment,
-    Menu,
-    Point,
-    MarkdownRenderChild,
-    TFile,
-    Scope
+	Events,
+	Notice,
+	moment,
+	Menu,
+	Point,
+	MarkdownRenderChild,
+	TFile,
+	Scope,
 } from "obsidian";
 
 import {
-    ILayerGroup,
-    ILeafletMapOptions,
-    ILeafletMarker,
-    IMarkerData,
-    IMarkerIcon,
-    IObsidianAppData,
-    Length,
-    ObsidianLeaflet,
-    Marker as MarkerDefinition,
-    IOverlayData
+	ILayerGroup,
+	ILeafletMapOptions,
+	ILeafletMarker,
+	IMarkerData,
+	IMarkerIcon,
+	IObsidianAppData,
+	Length,
+	ObsidianLeaflet,
+	Marker as MarkerDefinition,
+	IOverlayData,
 } from "./@types";
 import {
-    getId,
-    getImageDimensions,
-    icon,
-    DISTANCE_DECIMALS,
-    LAT_LONG_DECIMALS,
-    DEFAULT_MAP_OPTIONS
+	getId,
+	getImageDimensions,
+	icon,
+	DISTANCE_DECIMALS,
+	LAT_LONG_DECIMALS,
+	DEFAULT_MAP_OPTIONS,
 } from "./utils";
 
 import {
-    DistanceDisplay,
-    distanceDisplay,
-    editMarkers,
-    filterMarkerControl,
-    Marker,
-    resetZoomControl,
-    zoomControl
+	DistanceDisplay,
+	distanceDisplay,
+	editMarkers,
+	filterMarkerControl,
+	Marker,
+	resetZoomControl,
+	zoomControl,
 } from "./map";
 import { ILeafletOverlay } from "./@types/";
 import { OverlayContextModal } from "./modals/context";
 declare module "leaflet" {
-    interface Map {
-        isFullscreen(): boolean;
-    }
+	interface Map {
+		isFullscreen(): boolean;
+	}
 }
 
 export class LeafletRenderer extends MarkdownRenderChild {
-    map: LeafletMap;
-    constructor(
-        public plugin: ObsidianLeaflet,
-        sourcePath: string,
-        container: HTMLElement,
-        options: ILeafletMapOptions = {}
-    ) {
-        super(container);
-        this.map = new LeafletMap(plugin, options);
+	map: LeafletMap;
+	constructor(
+		public plugin: ObsidianLeaflet,
+		sourcePath: string,
+		container: HTMLElement,
+		options: ILeafletMapOptions = {}
+	) {
+		super(container);
+		this.map = new LeafletMap(plugin, options);
 
-        this.register(async () => {
-            try {
-                this.map.remove();
-            } catch (e) {}
+		this.register(async () => {
+			try {
+				this.map.remove();
+			} catch (e) {}
 
-            let file = this.plugin.app.vault.getAbstractFileByPath(sourcePath);
-            if (!file || !(file instanceof TFile)) {
-                return;
-            }
-            let fileContent = await this.plugin.app.vault.read(file);
+			let file = this.plugin.app.vault.getAbstractFileByPath(sourcePath);
+			if (!file || !(file instanceof TFile)) {
+				return;
+			}
+			let fileContent = await this.plugin.app.vault.read(file);
 
-            let containsThisMap: boolean = false,
-                r = new RegExp(
-                    `\`\`\`leaflet[\\s\\S]*?\\bid:(\\s?${this.map.id})\\b\\s*\\n[\\s\\S]*?\`\`\``,
-                    "g"
-                );
-            containsThisMap = fileContent.match(r)?.length > 0 || false;
+			let containsThisMap: boolean = false,
+				r = new RegExp(
+					`\`\`\`leaflet[\\s\\S]*?\\bid:(\\s?${this.map.id})\\b\\s*\\n[\\s\\S]*?\`\`\``,
+					"g"
+				);
+			containsThisMap = fileContent.match(r)?.length > 0 || false;
 
-            if (!containsThisMap) {
-                //Block was deleted or id was changed
+			if (!containsThisMap) {
+				//Block was deleted or id was changed
 
-                let mapFile = this.plugin.mapFiles.find(
-                    ({ file: f }) => f === sourcePath
-                );
-                mapFile.maps = mapFile.maps.filter(
-                    (mapId) => mapId != this.map.id
-                );
-            }
+				let mapFile = this.plugin.mapFiles.find(
+					({ file: f }) => f === sourcePath
+				);
+				mapFile.maps = mapFile.maps.filter(
+					(mapId) => mapId != this.map.id
+				);
+			}
 
-            await this.plugin.saveSettings();
+			await this.plugin.saveSettings();
 
-            this.plugin.maps = this.plugin.maps.filter((m) => {
-                return m.map != this.map;
-            });
-        });
-    }
-    async onload() {
-        this.containerEl.appendChild(this.map.contentEl);
-    }
+			this.plugin.maps = this.plugin.maps.filter((m) => {
+				return m.map != this.map;
+			});
+		});
+	}
+	async onload() {
+		this.containerEl.appendChild(this.map.contentEl);
+	}
 }
 
 /**

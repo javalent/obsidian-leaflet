@@ -248,16 +248,17 @@ export default class ObsidianLeaflet extends Plugin {
         map.contentEl.style.height = getHeight(view, height) ?? "500px";
         map.contentEl.style.width = "100%";
 
-        let coords: [number, number];
+        let coords: [number, number] = [undefined, undefined];
         let err: boolean = false;
         try {
             coords = [
-                Number(lat?.split("%").shift()),
-                Number(long?.split("%").shift())
+                Number(`${lat}`?.split("%").shift()),
+                Number(`${long}`?.split("%").shift())
             ];
         } catch (e) {
             err = true;
         }
+        
         if (err || isNaN(coords[0]) || isNaN(coords[1])) {
             new Notice(
                 "There was an error with the provided latitude and longitude. Using defaults."
@@ -282,7 +283,7 @@ export default class ObsidianLeaflet extends Plugin {
             if (!long || isNaN(coords[1])) {
                 coords[1] = 50;
             }
-            coords = [+lat, +long];
+    
             layerData = await Promise.all(
                 layers.map(async (image) => {
                     return {
@@ -304,7 +305,7 @@ export default class ObsidianLeaflet extends Plugin {
             if (!long || isNaN(coords[1])) {
                 coords[1] = this.AppData.long;
             }
-            //coords = [lat, long];
+            
         }
 
         this.registerMapEvents(map);
