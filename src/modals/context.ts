@@ -6,6 +6,8 @@ import { PathSuggestionModal } from "./path";
 import { CommandSuggestionModal } from "./command";
 import { removeValidationError, setValidationError } from "src/utils";
 
+import { DISTANCE_DECIMALS, UNIT_NAME_ALIASES } from "src/utils/constants";
+import convert from "convert";
 export class MarkerContextModal extends Modal {
     deleted: boolean = false;
     tempMarker: Marker;
@@ -56,7 +58,7 @@ export class MarkerContextModal extends Modal {
                         ...commands
                     ]);
 
-                    this.modal.onClose = async (item) => {
+                    this.modal.onClose = (item) => {
                         this.tempMarker.link = item.id;
                     };
 
@@ -153,12 +155,32 @@ export class OverlayContextModal extends Modal {
         this.contentEl.empty();
 
         let radiusInput: TextComponent;
+
+        let radius = convert(this.tempOverlay.radius)
+            .from(this.map.type == "image" ? this.map.unit : "m")
+            .to(this.tempOverlay.unit ?? "m");
+        if (this.map.type == "image") {
+            radius = radius * this.map.scale;
+        }
         new Setting(this.contentEl)
             .setName("Overlay Radius")
-            .setDesc("Circle radius in meters.")
+            .setDesc(
+                `Circle radius in ${
+                    UNIT_NAME_ALIASES[this.tempOverlay.unit] ?? "meters"
+                }.`
+            )
             .addText((t) => {
                 radiusInput = t;
-                t.setValue(`${this.tempOverlay.radius}`);
+                t.setValue(
+                    `${
+                        /* this.tempOverlay.radius */ radius.toLocaleString(
+                            this.map.locale,
+                            {
+                                maximumFractionDigits: DISTANCE_DECIMALS
+                            }
+                        )
+                    }`
+                );
                 t.inputEl.onblur = () => {
                     if (
                         isNaN(Number(t.inputEl.value)) &&
@@ -168,19 +190,43 @@ export class OverlayContextModal extends Modal {
                             radiusInput,
                             "Radius must be greater than 0."
                         );
-                        t.inputEl.value = `${this.tempOverlay.radius}`;
+                        t.inputEl.value = `${radius}`;
                         return;
                     }
                     removeValidationError(radiusInput);
-                    this.tempOverlay.radius = Number(t.inputEl.value);
+
+                    let newRadius = convert(Number(t.inputEl.value))
+                        .from(this.tempOverlay.unit ?? "m")
+                        .to(this.map.type == "image" ? this.map.unit : "m");
+                    if (this.map.type == "image") {
+                        newRadius = newRadius / this.map.scale;
+                    }
+
+                    this.tempOverlay.radius = Number(newRadius);
                 };
             });
 
+        const desc = new Setting(this.contentEl)
+            .setName("Overlay Description")
+            .addText((t) => {
+                t.setValue(this.tempOverlay.desc).onChange((v) => {
+                    this.tempOverlay.desc = v;
+                });
+            });
+
         const color = new Setting(this.contentEl).setName("Overlay Color");
+        /** convert color to hex */
+        let colorOfOverlay = this.tempOverlay.color;
+        if (!/#\w{3,6}/.test(colorOfOverlay)) {
+            const canvas = createEl("canvas");
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = colorOfOverlay;
+            colorOfOverlay = ctx.fillStyle;
+        }
         let colorInputNode = color.controlEl.createEl("input", {
             attr: {
                 type: "color",
-                value: this.tempOverlay.color
+                value: colorOfOverlay
             }
         });
         colorInputNode.oninput = (evt) => {

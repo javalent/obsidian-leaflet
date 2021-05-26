@@ -19,7 +19,6 @@ import {
     ILeafletMarker,
     IMarkerData,
     IMarkerIcon,
-    IObsidianAppData,
     Length,
     ObsidianLeaflet,
     Marker as MarkerDefinition,
@@ -31,7 +30,8 @@ import {
     icon,
     DISTANCE_DECIMALS,
     LAT_LONG_DECIMALS,
-    DEFAULT_MAP_OPTIONS
+    DEFAULT_MAP_OPTIONS,
+    BASE_POPUP_OPTIONS
 } from "./utils";
 
 import {
@@ -61,6 +61,10 @@ export class LeafletRenderer extends MarkdownRenderChild {
     ) {
         super(container);
         this.map = new LeafletMap(plugin, options);
+
+        this.containerEl.style.height = options.height;
+        this.containerEl.style.width = "100%";
+        this.containerEl.style.backgroundColor = "#ddd";
 
         this.register(async () => {
             try {
@@ -135,8 +139,9 @@ class LeafletMap extends Events {
 
     markerIcons: IMarkerIcon[];
 
+    unit: Length = "m";
+
     private _resize: ResizeObserver;
-    private _unit: Length = "m";
     private _distanceMultipler: number = 1;
     private _distanceEvent: L.LatLng | undefined = undefined;
     private _distanceLine: L.Polyline = L.polyline(
@@ -158,7 +163,7 @@ class LeafletMap extends Events {
         }
     );
     private _timeoutHandler: ReturnType<typeof setTimeout>;
-    private _popupTarget: ILeafletMarker | L.LatLng;
+    private _popupTarget: ILeafletMarker | ILeafletOverlay | L.LatLng;
     private _scale: number;
     private _hoveringOnMarker: boolean = false;
     private _distanceDisplay: DistanceDisplay;
@@ -176,7 +181,8 @@ class LeafletMap extends Events {
         this.markerIcons = plugin.markerIcons;
 
         this.contentEl = createDiv();
-
+        this.contentEl.style.height = options.height;
+        this.contentEl.style.width = "100%";
         this.options = Object.assign({}, DEFAULT_MAP_OPTIONS, options);
 
         this.id = this.options.id;
@@ -188,7 +194,7 @@ class LeafletMap extends Events {
             default: this.options.defaultZoom,
             delta: this.options.zoomDelta
         };
-        this._unit = this.options.unit as Length;
+        this.unit = this.options.unit as Length;
         this._scale = this.options.scale;
         this._distanceMultipler = this.options.distanceMultiplier;
 
@@ -230,7 +236,7 @@ class LeafletMap extends Events {
     get scale() {
         if (this.type !== "real") return this._scale;
 
-        return convert(1).from("m").to(this._unit);
+        return convert(1).from("m").to(this.unit);
     }
 
     get CRS() {
@@ -250,7 +256,7 @@ class LeafletMap extends Events {
         return this.map.isFullscreen();
     }
 
-    private get _locale() {
+    get locale() {
         return moment.locale();
     }
 
@@ -481,7 +487,7 @@ class LeafletMap extends Events {
 
     distance(latlng1: L.LatLng, latlng2: L.LatLng): string {
         const dist = this.map.distance(latlng1, latlng2);
-        let display = `${(dist * this.scale).toLocaleString(this._locale, {
+        let display = `${(dist * this.scale).toLocaleString(this.locale, {
             maximumFractionDigits: DISTANCE_DECIMALS
         })}`;
         if (this._distanceMultipler !== 1) {
@@ -489,11 +495,11 @@ class LeafletMap extends Events {
                 dist *
                 this.scale *
                 this._distanceMultipler
-            ).toLocaleString(this._locale, {
+            ).toLocaleString(this.locale, {
                 maximumFractionDigits: DISTANCE_DECIMALS
             })})`;
         }
-        return display + ` ${this._unit}`;
+        return display + ` ${this.unit}`;
     }
 
     stopDrawing() {
@@ -625,8 +631,8 @@ class LeafletMap extends Events {
     addOverlay(circle: IOverlayData, mutable = true) {
         let radius = convert(circle.radius)
             .from((circle.unit as Length) ?? "m")
-            .to(this.type == "image" ? this._unit : "m");
-        if (this.type == "image") {
+            .to(this.type == "image" ? this.unit : "m");
+        if (this.type == "image" && !mutable) {
             radius = radius / this.scale;
         }
         const leafletInstance = L.circle(L.latLng(circle.loc), {
@@ -637,7 +643,8 @@ class LeafletMap extends Events {
             leafletInstance: leafletInstance,
             layer: circle.layer,
             data: circle,
-            mutable: mutable
+            mutable: mutable,
+            radius: radius
         });
 
         if (this.rendered) {
@@ -658,9 +665,9 @@ class LeafletMap extends Events {
 
             this._tempCircle = L.circle(evt.latlng, {
                 radius: 1,
-                color: "blue"
+                color: this.options.overlayColor
             });
-            this.map.once("click", () => {
+            this.map.once("click", async () => {
                 this._tempCircle.remove();
 
                 const circle = L.circle(this._tempCircle.getLatLng(), {
@@ -671,17 +678,20 @@ class LeafletMap extends Events {
 
                 this._pushOverlay({
                     leafletInstance: circle,
+                    radius: circle.getRadius(),
                     layer: this.group.id,
                     data: {
                         radius: circle.getRadius(),
                         color: circle.options.color,
                         loc: [circle.getLatLng().lat, circle.getLatLng().lng],
                         layer: this.group.id,
-                        unit: this._unit
+                        unit: this.unit,
+                        desc: ""
                     },
                     mutable: true
                 });
                 this.stopDrawing();
+                await this.plugin.saveSettings();
             });
             this.map.on(
                 "mousemove",
@@ -926,9 +936,8 @@ class LeafletMap extends Events {
     }
 
     private _bindOverlayEvents(overlay: ILeafletOverlay) {
-        overlay.leafletInstance.on(
-            "contextmenu",
-            (evt: L.LeafletMouseEvent) => {
+        overlay.leafletInstance
+            .on("contextmenu", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
                 if (!overlay.mutable) {
                     new Notice(
@@ -950,22 +959,32 @@ class LeafletMap extends Events {
                         });
                         return;
                     }
+
+                    overlay.data.color = modal.tempOverlay.color;
+                    overlay.data.radius = modal.tempOverlay.radius;
+                    overlay.data.desc = modal.tempOverlay.desc;
+
                     overlay.leafletInstance.setRadius(overlay.data.radius);
                     overlay.leafletInstance.setStyle({
                         color: overlay.data.color
                     });
                 };
                 modal.open();
-            }
-        );
+            })
+            .on("mouseover", (evt: L.LeafletMouseEvent) => {
+                L.DomEvent.stopPropagation(evt);
+                if (overlay.data.desc) {
+                    this.openPopup(overlay, overlay.data.desc);
+                }
+            });
     }
 
-    private _bindMarkerEvents(marker: ILeafletMarker, mutable: boolean = true) {
+    private _bindMarkerEvents(marker: ILeafletMarker) {
         marker.leafletInstance
             .on("contextmenu", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
 
-                if (mutable) this.trigger("marker-context", marker);
+                if (marker.mutable) this.trigger("marker-context", marker);
                 else {
                     new Notice(
                         "This marker cannot be edited because it was defined in the code block."
@@ -1006,7 +1025,7 @@ class LeafletMap extends Events {
                         marker.command
                     );
                 } else {
-                    if (!mutable) {
+                    if (!marker.mutable) {
                         new Notice(
                             "This marker cannot be edited because it was defined in the code block."
                         );
@@ -1069,7 +1088,7 @@ class LeafletMap extends Events {
     }
 
     openPopup(
-        target: ILeafletMarker | L.LatLng,
+        target: ILeafletMarker | ILeafletOverlay | L.LatLng,
         content: ((source: L.Layer) => L.Content) | L.Content
     ) {
         if (this._timeoutHandler) {
@@ -1128,7 +1147,9 @@ class LeafletMap extends Events {
         popupElement.addEventListener("mouseenter", mouseOverHandler);
         popupElement.addEventListener("mouseleave", mouseOutHandler);
     }
-    private _getPopup(target: ILeafletMarker | L.LatLng): L.Popup {
+    private _getPopup(
+        target: ILeafletMarker | ILeafletOverlay | L.LatLng
+    ): L.Popup {
         if (this.popup.isOpen() && this._popupTarget == target) {
             return this.popup;
         }
@@ -1140,19 +1161,24 @@ class LeafletMap extends Events {
         }
         if (target instanceof L.LatLng) {
             return L.popup({
-                className: "leaflet-marker-link-popup",
-                autoClose: false,
-                closeButton: false,
-                closeOnClick: false,
-                autoPan: false
+                ...BASE_POPUP_OPTIONS
             }).setLatLng(target);
+        } else if (target.leafletInstance instanceof L.Circle) {
+            return L.popup({
+                ...BASE_POPUP_OPTIONS,
+                offset: new L.Point(
+                    0,
+                    (-1 *
+                        target.leafletInstance
+                            .getElement()
+                            .getBoundingClientRect().height) /
+                        2 +
+                        10 // not sure why circles have this extra padding..........
+                )
+            }).setLatLng(target.leafletInstance.getLatLng());
         } else {
             return L.popup({
-                className: "leaflet-marker-link-popup",
-                autoClose: false,
-                closeButton: false,
-                closeOnClick: false,
-                autoPan: false,
+                ...BASE_POPUP_OPTIONS,
                 offset: new L.Point(
                     0,
                     (-1 *
@@ -1161,7 +1187,7 @@ class LeafletMap extends Events {
                             .getBoundingClientRect().height) /
                         2
                 )
-            }).setLatLng(target.loc);
+            }).setLatLng(target.leafletInstance.getLatLng());
         }
     }
 

@@ -347,12 +347,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                         this.display();
                     })
                 );
-            /* let iconNode = icon(getIcon(marker.iconName), {
-                transform: marker.layer ? marker.transform : null,
-                mask: marker.layer
-                    ? getIcon(this.data.defaultMarker.iconName)
-                    : null
-            }).node[0]; */
+
             const params =
                 marker.layer && !this.data.defaultMarker.isImage
                     ? {

@@ -1,5 +1,4 @@
 import { allUnits, UnitFamilies } from "convert";
-import { MarkdownView } from "obsidian";
 import { DivIconMarker, MarkerDivIcon } from "./map";
 import { LeafletMap } from "./map";
 
@@ -29,6 +28,7 @@ export type Length = GetAliases<UnitFamilies.Length>;
 /** Leaflet Interfaces */
 
 export interface ILeafletMapOptions {
+    height?: string;
     type?: "image" | "real";
     id?: string;
     minZoom?: number;
@@ -40,6 +40,7 @@ export interface ILeafletMapOptions {
     distanceMultiplier?: number;
     darkMode?: boolean;
     tileServer?: string;
+    overlayColor?: string;
 }
 
 export interface IBlockParameters {
@@ -51,7 +52,9 @@ export interface IBlockParameters {
     markerFolder?: string | string[];
     markerFile?: string | string[];
     markerTag?: string | string[][];
-    overlay?: Array<[string, [number, number], number, string]>;
+    overlay?: Array<[string, [number, number], string]>;
+    overlayTag?: string;
+    overlayColor?: string;
     height?: string;
     minZoom?: number;
     maxZoom?: number;
@@ -69,13 +72,15 @@ export interface ILeafletOverlay {
     layer: string;
     data: IOverlayData;
     mutable: boolean;
+    radius: number;
 }
 export interface IOverlayData {
     radius: number;
     loc: [number, number];
     color: string;
     layer: string;
-    unit: string;
+    unit: Length;
+    desc: string;
 }
 
 export interface MarkerDivIconOptions extends L.DivIconOptions {

@@ -162,17 +162,19 @@ export function getHeight(view: MarkdownView, height: string): string {
     }
 }
 
-export async function getImmutableMarkers(
+export async function getImmutableItems(
     /* source: string */
     app: App,
     markers: string[],
     commandMarkers: string[],
     markerTags: string[][],
     markerFiles: string[],
-    markerFolders: string[]
+    markerFolders: string[],
+    overlayTag: string,
+    overlayColor: string
 ): Promise<{
     markers: [string, number, number, string, string, boolean][];
-    overlays: [string, [number, number], number, string][];
+    overlays: [string, [number, number], string, string][];
 }> {
     return new Promise(async (resolve, reject) => {
         let markersToReturn: [
@@ -183,7 +185,12 @@ export async function getImmutableMarkers(
                 string,
                 boolean
             ][] = [],
-            overlaysToReturn: [string, [number, number], number, string][] = [];
+            overlaysToReturn: [
+                string,
+                [number, number],
+                /* number,  */ string,
+                string
+            ][] = [];
 
         for (let marker of markers) {
             /* type, lat, long, link, layer, */
@@ -274,7 +281,7 @@ export async function getImmutableMarkers(
         }
         if (markerFiles.length || markerFolders.length || markerTags.length) {
             let files = new Set(markerFiles);
-            
+
             for (let path of markerFolders) {
                 let abstractFile = app.vault.getAbstractFileByPath(path);
                 if (!abstractFile) continue;
@@ -363,21 +370,60 @@ export async function getImmutableMarkers(
                     ]);
                 }
                 if (frontmatter.mapoverlay) {
+                    const match =
+                        frontmatter.mapoverlay.match(/^(\d+)\s?(\w*)/);
+                    if (!match) {
+                        new Notice(
+                            `Could not parse ${overlayTag} in ${file.name}. Please ensure it is in the format: <distance> <unit>`
+                        );
+                        continue;
+                    }
+
                     frontmatter.mapoverlay.forEach(
                         ([
-                            color = "blue",
+                            color = overlayColor ?? "blue",
                             loc = [0, 0],
-                            radius = 1,
-                            unit = "m"
+                            length = "1 m",
+                            desc
+                        ]: [
+                            color: string,
+                            loc: number[],
+                            length: string,
+                            desc: string
                         ]) => {
                             overlaysToReturn.push([
                                 color,
                                 loc as [number, number],
-                                radius,
-                                unit
+                                length,
+                                desc ?? `${file.basename} overlay`
                             ]);
                         }
                     );
+                }
+
+                if (
+                    Object.prototype.hasOwnProperty.call(
+                        frontmatter,
+                        overlayTag
+                    )
+                ) {
+                    const match =
+                        frontmatter[overlayTag].match(/^(\d+)\s?(\w*)/);
+                    if (!match) {
+                        new Notice(
+                            `Could not parse ${overlayTag} in ${file.name}. Please ensure it is in the format: <distance> <unit>`
+                        );
+                        continue;
+                    }
+                    overlaysToReturn.push([
+                        overlayColor,
+                        frontmatter.location,
+                        frontmatter[overlayTag],
+                        `${file.basename}: ${
+                            overlayTag[0].toUpperCase() +
+                            overlayTag.slice(1).toLowerCase()
+                        }`
+                    ]);
                 }
             }
         }
@@ -392,7 +438,7 @@ export async function getImmutableMarkers(
  * 3. Next, it pulls out markers defined in the source block. This is clunky to support previous version's syntax, but works.
  */
 export function getParamsFromSource(source: string): IBlockParameters {
-    let params: IBlockParameters;
+    let params: IBlockParameters = {};
     try {
         params = parseYaml(source);
     } catch (e) {
@@ -400,6 +446,7 @@ export function getParamsFromSource(source: string): IBlockParameters {
             source.split("\n").map((l) => l.split(/:\s?/))
         );
     } finally {
+        if (!params) params = {};
         let image = "real",
             layers: string[] = [];
 

@@ -17,7 +17,7 @@ import {
     toDataURL,
     getHeight,
     getParamsFromSource,
-    getImmutableMarkers,
+    getImmutableItems,
     getMarkerIcon
 } from "./utils";
 import {
@@ -28,7 +28,8 @@ import {
     IObsidianAppData,
     IMarker,
     Marker,
-    LeafletMap
+    LeafletMap,
+    Length
 } from "./@types";
 import { MarkerContextModal } from "./modals";
 
@@ -126,230 +127,240 @@ export default class ObsidianLeaflet extends Plugin {
         ctx: MarkdownPostProcessorContext
     ): Promise<void> {
         try {
-        /** Get Parameters from Source */
-        let params = getParamsFromSource(source);
-        let {
-            height = "500px",
-            minZoom = 1,
-            maxZoom = 10,
-            defaultZoom = 5,
-            zoomDelta = 1,
-            lat = `${this.AppData.lat}`,
-            long = `${this.AppData.long}`,
-            id = undefined,
-            scale = 1,
-            unit = "m",
-            distanceMultiplier = 1,
-            darkMode = "false",
-            image = "real",
-            layers = [],
-            overlay = []
-        } = params;
+            /** Get Parameters from Source */
+            let params = getParamsFromSource(source);
+            let {
+                height = "500px",
+                minZoom = 1,
+                maxZoom = 10,
+                defaultZoom = 5,
+                zoomDelta = 1,
+                lat = `${this.AppData.lat}`,
+                long = `${this.AppData.long}`,
+                id = undefined,
+                scale = 1,
+                unit = "m",
+                distanceMultiplier = 1,
+                darkMode = "false",
+                image = "real",
+                layers = [],
+                overlay = [],
+                overlayColor = "blue"
+            } = params;
 
-        if (!id) {
-            new Notice(
-                "As of version 3.0.0, Obsidian Leaflet maps must have an ID."
-            );
-            new Notice(
-                "All marker data associated with this map will sync to the new ID."
-            );
-            throw new Error("ID required");
-        }
-        let view = this.app.workspace.getActiveViewOfType(MarkdownView);
+            if (!id) {
+                new Notice(
+                    "As of version 3.0.0, Obsidian Leaflet maps must have an ID."
+                );
+                new Notice(
+                    "All marker data associated with this map will sync to the new ID."
+                );
+                throw new Error("ID required");
+            }
+            let view = this.app.workspace.getActiveViewOfType(MarkdownView);
 
-        /** Get Markers from Parameters */
+            /** Get Markers from Parameters */
 
-        /** Update Old Map Data Format */
-        if (
-            this.AppData.mapMarkers.find(
-                ({ path, id: mapId }) =>
-                    (path == `${ctx.sourcePath}/${image}` && !mapId) ||
-                    path == `${ctx.sourcePath}/${id}`
-            )
-        ) {
-            let data = this.AppData.mapMarkers.find(
-                ({ path }) =>
-                    path == `${ctx.sourcePath}/${image}` ||
-                    path == `${ctx.sourcePath}/${id}`
-            );
-            this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
-                (d) => d != data
-            );
+            /** Update Old Map Data Format */
+            if (
+                this.AppData.mapMarkers.find(
+                    ({ path, id: mapId }) =>
+                        (path == `${ctx.sourcePath}/${image}` && !mapId) ||
+                        path == `${ctx.sourcePath}/${id}`
+                )
+            ) {
+                let data = this.AppData.mapMarkers.find(
+                    ({ path }) =>
+                        path == `${ctx.sourcePath}/${image}` ||
+                        path == `${ctx.sourcePath}/${id}`
+                );
+                this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
+                    (d) => d != data
+                );
 
-            data.id = id;
-            this.AppData.mapMarkers.push({
-                id: data.id,
-                markers: data.markers,
-                files: [ctx.sourcePath],
-                lastAccessed: Date.now(),
-                overlays: data.overlays || []
+                data.id = id;
+                this.AppData.mapMarkers.push({
+                    id: data.id,
+                    markers: data.markers,
+                    files: [ctx.sourcePath],
+                    lastAccessed: Date.now(),
+                    overlays: data.overlays || []
+                });
+            }
+            const renderer = new LeafletRenderer(this, ctx.sourcePath, el, {
+                height: getHeight(view, height) ?? "500px",
+                type: image != "real" ? "image" : "real",
+                minZoom: +minZoom,
+                maxZoom: +maxZoom,
+                defaultZoom: +defaultZoom,
+                zoomDelta: +zoomDelta,
+                unit: unit,
+                scale: scale,
+                distanceMultiplier: distanceMultiplier,
+                id: id,
+                darkMode: darkMode === "true",
+                overlayColor: overlayColor
             });
-        }
-        const renderer = new LeafletRenderer(this, ctx.sourcePath, el, {
-            type: image != "real" ? "image" : "real",
-            minZoom: +minZoom,
-            maxZoom: +maxZoom,
-            defaultZoom: +defaultZoom,
-            zoomDelta: +zoomDelta,
-            unit: unit,
-            scale: scale,
-            distanceMultiplier: distanceMultiplier,
-            id: id,
-            darkMode: darkMode === "true"
-        });
-        const map = renderer.map;
+            const map = renderer.map;
 
-        let { markers: immutableMarkers, overlays: immutableOverlays } =
-            await getImmutableMarkers(
-                /* source */
-                this.app,
-                params.marker as string[],
-                params.commandMarker as string[],
-                params.markerTag as string[][],
-                params.markerFile as string[],
-                params.markerFolder as string[]
-            );
-        for (let [
-            type,
-            lat,
-            long,
-            link,
-            layer = layers[0],
-            command = false
-        ] of immutableMarkers) {
-            map.createMarker(
-                this.markerIcons.find(({ type: t }) => t == type),
-                latLng([Number(lat), Number(long)]),
-                link?.trim(),
-                undefined,
-                layer,
-                false,
-                command
-            );
-        }
-        for (let [color, loc, radius, unit = "m"] of [
-            ...overlay,
-            ...immutableOverlays
-        ]) {
-            map.addOverlay(
-                {
-                    radius: radius,
-                    loc: loc,
-                    color: color,
-                    unit: unit,
-                    layer: layers[0]
-                },
-                false
-            );
-        }
-
-        /**
-         * Set height of map element in pixels.
-         */
-        map.contentEl.style.height = getHeight(view, height) ?? "500px";
-        map.contentEl.style.width = "100%";
-
-        let coords: [number, number] = [undefined, undefined];
-        let err: boolean = false;
-        try {
-            coords = [
-                Number(`${lat}`?.split("%").shift()),
-                Number(`${long}`?.split("%").shift())
-            ];
-        } catch (e) {
-            err = true;
-        }
-
-        if (err || isNaN(coords[0]) || isNaN(coords[1])) {
-            new Notice(
-                "There was an error with the provided latitude and longitude. Using defaults."
-            );
-        }
-
-        let mapData = this.AppData.mapMarkers.find(
-            ({ id: mapId }) => mapId == id
-        );
-
-        await map.loadData(mapData);
-
-        let layerData: {
-            data: string;
-            id: string;
-        }[] = [];
-
-        if (image != "real") {
-            if (!lat || isNaN(coords[0])) {
-                coords[0] = 50;
+            let { markers: immutableMarkers, overlays: immutableOverlays } =
+                await getImmutableItems(
+                    /* source */
+                    this.app,
+                    params.marker as string[],
+                    params.commandMarker as string[],
+                    params.markerTag as string[][],
+                    params.markerFile as string[],
+                    params.markerFolder as string[],
+                    params.overlayTag,
+                    params.overlayColor
+                );
+            for (let [
+                type,
+                lat,
+                long,
+                link,
+                layer = layers[0],
+                command = false
+            ] of immutableMarkers) {
+                map.createMarker(
+                    this.markerIcons.find(({ type: t }) => t == type),
+                    latLng([Number(lat), Number(long)]),
+                    link?.trim(),
+                    undefined,
+                    layer,
+                    false,
+                    command
+                );
             }
-            if (!long || isNaN(coords[1])) {
-                coords[1] = 50;
+            for (let [color, loc, length, desc] of [
+                ...overlay,
+                ...immutableOverlays
+            ]) {
+                const match = length.match(/^(\d+)\s?(\w*)/);
+                if (!match || isNaN(Number(match[1]))) {
+                    throw new Error(
+                        "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`."
+                    );
+                }
+                const [, radius, unit = "m"] = match;
+                map.addOverlay(
+                    {
+                        radius: Number(radius),
+                        loc: loc,
+                        color: color,
+                        unit: unit as Length,
+                        layer: layers[0],
+                        desc: desc
+                    },
+                    false
+                );
             }
 
-            layerData = await Promise.all(
-                layers.map(async (image) => {
-                    return {
-                        id: image,
-                        data: await toDataURL(
-                            encodeURIComponent(image),
-                            this.app
-                        )
-                    };
-                })
+            let coords: [number, number] = [undefined, undefined];
+            let err: boolean = false;
+            try {
+                coords = [
+                    Number(`${lat}`?.split("%").shift()),
+                    Number(`${long}`?.split("%").shift())
+                ];
+            } catch (e) {
+                err = true;
+            }
+
+            if (err || isNaN(coords[0]) || isNaN(coords[1])) {
+                new Notice(
+                    "There was an error with the provided latitude and longitude. Using defaults."
+                );
+            }
+
+            let mapData = this.AppData.mapMarkers.find(
+                ({ id: mapId }) => mapId == id
             );
-            if (layerData.filter((d) => !d.data).length) {
-                throw new Error();
+
+            await map.loadData(mapData);
+
+            let layerData: {
+                data: string;
+                id: string;
+            }[] = [];
+
+            if (image != "real") {
+                if (!lat || isNaN(coords[0])) {
+                    coords[0] = 50;
+                }
+                if (!long || isNaN(coords[1])) {
+                    coords[1] = 50;
+                }
+
+                layerData = await Promise.all(
+                    layers.map(async (image) => {
+                        return {
+                            id: image,
+                            data: await toDataURL(
+                                encodeURIComponent(image),
+                                this.app
+                            )
+                        };
+                    })
+                );
+                if (layerData.filter((d) => !d.data).length) {
+                    throw new Error();
+                }
+            } else {
+                if (!lat || isNaN(coords[0])) {
+                    coords[0] = this.AppData.lat;
+                }
+                if (!long || isNaN(coords[1])) {
+                    coords[1] = this.AppData.long;
+                }
             }
-        } else {
-            if (!lat || isNaN(coords[0])) {
-                coords[0] = this.AppData.lat;
-            }
-            if (!long || isNaN(coords[1])) {
-                coords[1] = this.AppData.long;
-            }
-        }
 
-        this.registerMapEvents(map);
+            this.registerMapEvents(map);
 
-        map.render({
-            coords: coords,
-            layer: layerData[0],
-            hasAdditional: layerData.length > 1
-        });
-
-        ctx.addChild(renderer);
-
-        this.maps = this.maps.filter((m) => m.el != el);
-        this.maps.push({
-            map: map,
-            source: source,
-            el: el,
-            id: id
-        });
-
-        if (this.mapFiles.find(({ file }) => file == ctx.sourcePath)) {
-            this.mapFiles
-                .find(({ file }) => file == ctx.sourcePath)
-                .maps.push(id);
-        } else {
-            this.mapFiles.push({
-                file: ctx.sourcePath,
-                maps: [id]
+            map.render({
+                coords: coords,
+                layer: layerData[0],
+                hasAdditional: layerData.length > 1
             });
-        }
 
-        map.on("rendered", () => {
-            if (layerData.length > 1)
-                map.loadAdditionalMapLayers(layerData.slice(1));
-        });
+            ctx.addChild(renderer);
 
-        await this.saveSettings();
+            this.maps = this.maps.filter((m) => m.el != el);
+            this.maps.push({
+                map: map,
+                source: source,
+                el: el,
+                id: id
+            });
 
+            if (this.mapFiles.find(({ file }) => file == ctx.sourcePath)) {
+                this.mapFiles
+                    .find(({ file }) => file == ctx.sourcePath)
+                    .maps.push(id);
+            } else {
+                this.mapFiles.push({
+                    file: ctx.sourcePath,
+                    maps: [id]
+                });
+            }
+
+            map.on("rendered", () => {
+                if (layerData.length > 1)
+                    map.loadAdditionalMapLayers(layerData.slice(1));
+            });
+
+            await this.saveSettings();
         } catch (e) {
             console.error(e);
             new Notice("There was an error loading the map.");
             let newPre = createEl("pre");
             newPre.createEl("code", {}, (code) => {
-                code.innerText = `\`\`\`leaflet\n${e.message}\n${source}\`\`\``;
+                code.innerText = `\`\`\`leaflet
+There was an error rendering the map:
+
+${e.message}
+\`\`\``;
                 el.parentElement.replaceChild(newPre, el);
             });
         }
@@ -401,14 +412,15 @@ export default class ObsidianLeaflet extends Plugin {
                     .map((overlay) => {
                         if (overlay.leafletInstance instanceof Circle) {
                             return {
-                                radius: overlay.leafletInstance.getRadius(),
+                                radius: overlay.radius,
                                 loc: [
                                     overlay.leafletInstance.getLatLng().lat,
                                     overlay.leafletInstance.getLatLng().lng
                                 ],
                                 color: overlay.leafletInstance.options.color,
                                 layer: overlay.layer,
-                                unit: overlay.data.unit
+                                unit: overlay.data.unit,
+                                desc: overlay.data.desc
                             };
                         }
                     })
@@ -417,7 +429,7 @@ export default class ObsidianLeaflet extends Plugin {
 
         /** Only need to save maps with defined marker data */
         this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
-            ({ markers }) => markers.length > 0
+            ({ markers, overlays }) => markers.length > 0 || overlays.length > 0
         );
 
         /** Remove maps that haven't been accessed in more than 1 week that are not associated with a file */

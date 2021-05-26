@@ -185,7 +185,7 @@ export class CreateMarkerModal extends Modal {
                         .drawImage(image, 0, 0, width, height);
 
                     this.tempMarker.isImage = true;
-                    this.tempMarker.imageUrl = canvas.toDataURL("image/jpeg");
+                    this.tempMarker.imageUrl = canvas.toDataURL("image/png");
 
                     this.display();
                 };

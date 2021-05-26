@@ -1,5 +1,30 @@
 # Version History
 
+## 3.13.0
+
+-   Added overlay descriptions
+    -   Changed overlay syntax to `[<color>, <location>, <radius> <unit>, <description>]`
+-   Added `overlayTag` and `overlayColor` map block parameters
+-   Fixed issue where immutable markers would still launch the context modal
+-   Fixed issue where transparent images were not uploading correctly
+-   Fixed issue where a map with overlays but no markers would not save
+-   Fixed issue where overlays drawn directly on image maps would not re-render correctly
+-   Fixed issue where overlays defined with a non-hex color would display black in the color-picker
+-   Fixed issue where edited parameters in the overlay context menu were not correctly applied
+-   Overlay radiuses in the context menu now correctly display the radius in the correct unit
+-   Improved visual appearance of a loading map
+-   Improved documentation
+
+## 3.12.0
+
+-   Added ability to upload images to use as marker icons
+    -   Images will be resized to 24px wide maximum
+    -   Markers with image icons cannot be layered
+    -   If the default marker is set to an image, additional marker types cannot be layered
+-   Improved behavior of Filter Marker control box
+-   File upload buttons now respect theme CSS
+-   Fixed some bugs related to removing/adding marker types when maps are open
+
 ## 3.11.0
 
 -   Large codebase re-organization

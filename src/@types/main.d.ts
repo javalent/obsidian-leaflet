@@ -1,8 +1,6 @@
 import {
     MarkdownPostProcessorContext,
-    MarkdownView,
     Plugin,
-    Scope
 } from "obsidian";
 import { IMapInterface, IMarker, IMarkerIcon, IObsidianAppData } from ".";
 import { LeafletMap, Marker } from "./map";

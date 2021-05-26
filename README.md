@@ -72,9 +72,9 @@ marker:
 
 #### Marker Tags in YAML
 
-YAML considers the `#` symbol to be a comment, so the `markerTag` parameter **cannot be defined using #**. Only the *name* of the tag may be specified.
+YAML considers the `#` symbol to be a comment, so the `markerTag` parameter **cannot be defined using #**. Only the _name_ of the tag may be specified.
 
-Additionally, `markerTag` groups are specified the same way as before - an *array* of tags means the note **must match both tags**, while *multiple `markerTag` parameters will match notes with any tag*. Please see [Marker Tags](https://github.com/valentine195/obsidian-leaflet-plugin#marker-tags) for more information.
+Additionally, `markerTag` groups are specified the same way as before - an _array_ of tags means the note **must match both tags**, while _multiple `markerTag` parameters will match notes with any tag_. Please see [Marker Tags](https://github.com/valentine195/obsidian-leaflet-plugin#marker-tags) for more information.
 
 ## Map IDs
 
@@ -279,36 +279,74 @@ Overlays may be added to the map by <kbd>Shift</kbd>-right clicking, dragging th
 
 Additionally, overlays may be specified in the source block using the `overlay` parameter, as so:
 
-`overlay: [<color>, [<lat>, <long>], <radius>, <unit>]`
+`overlay: [<color>, [<lat>, <long>], <radius> <unit?>, <desc>]`
+
 OR
-`overlay: [<color>, [<lat>, <long>], <radius>, <unit>]`
+
+```
+overlay: 
+    - [<color>, [<lat>, <long>], <radius> <unit?>, <desc>]
+    - [<color>, [<lat>, <long>], <radius> <unit?>, <desc>]
+    ...
+```
 
 This will create a `<color>`-overlay circle centered at `<lat>, <long>`, with a radius `<radius>` in `<unit>`.
+
+> **Please Note**
+>
+> Overlays are drawn _in the order they are specified_. If a smaller overlay is obscured by a larger one, the smaller one will not be interactable.
+
+The `<color>` may be _any_ valid CSS color, including hexadecimals, `rgb()` and `hsl()`.
+
+Please note that due to the YAML syntax, strings starting with `#` and entries with commas must be enclosed in quotes.
 
 Examples:
 
 ````
 ```leaflet
-overlay: [blue, [32, -89], 25, mi]
+overlay: [blue, [32, -89], 25 mi, 'This is my overlay!']
 ```
 ````
 
 ````
 ```leaflet
 overlay:
-  - [blue, [32, -89], 25, mi]
-  - [green, [32, -89], 50, mi]
+  - ['rgb(255, 255, 0)', [32, -89], 25 km, 'This is also my overlay!']
+  - ['#00FF00', [32, -89], 500 ft, 'This is a third overlay!']
 ```
 ````
+
 ### Editing the Overlay
 
-The overlay radius and color may be changed, or the overlay removed, by right-clicking on the overlay.
+Overlays drawn directly on the map may be edited. The radius and color may be changed, or the overlay removed, by right-clicking on the overlay.
 
 ### Overlays using Note frontmatter
 
 Similarly to markers, overlays may be created from notes found using the `markerFile`, `markerFolder`, and `markerTag` parameters.
 
 The plugin will scan the frontmatter of the notes and generate an overlay from a frontmatter `mapoverlay` parameter, defined using the same syntax as above.
+
+### Overlay Tag 
+
+
+
+The overlay tag parameter can be used to auto-generate an overlay from a tag in a note's frontmatter.
+
+Example:
+
+````
+```leaflet
+overlayTag: nearby
+```
+````
+
+Note frontmatter:
+```
+nearby: 50 km
+```
+### Overlay Color
+
+The overlay color tag may be used to specify the default overlay color when drawing on the map or when using the overlay tag parameter.
 
 ## Distances
 

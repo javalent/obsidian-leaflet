@@ -1,3 +1,4 @@
+import { Length } from "convert/dist/types/units";
 import L from "leaflet";
 import { DivIcon } from "leaflet";
 import { Events } from "obsidian";
@@ -33,6 +34,10 @@ declare class LeafletMap extends Events {
 
     overlays: ILeafletOverlay[];
 
+    unit: Length;
+
+    locale: string;
+
     constructor(
         plugin: ObsidianLeaflet,
         el: HTMLElement,
@@ -58,7 +63,7 @@ declare class LeafletMap extends Events {
 
     render(
         /* type: "real" | "image",
-         */options?: {
+         */ options?: {
             coords?: [number, number];
             layers?: { data: string; id: string }[];
         }
