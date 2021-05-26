@@ -52,7 +52,7 @@ export interface IBlockParameters {
     markerFolder?: string | string[];
     markerFile?: string | string[];
     markerTag?: string | string[][];
-    overlay?: Array<[string, [number, number], string]>;
+    overlay?: Array<[string, [number, number], string, string]>;
     overlayTag?: string;
     overlayColor?: string;
     height?: string;
@@ -72,7 +72,6 @@ export interface ILeafletOverlay {
     layer: string;
     data: IOverlayData;
     mutable: boolean;
-    radius: number;
 }
 export interface IOverlayData {
     radius: number;

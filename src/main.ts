@@ -233,17 +233,26 @@ export default class ObsidianLeaflet extends Plugin {
                     command
                 );
             }
-            for (let [color, loc, length, desc] of [
-                ...overlay,
-                ...immutableOverlays
-            ]) {
-                const match = length.match(/^(\d+)\s?(\w*)/);
-                if (!match || isNaN(Number(match[1]))) {
-                    throw new Error(
-                        "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`."
-                    );
+            const overlayArray: [
+                string,
+                [number, number],
+                number,
+                string,
+                string
+            ][] = [...overlay, ...immutableOverlays].map(
+                ([color, loc, length, desc]) => {
+                    const match = length.match(/^(\d+)\s?(\w*)/);
+                    if (!match || isNaN(Number(match[1]))) {
+                        throw new Error(
+                            "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`."
+                        );
+                    }
+                    const [, radius, unit = "m"] = match;
+                    return [color, loc, Number(radius), unit, desc];
                 }
-                const [, radius, unit = "m"] = match;
+            );
+            overlayArray.sort((a, b) => b[2] - a[2]);
+            for (let [color, loc, radius, unit, desc] of overlayArray) {
                 map.addOverlay(
                     {
                         radius: Number(radius),
@@ -412,7 +421,7 @@ ${e.message}
                     .map((overlay) => {
                         if (overlay.leafletInstance instanceof Circle) {
                             return {
-                                radius: overlay.radius,
+                                radius: overlay.data.radius,
                                 loc: [
                                     overlay.leafletInstance.getLatLng().lat,
                                     overlay.leafletInstance.getLatLng().lng

@@ -643,8 +643,7 @@ class LeafletMap extends Events {
             leafletInstance: leafletInstance,
             layer: circle.layer,
             data: circle,
-            mutable: mutable,
-            radius: radius
+            mutable: mutable
         });
 
         if (this.rendered) {
@@ -676,12 +675,16 @@ class LeafletMap extends Events {
                 });
                 circle.addTo(this.group.group);
 
+                const radius =
+                    this.type === "image"
+                        ? circle.getRadius()
+                        : convert(circle.getRadius()).from("m").to(this.unit);
+
                 this._pushOverlay({
                     leafletInstance: circle,
-                    radius: circle.getRadius(),
                     layer: this.group.id,
                     data: {
-                        radius: circle.getRadius(),
+                        radius: radius,
                         color: circle.options.color,
                         loc: [circle.getLatLng().lat, circle.getLatLng().lng],
                         layer: this.group.id,
