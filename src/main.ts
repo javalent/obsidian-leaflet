@@ -35,6 +35,7 @@ import { MarkerContextModal } from "./modals";
 
 import { LeafletRenderer } from "./leaflet";
 import { markerDivIcon } from "./map";
+import convert from "convert";
 
 //add commands to app interface
 declare module "obsidian" {
@@ -251,7 +252,15 @@ export default class ObsidianLeaflet extends Plugin {
                     return [color, loc, Number(radius), unit, desc];
                 }
             );
-            overlayArray.sort((a, b) => b[2] - a[2]);
+            overlayArray.sort((a, b) => {
+                const radiusA = convert(a[2])
+                    .from(a[3] as Length)
+                    .to("m");
+                const radiusB = convert(b[2])
+                    .from(b[3] as Length)
+                    .to("m");
+                return radiusB - radiusA;
+            });
             for (let [color, loc, radius, unit, desc] of overlayArray) {
                 map.addOverlay(
                     {
