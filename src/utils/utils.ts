@@ -370,16 +370,11 @@ export async function getImmutableItems(
                     ]);
                 }
                 if (frontmatter.mapoverlay) {
-                    const match =
-                        frontmatter.mapoverlay.match(/^(\d+)\s?(\w*)/);
-                    if (!match) {
-                        new Notice(
-                            `Could not parse ${overlayTag} in ${file.name}. Please ensure it is in the format: <distance> <unit>`
-                        );
-                        continue;
-                    }
-
-                    frontmatter.mapoverlay.forEach(
+                    const arr =
+                        frontmatter.mapoverlay[0] instanceof Array
+                            ? frontmatter.mapoverlay
+                            : [frontmatter.mapoverlay];
+                    arr.forEach(
                         ([
                             color = overlayColor ?? "blue",
                             loc = [0, 0],
@@ -391,6 +386,13 @@ export async function getImmutableItems(
                             length: string,
                             desc: string
                         ]) => {
+                            const match = length.match(/^(\d+)\s?(\w*)/);
+                            if (!match) {
+                                new Notice(
+                                    `Could not parse map overlay length in ${file.name}. Please ensure it is in the format: <distance> <unit>`
+                                );
+                                return;
+                            }
                             overlaysToReturn.push([
                                 color,
                                 loc as [number, number],
