@@ -386,7 +386,9 @@ export async function getImmutableItems(
                             length: string,
                             desc: string
                         ]) => {
-                            const match = length.match(/^(\d+)\s?(\w*)/);
+                            const match = length.match(
+                                /^(\d+(?:\.\d+)?)\s?(\w*)/
+                            );
                             if (!match) {
                                 new Notice(
                                     `Could not parse map overlay length in ${file.name}. Please ensure it is in the format: <distance> <unit>`
@@ -409,8 +411,9 @@ export async function getImmutableItems(
                         overlayTag
                     )
                 ) {
-                    const match =
-                        frontmatter[overlayTag].match(/^(\d+)\s?(\w*)/);
+                    const match = frontmatter[overlayTag].match(
+                        /^(\d+(?:\.\d+)?)\s?(\w*)/
+                    );
                     if (!match) {
                         new Notice(
                             `Could not parse ${overlayTag} in ${file.name}. Please ensure it is in the format: <distance> <unit>`
@@ -421,10 +424,7 @@ export async function getImmutableItems(
                         overlayColor,
                         frontmatter.location,
                         frontmatter[overlayTag],
-                        `${file.basename}: ${
-                            overlayTag[0].toUpperCase() +
-                            overlayTag.slice(1).toLowerCase()
-                        }`
+                        `${file.basename}: ${overlayTag}`
                     ]);
                 }
             }
