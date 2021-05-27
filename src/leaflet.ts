@@ -977,7 +977,21 @@ class LeafletMap extends Events {
             .on("mouseover", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
                 if (overlay.data.desc) {
-                    this.openPopup(overlay, overlay.data.desc);
+                    this.openPopup(
+                        overlay,
+                        overlay.data.desc +
+                            ` (${overlay.data.radius.toLocaleString(
+                                this.locale,
+                                { maximumFractionDigits: DISTANCE_DECIMALS }
+                            )} ${overlay.data.unit})`
+                    );
+                } else {
+                    this.openPopup(
+                        overlay,
+                        `${overlay.data.radius.toLocaleString(this.locale, {
+                            maximumFractionDigits: DISTANCE_DECIMALS
+                        })} ${overlay.data.unit}`
+                    );
                 }
             });
     }
@@ -1114,7 +1128,27 @@ class LeafletMap extends Events {
         const popupElement = this.popup.getElement();
 
         let _this = this;
+
+        const zoomAnimHandler = function () {
+            if (
+                !(target instanceof L.LatLng) &&
+                target.leafletInstance instanceof L.Circle
+            ) {
+                _this.popup.options.offset = new L.Point(
+                    0,
+                    (-1 *
+                        target.leafletInstance
+                            .getElement()
+                            .getBoundingClientRect().height) /
+                        2 +
+                        10 // not sure why circles have this extra padding..........
+                );
+                _this.popup.update();
+            }
+        };
+
         const mouseOutHandler = function () {
+            clearTimeout(_this._timeoutHandler);
             _this._timeoutHandler = setTimeout(function () {
                 if (!(target instanceof L.LatLng)) {
                     target.leafletInstance.off("mouseenter", mouseOverHandler);
@@ -1126,6 +1160,7 @@ class LeafletMap extends Events {
                 );
                 popupElement.removeEventListener("mouseleave", mouseOutHandler);
 
+                _this.map.off("zoomend", zoomAnimHandler);
                 _this.map.closePopup(_this.popup);
             }, 500);
         };
@@ -1146,6 +1181,7 @@ class LeafletMap extends Events {
             target.leafletInstance
                 .on("mouseout", mouseOutHandler)
                 .on("mouseenter", mouseOverHandler);
+            this.map.on("zoomend", zoomAnimHandler);
         }
         popupElement.addEventListener("mouseenter", mouseOverHandler);
         popupElement.addEventListener("mouseleave", mouseOutHandler);

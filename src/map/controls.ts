@@ -717,6 +717,26 @@ class FilterMarkers extends FontAwesomeControl {
     private update() {
         this.section.empty();
 
+        const buttons = this.section.createDiv(
+            "leaflet-control-filter-button-group"
+        );
+        buttons.createEl("button", { text: "All" }).onclick = () => {
+            this.map.markerIcons.forEach(({ type }) => {
+                if (!this.map.displaying.get(type))
+                    this.map.group.markers[type].addTo(this.leafletInstance);
+                this.map.displaying.set(type, true);
+            });
+            this.update();
+        };
+        buttons.createEl("button", { text: "None" }).onclick = () => {
+            this.map.markerIcons.forEach(({ type }) => {
+                if (this.map.displaying.get(type))
+                    this.map.group.markers[type].remove();
+                this.map.displaying.set(type, false);
+            });
+            this.update();
+        };
+
         const ul = this.section.createEl("ul", "contains-task-list");
 
         for (let i = 0; i < this.map.markerIcons.length; i++) {
@@ -726,6 +746,7 @@ class FilterMarkers extends FontAwesomeControl {
                 this.map.group.markers[type].getLayers().length
             ) {
                 const li = ul.createEl("li", "task-list-item");
+
                 const id = getId();
                 const input = li.createEl("input", {
                     attr: {
@@ -738,9 +759,15 @@ class FilterMarkers extends FontAwesomeControl {
                     cls: "task-list-item-checkbox"
                 });
 
-                li.createEl("label", {
-                    text: type[0].toUpperCase() + type.slice(1).toLowerCase(),
+                const label = li.createEl("label", {
                     attr: { for: "leaflet-control-filter-item-label-" + id }
+                });
+                label.createDiv({
+                    cls: "leaflet-control-filter-icon"
+                }).innerHTML = this.map.markerIcons[i].html;
+
+                label.createDiv({
+                    text: type[0].toUpperCase() + type.slice(1).toLowerCase()
                 });
 
                 L.DomEvent.on(

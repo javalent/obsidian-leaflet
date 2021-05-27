@@ -314,6 +314,7 @@ input.is-invalid {
     filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg)
         saturate(0.3) brightness(0.7);
 }
+/** Filter Control */
 .leaflet-control-filter {
     background: #fff;
 }
@@ -332,4 +333,32 @@ input.is-invalid {
 
 .leaflet-control-filter ul {
     margin: 0;
+}
+
+.leaflet-control-filter-list li {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.leaflet-control-filter-list ul li > input {
+    top: 0px;
+}
+.leaflet-control-filter-list ul li > label {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+.leaflet-control-filter-list ul li .leaflet-control-filter-icon {
+    width: 18px;
+    height: 18px;
+    margin-right: 4px;
+}
+.leaflet-control-filter-list .leaflet-control-filter-button-group {
+    margin-bottom: 6px;
+}
+.leaflet-control-filter-list
+    .leaflet-control-filter-button-group
+    button:last-child {
+    margin-right: 0px;
 }

@@ -424,7 +424,7 @@ export async function getImmutableItems(
                         `${file.basename}: ${
                             overlayTag[0].toUpperCase() +
                             overlayTag.slice(1).toLowerCase()
-                        } (${frontmatter[overlayTag]})`
+                        }`
                     ]);
                 }
             }
