@@ -461,4 +461,5 @@ Please ensure you have automated backups.
 
 If you're using Obsidian to run/plan a TTRPG, you may find my other plugin useful:
 
+-   [5e Statblocks(https://github.com/valentine195/obsidian-5e-statblocks/) - Create 5e-styled statblocks inside notes
 -   [Dice Roller](https://github.com/valentine195/obsidian-dice-roller) - Roll & re-roll dice in notes
