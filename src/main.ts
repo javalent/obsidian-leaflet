@@ -199,7 +199,7 @@ export default class ObsidianLeaflet extends Plugin {
                 scale: scale,
                 distanceMultiplier: distanceMultiplier,
                 id: id,
-                darkMode: darkMode === "true",
+                darkMode: !!darkMode || darkMode === "true",
                 overlayColor: overlayColor
             });
             const map = renderer.map;
