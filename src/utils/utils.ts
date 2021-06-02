@@ -14,6 +14,17 @@ import { parse as parseCSV } from "papaparse";
 
 import { IBlockParameters } from "src/@types";
 
+export function renderError(el: HTMLElement, error: string): void {
+    
+    let pre =createEl("pre", { attr: { id: "leaflet-error" } });
+    pre.setText(`\`\`\`leaflet
+There was an error rendering the map:
+
+${error}
+\`\`\``);
+    el.replaceWith(pre);
+}
+
 export function getImageDimensions(url: string): Promise<any> {
     return new Promise(function (resolved, reject) {
         var i = new Image();

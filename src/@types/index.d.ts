@@ -41,6 +41,7 @@ export interface ILeafletMapOptions {
     darkMode?: boolean;
     tileServer?: string;
     overlayColor?: string;
+    bounds?: [[number, number], [number, number]];
 }
 
 export interface IBlockParameters {
@@ -66,6 +67,7 @@ export interface IBlockParameters {
     unit?: string;
     distanceMultiplier?: number;
     darkMode?: string;
+    bounds?: [[number, number], [number, number]];
 }
 export interface ILeafletOverlay {
     leafletInstance: L.Circle;

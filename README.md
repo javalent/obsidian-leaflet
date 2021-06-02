@@ -51,6 +51,9 @@ darkMode: true
 | markerFolder  | Create immutable markers from _all_ of the notes in a given folder                   |                                            |
 | darkMode      | Invert map colors                                                                    |                                            |
 | overlay       | Add a circle overlay to the map                                                      |                                            |
+| overlayTag    | Define a YAML tag to search for in specified marker notes                            |                                            |
+| overlayColor  | Change default overlay color                                                         |                                            |
+| bounds        | Set image map bounds to specified coordinates instead of default                     |                                            |
 
 ### YAML syntax
 
@@ -115,6 +118,23 @@ The control box in the top right of the map will allow you to change layers.
 Markers can be created and saved on each layer separately from one another.
 
 **If multiple images are provided, an ID _must_ be given to the map, or the map will only display the first provided image.**
+
+### Bounds
+
+Custom bounds may be given to an image map using the `bounds` parameter:
+
+````
+```leaflet
+image: [[Image.jpg]]
+bounds:
+    - [<top-left-latitude>, <top-left-longitude>]
+    - [<bottom-right-latitude>, <bottom-right-longitude>]
+```
+````
+
+This will cause the latitude and longitude of the image map to be updated to fit within the bounds. _This will skew the image if the provided bounds do not match the aspect ratio of the image._
+
+Any markers or overlays defined on the map will not be updated.
 
 ### Latitude and Longtitude of Image Maps
 
@@ -284,7 +304,7 @@ Additionally, overlays may be specified in the source block using the `overlay` 
 OR
 
 ```
-overlay: 
+overlay:
     - [<color>, [<lat>, <long>], <radius> <unit?>, <desc>]
     - [<color>, [<lat>, <long>], <radius> <unit?>, <desc>]
     ...
@@ -303,18 +323,22 @@ Please note that due to the YAML syntax, strings starting with `#` and entries w
 Examples:
 
 ````
+
 ```leaflet
 overlay: [blue, [32, -89], 25 mi, 'This is my overlay!']
 ```
-````
 
-````
+```
+
+```
+
 ```leaflet
 overlay:
   - ['rgb(255, 255, 0)', [32, -89], 25 km, 'This is also my overlay!']
   - ['#00FF00', [32, -89], 500 ft, 'This is a third overlay!']
 ```
-````
+
+```
 
 ### Editing the Overlay
 
@@ -326,7 +350,7 @@ Similarly to markers, overlays may be created from notes found using the `marker
 
 The plugin will scan the frontmatter of the notes and generate an overlay from a frontmatter `mapoverlay` parameter, defined using the same syntax as above.
 
-### Overlay Tag 
+### Overlay Tag
 
 
 
@@ -334,16 +358,20 @@ The overlay tag parameter can be used to auto-generate an overlay from a tag in 
 
 Example:
 
-````
+```
+
 ```leaflet
 overlayTag: nearby
 ```
+
 ````
 
 Note frontmatter:
+
 ```
 nearby: 50 km
 ```
+
 ### Overlay Color
 
 The overlay color tag may be used to specify the default overlay color when drawing on the map or when using the overlay tag parameter.
@@ -441,7 +469,7 @@ From Obsidian v0.9.8, you can activate this plugin within Obsidian by doing the 
 ## From GitHub
 
 -   Download the Latest Release from the Releases section of the GitHub Repository
--   Extract the plugin folder from the zip to your vault's plugins folder: `<vault>/.obsidian/plugins/`  
+-   Extract the plugin folder from the zip to your vault's plugins folder: `<vault>/.obsidian/plugins/`
     Note: On some machines the `.obsidian` folder may be hidden. On MacOS you should be able to press `Command+Shift+Dot` to show the folder in Finder.
 -   Reload Obsidian
 -   If prompted about Safe Mode, you can disable safe mode and enable the plugin.
@@ -462,3 +490,7 @@ Please ensure you have automated backups.
 If you're using Obsidian to run/plan a TTRPG, you may find my other plugin useful:
 
 -   [Dice Roller](https://github.com/valentine195/obsidian-dice-roller) - Roll & re-roll dice in notes
+
+```
+
+```

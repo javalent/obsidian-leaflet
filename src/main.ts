@@ -5,7 +5,7 @@ import {
     setIcon,
     Plugin
 } from "obsidian";
-import { latLng, Circle } from "leaflet";
+import { latLng, Circle, bounds } from "leaflet";
 
 //Local Imports
 import "./main.css";
@@ -18,7 +18,8 @@ import {
     getHeight,
     getParamsFromSource,
     getImmutableItems,
-    getMarkerIcon
+    getMarkerIcon,
+    renderError
 } from "./utils";
 import {
     IMapInterface,
@@ -146,7 +147,8 @@ export default class ObsidianLeaflet extends Plugin {
                 image = "real",
                 layers = [],
                 overlay = [],
-                overlayColor = "blue"
+                overlayColor = "blue",
+                bounds
             } = params;
 
             if (!id) {
@@ -199,8 +201,9 @@ export default class ObsidianLeaflet extends Plugin {
                 scale: scale,
                 distanceMultiplier: distanceMultiplier,
                 id: id,
-                darkMode: !!darkMode || darkMode === "true",
-                overlayColor: overlayColor
+                darkMode: `${darkMode}` === "true",
+                overlayColor: overlayColor,
+                bounds: bounds
             });
             const map = renderer.map;
 
@@ -372,15 +375,16 @@ export default class ObsidianLeaflet extends Plugin {
         } catch (e) {
             console.error(e);
             new Notice("There was an error loading the map.");
-            let newPre = createEl("pre");
+            renderError(el, e.message);
+            /* let newPre = createEl("pre");
             newPre.createEl("code", {}, (code) => {
                 code.innerText = `\`\`\`leaflet
 There was an error rendering the map:
 
 ${e.message}
 \`\`\``;
-                el.parentElement.replaceChild(newPre, el);
-            });
+                el.parentElement.replaceChild(newPre, el); 
+            });*/
         }
     }
 
