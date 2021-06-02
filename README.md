@@ -75,7 +75,7 @@ marker:
 
 #### Marker Tags in YAML
 
-YAML considers the `#` symbol to be a comment, so the `markerTag` parameter **cannot be defined using #**. Only the _name_ of the tag may be specified.
+YAML considers the `#` symbol to be a comment, so the `markerTag` parameter must either be wrapped in quotes (`"#tag"`) or defined without the `#` symbol.
 
 Additionally, `markerTag` groups are specified the same way as before - an _array_ of tags means the note **must match both tags**, while _multiple `markerTag` parameters will match notes with any tag_. Please see [Marker Tags](https://github.com/valentine195/obsidian-leaflet-plugin#marker-tags) for more information.
 
