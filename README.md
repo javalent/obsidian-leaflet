@@ -117,8 +117,6 @@ The control box in the top right of the map will allow you to change layers.
 
 Markers can be created and saved on each layer separately from one another.
 
-**If multiple images are provided, an ID _must_ be given to the map, or the map will only display the first provided image.**
-
 ### Bounds
 
 Custom bounds may be given to an image map using the `bounds` parameter:
@@ -384,6 +382,20 @@ Distances are displayed in meters, unless a scale factor and/or unit is specifie
 
 A control box in the bottom-left corner of the map displays the last-calculated distance. Hovering on this will display the distance line on the map, and clicking on it will zoom the map to those coordinates.
 
+## Dark Mode
+
+The `darkMode` parameter will invert the colors of the map using CSS. This is done by applying a `.dark-mode` CSS class to the map tile layer, and the following CSS:
+
+```css
+.leaflet-container .dark-mode {
+    filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(
+            0.3
+        ) brightness(0.7);
+}
+```
+
+Overriding this CSS in a custom snippet will allow for customization of the dark mode appearance. For a reference to the CSS `filter` property, please see [this article](https://developer.mozilla.org/en-US/docs/Web/CSS/filter).
+
 ## Settings
 
 ### Marker CSV Files
@@ -440,14 +452,23 @@ Additional marker types can be added, selectable from a context menu on the map.
 
 Adding a new marker displays a new window, where the new marker parameters can be added.
 
-| Parameter   | Description                                                                                          |
-| ----------- | ---------------------------------------------------------------------------------------------------- |
-| Marker Name | Displayed in the context menu when adding a marker (e.g., Location, Event, Person)                   |
-| Marker Icon | The [Font Awesome Free](https://fontawesome.com/icons?d=gallery&p=2&s=solid&m=free) icon name to use |
-| Layer Icon  | Layer this icon on top of the base marker. If off, the icon itself will be used.                     |
-| Icon Color  | Override the default icon color                                                                      |
+| Parameter    | Description                                                                                          |
+| ------------ | ---------------------------------------------------------------------------------------------------- |
+| Marker Name  | Displayed in the context menu when adding a marker (e.g., Location, Event, Person)                   |
+| Marker Icon  | The [Font Awesome Free](https://fontawesome.com/icons?d=gallery&p=2&s=solid&m=free) icon name to use |
+| Upload Image | Upload a custom image to use for the marker icon instead of using a Font Awesome icon                |
+| Layer Icon   | Layer this icon on top of the base marker. If off, the icon itself will be used.                     |
+| Icon Color   | Override the default icon color                                                                      |
 
 If layer icon is on, the icon be moved around the base icon by clicking and dragging, to customize where the icon is layered. If <kbd>Shift</kbd> is held while moving the icon, it will snap to the midlines.
+
+#### Using an Image as a Marker Icon
+
+When creating an additional marker, an image may be uploaded to use as the marker icon instead of selecting a Font Awesome icon.
+
+Click the "Upload Image" button and select the image to use. The plugin will load the image and scale it to `24px x 24px`. The image used for the marker cannot be edited once it has been uploaded.
+
+If an image has been uploaded, selecting a Font Awesome icon will remove the image.
 
 # Version History
 
