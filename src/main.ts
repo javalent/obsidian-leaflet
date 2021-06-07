@@ -3,9 +3,10 @@ import {
     MarkdownView,
     MarkdownPostProcessorContext,
     setIcon,
-    Plugin
+    Plugin,
+    TFile
 } from "obsidian";
-import { latLng, Circle, bounds } from "leaflet";
+import { latLng, Circle } from "leaflet";
 
 //Local Imports
 import "./main.css";
@@ -19,7 +20,8 @@ import {
     getParamsFromSource,
     getImmutableItems,
     getMarkerIcon,
-    renderError
+    renderError,
+    OVERLAY_TAG_REGEX
 } from "./utils";
 import {
     IMapInterface,
@@ -97,17 +99,6 @@ export default class ObsidianLeaflet extends Plugin {
         );
 
         this.addSettingTab(new ObsidianLeafletSettingTab(this.app, this));
-
-        /* this.escapeScope = new Scope();
-        this.escapeScope.register(undefined, "Escape", () => {
-            const { map } = this.maps.find(({ map }) => map.isDrawing) ?? {};
-
-            if (map && !map.isFullscreen) {
-                map.stopDrawing();
-
-                this.app.keymap.popScope(this.escapeScope);
-            }
-        }); */
     }
 
     async onunload(): Promise<void> {
@@ -139,6 +130,7 @@ export default class ObsidianLeaflet extends Plugin {
                 zoomDelta = 1,
                 lat = `${this.AppData.lat}`,
                 long = `${this.AppData.long}`,
+                coordinates,
                 id = undefined,
                 scale = 1,
                 unit = "m",
@@ -150,7 +142,6 @@ export default class ObsidianLeaflet extends Plugin {
                 overlayColor = "blue",
                 bounds
             } = params;
-
             if (!id) {
                 new Notice(
                     "As of version 3.0.0, Obsidian Leaflet maps must have an ID."
@@ -245,7 +236,7 @@ export default class ObsidianLeaflet extends Plugin {
                 string
             ][] = [...overlay, ...immutableOverlays].map(
                 ([color, loc, length, desc]) => {
-                    const match = length.match(/^(\d+(?:\.\d+)?)\s?(\w*)/);
+                    const match = length.match(OVERLAY_TAG_REGEX);
                     if (!match || isNaN(Number(match[1]))) {
                         throw new Error(
                             "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`."
@@ -278,7 +269,15 @@ export default class ObsidianLeaflet extends Plugin {
                 );
             }
 
-            let coords: [number, number] = [undefined, undefined];
+            const { coords, distanceToZoom } = await this._getCoordinates(
+                lat,
+                long,
+                coordinates,
+                params.zoomTag,
+                map
+            );
+
+            /*             let coords: [number, number] = [undefined, undefined];
             let err: boolean = false;
             try {
                 coords = [
@@ -293,7 +292,7 @@ export default class ObsidianLeaflet extends Plugin {
                 new Notice(
                     "There was an error with the provided latitude and longitude. Using defaults."
                 );
-            }
+            } */
 
             let mapData = this.AppData.mapMarkers.find(
                 ({ id: mapId }) => mapId == id
@@ -307,13 +306,6 @@ export default class ObsidianLeaflet extends Plugin {
             }[] = [];
 
             if (image != "real") {
-                if (!lat || isNaN(coords[0])) {
-                    coords[0] = 50;
-                }
-                if (!long || isNaN(coords[1])) {
-                    coords[1] = 50;
-                }
-
                 layerData = await Promise.all(
                     layers.map(async (image) => {
                         return {
@@ -326,14 +318,9 @@ export default class ObsidianLeaflet extends Plugin {
                     })
                 );
                 if (layerData.filter((d) => !d.data).length) {
-                    throw new Error();
-                }
-            } else {
-                if (!lat || isNaN(coords[0])) {
-                    coords[0] = this.AppData.lat;
-                }
-                if (!long || isNaN(coords[1])) {
-                    coords[1] = this.AppData.long;
+                    throw new Error(
+                        "No valid layers were provided to the image map."
+                    );
                 }
             }
 
@@ -341,6 +328,7 @@ export default class ObsidianLeaflet extends Plugin {
 
             map.render({
                 coords: coords,
+                zoomDistance: distanceToZoom,
                 layer: layerData[0],
                 hasAdditional: layerData.length > 1
             });
@@ -376,16 +364,97 @@ export default class ObsidianLeaflet extends Plugin {
             console.error(e);
             new Notice("There was an error loading the map.");
             renderError(el, e.message);
-            /* let newPre = createEl("pre");
-            newPre.createEl("code", {}, (code) => {
-                code.innerText = `\`\`\`leaflet
-There was an error rendering the map:
-
-${e.message}
-\`\`\``;
-                el.parentElement.replaceChild(newPre, el); 
-            });*/
         }
+    }
+    private async _getCoordinates(
+        lat: string,
+        long: string,
+        coordinates: [string, string] | [[string]],
+        zoomTag: string,
+        map: LeafletMap
+    ): Promise<{ coords: [number, number]; distanceToZoom: number }> {
+        let latitude = lat;
+        let longitude = long;
+        let coords: [number, number] = [undefined, undefined];
+        let distanceToZoom;
+        if (coordinates instanceof Array && coordinates.length) {
+            const file = await this.app.metadataCache.getFirstLinkpathDest(
+                coordinates.flat()[0].replace(/(\[|\])/, ""),
+                ""
+            );
+            file: if (file && file instanceof TFile) {
+                //internal, try to read note yaml for coords
+                const cache = await this.app.metadataCache.getFileCache(file);
+                if (
+                    !cache ||
+                    !cache.frontmatter ||
+                    !cache.frontmatter.location ||
+                    !(cache.frontmatter.location instanceof Array)
+                )
+                    break file;
+                const location = cache.frontmatter.location;
+                latitude = location[0];
+                longitude = location[1];
+
+                if (
+                    !zoomTag ||
+                    !Object.prototype.hasOwnProperty.call(
+                        cache.frontmatter,
+                        zoomTag
+                    )
+                )
+                    break file;
+
+                const overlay = cache.frontmatter[zoomTag];
+                const [, distance, unit] =
+                    overlay?.match(OVERLAY_TAG_REGEX) ?? [];
+                if (!distance) break file;
+                //try to scale default zoom
+
+                distanceToZoom = convert(distance)
+                    .from((unit as Length) ?? "m")
+                    .to(map.type == "image" ? map.unit : "m");
+                if (map.type == "image") {
+                    distanceToZoom = distanceToZoom / map.scale;
+                }
+            } else if (coordinates.length == 2) {
+                latitude = coordinates[0];
+                longitude = coordinates[1];
+            }
+        }
+
+        let err: boolean = false;
+        try {
+            coords = [
+                Number(`${latitude}`?.split("%").shift()),
+                Number(`${longitude}`?.split("%").shift())
+            ];
+        } catch (e) {
+            err = true;
+        }
+
+        if (err || isNaN(coords[0]) || isNaN(coords[1])) {
+            new Notice(
+                "There was an error with the provided latitude and longitude. Using defaults."
+            );
+        }
+
+        if (map.type != "real") {
+            if (!latitude || isNaN(coords[0])) {
+                coords[0] = 50;
+            }
+            if (!longitude || isNaN(coords[1])) {
+                coords[1] = 50;
+            }
+        } else {
+            if (!latitude || isNaN(coords[0])) {
+                coords[0] = this.AppData.lat;
+            }
+            if (!longitude || isNaN(coords[1])) {
+                coords[1] = this.AppData.long;
+            }
+        }
+        return { coords, distanceToZoom };
     }
 
     async loadSettings() {

@@ -65,6 +65,7 @@ declare class LeafletMap extends Events {
         /* type: "real" | "image",
          */ options?: {
             coords?: [number, number];
+            zoomDistance?: number;
             layers?: { data: string; id: string }[];
         }
     ): Promise<void>;

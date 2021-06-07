@@ -247,6 +247,16 @@ class LeafletMap extends Events {
                 this.plugin.app.keymap.popScope(this._escapeScope);
             }
         });
+
+        this.map = L.map(this.contentEl, {
+            crs: this.CRS,
+            maxZoom: this.zoom.max,
+            minZoom: this.zoom.min,
+            zoomDelta: this.zoom.delta,
+            zoomSnap: this.zoom.delta,
+            worldCopyJump: this.type === "real",
+            fullscreenControl: true
+        });
     }
 
     get data() {
@@ -313,19 +323,10 @@ class LeafletMap extends Events {
     @catchErrorAsync
     async render(options: {
         coords: [number, number];
+        zoomDistance: number;
         layer: { data: string; id: string };
         hasAdditional?: boolean;
     }) {
-        this.map = L.map(this.contentEl, {
-            crs: this.CRS,
-            maxZoom: this.zoom.max,
-            minZoom: this.zoom.min,
-            zoomDelta: this.zoom.delta,
-            zoomSnap: this.zoom.delta,
-            worldCopyJump: this.type === "real",
-            fullscreenControl: true
-        });
-
         /** Get layers
          *  Returns TileLayer (real) or ImageOverlay (image)
          */
@@ -350,6 +351,16 @@ class LeafletMap extends Events {
             options.coords[1] * this._coordMult[1]
         ];
         this.map.panTo(this.initialCoords);
+        if (options.zoomDistance) {
+            const circle = L.circle(options.coords, {
+                radius: options.zoomDistance
+            });
+            circle.addTo(this.map);
+            this.map.setZoom(this.map.getBoundsZoom(circle.getBounds()), {
+                animate: false
+            });
+            circle.remove();
+        }
 
         /** Build Marker Layer Groups */
 

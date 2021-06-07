@@ -442,9 +442,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
         const importSetting = new Setting(containerEl).setDesc(
             "This setting is experimental and could cause marker data issues. Use at your own risk."
         );
-        let name = importSetting.nameEl.createDiv({
-            cls: "use-csv-marker"
-        });
+        let name = importSetting.nameEl.createDiv();
         name.appendChild(
             icon(
                 findIconDefinition({

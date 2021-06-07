@@ -68,6 +68,8 @@ export interface IBlockParameters {
     distanceMultiplier?: number;
     darkMode?: string;
     bounds?: [[number, number], [number, number]];
+    coordinates?: [string, string] | [[string]];
+    zoomTag?: string;
 }
 export interface ILeafletOverlay {
     leafletInstance: L.Circle;
