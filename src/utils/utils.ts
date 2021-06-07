@@ -177,11 +177,13 @@ export function getHeight(view: MarkdownView, height: string): string {
 export async function getImmutableItems(
     /* source: string */
     app: App,
-    markers: string[],
-    commandMarkers: string[],
-    markerTags: string[][],
-    markerFiles: string[],
-    markerFolders: string[],
+    markers: string[] = [],
+    commandMarkers: string[] = [],
+    markerTags: string[][] = [],
+    markerFiles: string[] = [],
+    markerFolders: string[] = [],
+    linksTo: string[] = [],
+    linksFrom: string[] = [],
     overlayTag: string,
     overlayColor: string
 ): Promise<{
@@ -309,7 +311,13 @@ export async function getImmutableItems(
                 null
             ]);
         }
-        if (markerFiles.length || markerFolders.length || markerTags.length) {
+        if (
+            markerFiles.length ||
+            markerFolders.length ||
+            markerTags.length ||
+            linksTo.length ||
+            linksFrom
+        ) {
             let files = new Set(markerFiles);
 
             for (let path of markerFolders) {
@@ -326,7 +334,7 @@ export async function getImmutableItems(
             //error is thrown here because plugins isn't exposed on Obsidian App
             //@ts-expect-error
             const cache = app.plugins.plugins.dataview?.index;
-            if (cache && markerTags.length > 0) {
+            if (cache /*  && markerTags.length > 0 */) {
                 const tagSet = new Set();
                 for (let tags of markerTags) {
                     tags.map((tag) => {
@@ -348,12 +356,65 @@ export async function getImmutableItems(
                 } else {
                     tagSet.forEach(files.add, files);
                 }
-            } else {
-                if (markerTags.length) {
-                    new Notice(
-                        "The `markerTag` field can only be used with the Dataview plugin installed."
+                for (let link of linksTo) {
+                    //invMap -> linksTo
+                    const file = await app.metadataCache.getFirstLinkpathDest(
+                        link,
+                        ""
                     );
+                    if (!file) continue;
+
+                    const links = cache.links.invMap.get(file.path);
+
+                    if (!links) continue;
+
+                    links.forEach(files.add, files);
                 }
+                for (let link of linksFrom) {
+                    //map -> linksFrom
+                    const file = await app.metadataCache.getFirstLinkpathDest(
+                        link,
+                        ""
+                    );
+                    if (!file) continue;
+
+                    const links = cache.links.map.get(file.path);
+
+                    if (!links) continue;
+
+                    links.forEach(files.add, files);
+                }
+            } else {
+                const errors: string[] = [];
+                if (markerTags.length) {
+                    errors.push("markerTags");
+                }
+                if (linksTo.length) {
+                    errors.push("linksTo");
+                }
+                if (linksFrom.length) {
+                    errors.push("linksFrom");
+                }
+                if (errors.length)
+                    new Notice(
+                        `The \`${errors.reduce((res, k, i) =>
+                            [res, k].join(
+                                i ===
+                                    errors.reduce((res, k, i) =>
+                                        [res, k].join(
+                                            i === errors.length - 1
+                                                ? " and "
+                                                : ", "
+                                        )
+                                    ).length -
+                                        1
+                                    ? " and "
+                                    : ", "
+                            )
+                        )}\` field${
+                            errors.length > 2 ? "s" : ""
+                        } can only be used with the Dataview plugin installed.`
+                    );
             }
 
             for (let path of files) {

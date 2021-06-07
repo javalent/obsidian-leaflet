@@ -70,6 +70,8 @@ export interface IBlockParameters {
     bounds?: [[number, number], [number, number]];
     coordinates?: [string, string] | [[string]];
     zoomTag?: string;
+    linksTo?: string[];
+    linksFrom?: string[];
 }
 export interface ILeafletOverlay {
     leafletInstance: L.Circle;

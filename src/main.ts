@@ -141,7 +141,9 @@ export default class ObsidianLeaflet extends Plugin {
                 layers = [],
                 overlay = [],
                 overlayColor = "blue",
-                bounds
+                bounds,
+                linksFrom = [],
+                linksTo = []
             } = params;
             if (!id) {
                 new Notice(
@@ -208,6 +210,8 @@ export default class ObsidianLeaflet extends Plugin {
                     params.markerTag as string[][],
                     params.markerFile as string[],
                     params.markerFolder as string[],
+                    linksTo.flat(Infinity),
+                    linksFrom.flat(Infinity),
                     params.overlayTag,
                     params.overlayColor
                 );
