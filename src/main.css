@@ -241,11 +241,6 @@ input.is-invalid {
     cursor: pointer !important;
 }
 
-.use-csv-marker > svg {
-    color: yellow;
-    margin-right: 8px;
-}
-
 .leaflet-file-upload > input[type="file"] {
     display: none;
 }

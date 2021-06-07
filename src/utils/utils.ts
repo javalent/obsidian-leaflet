@@ -13,10 +13,11 @@ import { getType as lookupMimeType } from "mime/lite";
 import { parse as parseCSV } from "papaparse";
 
 import { IBlockParameters } from "src/@types";
+import { OVERLAY_TAG_REGEX } from "./constants";
+import { latLng, LatLng, LatLngTuple } from "leaflet";
 
 export function renderError(el: HTMLElement, error: string): void {
-    
-    let pre =createEl("pre", { attr: { id: "leaflet-error" } });
+    let pre = createEl("pre", { attr: { id: "leaflet-error" } });
     pre.setText(`\`\`\`leaflet
 There was an error rendering the map:
 
@@ -422,9 +423,8 @@ export async function getImmutableItems(
                         overlayTag
                     )
                 ) {
-                    const match = frontmatter[overlayTag].match(
-                        /^(\d+(?:\.\d+)?)\s?(\w*)/
-                    );
+                    const match =
+                        frontmatter[overlayTag].match(OVERLAY_TAG_REGEX);
                     if (!match) {
                         new Notice(
                             `Could not parse ${overlayTag} in ${file.name}. Please ensure it is in the format: <distance> <unit>`
