@@ -21,7 +21,8 @@ import {
     getImmutableItems,
     getMarkerIcon,
     renderError,
-    OVERLAY_TAG_REGEX
+    OVERLAY_TAG_REGEX,
+    getId
 } from "./utils";
 import {
     IMapInterface,
@@ -140,7 +141,9 @@ export default class ObsidianLeaflet extends Plugin {
                 layers = [],
                 overlay = [],
                 overlayColor = "blue",
-                bounds
+                bounds,
+                linksFrom = [],
+                linksTo = []
             } = params;
             if (!id) {
                 new Notice(
@@ -207,6 +210,8 @@ export default class ObsidianLeaflet extends Plugin {
                     params.markerTag as string[][],
                     params.markerFile as string[],
                     params.markerFolder as string[],
+                    linksTo.flat(Infinity),
+                    linksFrom.flat(Infinity),
                     params.overlayTag,
                     params.overlayColor
                 );
@@ -216,13 +221,14 @@ export default class ObsidianLeaflet extends Plugin {
                 long,
                 link,
                 layer = layers[0],
-                command = false
+                command = false,
+                id = getId()
             ] of immutableMarkers) {
                 map.createMarker(
                     this.markerIcons.find(({ type: t }) => t == type),
                     latLng([Number(lat), Number(long)]),
                     link?.trim(),
-                    undefined,
+                    id,
                     layer,
                     false,
                     command
@@ -233,9 +239,10 @@ export default class ObsidianLeaflet extends Plugin {
                 [number, number],
                 number,
                 string,
+                string,
                 string
             ][] = [...overlay, ...immutableOverlays].map(
-                ([color, loc, length, desc]) => {
+                ([color, loc, length, desc, id = getId()]) => {
                     const match = length.match(OVERLAY_TAG_REGEX);
                     if (!match || isNaN(Number(match[1]))) {
                         throw new Error(
@@ -243,7 +250,7 @@ export default class ObsidianLeaflet extends Plugin {
                         );
                     }
                     const [, radius, unit = "m"] = match;
-                    return [color, loc, Number(radius), unit, desc];
+                    return [color, loc, Number(radius), unit, desc, id];
                 }
             );
             overlayArray.sort((a, b) => {
@@ -255,7 +262,7 @@ export default class ObsidianLeaflet extends Plugin {
                     .to("m");
                 return radiusB - radiusA;
             });
-            for (let [color, loc, radius, unit, desc] of overlayArray) {
+            for (let [color, loc, radius, unit, desc, id] of overlayArray) {
                 map.addOverlay(
                     {
                         radius: Number(radius),
@@ -263,7 +270,8 @@ export default class ObsidianLeaflet extends Plugin {
                         color: color,
                         unit: unit as Length,
                         layer: layers[0],
-                        desc: desc
+                        desc: desc,
+                        id: id
                     },
                     false
                 );

@@ -386,7 +386,23 @@ class LeafletMap extends Events {
                     !overlay.layer || overlay.layer === this.mapLayers[0].id
             )
             .forEach((overlay) => {
-                overlay.leafletInstance.addTo(this.mapLayers[0].group);
+                let group;
+                if (overlay.id) {
+                    const marker = this.markers.find(
+                        ({ id }) => id === overlay.id
+                    );
+                    if (marker)
+                        group = this.group.markers[marker.type].addLayer(
+                            marker.leafletInstance
+                        );
+                } else {
+                    group =
+                        this.mapLayers.find(({ id }) => id === overlay.layer)
+                            ?.group ?? this.mapLayers[0].group;
+                }
+                overlay.leafletInstance.addTo(group ?? this.group.group);
+
+                /* overlay.leafletInstance.addTo(this.mapLayers[0].group); */
             });
         /** Register Resize Handler */
         this._handleResize();
@@ -693,6 +709,21 @@ class LeafletMap extends Events {
     private _pushOverlay(overlay: ILeafletOverlay) {
         this._bindOverlayEvents(overlay);
         this.overlays.push(overlay);
+        if (this.rendered) {
+            let group;
+            if (overlay.id) {
+                const marker = this.markers.find(({ id }) => id === overlay.id);
+                if (marker)
+                    group = this.group.markers[marker.type].addLayer(
+                        marker.leafletInstance
+                    );
+            } else {
+                group =
+                    this.mapLayers.find(({ id }) => id === overlay.layer)
+                        ?.group ?? this.mapLayers[0].group;
+            }
+            overlay.leafletInstance.addTo(group ?? this.group.group);
+        }
     }
 
     @catchError
@@ -711,16 +742,9 @@ class LeafletMap extends Events {
             leafletInstance: leafletInstance,
             layer: circle.layer,
             data: circle,
-            mutable: mutable
+            mutable: mutable,
+            id: circle.id
         });
-
-        if (this.rendered) {
-            let group =
-                this.mapLayers.find(({ id }) => id === circle.layer)?.group ??
-                this.mapLayers[0].group;
-
-            leafletInstance.addTo(group);
-        }
     }
 
     @catchError
@@ -765,7 +789,8 @@ class LeafletMap extends Events {
                             unit: this.unit,
                             desc: ""
                         },
-                        mutable: true
+                        mutable: true,
+                        id: null
                     });
                     await this.plugin.saveSettings();
                 }

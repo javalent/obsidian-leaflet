@@ -70,12 +70,15 @@ export interface IBlockParameters {
     bounds?: [[number, number], [number, number]];
     coordinates?: [string, string] | [[string]];
     zoomTag?: string;
+    linksTo?: string[];
+    linksFrom?: string[];
 }
 export interface ILeafletOverlay {
     leafletInstance: L.Circle;
     layer: string;
     data: IOverlayData;
     mutable: boolean;
+    id: string;
 }
 export interface IOverlayData {
     radius: number;
@@ -84,6 +87,7 @@ export interface IOverlayData {
     layer: string;
     unit: Length;
     desc: string;
+    id?: string;
 }
 
 export interface MarkerDivIconOptions extends L.DivIconOptions {
