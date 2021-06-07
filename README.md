@@ -49,11 +49,18 @@ darkMode: true
 | commandMarker | Create immutable markers that execute commands                                       |                                            |
 | markerFile    | Create immutable marker from a note's frontmatter                                    |                                            |
 | markerFolder  | Create immutable markers from _all_ of the notes in a given folder                   |                                            |
+| markerTags\*  | Create immutable markers from _all_ of the notes with the given tags.                |                                            |
+| linksTo\*     | Create immutable markers from _all_ of the notes linking **TO** a note               |                                            |
+| linksFrom\*   | Create immutable markers from _all_ of the notes linking **FROM** a note             |                                            |
 | darkMode      | Invert map colors                                                                    |                                            |
 | overlay       | Add a circle overlay to the map                                                      |                                            |
 | overlayTag    | Define a YAML tag to search for in specified marker notes                            |                                            |
 | overlayColor  | Change default overlay color                                                         |                                            |
 | bounds        | Set image map bounds to specified coordinates instead of default                     |                                            |
+| coordinates   | Read location data from a note and use it as initial coordinates                     |                                            |
+| zoomTag       | Read distance-to-zoom data from a note and use it as default initial zoom            |                                            |
+
+> \*: Requires the [DataView plugin](https://github.com/blacksmithgu/obsidian-dataview).
 
 ### YAML syntax
 
@@ -86,6 +93,44 @@ As of **3.0.0**, map ids are required. If a note with a old map block is opened,
 Once an old map is given an ID, the plugin will try to associate the marker data with the new map.
 
 The first time you open the plugin after updating to 3.0.0, a backup of your marker data will be created in case you need to downgrade. If you run into issues, please create an issue on Github.
+
+## Initial Map View
+
+### Initial Coordinates
+
+The map will open to the latitude and longitude defined using `lat` and `long`. If not provided, it will default to the latitude and longitude defined in settings.
+
+Alternatively, the latitude and longitude may be defined using the `coordinates` parameter. Coordinates may be defined as an array of numbers, or as a wikilink to a note that has a `location` frontmatter tag:
+
+```
+coordinates: [36, -89]
+coordinates: [[Note with Location Frontmatter]]
+```
+
+### Initial Zoom Level
+
+The initial zoom level of the map may be set using the `defaultZoom` parameter. This must be a number between the `minZoom` and `maxZoom` parameters - if outside of them, it will be set to the nearest parameter.
+
+Alternatively, if a `coordinates` note has been defined, the initial zoom level may be read from that note's frontmatter as `<distance> <unit>`.
+
+For example, if a note has the following frontmatter:
+
+```
+### Note With Frontmatter.md
+---
+location: [-36, 89]
+nearby: 100 mi
+---
+```
+
+and the map was defined like this:
+
+```leaflet
+coordinates: [[Note With Frontmatter]]
+zoomTag: nearby
+```
+
+Then the map will read the `nearby` tag, recognize it is `100 miles`, and set the map's initial zoom to the closest level that will display 100 miles (this depends on `minZoom`, `maxZoom`, and `zoomDelta`).
 
 ## Image Maps
 
@@ -214,7 +259,7 @@ The marker link may be defined as an Obsidian wikilink.
 
 These markers **will not be included in exported marker data.**
 
-### Marker Files, Marker Folders and Marker Tags
+### Marker Files, Marker Folders, Marker Tags, and Markers from Links
 
 These parameters allow you to create markers directly from a list of markdown note files.
 
@@ -250,6 +295,19 @@ If you have the [Dataview plugin](https://github.com/blacksmithgu/obsidian-datav
 Each `markerTag` parameter will return notes that have _all_ of the tags defined in that paramter. If you are looking for files containing _any_ tag listed, use separate `markerTag` parameters.
 
 If one or more `markerFolder` parameters are specified, the `markerTag` parameter will only look for notes _in the folders that contain the tags_.
+
+#### Links
+
+The `linksTo` and `linksFrom` parameters uses DataView's link index to find notes linked to or from the notes specified in the parameter to build immutable markers, using the same syntax as above.
+
+Multiple files can be specified using YAML array syntax:
+
+```
+linksTo: [[File]]
+linksFrom:
+    - [[File 1]]
+    - [[File 2]]
+```
 
 #### Examples
 
