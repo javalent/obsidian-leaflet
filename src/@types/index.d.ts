@@ -76,6 +76,7 @@ export interface ILeafletOverlay {
     layer: string;
     data: IOverlayData;
     mutable: boolean;
+    id: string;
 }
 export interface IOverlayData {
     radius: number;
@@ -84,6 +85,7 @@ export interface IOverlayData {
     layer: string;
     unit: Length;
     desc: string;
+    id?: string;
 }
 
 export interface MarkerDivIconOptions extends L.DivIconOptions {

@@ -185,23 +185,39 @@ export async function getImmutableItems(
     overlayTag: string,
     overlayColor: string
 ): Promise<{
-    markers: [string, number, number, string, string, boolean][];
-    overlays: [string, [number, number], string, string][];
+    markers: [
+        type: string,
+        lat: number,
+        long: number,
+        link: string,
+        layer: string,
+        mutable: boolean,
+        id: string
+    ][];
+    overlays: [
+        color: string,
+        loc: [number, number],
+        length: string,
+        desc: string,
+        id: string
+    ][];
 }> {
     return new Promise(async (resolve, reject) => {
         let markersToReturn: [
-                string,
-                number,
-                number,
-                string,
-                string,
-                boolean
+                type: string,
+                lat: number,
+                long: number,
+                link: string,
+                layer: string,
+                mutable: boolean,
+                id: string
             ][] = [],
             overlaysToReturn: [
-                string,
-                [number, number],
-                /* number,  */ string,
-                string
+                color: string,
+                loc: [number, number],
+                length: string,
+                desc: string,
+                id: string
             ][] = [];
 
         for (let marker of markers) {
@@ -242,7 +258,8 @@ export async function getImmutableItems(
                 Number(long),
                 link,
                 layer,
-                false
+                false,
+                null
             ]);
         }
 
@@ -288,7 +305,8 @@ export async function getImmutableItems(
                 Number(long),
                 id,
                 layer,
-                true
+                true,
+                null
             ]);
         }
         if (markerFiles.length || markerFolders.length || markerTags.length) {
@@ -351,6 +369,8 @@ export async function getImmutableItems(
                     (!frontmatter.location && !frontmatter.mapoverlay)
                 )
                     continue;
+
+                const id = getId();
                 if (frontmatter.location) {
                     let err = false,
                         [lat, long] = frontmatter.location;
@@ -378,7 +398,8 @@ export async function getImmutableItems(
                         long,
                         app.metadataCache.fileToLinktext(file, "", true),
                         undefined,
-                        false
+                        false,
+                        id
                     ]);
                 }
                 if (frontmatter.mapoverlay) {
@@ -411,7 +432,8 @@ export async function getImmutableItems(
                                 color,
                                 loc as [number, number],
                                 length,
-                                desc ?? `${file.basename} overlay`
+                                desc ?? `${file.basename} overlay`,
+                                id
                             ]);
                         }
                     );
@@ -435,7 +457,8 @@ export async function getImmutableItems(
                         overlayColor,
                         frontmatter.location,
                         frontmatter[overlayTag],
-                        `${file.basename}: ${overlayTag}`
+                        `${file.basename}: ${overlayTag}`,
+                        null
                     ]);
                 }
             }
