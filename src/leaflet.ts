@@ -151,6 +151,9 @@ export class LeafletRenderer extends MarkdownRenderChild {
  *
  */
 class LeafletMap extends Events {
+    getMarkerById(id: string): Marker {
+        return this.markers.find(({ id: marker }) => marker === id);
+    }
     id: string;
     contentEl: HTMLElement;
     rendered: boolean;

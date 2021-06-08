@@ -6,7 +6,7 @@ import {
     Plugin,
     TFile
 } from "obsidian";
-import { latLng, Circle } from "leaflet";
+import { latLng, Circle, LatLngTuple } from "leaflet";
 
 //Local Imports
 import "./main.css";
@@ -62,6 +62,7 @@ export default class ObsidianLeaflet extends Plugin {
     markerIcons: IMarkerIcon[];
     maps: IMapInterface[] = [];
     mapFiles: { file: string; maps: string[] }[] = [];
+    watchers: Set<TFile> = new Set();
     /* escapeScope: Scope; */
     async onload(): Promise<void> {
         console.log("Loading Obsidian Leaflet v" + this.manifest.version);
@@ -201,20 +202,23 @@ export default class ObsidianLeaflet extends Plugin {
             });
             const map = renderer.map;
 
-            let { markers: immutableMarkers, overlays: immutableOverlays } =
-                await getImmutableItems(
-                    /* source */
-                    this.app,
-                    params.marker as string[],
-                    params.commandMarker as string[],
-                    params.markerTag as string[][],
-                    params.markerFile as string[],
-                    params.markerFolder as string[],
-                    linksTo.flat(Infinity),
-                    linksFrom.flat(Infinity),
-                    params.overlayTag,
-                    params.overlayColor
-                );
+            let {
+                markers: immutableMarkers,
+                overlays: immutableOverlays,
+                files: watchers
+            } = await getImmutableItems(
+                /* source */
+                this.app,
+                params.marker as string[],
+                params.commandMarker as string[],
+                params.markerTag as string[][],
+                params.markerFile as string[],
+                params.markerFolder as string[],
+                linksTo.flat(Infinity),
+                linksFrom.flat(Infinity),
+                params.overlayTag,
+                params.overlayColor
+            );
             for (let [
                 type,
                 lat,
@@ -276,6 +280,37 @@ export default class ObsidianLeaflet extends Plugin {
                     false
                 );
             }
+
+            /** Register File Watcher to Update Markers/Overlays */
+
+            this.app.vault.on("modify", (file) => {
+                if (!(file instanceof TFile)) return;
+                if (!watchers.has(file)) return;
+                const cache = this.app.metadataCache.getFileCache(file);
+                if (!cache || !cache.frontmatter) return;
+
+                if (
+                    cache.frontmatter.location &&
+                    cache.frontmatter.location instanceof Array
+                ) {
+                    const { location } = cache.frontmatter;
+                    if (
+                        location.length == 2 &&
+                        !location.every((v) => typeof v == "number")
+                    )
+                        return;
+
+                    const marker = map.getMarkerById(watchers.get(file));
+                    if (!marker) return;
+                    if (!marker.loc.equals(latLng(<LatLngTuple>location))) {
+                        marker.setLatLng(latLng(<LatLngTuple>location));
+                    }
+                }
+            });
+
+            this.app.vault.on("delete", (file) => {});
+
+            this.app.vault.on("rename", (file) => {});
 
             const { coords, distanceToZoom } = await this._getCoordinates(
                 lat,

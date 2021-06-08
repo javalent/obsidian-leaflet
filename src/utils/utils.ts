@@ -203,6 +203,7 @@ export async function getImmutableItems(
         desc: string,
         id: string
     ][];
+    files: Map<TFile, string>;
 }> {
     return new Promise(async (resolve, reject) => {
         let markersToReturn: [
@@ -311,6 +312,7 @@ export async function getImmutableItems(
                 null
             ]);
         }
+        let watchers = new Map<TFile, string>();
         if (
             markerFiles.length ||
             markerFolders.length ||
@@ -468,6 +470,8 @@ export async function getImmutableItems(
                         false,
                         id
                     ]);
+
+                    watchers.set(file, id);
                 }
                 if (frontmatter.mapoverlay) {
                     const arr =
@@ -504,6 +508,7 @@ export async function getImmutableItems(
                             ]);
                         }
                     );
+                    watchers.set(file, id);
                 }
 
                 if (
@@ -527,10 +532,15 @@ export async function getImmutableItems(
                         `${file.basename}: ${overlayTag}`,
                         null
                     ]);
+                    watchers.set(file, id);
                 }
             }
         }
-        resolve({ markers: markersToReturn, overlays: overlaysToReturn });
+        resolve({
+            markers: markersToReturn,
+            overlays: overlaysToReturn,
+            files: watchers
+        });
     });
 }
 

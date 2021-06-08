@@ -87,6 +87,8 @@ declare class LeafletMap extends Events {
 
     removeMarker(marker: Marker): void;
 
+    getMarkerById(id: string): Marker;
+
     loadData(data: any): Promise<void>;
 
     distance(latlng1: L.LatLng, latlng2: L.LatLng): string;
