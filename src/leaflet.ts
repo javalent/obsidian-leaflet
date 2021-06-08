@@ -254,6 +254,7 @@ class LeafletMap extends Events {
             minZoom: this.zoom.min,
             zoomDelta: this.zoom.delta,
             zoomSnap: this.zoom.delta,
+            wheelPxPerZoomLevel: 60 * (1 / this.zoom.delta),
             worldCopyJump: this.type === "real",
             fullscreenControl: true
         });
