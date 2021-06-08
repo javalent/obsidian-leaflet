@@ -491,7 +491,7 @@ export async function getImmutableItems(
                             desc: string
                         ]) => {
                             const match = length.match(
-                                /^(\d+(?:\.\d+)?)\s?(\w*)/
+                                OVERLAY_TAG_REGEX
                             );
                             if (!match) {
                                 new Notice(

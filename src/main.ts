@@ -282,35 +282,158 @@ export default class ObsidianLeaflet extends Plugin {
             }
 
             /** Register File Watcher to Update Markers/Overlays */
+            if (watchers.size) {
+                this.registerEvent(
+                    this.app.metadataCache.on("changed", (file) => {
+                        if (!(file instanceof TFile)) return;
+                        if (!watchers.has(file)) return;
+                        const cache = this.app.metadataCache.getFileCache(file);
+                        if (!cache || !cache.frontmatter) return;
 
-            this.app.vault.on("modify", (file) => {
-                if (!(file instanceof TFile)) return;
-                if (!watchers.has(file)) return;
-                const cache = this.app.metadataCache.getFileCache(file);
-                if (!cache || !cache.frontmatter) return;
+                        const fileId = watchers.get(file);
+                        const marker = map.getMarkerById(fileId);
 
-                if (
-                    cache.frontmatter.location &&
-                    cache.frontmatter.location instanceof Array
-                ) {
-                    const { location } = cache.frontmatter;
-                    if (
-                        location.length == 2 &&
-                        !location.every((v) => typeof v == "number")
-                    )
-                        return;
+                        if (
+                            marker &&
+                            cache.frontmatter.location &&
+                            cache.frontmatter.location instanceof Array
+                        ) {
+                            try {
+                                const { location } = cache.frontmatter;
+                                if (
+                                    location.length == 2 &&
+                                    location.every((v) => typeof v == "number")
+                                ) {
+                                    if (
+                                        !marker.loc.equals(
+                                            latLng(<LatLngTuple>location)
+                                        )
+                                    ) {
+                                        marker.setLatLng(
+                                            latLng(<LatLngTuple>location)
+                                        );
+                                    }
+                                }
+                            } catch (e) {
+                                new Notice(
+                                    `There was an error updating the marker for ${file.name}.`
+                                );
+                            }
+                        }
 
-                    const marker = map.getMarkerById(watchers.get(file));
-                    if (!marker) return;
-                    if (!marker.loc.equals(latLng(<LatLngTuple>location))) {
-                        marker.setLatLng(latLng(<LatLngTuple>location));
-                    }
-                }
-            });
+                        if (marker && cache.frontmatter.mapmarker) {
+                            try {
+                                const { mapmarker } = cache.frontmatter;
 
-            this.app.vault.on("delete", (file) => {});
+                                if (
+                                    this.markerIcons.find(
+                                        ({ type }) => type == mapmarker
+                                    )
+                                ) {
+                                    marker.icon = this.markerIcons.find(
+                                        ({ type }) => type == mapmarker
+                                    );
+                                }
+                            } catch (e) {
+                                new Notice(
+                                    `There was an error updating the marker type for ${file.name}.`
+                                );
+                            }
+                        }
 
-            this.app.vault.on("rename", (file) => {});
+                        try {
+                            map.overlays
+                                .filter(({ id }) => id === fileId)
+                                ?.forEach((overlay) => {
+                                    overlay.leafletInstance.remove();
+                                });
+                            map.overlays = map.overlays.filter(
+                                ({ id }) => id != fileId
+                            );
+
+                            cache.frontmatter.mapoverlay?.forEach(
+                                ([
+                                    color = overlayColor ?? "blue",
+                                    loc = [0, 0],
+                                    length = "1 m",
+                                    desc
+                                ]: [
+                                    color: string,
+                                    loc: [number, number],
+                                    length: string,
+                                    desc: string
+                                ]) => {
+                                    const [, radius, unit = "m"] =
+                                        length.match(OVERLAY_TAG_REGEX) ?? [];
+                                    if (!radius || isNaN(Number(radius))) {
+                                        new Notice(
+                                            `Could not parse map overlay length in ${file.name}. Please ensure it is in the format: <distance> <unit>`
+                                        );
+                                        return;
+                                    }
+                                    map.addOverlay(
+                                        {
+                                            color: color,
+                                            loc: loc,
+                                            radius: Number(radius),
+                                            unit: unit as Length,
+                                            desc: desc,
+                                            layer: map.mapLayers[0].id,
+                                            id: fileId
+                                        },
+                                        false
+                                    );
+                                }
+                            );
+                        } catch (e) {
+                            new Notice(
+                                `There was an error updating the overlays for ${file.name}.`
+                            );
+                        }
+                    })
+                );
+
+                this.registerEvent(
+                    this.app.vault.on("delete", (file) => {
+                        if (!(file instanceof TFile)) return;
+                        if (!watchers.has(file)) return;
+                        const fileId = watchers.get(file);
+                        const marker = map.getMarkerById(fileId);
+
+                        map.removeMarker(marker);
+
+                        map.overlays
+                            .filter(({ id }) => id === fileId)
+                            ?.forEach((overlay) => {
+                                overlay.leafletInstance.remove();
+                            });
+                        map.overlays = map.overlays.filter(
+                            ({ id }) => id != fileId
+                        );
+
+                        watchers.delete(file);
+                    })
+                );
+
+                this.registerEvent(
+                    this.app.vault.on("rename", (file) => {
+                        if (!(file instanceof TFile)) return;
+                        if (!watchers.has(file)) return;
+                        const cache = this.app.metadataCache.getFileCache(file);
+                        if (!cache || !cache.frontmatter) return;
+
+                        const fileId = watchers.get(file);
+                        const marker = map.getMarkerById(fileId);
+
+                        if (marker)
+                            marker.link = this.app.metadataCache.fileToLinktext(
+                                file,
+                                "",
+                                true
+                            );
+                    })
+                );
+            }
 
             const { coords, distanceToZoom } = await this._getCoordinates(
                 lat,
