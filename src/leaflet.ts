@@ -284,7 +284,7 @@ class LeafletMap extends Events {
         return this.markerIcons.map(({ type }) => type);
     }
     get displayedMarkers() {
-        return this.markers.filter(({ type }) => this.displaying.has(type));
+        return this.markers.filter(({ type }) => this.displaying.get(type));
     }
 
     get scale() {
@@ -350,21 +350,16 @@ class LeafletMap extends Events {
             }
         }
         /** Move to supplied coordinates */
-        this.initialCoords = [
-            options.coords[0] * this._coordMult[0],
-            options.coords[1] * this._coordMult[1]
-        ];
+        this.setInitialCoords(options.coords);
+
         this.map.panTo(this.initialCoords);
+
         if (options.zoomDistance) {
-            const circle = L.circle(options.coords, {
-                radius: options.zoomDistance
-            });
-            circle.addTo(this.map);
-            this.map.setZoom(this.map.getBoundsZoom(circle.getBounds()), {
-                animate: false
-            });
-            circle.remove();
+            this.setZoomByDistance(options.zoomDistance);
         }
+        this.map.setZoom(this.zoom.default, {
+            animate: false
+        });
 
         /** Build Marker Layer Groups */
 
@@ -419,6 +414,25 @@ class LeafletMap extends Events {
         this.map.on("click", this._handleMapClick.bind(this));
 
         this.group.group.addTo(this.map);
+    }
+    setZoomByDistance(zoomDistance: number) {
+        if (!zoomDistance) {
+            this.zoom.default = this.options.defaultZoom;
+        }
+        const circle = L.circle(this.initialCoords, {
+            radius: zoomDistance,
+            fillOpacity: 0,
+            opacity: 0
+        });
+        circle.addTo(this.map);
+        this.zoom.default = this.map.getBoundsZoom(circle.getBounds());
+        circle.remove();
+    }
+    setInitialCoords(coords: [number, number]) {
+        this.initialCoords = [
+            coords[0] * this._coordMult[0],
+            coords[1] * this._coordMult[1]
+        ];
     }
 
     @catchError

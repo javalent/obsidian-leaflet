@@ -203,7 +203,7 @@ export async function getImmutableItems(
         desc: string,
         id: string
     ][];
-    files: Map<TFile, string>;
+    files: Map<TFile, Map<string, string>>;
 }> {
     return new Promise(async (resolve, reject) => {
         let markersToReturn: [
@@ -312,7 +312,7 @@ export async function getImmutableItems(
                 null
             ]);
         }
-        let watchers = new Map<TFile, string>();
+        let watchers = new Map<TFile, Map<string, string>>();
         if (
             markerFiles.length ||
             markerFolders.length ||
@@ -430,6 +430,7 @@ export async function getImmutableItems(
                     path.replace(/(^\[{1,2}|\]{1,2}$)/g, ""),
                     ""
                 );
+                const idMap = new Map<string, string>();
                 if (!file || !(file instanceof TFile)) continue;
                 let { frontmatter } = app.metadataCache.getFileCache(file);
 
@@ -471,7 +472,8 @@ export async function getImmutableItems(
                         id
                     ]);
 
-                    watchers.set(file, id);
+                    /* watchers.set(file, watchers.get(file).add(id)); */
+                    idMap.set("marker", id);
                 }
                 if (frontmatter.mapoverlay) {
                     const arr =
@@ -490,9 +492,7 @@ export async function getImmutableItems(
                             length: string,
                             desc: string
                         ]) => {
-                            const match = length.match(
-                                OVERLAY_TAG_REGEX
-                            );
+                            const match = length.match(OVERLAY_TAG_REGEX);
                             if (!match) {
                                 new Notice(
                                     `Could not parse map overlay length in ${file.name}. Please ensure it is in the format: <distance> <unit>`
@@ -508,7 +508,7 @@ export async function getImmutableItems(
                             ]);
                         }
                     );
-                    watchers.set(file, id);
+                    idMap.set("overlay", id);
                 }
 
                 if (
@@ -530,10 +530,12 @@ export async function getImmutableItems(
                         frontmatter.location,
                         frontmatter[overlayTag],
                         `${file.basename}: ${overlayTag}`,
-                        null
+                        id
                     ]);
-                    watchers.set(file, id);
+                    idMap.set("overlayTag", "overlayTag");
+                    //watchers.set(file, `overlayTag|${id}`);
                 }
+                watchers.set(file, idMap);
             }
         }
         resolve({

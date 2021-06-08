@@ -4,7 +4,8 @@ import {
     MarkdownPostProcessorContext,
     setIcon,
     Plugin,
-    TFile
+    TFile,
+    CachedMetadata
 } from "obsidian";
 import { latLng, Circle, LatLngTuple } from "leaflet";
 
@@ -217,7 +218,7 @@ export default class ObsidianLeaflet extends Plugin {
                 linksTo.flat(Infinity),
                 linksFrom.flat(Infinity),
                 params.overlayTag,
-                params.overlayColor
+                overlayColor
             );
             for (let [
                 type,
@@ -281,6 +282,23 @@ export default class ObsidianLeaflet extends Plugin {
                 );
             }
 
+            const { coords, distanceToZoom, file } = await this._getCoordinates(
+                lat,
+                long,
+                coordinates,
+                params.zoomTag,
+                map
+            );
+
+            if (file) {
+                //watchers.set(file, "coordinates");
+                watchers.set(
+                    file,
+                    watchers.get(file)?.set("coordinates", "coordinates") ??
+                        new Map([["coordinates", "coordinates"]])
+                );
+            }
+
             /** Register File Watcher to Update Markers/Overlays */
             if (watchers.size) {
                 this.registerEvent(
@@ -289,17 +307,54 @@ export default class ObsidianLeaflet extends Plugin {
                         if (!watchers.has(file)) return;
                         const cache = this.app.metadataCache.getFileCache(file);
                         if (!cache || !cache.frontmatter) return;
+                        const frontmatter = cache.frontmatter;
 
-                        const fileId = watchers.get(file);
-                        const marker = map.getMarkerById(fileId);
+                        let fileIds = watchers.get(file);
+                        if (fileIds.has("coordinates")) {
+                            const { latitude, longitude, distanceToZoom } =
+                                this._getCoordsFromCache(
+                                    cache,
+                                    params.zoomTag,
+                                    map
+                                );
+                            if (
+                                !isNaN(Number(latitude)) &&
+                                !isNaN(Number(longitude))
+                            ) {
+                                map.setInitialCoords([
+                                    Number(latitude),
+                                    Number(longitude)
+                                ]);
+                            }
+                            if (distanceToZoom) {
+                                map.setZoomByDistance(distanceToZoom);
+                            }
+                        }
+                        let overlays = [];
+                        if (fileIds.has("overlayTag")) {
+                            if (
+                                Object.prototype.hasOwnProperty.call(
+                                    frontmatter,
+                                    params.overlayTag
+                                )
+                            ) {
+                                overlays.push([
+                                    overlayColor ?? "blue",
+                                    frontmatter.location ?? [0, 0],
+                                    frontmatter[params.overlayTag],
+                                    `${file.basename}: ${params.overlayTag}`
+                                ]);
+                            }
+                        }
+                        const marker = map.getMarkerById(fileIds.get("marker"));
 
                         if (
                             marker &&
-                            cache.frontmatter.location &&
-                            cache.frontmatter.location instanceof Array
+                            frontmatter.location &&
+                            frontmatter.location instanceof Array
                         ) {
                             try {
-                                const { location } = cache.frontmatter;
+                                const { location } = frontmatter;
                                 if (
                                     location.length == 2 &&
                                     location.every((v) => typeof v == "number")
@@ -321,9 +376,9 @@ export default class ObsidianLeaflet extends Plugin {
                             }
                         }
 
-                        if (marker && cache.frontmatter.mapmarker) {
+                        if (marker && frontmatter.mapmarker) {
                             try {
-                                const { mapmarker } = cache.frontmatter;
+                                const { mapmarker } = frontmatter;
 
                                 if (
                                     this.markerIcons.find(
@@ -343,15 +398,26 @@ export default class ObsidianLeaflet extends Plugin {
 
                         try {
                             map.overlays
-                                .filter(({ id }) => id === fileId)
+                                .filter(
+                                    ({ id }) => id === fileIds.get("overlay")
+                                )
                                 ?.forEach((overlay) => {
-                                    overlay.leafletInstance.remove();
+                                    try {
+                                        overlay.leafletInstance.remove();
+                                    } catch (e) {}
                                 });
                             map.overlays = map.overlays.filter(
-                                ({ id }) => id != fileId
+                                ({ id }) => id != fileIds.get("overlay")
                             );
 
-                            cache.frontmatter.mapoverlay?.forEach(
+                            if (
+                                frontmatter.mapoverlay &&
+                                frontmatter.mapoverlay instanceof Array
+                            ) {
+                                overlays.push(...frontmatter.mapoverlay);
+                            }
+
+                            overlays.forEach(
                                 ([
                                     color = overlayColor ?? "blue",
                                     loc = [0, 0],
@@ -379,7 +445,7 @@ export default class ObsidianLeaflet extends Plugin {
                                             unit: unit as Length,
                                             desc: desc,
                                             layer: map.mapLayers[0].id,
-                                            id: fileId
+                                            id: fileIds.get("overlay")
                                         },
                                         false
                                     );
@@ -398,17 +464,17 @@ export default class ObsidianLeaflet extends Plugin {
                         if (!(file instanceof TFile)) return;
                         if (!watchers.has(file)) return;
                         const fileId = watchers.get(file);
-                        const marker = map.getMarkerById(fileId);
+                        const marker = map.getMarkerById(fileId.get("marker"));
 
                         map.removeMarker(marker);
 
                         map.overlays
-                            .filter(({ id }) => id === fileId)
+                            .filter(({ id }) => id === fileId.get("overlay"))
                             ?.forEach((overlay) => {
                                 overlay.leafletInstance.remove();
                             });
                         map.overlays = map.overlays.filter(
-                            ({ id }) => id != fileId
+                            ({ id }) => id != fileId.get("overlay")
                         );
 
                         watchers.delete(file);
@@ -423,7 +489,7 @@ export default class ObsidianLeaflet extends Plugin {
                         if (!cache || !cache.frontmatter) return;
 
                         const fileId = watchers.get(file);
-                        const marker = map.getMarkerById(fileId);
+                        const marker = map.getMarkerById(fileId.get("marker"));
 
                         if (marker)
                             marker.link = this.app.metadataCache.fileToLinktext(
@@ -434,31 +500,6 @@ export default class ObsidianLeaflet extends Plugin {
                     })
                 );
             }
-
-            const { coords, distanceToZoom } = await this._getCoordinates(
-                lat,
-                long,
-                coordinates,
-                params.zoomTag,
-                map
-            );
-
-            /*             let coords: [number, number] = [undefined, undefined];
-            let err: boolean = false;
-            try {
-                coords = [
-                    Number(`${lat}`?.split("%").shift()),
-                    Number(`${long}`?.split("%").shift())
-                ];
-            } catch (e) {
-                err = true;
-            }
-
-            if (err || isNaN(coords[0]) || isNaN(coords[1])) {
-                new Notice(
-                    "There was an error with the provided latitude and longitude. Using defaults."
-                );
-            } */
 
             let mapData = this.AppData.mapMarkers.find(
                 ({ id: mapId }) => mapId == id
@@ -538,51 +579,28 @@ export default class ObsidianLeaflet extends Plugin {
         coordinates: [string, string] | [[string]],
         zoomTag: string,
         map: LeafletMap
-    ): Promise<{ coords: [number, number]; distanceToZoom: number }> {
+    ): Promise<{
+        coords: [number, number];
+        distanceToZoom: number;
+        file: TFile;
+    }> {
         let latitude = lat;
         let longitude = long;
         let coords: [number, number] = [undefined, undefined];
-        let distanceToZoom;
+        let distanceToZoom, file;
         if (coordinates instanceof Array && coordinates.length) {
-            const file = await this.app.metadataCache.getFirstLinkpathDest(
+            file = await this.app.metadataCache.getFirstLinkpathDest(
                 coordinates.flat()[0].replace(/(\[|\])/, ""),
                 ""
             );
-            file: if (file && file instanceof TFile) {
+            if (file && file instanceof TFile) {
                 //internal, try to read note yaml for coords
-                const cache = await this.app.metadataCache.getFileCache(file);
-                if (
-                    !cache ||
-                    !cache.frontmatter ||
-                    !cache.frontmatter.location ||
-                    !(cache.frontmatter.location instanceof Array)
-                )
-                    break file;
-                const location = cache.frontmatter.location;
-                latitude = location[0];
-                longitude = location[1];
-
-                if (
-                    !zoomTag ||
-                    !Object.prototype.hasOwnProperty.call(
-                        cache.frontmatter,
-                        zoomTag
-                    )
-                )
-                    break file;
-
-                const overlay = cache.frontmatter[zoomTag];
-                const [, distance, unit] =
-                    overlay?.match(OVERLAY_TAG_REGEX) ?? [];
-                if (!distance) break file;
-                //try to scale default zoom
-
-                distanceToZoom = convert(distance)
-                    .from((unit as Length) ?? "m")
-                    .to(map.type == "image" ? map.unit : "m");
-                if (map.type == "image") {
-                    distanceToZoom = distanceToZoom / map.scale;
-                }
+                ({ latitude, longitude, distanceToZoom } =
+                    this._getCoordsFromCache(
+                        this.app.metadataCache.getFileCache(file),
+                        zoomTag,
+                        map
+                    ));
             } else if (coordinates.length == 2) {
                 latitude = coordinates[0];
                 longitude = coordinates[1];
@@ -620,7 +638,47 @@ export default class ObsidianLeaflet extends Plugin {
                 coords[1] = this.AppData.long;
             }
         }
-        return { coords, distanceToZoom };
+        return { coords, distanceToZoom, file };
+    }
+    private _getCoordsFromCache(
+        cache: CachedMetadata,
+        zoomTag: string,
+        map: LeafletMap
+    ): {
+        latitude: string;
+        longitude: string;
+        distanceToZoom: number;
+    } {
+        /* const cache = await this.app.metadataCache.getFileCache(file); */
+        let latitude, longitude, distanceToZoom;
+        if (
+            cache &&
+            cache.frontmatter &&
+            cache.frontmatter.location &&
+            cache.frontmatter.location instanceof Array
+        ) {
+            const location = cache.frontmatter.location;
+            latitude = location[0];
+            longitude = location[1];
+        }
+
+        if (
+            zoomTag &&
+            Object.prototype.hasOwnProperty.call(cache.frontmatter, zoomTag)
+        ) {
+            const overlay = cache.frontmatter[zoomTag];
+            const [, distance, unit] = overlay?.match(OVERLAY_TAG_REGEX) ?? [];
+            if (!distance) return;
+            //try to scale default zoom
+
+            distanceToZoom = convert(distance)
+                .from((unit as Length) ?? "m")
+                .to(map.type == "image" ? map.unit : "m");
+            if (map.type == "image") {
+                distanceToZoom = distanceToZoom / map.scale;
+            }
+        }
+        return { latitude, longitude, distanceToZoom };
     }
 
     async loadSettings() {
