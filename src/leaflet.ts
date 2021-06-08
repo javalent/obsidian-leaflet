@@ -151,6 +151,9 @@ export class LeafletRenderer extends MarkdownRenderChild {
  *
  */
 class LeafletMap extends Events {
+    getMarkerById(id: string): Marker {
+        return this.markers.find(({ id: marker }) => marker === id);
+    }
     id: string;
     contentEl: HTMLElement;
     rendered: boolean;
@@ -254,6 +257,7 @@ class LeafletMap extends Events {
             minZoom: this.zoom.min,
             zoomDelta: this.zoom.delta,
             zoomSnap: this.zoom.delta,
+            wheelPxPerZoomLevel: 60 * (1 / this.zoom.delta),
             worldCopyJump: this.type === "real",
             fullscreenControl: true
         });

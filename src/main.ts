@@ -6,7 +6,7 @@ import {
     Plugin,
     TFile
 } from "obsidian";
-import { latLng, Circle } from "leaflet";
+import { latLng, Circle, LatLngTuple } from "leaflet";
 
 //Local Imports
 import "./main.css";
@@ -62,6 +62,7 @@ export default class ObsidianLeaflet extends Plugin {
     markerIcons: IMarkerIcon[];
     maps: IMapInterface[] = [];
     mapFiles: { file: string; maps: string[] }[] = [];
+    watchers: Set<TFile> = new Set();
     /* escapeScope: Scope; */
     async onload(): Promise<void> {
         console.log("Loading Obsidian Leaflet v" + this.manifest.version);
@@ -201,20 +202,23 @@ export default class ObsidianLeaflet extends Plugin {
             });
             const map = renderer.map;
 
-            let { markers: immutableMarkers, overlays: immutableOverlays } =
-                await getImmutableItems(
-                    /* source */
-                    this.app,
-                    params.marker as string[],
-                    params.commandMarker as string[],
-                    params.markerTag as string[][],
-                    params.markerFile as string[],
-                    params.markerFolder as string[],
-                    linksTo.flat(Infinity),
-                    linksFrom.flat(Infinity),
-                    params.overlayTag,
-                    params.overlayColor
-                );
+            let {
+                markers: immutableMarkers,
+                overlays: immutableOverlays,
+                files: watchers
+            } = await getImmutableItems(
+                /* source */
+                this.app,
+                params.marker as string[],
+                params.commandMarker as string[],
+                params.markerTag as string[][],
+                params.markerFile as string[],
+                params.markerFolder as string[],
+                linksTo.flat(Infinity),
+                linksFrom.flat(Infinity),
+                params.overlayTag,
+                params.overlayColor
+            );
             for (let [
                 type,
                 lat,
@@ -274,6 +278,160 @@ export default class ObsidianLeaflet extends Plugin {
                         id: id
                     },
                     false
+                );
+            }
+
+            /** Register File Watcher to Update Markers/Overlays */
+            if (watchers.size) {
+                this.registerEvent(
+                    this.app.metadataCache.on("changed", (file) => {
+                        if (!(file instanceof TFile)) return;
+                        if (!watchers.has(file)) return;
+                        const cache = this.app.metadataCache.getFileCache(file);
+                        if (!cache || !cache.frontmatter) return;
+
+                        const fileId = watchers.get(file);
+                        const marker = map.getMarkerById(fileId);
+
+                        if (
+                            marker &&
+                            cache.frontmatter.location &&
+                            cache.frontmatter.location instanceof Array
+                        ) {
+                            try {
+                                const { location } = cache.frontmatter;
+                                if (
+                                    location.length == 2 &&
+                                    location.every((v) => typeof v == "number")
+                                ) {
+                                    if (
+                                        !marker.loc.equals(
+                                            latLng(<LatLngTuple>location)
+                                        )
+                                    ) {
+                                        marker.setLatLng(
+                                            latLng(<LatLngTuple>location)
+                                        );
+                                    }
+                                }
+                            } catch (e) {
+                                new Notice(
+                                    `There was an error updating the marker for ${file.name}.`
+                                );
+                            }
+                        }
+
+                        if (marker && cache.frontmatter.mapmarker) {
+                            try {
+                                const { mapmarker } = cache.frontmatter;
+
+                                if (
+                                    this.markerIcons.find(
+                                        ({ type }) => type == mapmarker
+                                    )
+                                ) {
+                                    marker.icon = this.markerIcons.find(
+                                        ({ type }) => type == mapmarker
+                                    );
+                                }
+                            } catch (e) {
+                                new Notice(
+                                    `There was an error updating the marker type for ${file.name}.`
+                                );
+                            }
+                        }
+
+                        try {
+                            map.overlays
+                                .filter(({ id }) => id === fileId)
+                                ?.forEach((overlay) => {
+                                    overlay.leafletInstance.remove();
+                                });
+                            map.overlays = map.overlays.filter(
+                                ({ id }) => id != fileId
+                            );
+
+                            cache.frontmatter.mapoverlay?.forEach(
+                                ([
+                                    color = overlayColor ?? "blue",
+                                    loc = [0, 0],
+                                    length = "1 m",
+                                    desc
+                                ]: [
+                                    color: string,
+                                    loc: [number, number],
+                                    length: string,
+                                    desc: string
+                                ]) => {
+                                    const [, radius, unit = "m"] =
+                                        length.match(OVERLAY_TAG_REGEX) ?? [];
+                                    if (!radius || isNaN(Number(radius))) {
+                                        new Notice(
+                                            `Could not parse map overlay length in ${file.name}. Please ensure it is in the format: <distance> <unit>`
+                                        );
+                                        return;
+                                    }
+                                    map.addOverlay(
+                                        {
+                                            color: color,
+                                            loc: loc,
+                                            radius: Number(radius),
+                                            unit: unit as Length,
+                                            desc: desc,
+                                            layer: map.mapLayers[0].id,
+                                            id: fileId
+                                        },
+                                        false
+                                    );
+                                }
+                            );
+                        } catch (e) {
+                            new Notice(
+                                `There was an error updating the overlays for ${file.name}.`
+                            );
+                        }
+                    })
+                );
+
+                this.registerEvent(
+                    this.app.vault.on("delete", (file) => {
+                        if (!(file instanceof TFile)) return;
+                        if (!watchers.has(file)) return;
+                        const fileId = watchers.get(file);
+                        const marker = map.getMarkerById(fileId);
+
+                        map.removeMarker(marker);
+
+                        map.overlays
+                            .filter(({ id }) => id === fileId)
+                            ?.forEach((overlay) => {
+                                overlay.leafletInstance.remove();
+                            });
+                        map.overlays = map.overlays.filter(
+                            ({ id }) => id != fileId
+                        );
+
+                        watchers.delete(file);
+                    })
+                );
+
+                this.registerEvent(
+                    this.app.vault.on("rename", (file) => {
+                        if (!(file instanceof TFile)) return;
+                        if (!watchers.has(file)) return;
+                        const cache = this.app.metadataCache.getFileCache(file);
+                        if (!cache || !cache.frontmatter) return;
+
+                        const fileId = watchers.get(file);
+                        const marker = map.getMarkerById(fileId);
+
+                        if (marker)
+                            marker.link = this.app.metadataCache.fileToLinktext(
+                                file,
+                                "",
+                                true
+                            );
+                    })
                 );
             }
 
