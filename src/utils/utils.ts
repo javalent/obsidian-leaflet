@@ -334,27 +334,33 @@ export async function getImmutableItems(
             //error is thrown here because plugins isn't exposed on Obsidian App
             //@ts-expect-error
             const cache = app.plugins.plugins.dataview?.index;
-            if (cache /*  && markerTags.length > 0 */) {
-                const tagSet = new Set();
-                for (let tags of markerTags) {
-                    tags.map((tag) => {
-                        if (!tag.includes("#")) {
-                            tag = `#${tag}`;
-                        }
-                        return cache.tags.getInverse(tag.trim());
-                    })
-                        .reduce(
-                            (a, b) =>
-                                new Set(
-                                    [...b].filter(Set.prototype.has, new Set(a))
-                                )
-                        )
-                        .forEach(tagSet.add, tagSet);
-                }
-                if (files.size) {
-                    files = new Set([...files].filter(tagSet.has, tagSet));
-                } else {
-                    tagSet.forEach(files.add, files);
+            if (cache) {
+                if (markerTags.length > 0) {
+                    const tagSet = new Set();
+                    for (let tags of markerTags) {
+                        tags.map((tag) => {
+                            if (!tag.includes("#")) {
+                                tag = `#${tag}`;
+                            }
+                            return cache.tags.getInverse(tag.trim());
+                        })
+                            .reduce(
+                                (a, b) =>
+                                    new Set(
+                                        [...b].filter(
+                                            Set.prototype.has,
+                                            new Set(a)
+                                        )
+                                    )
+                            )
+                            .forEach(tagSet.add, tagSet);
+                    }
+
+                    if (files.size) {
+                        files = new Set([...files].filter(tagSet.has, tagSet));
+                    } else {
+                        tagSet.forEach(files.add, files);
+                    }
                 }
                 for (let link of linksTo) {
                     //invMap -> linksTo
