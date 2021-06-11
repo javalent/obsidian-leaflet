@@ -14,9 +14,12 @@ export class DistanceDisplay extends L.Control {
     controlEl: HTMLElement;
     textEl: HTMLSpanElement;
     line: L.Polyline;
-    map: L.Map;
     popups: [L.Popup, L.Popup];
-    constructor(opts: L.ControlOptions, line: L.Polyline) {
+    constructor(
+        opts: L.ControlOptions,
+        line: L.Polyline,
+        public map: LeafletMap
+    ) {
         super(opts);
         this.line = line;
         this.popups = [
@@ -53,7 +56,7 @@ export class DistanceDisplay extends L.Control {
                     maximumFractionDigits: LAT_LONG_DECIMALS
                 })}]`
             );
-            this.map.openPopup(this.popups[0]);
+            this.map.map.openPopup(this.popups[0]);
 
             this.popups[1].setLatLng(latlngs[1]);
             this.popups[1].setContent(
@@ -63,10 +66,10 @@ export class DistanceDisplay extends L.Control {
                     maximumFractionDigits: LAT_LONG_DECIMALS
                 })}]`
             );
-            this.map.openPopup(this.popups[1]);
+            this.map.map.openPopup(this.popups[1]);
 
             this.line.setStyle({ color: "blue", dashArray: "4 1" });
-            this.line.addTo(this.map);
+            this.line.addTo(this.map.map);
         }
     }
     onClick(evt: MouseEvent) {
@@ -74,7 +77,7 @@ export class DistanceDisplay extends L.Control {
         evt.preventDefault();
 
         if (this.line) {
-            this.map.fitBounds(
+            this.map.map.fitBounds(
                 L.latLngBounds(
                     this.line.getLatLngs()[0] as L.LatLng,
                     this.line.getLatLngs()[1] as L.LatLng
@@ -92,17 +95,17 @@ export class DistanceDisplay extends L.Control {
         if (this.line) {
             this.line.remove();
         }
-        this.map.closePopup(this.popups[0]);
-        this.map.closePopup(this.popups[1]);
+        this.map.map.closePopup(this.popups[0]);
+        this.map.map.closePopup(this.popups[1]);
     }
-    onAdd(map: L.Map) {
-        this.map = map;
+    onAdd() {
+        /* this.map = map; */
         this.controlEl = L.DomUtil.create(
             "div",
             "leaflet-bar leaflet-distance-control hidden"
         );
         this.textEl = this.controlEl.createSpan();
-        this.textEl.setText("0 km");
+        this.textEl.setText(`0 ${this.map.unit}`);
 
         this.initEvents();
 
@@ -115,9 +118,10 @@ export class DistanceDisplay extends L.Control {
 }
 export const distanceDisplay = function (
     opts: L.ControlOptions,
-    line: L.Polyline
+    line: L.Polyline,
+    map: LeafletMap
 ) {
-    return new DistanceDisplay(opts, line);
+    return new DistanceDisplay(opts, line, map);
 };
 
 interface FontAwesomeControlOptions extends L.ControlOptions {
