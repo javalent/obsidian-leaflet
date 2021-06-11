@@ -693,7 +693,8 @@ class LeafletMap extends Events {
             {
                 position: "bottomleft"
             },
-            this._previousDistanceLine
+            this._previousDistanceLine,
+            this
         ).addTo(this.map);
     }
 
