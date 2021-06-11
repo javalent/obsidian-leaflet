@@ -386,9 +386,7 @@ export default class ObsidianLeaflet extends Plugin {
                                     ({ id }) => id === fileIds.get("overlay")
                                 )
                                 ?.forEach((overlay) => {
-                                    try {
-                                        overlay.leafletInstance.remove();
-                                    } catch (e) {}
+                                    overlay.leafletInstance.remove();
                                 });
                             map.overlays = map.overlays.filter(
                                 ({ id }) => id != fileIds.get("overlay")
@@ -404,7 +402,13 @@ export default class ObsidianLeaflet extends Plugin {
                             const overlayArray: IOverlayData[] = [
                                 ...overlays
                             ].map(
-                                ([color, loc, length, desc, id = getId()]) => {
+                                ([
+                                    color,
+                                    loc,
+                                    length,
+                                    desc,
+                                    id = fileIds.get("overlay")
+                                ]) => {
                                     const match =
                                         length.match(OVERLAY_TAG_REGEX);
                                     if (!match || isNaN(Number(match[1]))) {

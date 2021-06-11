@@ -532,6 +532,7 @@ export async function getImmutableItems(
                         `${file.basename}: ${overlayTag}`,
                         id
                     ]);
+
                     idMap.set("overlayTag", "overlayTag");
                     //watchers.set(file, `overlayTag|${id}`);
                 }
