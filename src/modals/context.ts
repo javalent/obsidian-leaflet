@@ -4,7 +4,11 @@ import { ObsidianLeaflet, LeafletMap, IOverlayData, Marker } from "../@types";
 
 import { PathSuggestionModal } from "./path";
 import { CommandSuggestionModal } from "./command";
-import { removeValidationError, setValidationError } from "src/utils";
+import {
+    getGroupSeparator,
+    removeValidationError,
+    setValidationError
+} from "src/utils";
 
 import { DISTANCE_DECIMALS, UNIT_NAME_ALIASES } from "src/utils/constants";
 import convert from "convert";
@@ -155,10 +159,7 @@ export class OverlayContextModal extends Modal {
         this.contentEl.empty();
 
         let radiusInput: TextComponent;
-
-        let radius = convert(this.tempOverlay.radius)
-            .from(this.map.type == "image" ? this.map.unit : "m")
-            .to(this.tempOverlay.unit ?? "m");
+        let radius = this.tempOverlay.radius;
         if (this.map.type == "image") {
             radius = radius * this.map.scale;
         }
@@ -171,15 +172,14 @@ export class OverlayContextModal extends Modal {
             )
             .addText((t) => {
                 radiusInput = t;
+                const regex = new RegExp(
+                    `\\${getGroupSeparator(this.map.locale) ?? ","}`,
+                    "g"
+                );
                 t.setValue(
-                    `${
-                        /* this.tempOverlay.radius */ radius.toLocaleString(
-                            this.map.locale,
-                            {
-                                maximumFractionDigits: DISTANCE_DECIMALS
-                            }
-                        )
-                    }`
+                    `${this.map.distanceFormatter
+                        .format(radius)
+                        .replace(regex, "")}`
                 );
                 t.inputEl.onblur = () => {
                     if (
