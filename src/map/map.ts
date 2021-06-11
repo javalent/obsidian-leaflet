@@ -4,7 +4,8 @@ import {
     DivIconMarkerOptions,
     IMarkerIcon,
     MarkerDivIconOptions,
-    Marker as MarkerDefinition
+    Marker as MarkerDefinition,
+    LeafletMap
 } from "../@types";
 
 class MarkerDivIcon extends DivIcon {
@@ -62,38 +63,43 @@ export class Marker implements MarkerDefinition {
     private _link: string;
     private _mutable: boolean;
     private _type: string;
-    private _loc: [number, number];
     leafletInstance: DivIconMarker;
     loc: L.LatLng;
+    percent: [number, number];
     id: string;
     layer: string;
     command: boolean;
     zoom: number;
     maxZoom: number;
     divIcon: MarkerDivIcon;
-    constructor({
-        id,
-        icon,
-        type,
-        loc,
-        link,
-        layer,
-        mutable,
-        command,
-        zoom,
-        maxZoom = zoom
-    }: {
-        id: string;
-        icon: MarkerDivIcon;
-        type: string;
-        loc: L.LatLng;
-        link: string;
-        layer: string;
-        mutable: boolean;
-        command: boolean;
-        zoom: number;
-        maxZoom?: number;
-    }) {
+    constructor(
+        private map: LeafletMap,
+        {
+            id,
+            icon,
+            type,
+            loc,
+            link,
+            layer,
+            mutable,
+            command,
+            zoom,
+            percent,
+            maxZoom = zoom
+        }: {
+            id: string;
+            icon: MarkerDivIcon;
+            type: string;
+            loc: L.LatLng;
+            link: string;
+            layer: string;
+            mutable: boolean;
+            command: boolean;
+            zoom: number;
+            percent: [number, number];
+            maxZoom?: number;
+        }
+    ) {
         this.leafletInstance = divIconMarker(
             loc,
             {
@@ -117,6 +123,7 @@ export class Marker implements MarkerDefinition {
         this.mutable = mutable;
         this.command = command;
         this.divIcon = icon;
+        this.percent = percent;
 
         this.zoom = zoom;
         this.maxZoom = maxZoom;
@@ -156,29 +163,31 @@ export class Marker implements MarkerDefinition {
         }
     }
     set icon(x: IMarkerIcon) {
-        
         this.type = x.type;
         this.leafletInstance.setIcon(x.icon);
     }
+    get latLng() {
+        return this.loc;
+    }
+    get pixels(): [number, number] {
+        const point = this.map.map.project(this.loc, this.map.zoom.max - 1);
+        return [point.x, point.y];
+    }
     setLatLng(latlng: L.LatLng) {
         this.loc = latlng;
+        if (this.map.rendered && this.map.type === "image") {
+            let { x, y } = this.map.map.project(
+                this.loc,
+                this.map.zoom.max - 1
+            );
+            this.percent = [
+                x / this.map.group.dimensions[0],
+                y / this.map.group.dimensions[1]
+            ];
+        }
         this.leafletInstance.setLatLng(latlng);
     }
     remove() {
         this.leafletInstance.remove();
-    }
-    static from(marker: Marker): Marker {
-        return new Marker({
-            id: marker.id,
-            icon: marker.divIcon,
-            type: marker.type,
-            loc: marker.loc,
-            link: marker.link,
-            layer: marker.layer,
-            mutable: marker.mutable,
-            zoom: marker.zoom,
-            maxZoom: marker.maxZoom,
-            command: marker.command
-        });
     }
 }

@@ -233,6 +233,7 @@ export default class ObsidianLeaflet extends Plugin {
                 map.createMarker(
                     this.markerIcons.find(({ type: t }) => t == type),
                     latLng([Number(lat), Number(long)]),
+                    undefined,
                     link?.trim(),
                     id,
                     layer,
@@ -577,12 +578,11 @@ export default class ObsidianLeaflet extends Plugin {
                 });
             }
 
-            map.on("rendered", () => {
+            map.on("rendered", async () => {
                 if (layerData.length > 1)
                     map.loadAdditionalMapLayers(layerData.slice(1));
+                await this.saveSettings();
             });
-
-            await this.saveSettings();
         } catch (e) {
             console.error(e);
             new Notice("There was an error loading the map.");
@@ -732,6 +732,7 @@ export default class ObsidianLeaflet extends Plugin {
                             type: marker.type,
                             id: marker.id,
                             loc: [marker.loc.lat, marker.loc.lng],
+                            percent: marker.percent,
                             link: marker.link,
                             layer: marker.layer,
                             command: marker.command || false,
@@ -844,6 +845,7 @@ export default class ObsidianLeaflet extends Plugin {
             let marker = map.createMarker(
                 map.markerIcons[0],
                 map.map.mouseEventToLatLng(evt),
+                undefined,
                 file
             );
             marker.leafletInstance.closeTooltip();

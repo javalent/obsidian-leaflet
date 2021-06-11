@@ -190,11 +190,6 @@ class LeafletMap extends Events {
         maximumFractionDigits: LAT_LONG_DECIMALS
     });
 
-    get conversionUnit() {
-        if (this.type == "image") return this.unit;
-        return "m";
-    }
-
     private _resize: ResizeObserver;
     private _distanceMultipler: number = 1;
     private _distanceEvent: L.LatLng | undefined = undefined;
@@ -348,9 +343,7 @@ class LeafletMap extends Events {
         /** Get layers
          *  Returns TileLayer (real) or ImageOverlay (image)
          */
-        this.layer = await this._buildLayersForType(
-            /* this.type,  */ options.layer
-        );
+        this.layer = await this._buildLayersForType(options.layer);
 
         /** Render map */
         switch (this.type) {
@@ -375,8 +368,23 @@ class LeafletMap extends Events {
             animate: false
         });
 
-        /** Build Marker Layer Groups */
-
+        if (
+            this.type == "image" &&
+            this.markers.filter((marker) => !marker.percent).length > 0
+        ) {
+            this.markers
+                .filter((marker) => !marker.percent)
+                .forEach((marker) => {
+                    const { x, y } = this.map.project(
+                        marker.loc,
+                        this.zoom.max - 1
+                    );
+                    marker.percent = [
+                        x / this.group.dimensions[0],
+                        y / this.group.dimensions[1]
+                    ];
+                });
+        }
         /** Add markers to map */
         this.markers
             .filter(
@@ -384,9 +392,23 @@ class LeafletMap extends Events {
                     !marker.layer || marker.layer === this.mapLayers[0].id
             )
             .forEach((marker) => {
+                if (marker.percent) {
+                    const latlng = this.map.unproject(
+                        [
+                            marker.percent[0] * this.group.dimensions[0],
+                            marker.percent[1] * this.group.dimensions[1]
+                        ],
+                        this.zoom.max - 1
+                    );
+                    console.log(marker.loc, latlng);
+                    if (latlng != marker.loc) marker.loc = latlng;
+                }
+
                 const layer = this.mapLayers[0];
                 const markerGroup =
                     layer.markers[marker.type] || layer.markers["default"];
+
+                marker.leafletInstance.setLatLng(marker.latLng);
                 markerGroup.addLayer(marker.leafletInstance);
 
                 this.displaying.set(marker.type, true);
@@ -499,7 +521,7 @@ class LeafletMap extends Events {
             ({ type }) => type == markerToBeAdded.type
         ).icon;
 
-        const marker = new Marker({
+        const marker = new Marker(this, {
             id: markerToBeAdded.id,
             type: markerToBeAdded.type,
             loc: markerToBeAdded.loc,
@@ -510,7 +532,8 @@ class LeafletMap extends Events {
                 : this.group?.id,
             mutable: markerToBeAdded.mutable,
             command: markerToBeAdded.command || false,
-            zoom: this.map.getMaxZoom()
+            zoom: this.map.getMaxZoom(),
+            percent: markerToBeAdded.percent
         });
 
         this._pushMarker(marker);
@@ -520,6 +543,7 @@ class LeafletMap extends Events {
     createMarker(
         markerIcon: IMarkerIcon,
         loc: L.LatLng,
+        percent: [number, number],
         link: string | undefined = undefined,
         id: string = getId(),
         layer: string | undefined = undefined,
@@ -539,7 +563,7 @@ class LeafletMap extends Events {
             type = markerIcon.type;
         }
 
-        const marker = new Marker({
+        const marker = new Marker(this, {
             id: id,
             type: type,
             loc: loc,
@@ -548,7 +572,8 @@ class LeafletMap extends Events {
             layer: layer ? layer : this.group?.id,
             mutable: mutable,
             command: command,
-            zoom: zoom ?? this.zoom.max
+            zoom: zoom ?? this.zoom.max,
+            percent: percent
         });
 
         this._pushMarker(marker);
@@ -579,6 +604,7 @@ class LeafletMap extends Events {
                 this.createMarker(
                     this.markerIcons.find((icon) => icon.type == marker.type),
                     L.latLng(marker.loc),
+                    marker.percent,
                     marker.link,
                     marker.id,
                     marker.layer,
@@ -672,6 +698,7 @@ class LeafletMap extends Events {
                 this.createMarker(
                     this.markerIcons.find(({ type }) => type == marker.type),
                     marker.loc,
+                    marker.percent,
                     marker.link,
                     marker.id,
                     marker.layer,
@@ -854,7 +881,7 @@ class LeafletMap extends Events {
         }
 
         if (this.markerIcons.length <= 1) {
-            this.createMarker(this.markerIcons[0], evt.latlng);
+            this.createMarker(this.markerIcons[0], evt.latlng, undefined);
             return;
         }
 
@@ -869,7 +896,7 @@ class LeafletMap extends Events {
                 );
                 item.setActive(true);
                 item.onClick(async () => {
-                    this.createMarker(marker, evt.latlng);
+                    this.createMarker(marker, evt.latlng, undefined);
                     await this.plugin.saveSettings();
                 });
             });
@@ -988,9 +1015,8 @@ class LeafletMap extends Events {
             this.mapLayers.push(newLayer);
         }
 
-        this.mapLayers[0].layer.on("load", () => {
+        this.mapLayers[0].layer.once("load", () => {
             this.rendered = true;
-
             this.trigger("rendered");
         });
         return this.mapLayers[0].layer;
@@ -1017,13 +1043,12 @@ class LeafletMap extends Events {
     }): Promise<ILayerGroup> {
         const { h, w } = await getImageDimensions(layer.data);
 
-        const southWest = this.map.unproject([0, h], this.zoom.max - 1);
-        const northEast = this.map.unproject([w, 0], this.zoom.max - 1);
-
         let bounds: L.LatLngBounds;
         if (this._userBounds?.length) {
             bounds = new L.LatLngBounds(...this._userBounds);
         } else {
+            const southWest = this.map.unproject([0, h], this.zoom.max - 1);
+            const northEast = this.map.unproject([w, 0], this.zoom.max - 1);
             bounds = new L.LatLngBounds(southWest, northEast);
         }
 
@@ -1055,7 +1080,8 @@ class LeafletMap extends Events {
             layer: mapLayer,
             id: layer.id,
             data: layer.data,
-            markers: markerGroups
+            markers: markerGroups,
+            dimensions: [w, h]
         };
     }
 
@@ -1163,7 +1189,7 @@ class LeafletMap extends Events {
     }
 
     @catchError
-    private _bindMarkerEvents(marker: ILeafletMarker) {
+    private _bindMarkerEvents(marker: Marker) {
         marker.leafletInstance
             .on("contextmenu", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
@@ -1225,7 +1251,8 @@ class LeafletMap extends Events {
             })
             .on("dragend", (evt: L.LeafletMouseEvent) => {
                 const old = marker.loc;
-                marker.loc = marker.leafletInstance.getLatLng();
+                /* marker.loc = marker.leafletInstance.getLatLng(); */
+                marker.setLatLng(marker.leafletInstance.getLatLng());
                 this.trigger("marker-data-updated", marker, old);
             })
             .on("mouseover", (evt: L.LeafletMouseEvent) => {

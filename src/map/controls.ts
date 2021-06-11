@@ -487,7 +487,8 @@ class SimpleLeafletMap extends Events {
                 oldMarker.id,
                 oldMarker.layer,
                 oldMarker.mutable,
-                oldMarker.command
+                oldMarker.command,
+                oldMarker.percent
             );
         }
     }
@@ -498,13 +499,14 @@ class SimpleLeafletMap extends Events {
         id: string,
         layer: string | undefined = undefined,
         mutable: boolean,
-        command: boolean
+        command: boolean,
+        percent: [number, number] = undefined
     ) {
         const mapIcon = this.original.markerIcons.find(
             ({ type: t }) => t == type
         ).icon;
 
-        const marker = new Marker({
+        const marker = new Marker(this.original, {
             id: id,
             type: type || "default",
             loc: loc,
@@ -513,7 +515,8 @@ class SimpleLeafletMap extends Events {
             layer: layer,
             mutable: mutable,
             command: command,
-            zoom: this.original.zoom.max
+            zoom: this.original.zoom.max,
+            percent: percent
         });
 
         //marker.leafletInstance.addTo(this.map);

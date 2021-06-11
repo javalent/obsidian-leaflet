@@ -523,6 +523,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                         mapMap.push({
                             type: type,
                             loc: [Number(lat), Number(long)],
+                            percent: undefined,
                             link: link,
                             layer: layer,
                             id: id,
@@ -559,6 +560,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                                         ({ type }) => type === marker.type
                                     ),
                                     latLng(marker.loc),
+                                    undefined,
                                     marker.link,
                                     marker.id,
                                     marker.layer

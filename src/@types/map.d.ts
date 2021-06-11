@@ -80,6 +80,7 @@ declare class LeafletMap extends Events {
     createMarker(
         markerIcon: IMarkerIcon,
         loc: L.LatLng,
+        percent: [number, number],
         link?: string | undefined,
         id?: string,
         layer?: string | undefined,
@@ -113,35 +114,41 @@ declare class LeafletMap extends Events {
 declare class Marker {
     leafletInstance: DivIconMarker;
     loc: L.LatLng;
+    percent: [number, number];
     id: string;
     layer: string;
     command: boolean;
     zoom: number;
     maxZoom: number;
     divIcon: MarkerDivIcon;
-    constructor({
-        id,
-        icon,
-        type,
-        loc,
-        link,
-        layer,
-        mutable,
-        command,
-        zoom,
-        maxZoom
-    }: {
-        id: string;
-        icon: MarkerDivIcon;
-        type: string;
-        loc: L.LatLng;
-        link: string;
-        layer: string;
-        mutable: boolean;
-        command: boolean;
-        zoom: number;
-        maxZoom?: number;
-    });
+    constructor(
+        map: L.Map,
+        {
+            id,
+            icon,
+            type,
+            loc,
+            link,
+            layer,
+            mutable,
+            command,
+            zoom,
+            percent,
+            maxZoom
+        }: {
+            id: string;
+            icon: MarkerDivIcon;
+            type: string;
+            loc: L.LatLng;
+            link: string;
+            layer: string;
+            mutable: boolean;
+            command: boolean;
+            zoom: number;
+            percent: [number, number];
+            maxZoom?: number;
+        }
+    );
     get link(): string;
     set link(x: string);
     get mutable(): boolean;
@@ -150,6 +157,7 @@ declare class Marker {
     get type(): string;
     set type(x: string);
     set icon(x: IMarkerIcon);
+    get pixels(): [number, number];
     setLatLng(latlng: L.LatLng): void;
     remove(): void;
 }
