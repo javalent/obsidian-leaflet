@@ -181,6 +181,11 @@ class LeafletMap extends Events {
 
     unit: Length = "m";
 
+    get conversionUnit() {
+        if (this.type == "image") return this.unit;
+        return "m";
+    }
+
     private _resize: ResizeObserver;
     private _distanceMultipler: number = 1;
     private _distanceEvent: L.LatLng | undefined = undefined;
@@ -763,6 +768,27 @@ class LeafletMap extends Events {
             mutable: mutable,
             id: circle.id
         });
+    }
+
+    @catchError
+    addOverlays(
+        overlayArray: IOverlayData[],
+        options: { mutable: boolean; sort: boolean }
+    ) {
+        if (options.sort) {
+            overlayArray.sort((a, b) => {
+                const radiusA = convert(a.radius)
+                    .from(a.unit as Length)
+                    .to("m");
+                const radiusB = convert(b.radius)
+                    .from(b.unit as Length)
+                    .to("m");
+                return radiusB - radiusA;
+            });
+        }
+        for (let overlay of overlayArray) {
+            this.addOverlay(overlay, options.mutable);
+        }
     }
 
     @catchError

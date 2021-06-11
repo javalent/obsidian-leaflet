@@ -156,9 +156,14 @@ export class OverlayContextModal extends Modal {
 
         let radiusInput: TextComponent;
 
-        let radius = convert(this.tempOverlay.radius)
+        console.log(
+            "🚀 ~ file: context.ts ~ line 163 ~ OverlayContextModal ~ display ~ this.tempOverlay.radius",
+            this.tempOverlay.radius
+        );
+        let radius =
+            this.tempOverlay.radius; /* convert(this.tempOverlay.radius)
             .from(this.map.type == "image" ? this.map.unit : "m")
-            .to(this.tempOverlay.unit ?? "m");
+            .to(this.tempOverlay.unit ?? "m"); */
         if (this.map.type == "image") {
             radius = radius * this.map.scale;
         }
