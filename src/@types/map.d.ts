@@ -38,6 +38,9 @@ declare class LeafletMap extends Events {
 
     locale: string;
 
+    distanceFormatter: Intl.NumberFormat;
+    latLngFormatter: Intl.NumberFormat;
+
     constructor(
         plugin: ObsidianLeaflet,
         el: HTMLElement,

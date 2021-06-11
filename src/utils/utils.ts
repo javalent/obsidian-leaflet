@@ -669,3 +669,10 @@ export function getParamsFromSource(source: string): IBlockParameters {
         return params;
     }
 }
+
+export function getGroupSeparator(locale: string) {
+    const numberWithDecimalSeparator = 1000.1;
+    return Intl.NumberFormat(locale)
+        .formatToParts(numberWithDecimalSeparator)
+        .find((part) => part.type === "group").value;
+}

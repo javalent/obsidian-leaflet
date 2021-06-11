@@ -181,6 +181,15 @@ class LeafletMap extends Events {
 
     unit: Length = "m";
 
+    distanceFormatter = new Intl.NumberFormat(this.locale, {
+        style: "decimal",
+        maximumFractionDigits: DISTANCE_DECIMALS
+    });
+    latLngFormatter = new Intl.NumberFormat(this.locale, {
+        style: "decimal",
+        maximumFractionDigits: LAT_LONG_DECIMALS
+    });
+
     get conversionUnit() {
         if (this.type == "image") return this.unit;
         return "m";
@@ -588,17 +597,11 @@ class LeafletMap extends Events {
     @catchError
     distance(latlng1: L.LatLng, latlng2: L.LatLng): string {
         const dist = this.map.distance(latlng1, latlng2);
-        let display = `${(dist * this.scale).toLocaleString(this.locale, {
-            maximumFractionDigits: DISTANCE_DECIMALS
-        })}`;
+        let display = this.distanceFormatter.format(dist * this.scale);
         if (this._distanceMultipler !== 1) {
-            display += ` (${(
-                dist *
-                this.scale *
-                this._distanceMultipler
-            ).toLocaleString(this.locale, {
-                maximumFractionDigits: DISTANCE_DECIMALS
-            })})`;
+            display += ` (${this.distanceFormatter.format(
+                dist * this.scale * this._distanceMultipler
+            )})`;
         }
         return display + ` ${this.unit}`;
     }
@@ -703,11 +706,9 @@ class LeafletMap extends Events {
         ) {
             this.openPopup(
                 evt.latlng,
-                `[${evt.latlng.lat.toLocaleString("en-US", {
-                    maximumFractionDigits: LAT_LONG_DECIMALS
-                })}, ${evt.latlng.lng.toLocaleString("en-US", {
-                    maximumFractionDigits: LAT_LONG_DECIMALS
-                })}]`
+                `[${this.latLngFormatter.format(
+                    evt.latlng.lat
+                )}, ${this.latLngFormatter.format(evt.latlng.lng)}]`
             );
             if (
                 this.data.copyOnClick &&
@@ -1148,16 +1149,16 @@ class LeafletMap extends Events {
                     this.openPopup(
                         overlay,
                         overlay.data.desc +
-                            ` (${radius.toLocaleString(this.locale, {
-                                maximumFractionDigits: DISTANCE_DECIMALS
-                            })} ${overlay.data.unit})`
+                            ` (${this.distanceFormatter.format(radius)} ${
+                                overlay.data.unit
+                            })`
                     );
                 } else {
                     this.openPopup(
                         overlay,
-                        `${radius.toLocaleString(this.locale, {
-                            maximumFractionDigits: DISTANCE_DECIMALS
-                        })} ${overlay.data.unit}`
+                        `${this.distanceFormatter.format(radius)} ${
+                            overlay.data.unit
+                        }`
                     );
                 }
             });
@@ -1186,11 +1187,9 @@ class LeafletMap extends Events {
                 ) {
                     this.openPopup(
                         marker,
-                        `[${marker.loc.lat.toLocaleString("en-US", {
-                            maximumFractionDigits: LAT_LONG_DECIMALS
-                        })}, ${marker.loc.lng.toLocaleString("en-US", {
-                            maximumFractionDigits: LAT_LONG_DECIMALS
-                        })}]`
+                        `[${this.latLngFormatter.format(
+                            marker.loc.lat
+                        )}, ${this.latLngFormatter.format(marker.loc.lng)}]`
                     );
 
                     if (
@@ -1255,11 +1254,9 @@ class LeafletMap extends Events {
         await new Promise<void>((resolve, reject) => {
             navigator.clipboard
                 .writeText(
-                    `${loc.lat.toLocaleString("en-US", {
-                        maximumFractionDigits: LAT_LONG_DECIMALS
-                    })}, ${loc.lng.toLocaleString("en-US", {
-                        maximumFractionDigits: LAT_LONG_DECIMALS
-                    })}`
+                    `${this.latLngFormatter.format(
+                        loc.lat
+                    )}, ${this.latLngFormatter.format(loc.lng)}`
                 )
                 .then(() => {
                     new Notice("Coordinates copied to clipboard.");
