@@ -1139,10 +1139,9 @@ class LeafletMap extends Events {
             })
             .on("mouseover", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
-                let radius =
-                    overlay.data.radius; /* convert(this.tempOverlay.radius)
-            .from(this.map.type == "image" ? this.map.unit : "m")
-            .to(this.tempOverlay.unit ?? "m"); */
+                let radius = convert(overlay.data.radius)
+                    .from(overlay.data.unit)
+                    .to(this.unit);
                 if (this.type == "image") {
                     radius = radius * this.scale;
                 }
@@ -1151,15 +1150,13 @@ class LeafletMap extends Events {
                         overlay,
                         overlay.data.desc +
                             ` (${this.distanceFormatter.format(radius)} ${
-                                overlay.data.unit
+                                this.unit
                             })`
                     );
                 } else {
                     this.openPopup(
                         overlay,
-                        `${this.distanceFormatter.format(radius)} ${
-                            overlay.data.unit
-                        }`
+                        `${this.distanceFormatter.format(radius)} ${this.unit}`
                     );
                 }
             });
