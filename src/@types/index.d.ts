@@ -110,6 +110,7 @@ export interface IMarker {
 export interface ILeafletMarker {
     type: string;
     loc: L.LatLng;
+    percent: [number, number];
     id: string;
     link?: string;
     leafletInstance: DivIconMarker;
@@ -121,6 +122,7 @@ export interface ILeafletMarker {
 export interface IMarkerData {
     type: string;
     loc: [number, number];
+    percent: [number, number];
     id: string;
     link: string;
     layer: string;
@@ -163,6 +165,9 @@ export interface ILayerGroup {
 
     /** Only used for image maps -> actual image map data as base64 */
     data: string;
+
+    /** Only used for image maps -> dimensions of image */
+    dimensions?: [number, number];
 }
 
 /** Settings Interfaces */

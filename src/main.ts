@@ -34,7 +34,8 @@ import {
     IMarker,
     Marker,
     LeafletMap,
-    Length
+    Length,
+    IOverlayData
 } from "./@types";
 import { MarkerContextModal } from "./modals";
 
@@ -232,6 +233,7 @@ export default class ObsidianLeaflet extends Plugin {
                 map.createMarker(
                     this.markerIcons.find(({ type: t }) => t == type),
                     latLng([Number(lat), Number(long)]),
+                    undefined,
                     link?.trim(),
                     id,
                     layer,
@@ -239,48 +241,31 @@ export default class ObsidianLeaflet extends Plugin {
                     command
                 );
             }
-            const overlayArray: [
-                string,
-                [number, number],
-                number,
-                string,
-                string,
-                string
-            ][] = [...overlay, ...immutableOverlays].map(
-                ([color, loc, length, desc, id = getId()]) => {
-                    const match = length.match(OVERLAY_TAG_REGEX);
-                    if (!match || isNaN(Number(match[1]))) {
-                        throw new Error(
-                            "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`."
-                        );
-                    }
-                    const [, radius, unit = "m"] = match;
-                    return [color, loc, Number(radius), unit, desc, id];
+            const overlayArray: IOverlayData[] = [
+                ...overlay,
+                ...immutableOverlays
+            ].map(([color, loc, length, desc, id = getId()]) => {
+                const match = length.match(OVERLAY_TAG_REGEX);
+                if (!match || isNaN(Number(match[1]))) {
+                    throw new Error(
+                        "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`."
+                    );
                 }
-            );
-            overlayArray.sort((a, b) => {
-                const radiusA = convert(a[2])
-                    .from(a[3] as Length)
-                    .to("m");
-                const radiusB = convert(b[2])
-                    .from(b[3] as Length)
-                    .to("m");
-                return radiusB - radiusA;
+                const [, radius, unit = "m"] = match;
+                return {
+                    radius: Number(radius),
+                    loc: loc,
+                    color: color,
+                    unit: unit as Length,
+                    layer: layers[0],
+                    desc: desc,
+                    id: id
+                };
             });
-            for (let [color, loc, radius, unit, desc, id] of overlayArray) {
-                map.addOverlay(
-                    {
-                        radius: Number(radius),
-                        loc: loc,
-                        color: color,
-                        unit: unit as Length,
-                        layer: layers[0],
-                        desc: desc,
-                        id: id
-                    },
-                    false
-                );
-            }
+            map.addOverlays(overlayArray, {
+                mutable: false,
+                sort: true
+            });
 
             const { coords, distanceToZoom, file } = await this._getCoordinates(
                 lat,
@@ -402,9 +387,7 @@ export default class ObsidianLeaflet extends Plugin {
                                     ({ id }) => id === fileIds.get("overlay")
                                 )
                                 ?.forEach((overlay) => {
-                                    try {
-                                        overlay.leafletInstance.remove();
-                                    } catch (e) {}
+                                    overlay.leafletInstance.remove();
                                 });
                             map.overlays = map.overlays.filter(
                                 ({ id }) => id != fileIds.get("overlay")
@@ -417,7 +400,41 @@ export default class ObsidianLeaflet extends Plugin {
                                 overlays.push(...frontmatter.mapoverlay);
                             }
 
-                            overlays.forEach(
+                            const overlayArray: IOverlayData[] = [
+                                ...overlays
+                            ].map(
+                                ([
+                                    color,
+                                    loc,
+                                    length,
+                                    desc,
+                                    id = fileIds.get("overlay")
+                                ]) => {
+                                    const match =
+                                        length.match(OVERLAY_TAG_REGEX);
+                                    if (!match || isNaN(Number(match[1]))) {
+                                        throw new Error(
+                                            "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`."
+                                        );
+                                    }
+                                    const [, radius, unit = "m"] = match;
+                                    return {
+                                        radius: Number(radius),
+                                        loc: loc,
+                                        color: color,
+                                        unit: unit as Length,
+                                        layer: layers[0],
+                                        desc: desc,
+                                        id: id
+                                    };
+                                }
+                            );
+                            map.addOverlays(overlayArray, {
+                                mutable: false,
+                                sort: true
+                            });
+
+                            /* overlays.forEach(
                                 ([
                                     color = overlayColor ?? "blue",
                                     loc = [0, 0],
@@ -450,7 +467,7 @@ export default class ObsidianLeaflet extends Plugin {
                                         false
                                     );
                                 }
-                            );
+                            ); */
                         } catch (e) {
                             new Notice(
                                 `There was an error updating the overlays for ${file.name}.`
@@ -561,12 +578,11 @@ export default class ObsidianLeaflet extends Plugin {
                 });
             }
 
-            map.on("rendered", () => {
+            map.on("rendered", async () => {
                 if (layerData.length > 1)
                     map.loadAdditionalMapLayers(layerData.slice(1));
+                await this.saveSettings();
             });
-
-            await this.saveSettings();
         } catch (e) {
             console.error(e);
             new Notice("There was an error loading the map.");
@@ -716,6 +732,7 @@ export default class ObsidianLeaflet extends Plugin {
                             type: marker.type,
                             id: marker.id,
                             loc: [marker.loc.lat, marker.loc.lng],
+                            percent: marker.percent,
                             link: marker.link,
                             layer: marker.layer,
                             command: marker.command || false,
@@ -828,6 +845,7 @@ export default class ObsidianLeaflet extends Plugin {
             let marker = map.createMarker(
                 map.markerIcons[0],
                 map.map.mouseEventToLatLng(evt),
+                undefined,
                 file
             );
             marker.leafletInstance.closeTooltip();
