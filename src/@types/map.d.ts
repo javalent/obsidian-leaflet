@@ -96,7 +96,7 @@ declare class LeafletMap extends Events {
     setInitialCoords(coords: [number, number]): void;
     setZoomByDistance(zoomDistance: number): void;
 
-    getMarkerById(id: string): Marker;
+    getMarkerById(id: string): Marker[];
 
     distance(latlng1: L.LatLng, latlng2: L.LatLng): string;
 

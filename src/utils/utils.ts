@@ -490,6 +490,7 @@ export async function getImmutableItems(
                 }
 
                 if (frontmatter.mapmarkers) {
+                    const id = getId();
                     frontmatter.mapmarkers.forEach(
                         ([type, location, description]: [
                             type: string,
@@ -508,6 +509,7 @@ export async function getImmutableItems(
                             ]);
                         }
                     );
+                    idMap.set("mapmarkers", id);
                 }
 
                 if (frontmatter.mapoverlay) {
