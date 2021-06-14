@@ -191,13 +191,7 @@ export default class ObsidianLeaflet extends Plugin {
 
             let geojsonData: any[] = [];
             if (geojson.length) {
-                console.log(
-                    "🚀 ~ file: main.ts ~ line 195 ~ ObsidianLeaflet ~ geojson.flat(Infinity)",
-                    geojson.flat(Infinity)
-                );
                 for (let link of geojson.flat(Infinity)) {
-                    console.log(link);
-
                     const file = this.app.metadataCache.getFirstLinkpathDest(
                         link,
                         ""
