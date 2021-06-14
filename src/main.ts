@@ -13,6 +13,7 @@ import { latLng, Circle, LatLngTuple } from "leaflet";
 import "./main.css";
 
 import { ObsidianLeafletSettingTab } from "./settings";
+
 import {
     getIcon,
     DEFAULT_SETTINGS,
@@ -145,7 +146,8 @@ export default class ObsidianLeaflet extends Plugin {
                 overlayColor = "blue",
                 bounds = undefined,
                 linksFrom = [],
-                linksTo = []
+                linksTo = [],
+                geojson = []
             } = params;
             if (!id) {
                 new Notice(
@@ -187,6 +189,32 @@ export default class ObsidianLeaflet extends Plugin {
                 });
             }
 
+            let geojsonData: any[] = [];
+            if (geojson.length) {
+                console.log(
+                    "🚀 ~ file: main.ts ~ line 195 ~ ObsidianLeaflet ~ geojson.flat(Infinity)",
+                    geojson.flat(Infinity)
+                );
+                for (let link of geojson.flat(Infinity)) {
+                    console.log(link);
+
+                    const file = this.app.metadataCache.getFirstLinkpathDest(
+                        link,
+                        ""
+                    );
+                    if (file && file instanceof TFile) {
+                        let data = await this.app.vault.read(file);
+                        try {
+                            data = JSON.parse(data);
+                        } catch (e) {
+                            new Notice("Could not parse GeoJSON file " + link);
+                            continue;
+                        }
+                        geojsonData.push(data);
+                    }
+                }
+            }
+
             const renderer = new LeafletRenderer(this, ctx.sourcePath, el, {
                 height: getHeight(view, height) ?? "500px",
                 type: image != "real" ? "image" : "real",
@@ -200,7 +228,8 @@ export default class ObsidianLeaflet extends Plugin {
                 id: id,
                 darkMode: `${darkMode}` === "true",
                 overlayColor: overlayColor,
-                bounds: bounds
+                bounds: bounds,
+                geojson: geojsonData
             });
             const map = renderer.map;
 
@@ -222,6 +251,7 @@ export default class ObsidianLeaflet extends Plugin {
                 overlayColor
             );
 
+            /** Build arrays of markers and overlays to pass to map */
             let markerArray: IMarkerData[] = immutableMarkers.map(
                 ([type, lat, long, link, layer, command, id, desc]) => {
                     return {
@@ -260,6 +290,7 @@ export default class ObsidianLeaflet extends Plugin {
                 };
             });
 
+            /** Get initial coordinates and zoom level */
             const { coords, distanceToZoom, file } = await this._getCoordinates(
                 lat,
                 long,
@@ -269,7 +300,6 @@ export default class ObsidianLeaflet extends Plugin {
             );
 
             if (file) {
-                //watchers.set(file, "coordinates");
                 watchers.set(
                     file,
                     watchers.get(file)?.set("coordinates", "coordinates") ??
