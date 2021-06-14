@@ -358,6 +358,7 @@ export default class ObsidianLeaflet extends Plugin {
 
                         if (
                             marker &&
+                            marker.length &&
                             frontmatter.location &&
                             frontmatter.location instanceof Array
                         ) {
@@ -368,11 +369,11 @@ export default class ObsidianLeaflet extends Plugin {
                                     location.every((v) => typeof v == "number")
                                 ) {
                                     if (
-                                        !marker.loc.equals(
+                                        !marker[0].loc.equals(
                                             latLng(<LatLngTuple>location)
                                         )
                                     ) {
-                                        marker.setLatLng(
+                                        marker[0].setLatLng(
                                             latLng(<LatLngTuple>location)
                                         );
                                     }
@@ -384,7 +385,7 @@ export default class ObsidianLeaflet extends Plugin {
                             }
                         }
 
-                        if (marker && frontmatter.mapmarker) {
+                        if (marker && marker.length && frontmatter.mapmarker) {
                             try {
                                 const { mapmarker } = frontmatter;
 
@@ -393,7 +394,7 @@ export default class ObsidianLeaflet extends Plugin {
                                         ({ type }) => type == mapmarker
                                     )
                                 ) {
-                                    marker.icon = this.markerIcons.find(
+                                    marker[0].icon = this.markerIcons.find(
                                         ({ type }) => type == mapmarker
                                     );
                                 }
@@ -403,64 +404,106 @@ export default class ObsidianLeaflet extends Plugin {
                                 );
                             }
                         }
+                        if (frontmatter.mapmarkers) {
+                            try {
+                                const markers = map.getMarkerById(
+                                    fileIds.get("mapmarkers")
+                                );
+                                const { mapmarkers } = frontmatter;
 
-                        try {
-                            map.overlays
-                                .filter(
-                                    ({ id }) => id === fileIds.get("overlay")
-                                )
-                                ?.forEach((overlay) => {
-                                    overlay.leafletInstance.remove();
-                                });
-                            map.overlays = map.overlays.filter(
-                                ({ id }) => id != fileIds.get("overlay")
-                            );
+                                markers.forEach((marker) =>
+                                    map.removeMarker(marker)
+                                );
 
-                            if (
-                                frontmatter.mapoverlay &&
-                                frontmatter.mapoverlay instanceof Array
-                            ) {
-                                overlays.push(...frontmatter.mapoverlay);
-                            }
-
-                            const overlayArray: IOverlayData[] = [
-                                ...overlays
-                            ].map(
-                                ([
-                                    color,
-                                    loc,
-                                    length,
-                                    desc,
-                                    id = fileIds.get("overlay")
-                                ]) => {
-                                    const match =
-                                        length.match(OVERLAY_TAG_REGEX);
-                                    if (!match || isNaN(Number(match[1]))) {
-                                        throw new Error(
-                                            "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`."
-                                        );
+                                mapmarkers.forEach(
+                                    ([type, location, description]: [
+                                        type: string,
+                                        location: [number, number],
+                                        description: string
+                                    ]) => {
+                                        map.addMarker({
+                                            type: type,
+                                            loc: location,
+                                            percent: null,
+                                            id: fileIds.get("mapmarkers"),
+                                            link: this.app.metadataCache.fileToLinktext(
+                                                file,
+                                                "",
+                                                true
+                                            ),
+                                            layer: map.group.id,
+                                            command: false,
+                                            mutable: false,
+                                            description: description
+                                        });
                                     }
-                                    const [, radius, unit = "m"] = match;
-                                    return {
-                                        radius: Number(radius),
-                                        loc: loc,
-                                        color: color,
-                                        unit: unit as Length,
-                                        layer: layers[0],
-                                        desc: desc,
-                                        id: id
-                                    };
-                                }
-                            );
-                            map.addOverlays(overlayArray, {
-                                mutable: false,
-                                sort: true
-                            });
-                        } catch (e) {
-                            new Notice(
-                                `There was an error updating the overlays for ${file.name}.`
-                            );
+                                );
+                            } catch (e) {
+                                new Notice(
+                                    `There was an error updating the markers for ${file.name}.`
+                                );
+                            }
                         }
+
+                        if (marker)
+                            try {
+                                map.overlays
+                                    .filter(
+                                        ({ id }) =>
+                                            id === fileIds.get("overlay")
+                                    )
+                                    ?.forEach((overlay) => {
+                                        overlay.leafletInstance.remove();
+                                    });
+                                map.overlays = map.overlays.filter(
+                                    ({ id }) => id != fileIds.get("overlay")
+                                );
+
+                                if (
+                                    frontmatter.mapoverlay &&
+                                    frontmatter.mapoverlay instanceof Array
+                                ) {
+                                    overlays.push(...frontmatter.mapoverlay);
+                                }
+
+                                const overlayArray: IOverlayData[] = [
+                                    ...overlays
+                                ].map(
+                                    ([
+                                        color,
+                                        loc,
+                                        length,
+                                        desc,
+                                        id = fileIds.get("overlay")
+                                    ]) => {
+                                        const match =
+                                            length.match(OVERLAY_TAG_REGEX);
+                                        if (!match || isNaN(Number(match[1]))) {
+                                            throw new Error(
+                                                "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`."
+                                            );
+                                        }
+                                        const [, radius, unit = "m"] = match;
+                                        return {
+                                            radius: Number(radius),
+                                            loc: loc,
+                                            color: color,
+                                            unit: unit as Length,
+                                            layer: layers[0],
+                                            desc: desc,
+                                            id: id
+                                        };
+                                    }
+                                );
+                                map.addOverlays(overlayArray, {
+                                    mutable: false,
+                                    sort: true
+                                });
+                            } catch (e) {
+                                new Notice(
+                                    `There was an error updating the overlays for ${file.name}.`
+                                );
+                            }
                     })
                 );
 
@@ -469,9 +512,9 @@ export default class ObsidianLeaflet extends Plugin {
                         if (!(file instanceof TFile)) return;
                         if (!watchers.has(file)) return;
                         const fileId = watchers.get(file);
-                        const marker = map.getMarkerById(fileId.get("marker"));
+                        const markers = map.getMarkerById(fileId.get("marker"));
 
-                        map.removeMarker(marker);
+                        markers.forEach((marker) => map.removeMarker(marker));
 
                         map.overlays
                             .filter(({ id }) => id === fileId.get("overlay"))
@@ -494,14 +537,15 @@ export default class ObsidianLeaflet extends Plugin {
                         if (!cache || !cache.frontmatter) return;
 
                         const fileId = watchers.get(file);
-                        const marker = map.getMarkerById(fileId.get("marker"));
+                        const markers = map.getMarkerById(fileId.get("marker"));
 
-                        if (marker)
+                        markers.forEach((marker) => {
                             marker.link = this.app.metadataCache.fileToLinktext(
                                 file,
                                 "",
                                 true
                             );
+                        });
                     })
                 );
             }
