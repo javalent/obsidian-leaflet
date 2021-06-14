@@ -228,7 +228,8 @@ export default class ObsidianLeaflet extends Plugin {
                 link,
                 layer = layers[0],
                 command = false,
-                id = getId()
+                id = getId(),
+                description
             ] of immutableMarkers) {
                 map.createMarker(
                     this.markerIcons.find(({ type: t }) => t == type),
@@ -238,7 +239,9 @@ export default class ObsidianLeaflet extends Plugin {
                     id,
                     layer,
                     false,
-                    command
+                    command,
+                    null,
+                    description
                 );
             }
             const overlayArray: IOverlayData[] = [
@@ -736,7 +739,8 @@ export default class ObsidianLeaflet extends Plugin {
                             link: marker.link,
                             layer: marker.layer,
                             command: marker.command || false,
-                            zoom: marker.zoom ?? 0
+                            zoom: marker.zoom ?? 0,
+                            description: marker.description ?? null
                         };
                     }),
                 overlays: map.map.overlays
@@ -976,7 +980,7 @@ export default class ObsidianLeaflet extends Plugin {
         this.registerEvent(
             map.on(
                 "marker-mouseover",
-                async (evt: L.LeafletMouseEvent, marker: ILeafletMarker) => {
+                async (evt: L.LeafletMouseEvent, marker: Marker) => {
                     if (marker.command) {
                         const commands = this.app.commands.listCommands();
 
@@ -1076,7 +1080,7 @@ export default class ObsidianLeaflet extends Plugin {
                         } else {
                             map.openPopup(
                                 marker,
-                                marker.link
+                                marker.display
                                     .replace(/(\^)/, " > ^")
                                     .replace(/#/, " > ")
                                     .split("|")

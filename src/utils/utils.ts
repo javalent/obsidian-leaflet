@@ -14,7 +14,6 @@ import { parse as parseCSV } from "papaparse";
 
 import { IBlockParameters } from "src/@types";
 import { OVERLAY_TAG_REGEX } from "./constants";
-import { latLng, LatLng, LatLngTuple } from "leaflet";
 
 export function renderError(el: HTMLElement, error: string): void {
     let pre = createEl("pre", { attr: { id: "leaflet-error" } });
@@ -194,7 +193,8 @@ export async function getImmutableItems(
         link: string,
         layer: string,
         mutable: boolean,
-        id: string
+        id: string,
+        desc: string
     ][];
     overlays: [
         color: string,
@@ -213,7 +213,8 @@ export async function getImmutableItems(
                 link: string,
                 layer: string,
                 mutable: boolean,
-                id: string
+                id: string,
+                desc: string
             ][] = [],
             overlaysToReturn: [
                 color: string,
@@ -262,6 +263,7 @@ export async function getImmutableItems(
                 link,
                 layer,
                 false,
+                null,
                 null
             ]);
         }
@@ -309,6 +311,7 @@ export async function getImmutableItems(
                 id,
                 layer,
                 true,
+                null,
                 null
             ]);
         }
@@ -430,6 +433,12 @@ export async function getImmutableItems(
                     path.replace(/(^\[{1,2}|\]{1,2}$)/g, ""),
                     ""
                 );
+                const linkText = app.metadataCache.fileToLinktext(
+                    file,
+                    "",
+                    true
+                );
+
                 const idMap = new Map<string, string>();
                 if (!file || !(file instanceof TFile)) continue;
                 let { frontmatter } = app.metadataCache.getFileCache(file);
@@ -459,6 +468,9 @@ export async function getImmutableItems(
                     }
 
                     if (err || isNaN(lat) || isNaN(long)) {
+                        new Notice(
+                            "Could not parse location in " + file.basename
+                        );
                         continue;
                     }
 
@@ -466,15 +478,38 @@ export async function getImmutableItems(
                         frontmatter.mapmarker || "default",
                         lat,
                         long,
-                        app.metadataCache.fileToLinktext(file, "", true),
+                        linkText,
                         undefined,
                         false,
-                        id
+                        id,
+                        null
                     ]);
 
                     /* watchers.set(file, watchers.get(file).add(id)); */
                     idMap.set("marker", id);
                 }
+
+                if (frontmatter.mapmarkers) {
+                    frontmatter.mapmarkers.forEach(
+                        ([type, location, description]: [
+                            type: string,
+                            location: number[],
+                            description: string
+                        ]) => {
+                            markersToReturn.push([
+                                type || "default",
+                                location[0],
+                                location[1],
+                                linkText,
+                                undefined,
+                                false,
+                                id,
+                                description
+                            ]);
+                        }
+                    );
+                }
+
                 if (frontmatter.mapoverlay) {
                     const arr =
                         frontmatter.mapoverlay[0] instanceof Array

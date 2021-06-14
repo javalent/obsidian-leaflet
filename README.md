@@ -247,108 +247,6 @@ Turning on the `Command Marker` toggle.
 
 As of version 3.9.0, a bulk-edit button has been added to the map. Clicking this button will open a modal allowing for easy editing of all the mutable markers defined on the map.
 
-### Markers Defined in the Code Block
-
-Markers may be defined directly in the code block using the following syntax:
-
-`marker: <type>,<latitude>,<longitude>,<link>`
-
-An arbitrary number of markers can be defined, but _none of these markers will be editable._ If a change needs to be made to these markers, the code block must be edited.
-
-The marker link may be defined as an Obsidian wikilink.
-
-These markers **will not be included in exported marker data.**
-
-### Marker Files, Marker Folders, Marker Tags, and Markers from Links
-
-These parameters allow you to create markers directly from a list of markdown note files.
-
-A note specified in this manner should have the following frontmatter tags:
-`location: [lat, long]` **REQUIRED**
-`mapmarker: <marker-type>` **OPTIONAL**
-
-There is no limit to how many of these parameters you can have defined in the code block; all of the files found will be parsed for defined markers.
-
-_Please note that until I can utilize some form of caching, having a large amount of marker files defined could impact performance._
-
-#### Marker File
-
-Marker files may be defined in the code block using the following syntax:
-
-`markerFile: [[WikiLinkToFile]]` **OR**
-`markerFile: Direct/Path/To/Note`
-
-#### Marker Folders
-
-Marker folders may be defined in the code block using the following syntax:
-
-`markerFolder: Direct/Path/To/Folder`
-
-This will search through _all_ of the notes in the specified folder, even in sub folders.
-
-#### Marker Tags
-
-If you have the [Dataview plugin](https://github.com/blacksmithgu/obsidian-dataview) installed, markers may also be created from tags using the following syntax:
-
-`markerTag: #<tag>, #<tag>, ...`
-
-Each `markerTag` parameter will return notes that have _all_ of the tags defined in that paramter. If you are looking for files containing _any_ tag listed, use separate `markerTag` parameters.
-
-If one or more `markerFolder` parameters are specified, the `markerTag` parameter will only look for notes _in the folders that contain the tags_.
-
-#### Links
-
-The `linksTo` and `linksFrom` parameters uses DataView's link index to find notes linked to or from the notes specified in the parameter to build immutable markers, using the same syntax as above.
-
-Multiple files can be specified using YAML array syntax:
-
-```
-linksTo: [[File]]
-linksFrom:
-    - [[File 1]]
-    - [[File 2]]
-```
-
-#### Examples
-
-```
-markerFile: [[MarkerFile]]
-```
-
-would
-
-1. Load the MarkerFile.md note file and, if it has the correct frontmatter fields, create a marker for it.
-
-```
-markerFile: [[MarkerFile]]
-markerFolder: People and Locations
-```
-
-would
-
-1. Load the MarkerFile.md note
-2. Look through the People and Locations folder for additional notes
-
-```
-markerTag: #location, #friends
-```
-
-would
-
-1. Find _all_ notes tagged with both `#location` **and** `#friends` and create markers using their frontmatter
-
-```
-markerFolder: People and Locations
-markerFolder: Interests/Maps of the World
-markerTags: #people, #friends
-markerTags: #Paris
-```
-
-would search for notes that
-
-1. Are in the folders People and Locations OR Interests/Maps of the World, AND
-2. Contain both tags #people AND #friends OR the tag #Paris
-
 ## Overlays
 
 Overlays may be added to the map by <kbd>Shift</kbd>-right clicking, dragging the mouse to set the radius, and clicking again. Hitting <kbd>Escape</kbd> will cancel the drawing and remove the overlay. Overlays added to the map in this manner are saved to the map instance just like the markers, and will be recreated when the map is re-opened.
@@ -439,6 +337,152 @@ The overlay color tag may be used to specify the default overlay color when draw
 Distances are displayed in meters, unless a scale factor and/or unit is specified in the map block.
 
 A control box in the bottom-left corner of the map displays the last-calculated distance. Hovering on this will display the distance line on the map, and clicking on it will zoom the map to those coordinates.
+
+## Objects Defined in the Code Block
+
+Markers and overlays may be defined directly in the code block using the following syntax:
+
+| Type    | Syntax                                                     |
+| ------- | ---------------------------------------------------------- |
+| Marker  | `marker: <type>,<latitude>,<longitude>,<link>`             |
+| Overlay | `overlay: [blue, [32, -89], 25 mi, 'This is my overlay!']` |
+
+An arbitrary number of objects can be defined, but _none of these objects will be editable._ If a change needs to be made to these objects, the code block must be edited.
+
+The marker link may be defined as an Obsidian wikilink.
+
+**These will not be included in exported data.**
+
+### Marker Files, Marker Folders, Marker Tags, and Markers from Links
+
+These parameters allow you to create markers directly from the specified note files.
+
+There is no limit to how many of these parameters you can have defined in the code block; all of the files found will be parsed for defined markers.
+
+_Please note that until I implement some form of caching, having a large amount of marker files defined could impact performance._
+
+#### Note Frontmatter
+
+The `markerFile`, `markerFolder`, `markerTags`, `linksTo`, and `linksFrom` parameters tell the plugin _where to look for notes_. The notes themselves determine how the markers are created, using note frontmatter tags.
+
+All markers created from the note will automatically have their link set to the note.
+
+| Frontmatter Tag | Use                                                                                             |
+| --------------- | ----------------------------------------------------------------------------------------------- |
+| location        | Create a marker at this location. Also used if the `coordinates` parameter points to this note. |
+| mapmarker       | Use this marker type for the marker created using `location`. Optional.                         |
+| mapmarkers      | Array of markers to create. See below for syntax.                                               |
+| mapoverlay      | Array of overlays to create. See below for syntax.                                              |
+
+##### mapmarkers
+
+The `mapmarkers` parameter can be used to define an arbitrary number of markers to display on the map. This does not require the `location` tag to be set.
+
+A marker defined using `mapmarkers` should have the following syntax: 
+
+```
+---
+mapmarkers:
+  - [<type>, [<latitude>, <longitude>], <optional description>] 
+  - [<type>, [<latitude>, <longitude>], <optional description>]
+  - ... 
+---
+```
+
+##### mapoverlays
+
+The `mapoverlay` parameter can be used to define an arbitrary number of overlays to display on the map. This does not require the `location` tag to be set.
+
+A marker defined using `mapoverlay` should have the following syntax: 
+
+```
+---
+mapoverlay:
+  - [<color>, [<latitude>, <longitude>], <radius> <unit?>, <optional description>] 
+  - [<color>, [<latitude>, <longitude>], <radius> <unit?>, <optional description>]
+  - ... 
+---
+```
+
+As shown above, the radius of the overlay should be specified using `<radius> <unit>` (such as `100 miles`). If the `<unit>` is not provided, it will default to `meters`. Please see [this](src/utils/units.ts) for a list of supported units.
+
+#### Marker File
+
+Marker files may be defined in the code block using the following syntax:
+
+`markerFile: [[WikiLinkToFile]]` **OR**
+`markerFile: Direct/Path/To/Note`
+
+#### Marker Folders
+
+Marker folders may be defined in the code block using the following syntax:
+
+`markerFolder: Direct/Path/To/Folder`
+
+This will search through _all_ of the notes in the specified folder, even in sub folders.
+
+#### Marker Tags
+
+If you have the [Dataview plugin](https://github.com/blacksmithgu/obsidian-dataview) installed, markers may also be created from tags using the following syntax:
+
+`markerTag: #<tag>, #<tag>, ...`
+
+Each `markerTag` parameter will return notes that have _all_ of the tags defined in that paramter. If you are looking for files containing _any_ tag listed, use separate `markerTag` parameters.
+
+If one or more `markerFolder` parameters are specified, the `markerTag` parameter will only look for notes _in the folders that contain the tags_.
+
+#### Links
+
+The `linksTo` and `linksFrom` parameters uses DataView's link index to find notes linked to or from the notes specified in the parameter to build immutable markers, using the same syntax as above.
+
+Multiple files can be specified using YAML array syntax:
+
+```
+linksTo: [[File]]
+linksFrom:
+    - [[File 1]]
+    - [[File 2]]
+```
+
+#### Examples
+
+```
+markerFile: [[MarkerFile]]
+```
+
+would
+
+1. Load the MarkerFile.md note file and, if it has the correct frontmatter fields, create a marker for it.
+
+```
+markerFile: [[MarkerFile]]
+markerFolder: People and Locations
+```
+
+would
+
+1. Load the MarkerFile.md note
+2. Look through the People and Locations folder for additional notes
+
+```
+markerTag: #location, #friends
+```
+
+would
+
+1. Find _all_ notes tagged with both `#location` **and** `#friends` and create markers using their frontmatter
+
+```
+markerFolder: People and Locations
+markerFolder: Interests/Maps of the World
+markerTags: #people, #friends
+markerTags: #Paris
+```
+
+would search for notes that
+
+1. Are in the folders People and Locations OR Interests/Maps of the World, AND
+2. Contain both tags #people AND #friends OR the tag #Paris
 
 ## Dark Mode
 

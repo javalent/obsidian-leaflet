@@ -516,7 +516,8 @@ class SimpleLeafletMap extends Events {
             mutable: mutable,
             command: command,
             zoom: this.original.zoom.max,
-            percent: percent
+            percent: percent,
+            description: null
         });
 
         //marker.leafletInstance.addTo(this.map);

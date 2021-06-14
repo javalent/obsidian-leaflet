@@ -400,7 +400,6 @@ class LeafletMap extends Events {
                         ],
                         this.zoom.max - 1
                     );
-                    console.log(marker.loc, latlng);
                     if (latlng != marker.loc) marker.loc = latlng;
                 }
 
@@ -533,7 +532,8 @@ class LeafletMap extends Events {
             mutable: markerToBeAdded.mutable,
             command: markerToBeAdded.command || false,
             zoom: this.map.getMaxZoom(),
-            percent: markerToBeAdded.percent
+            percent: markerToBeAdded.percent,
+            description: markerToBeAdded.description
         });
 
         this._pushMarker(marker);
@@ -549,7 +549,8 @@ class LeafletMap extends Events {
         layer: string | undefined = undefined,
         mutable: boolean = true,
         command: boolean = false,
-        zoom: number = this.zoom.max
+        zoom: number = this.zoom.max,
+        description: string = null
     ): ILeafletMarker {
         let mapIcon = this.markerIcons.find(
                 ({ type }) => type === "default"
@@ -573,7 +574,8 @@ class LeafletMap extends Events {
             mutable: mutable,
             command: command,
             zoom: zoom ?? this.zoom.max,
-            percent: percent
+            percent: percent,
+            description: description
         });
 
         this._pushMarker(marker);

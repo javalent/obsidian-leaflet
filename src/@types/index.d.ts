@@ -117,6 +117,7 @@ export interface ILeafletMarker {
     layer: string;
     mutable: boolean;
     command: boolean;
+    description: string;
 }
 
 export interface IMarkerData {
@@ -128,6 +129,7 @@ export interface IMarkerData {
     layer: string;
     command: boolean;
     zoom?: number;
+    description: string;
 }
 
 export interface IMapInterface {

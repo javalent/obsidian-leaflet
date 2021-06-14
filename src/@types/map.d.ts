@@ -121,6 +121,7 @@ declare class Marker {
     zoom: number;
     maxZoom: number;
     divIcon: MarkerDivIcon;
+    description: string;
     constructor(
         map: L.Map,
         {
@@ -134,6 +135,7 @@ declare class Marker {
             command,
             zoom,
             percent,
+            description,
             maxZoom
         }: {
             id: string;
@@ -146,11 +148,15 @@ declare class Marker {
             command: boolean;
             zoom: number;
             percent: [number, number];
+            description: string;
             maxZoom?: number;
         }
     );
     get link(): string;
     set link(x: string);
+
+    get display(): string;
+
     get mutable(): boolean;
     set mutable(x: boolean);
 
