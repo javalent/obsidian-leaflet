@@ -156,6 +156,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
  *
  */
 class LeafletMap extends Events {
+    private _geojson: any[];
     getMarkerById(id: string): Marker[] {
         return this.markers.filter(({ id: marker }) => marker === id);
     }
@@ -260,6 +261,8 @@ class LeafletMap extends Events {
                 this.plugin.app.keymap.popScope(this._escapeScope);
             }
         });
+
+        this._geojson = options.geojson;
 
         this.map = L.map(this.contentEl, {
             crs: this.CRS,
@@ -453,6 +456,19 @@ class LeafletMap extends Events {
 
                 /* overlay.leafletInstance.addTo(this.mapLayers[0].group); */
             });
+
+        /** Add GeoJSON to map */
+        this._geojson.forEach((geoJSON) => {
+            try {
+                L.geoJSON(geoJSON).addTo(this.group.group);
+            } catch (e) {
+                new Notice(
+                    "There was an error adding GeoJSON to map " + this.id
+                );
+                return;
+            }
+        });
+
         /** Register Resize Handler */
         this._handleResize();
 

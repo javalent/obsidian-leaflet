@@ -59,6 +59,7 @@ darkMode: true
 | bounds        | Set image map bounds to specified coordinates instead of default                     |                                            |
 | coordinates   | Read location data from a note and use it as initial coordinates                     |                                            |
 | zoomTag       | Read distance-to-zoom data from a note and use it as default initial zoom            |                                            |
+| geojson       | Load GeoJSON files onto maps.                                              |
 
 > \*: Requires the [DataView plugin](https://github.com/blacksmithgu/obsidian-dataview).
 
@@ -330,13 +331,29 @@ nearby: 50 km
 
 The overlay color tag may be used to specify the default overlay color when drawing on the map or when using the overlay tag parameter.
 
-## Distances
+## GeoJSON
 
-<kbd>Shift</kbd> or <kbd>Alt</kbd>-clicking the map or a marker, then <kbd>Shift</kbd> or <kbd>Alt</kbd>-clicking again, will display the distance between the two points.
+GeoJSON is a format used to describe geographic data structures, such as points, lines, and shapes. Please see [this](https://datatracker.ietf.org/doc/html/rfc7946) for a full reference of the GeoJSON format.
 
-Distances are displayed in meters, unless a scale factor and/or unit is specified in the map block.
+GeoJSON can be loaded into the map using the following syntax:
 
-A control box in the bottom-left corner of the map displays the last-calculated distance. Hovering on this will display the distance line on the map, and clicking on it will zoom the map to those coordinates.
+````
+```leaflet
+geojson: [[GeoJSON_File.json]]
+```
+````
+
+or 
+
+````
+```leaflet
+geojson: 
+  - [[GeoJSON_File.json]]
+  - [[GeoJSON_File_2.json]]
+```
+````
+
+Especially large or a large number of GeoJSON files could slow down initial rendering.
 
 ## Objects Defined in the Code Block
 
@@ -378,14 +395,14 @@ All markers created from the note will automatically have their link set to the 
 
 The `mapmarkers` parameter can be used to define an arbitrary number of markers to display on the map. This does not require the `location` tag to be set.
 
-A marker defined using `mapmarkers` should have the following syntax: 
+A marker defined using `mapmarkers` should have the following syntax:
 
 ```
 ---
 mapmarkers:
-  - [<type>, [<latitude>, <longitude>], <optional description>] 
   - [<type>, [<latitude>, <longitude>], <optional description>]
-  - ... 
+  - [<type>, [<latitude>, <longitude>], <optional description>]
+  - ...
 ---
 ```
 
@@ -393,14 +410,14 @@ mapmarkers:
 
 The `mapoverlay` parameter can be used to define an arbitrary number of overlays to display on the map. This does not require the `location` tag to be set.
 
-A marker defined using `mapoverlay` should have the following syntax: 
+A marker defined using `mapoverlay` should have the following syntax:
 
 ```
 ---
 mapoverlay:
-  - [<color>, [<latitude>, <longitude>], <radius> <unit?>, <optional description>] 
   - [<color>, [<latitude>, <longitude>], <radius> <unit?>, <optional description>]
-  - ... 
+  - [<color>, [<latitude>, <longitude>], <radius> <unit?>, <optional description>]
+  - ...
 ---
 ```
 
@@ -483,6 +500,15 @@ would search for notes that
 
 1. Are in the folders People and Locations OR Interests/Maps of the World, AND
 2. Contain both tags #people AND #friends OR the tag #Paris
+
+## Distances
+
+<kbd>Shift</kbd> or <kbd>Alt</kbd>-clicking the map or a marker, then <kbd>Shift</kbd> or <kbd>Alt</kbd>-clicking again, will display the distance between the two points.
+
+Distances are displayed in meters, unless a scale factor and/or unit is specified in the map block.
+
+A control box in the bottom-left corner of the map displays the last-calculated distance. Hovering on this will display the distance line on the map, and clicking on it will zoom the map to those coordinates.
+
 
 ## Dark Mode
 

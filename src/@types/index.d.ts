@@ -1,9 +1,11 @@
 import { allUnits, UnitFamilies } from "convert";
-import { DivIconMarker, MarkerDivIcon } from "./map";
+import { MarkerDivIcon } from "./map";
 import { LeafletMap } from "./map";
 
 export { ObsidianLeaflet } from "./main";
 export { LeafletMap, Marker } from "./map";
+
+
 
 /** Recreate Length Alias Types from "convert" */
 declare type UnitsCombined = typeof allUnits;
@@ -42,6 +44,7 @@ export interface ILeafletMapOptions {
     tileServer?: string;
     overlayColor?: string;
     bounds?: [[number, number], [number, number]];
+    geojson?: any[];
 }
 
 export interface IBlockParameters {
@@ -72,6 +75,7 @@ export interface IBlockParameters {
     zoomTag?: string;
     linksTo?: string[];
     linksFrom?: string[];
+    geojson?: string[];
 }
 export interface ILeafletOverlay {
     leafletInstance: L.Circle;
