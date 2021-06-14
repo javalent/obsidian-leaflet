@@ -6,10 +6,10 @@ import {
     DivIconMarkerOptions,
     ILayerGroup,
     ILeafletMapOptions,
-    ILeafletMarker,
     IMarkerIcon,
     ILeafletOverlay,
-    MarkerDivIconOptions
+    MarkerDivIconOptions,
+    IMarkerData
 } from ".";
 import { ObsidianLeaflet } from "./main";
 
@@ -33,6 +33,7 @@ declare class LeafletMap extends Events {
     isDrawing: boolean;
 
     overlays: ILeafletOverlay[];
+    get markerIcons(): Map<string, IMarkerIcon>;
 
     unit: Length;
 
@@ -53,7 +54,6 @@ declare class LeafletMap extends Events {
     get rendered(): boolean;
     set rendered(v: boolean);
 
-    get markerIcons(): IMarkerIcon[];
     get displayedMarkers(): Marker[];
 
     get scale(): number;
@@ -73,9 +73,11 @@ declare class LeafletMap extends Events {
         }
     ): Promise<void>;
 
-    updateMarkerIcons(newIcons: IMarkerIcon[]): void;
+    updateMarkerIcons(): void;
 
-    addMarker(markerToBeAdded: ILeafletMarker): void;
+    addMarker(markerToBeAdded: IMarkerData): void;
+
+    addMarkers(markersToBeAdded: IMarkerData[]): void;
 
     createMarker(
         markerIcon: IMarkerIcon,
@@ -87,16 +89,14 @@ declare class LeafletMap extends Events {
         mutable?: boolean,
         command?: boolean,
         zoom?: number
-    ): ILeafletMarker;
+    ): Marker;
 
     removeMarker(marker: Marker): void;
 
     setInitialCoords(coords: [number, number]): void;
     setZoomByDistance(zoomDistance: number): void;
 
-    getMarkerById(id: string): Marker;
-
-    loadData(data: any): Promise<void>;
+    getMarkerById(id: string): Marker[];
 
     distance(latlng1: L.LatLng, latlng2: L.LatLng): string;
 
@@ -104,7 +104,7 @@ declare class LeafletMap extends Events {
     copyLatLngToClipboard(loc: L.LatLng): Promise<void>;
 
     openPopup(
-        target: ILeafletMarker | L.LatLng,
+        target: Marker | L.LatLng,
         content: ((source: L.Layer) => L.Content) | L.Content
     ): void;
 
@@ -121,6 +121,7 @@ declare class Marker {
     zoom: number;
     maxZoom: number;
     divIcon: MarkerDivIcon;
+    description: string;
     constructor(
         map: L.Map,
         {
@@ -134,6 +135,7 @@ declare class Marker {
             command,
             zoom,
             percent,
+            description,
             maxZoom
         }: {
             id: string;
@@ -146,11 +148,15 @@ declare class Marker {
             command: boolean;
             zoom: number;
             percent: [number, number];
+            description: string;
             maxZoom?: number;
         }
     );
     get link(): string;
     set link(x: string);
+
+    get display(): string;
+
     get mutable(): boolean;
     set mutable(x: boolean);
 

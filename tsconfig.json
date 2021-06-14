@@ -11,7 +11,7 @@
         "importHelpers": true,
         "experimentalDecorators": true,
         "allowSyntheticDefaultImports": true,
-        "lib": ["dom", "es5", "scripthost", "es2019"]
+        "lib": ["dom", "esnext", "scripthost", "es2019"]
     },
     "include": ["**/src/*", "**/modals/*", "**/utils/*", "**/map/*"]
 }

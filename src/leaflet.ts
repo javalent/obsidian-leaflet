@@ -16,7 +16,6 @@ import {
 import {
     ILayerGroup,
     ILeafletMapOptions,
-    ILeafletMarker,
     IMarkerData,
     IMarkerIcon,
     Length,
@@ -64,7 +63,10 @@ function catchError(
                 return original.apply(this, args);
             } catch (e) {
                 //throw error here
-                renderError(this.contentEl.parentElement, e.message);
+                renderError(
+                    this.contentEl?.parentElement ?? this.contentEl,
+                    e.message
+                );
             }
         };
     }
@@ -82,7 +84,10 @@ function catchErrorAsync(
                 return await original.apply(this, args);
             } catch (e) {
                 //throw error here
-                renderError(this.contentEl.parentElement, e.message);
+                renderError(
+                    this.contentEl?.parentElement ?? this.contentEl,
+                    e.message
+                );
             }
         };
     }
@@ -151,8 +156,9 @@ export class LeafletRenderer extends MarkdownRenderChild {
  *
  */
 class LeafletMap extends Events {
-    getMarkerById(id: string): Marker {
-        return this.markers.find(({ id: marker }) => marker === id);
+    private _geojson: any[];
+    getMarkerById(id: string): Marker[] {
+        return this.markers.filter(({ id: marker }) => marker === id);
     }
     id: string;
     contentEl: HTMLElement;
@@ -176,8 +182,6 @@ class LeafletMap extends Events {
     isDrawing: boolean = false;
 
     overlays: ILeafletOverlay[] = [];
-
-    markerIcons: IMarkerIcon[];
 
     unit: Length = "m";
 
@@ -212,7 +216,7 @@ class LeafletMap extends Events {
         }
     );
     private _timeoutHandler: ReturnType<typeof setTimeout>;
-    private _popupTarget: ILeafletMarker | ILeafletOverlay | L.LatLng;
+    private _popupTarget: MarkerDefinition | ILeafletOverlay | L.LatLng;
     private _scale: number;
     private _hoveringOnMarker: boolean = false;
     private _distanceDisplay: DistanceDisplay;
@@ -227,8 +231,6 @@ class LeafletMap extends Events {
         super();
 
         this.plugin = plugin;
-
-        this.markerIcons = plugin.markerIcons;
 
         this.contentEl = createDiv();
         this.contentEl.style.height = options.height;
@@ -260,6 +262,8 @@ class LeafletMap extends Events {
             }
         });
 
+        this._geojson = options.geojson;
+
         this.map = L.map(this.contentEl, {
             crs: this.CRS,
             maxZoom: this.zoom.max,
@@ -289,9 +293,23 @@ class LeafletMap extends Events {
     /* get markerIcons() {
         return this.plugin.markerIcons;
     } */
-    get markerTypes() {
-        return this.markerIcons.map(({ type }) => type);
+
+    get markerIcons(): Map<string, IMarkerIcon> {
+        return new Map(
+            this.plugin.markerIcons.map((markerIcon) => [
+                markerIcon.type,
+                markerIcon
+            ])
+        );
     }
+    get markerTypes() {
+        return Array.from(this.markerIcons.keys());
+    }
+
+    private get _markerTypesOnMap() {
+        return new Set(this.markers.map(({ type }) => type));
+    }
+
     get displayedMarkers() {
         return this.markers.filter(({ type }) => this.displaying.get(type));
     }
@@ -312,7 +330,7 @@ class LeafletMap extends Events {
         return this.markers.filter(({ mutable }) => mutable);
     }
     get defaultIcon() {
-        return this.markerIcons.find(({ type }) => type === "default");
+        return this.markerIcons.get("default");
     }
 
     get isFullscreen(): boolean {
@@ -400,7 +418,6 @@ class LeafletMap extends Events {
                         ],
                         this.zoom.max - 1
                     );
-                    console.log(marker.loc, latlng);
                     if (latlng != marker.loc) marker.loc = latlng;
                 }
 
@@ -439,6 +456,19 @@ class LeafletMap extends Events {
 
                 /* overlay.leafletInstance.addTo(this.mapLayers[0].group); */
             });
+
+        /** Add GeoJSON to map */
+        this._geojson.forEach((geoJSON) => {
+            try {
+                L.geoJSON(geoJSON).addTo(this.group.group);
+            } catch (e) {
+                new Notice(
+                    "There was an error adding GeoJSON to map " + this.id
+                );
+                return;
+            }
+        });
+
         /** Register Resize Handler */
         this._handleResize();
 
@@ -481,25 +511,24 @@ class LeafletMap extends Events {
     }
 
     @catchError
-    updateMarkerIcons(newIcons: IMarkerIcon[]) {
+    updateMarkerIcons() {
         /** Add New Marker Types To Filter List */
-        newIcons.forEach(({ type }) => {
-            if (!this.markerIcons.find((icon) => icon.type == type)) {
+        this.markerIcons.forEach(({ type }) => {
+            if (!this.markerIcons.has(type)) {
                 this.displaying.set(type, true);
                 this.group.markers[type] = L.layerGroup();
             }
         });
-        this.markerIcons = newIcons;
 
         this.markers.forEach((marker) => {
-            let icon =
-                this.markerIcons.find((icon) => icon.type == marker.type) ??
-                this.defaultIcon;
+            let icon = this.markerIcons.get(marker.type) ?? this.defaultIcon;
             marker.icon = icon;
         });
         /** Remove Old Marker Types From Filter List */
         [...this.displaying].forEach(([type]) => {
-            if (this.markerTypes.includes(type)) return;
+            if (this._markerTypesOnMap.has(type)) return;
+            if (!this.markerTypes.includes(type)) return;
+
             this.displaying.delete(type);
 
             if (!this.group.markers.default) {
@@ -516,27 +545,65 @@ class LeafletMap extends Events {
     }
 
     @catchError
-    addMarker(markerToBeAdded: ILeafletMarker) {
-        const mapIcon = this.markerIcons.find(
-            ({ type }) => type == markerToBeAdded.type
-        ).icon;
+    addMarker(markerToBeAdded: IMarkerData) {
+        if (!this.markerTypes.includes(markerToBeAdded.type)) {
+            new Notice(`Marker type "${markerToBeAdded.type}" does not exist.`);
+            markerToBeAdded.type = "default";
+        }
+        const markerIcon = this.markerIcons.get(markerToBeAdded.type);
+
+        const mapIcon = markerIcon?.icon ?? this.defaultIcon.icon;
 
         const marker = new Marker(this, {
             id: markerToBeAdded.id,
             type: markerToBeAdded.type,
-            loc: markerToBeAdded.loc,
+            loc: L.latLng(markerToBeAdded.loc),
             link: markerToBeAdded.link,
             icon: mapIcon,
             layer: markerToBeAdded.layer
                 ? markerToBeAdded.layer
                 : this.group?.id,
-            mutable: markerToBeAdded.mutable,
-            command: markerToBeAdded.command || false,
+            mutable: markerToBeAdded.mutable ?? false,
+            command: markerToBeAdded.command ?? false,
             zoom: this.map.getMaxZoom(),
-            percent: markerToBeAdded.percent
+            percent: markerToBeAdded.percent,
+            description: markerToBeAdded.description
         });
 
         this._pushMarker(marker);
+    }
+
+    @catchError
+    addMarkers(markersToBeAdded: IMarkerData[]) {
+        for (let markerToBeAdded of markersToBeAdded) {
+            if (!this.markerTypes.includes(markerToBeAdded.type)) {
+                new Notice(
+                    `Marker type "${markerToBeAdded.type}" does not exist.`
+                );
+                markerToBeAdded.type = "default";
+            }
+            const markerIcon = this.markerIcons.get(markerToBeAdded.type);
+
+            const mapIcon = markerIcon?.icon ?? this.defaultIcon.icon;
+
+            const marker = new Marker(this, {
+                id: markerToBeAdded.id,
+                type: markerToBeAdded.type,
+                loc: L.latLng(markerToBeAdded.loc),
+                link: markerToBeAdded.link,
+                icon: mapIcon,
+                layer: markerToBeAdded.layer
+                    ? markerToBeAdded.layer
+                    : this.group?.id,
+                mutable: markerToBeAdded.mutable ?? false,
+                command: markerToBeAdded.command ?? false,
+                zoom: this.map.getMaxZoom(),
+                percent: markerToBeAdded.percent,
+                description: markerToBeAdded.description
+            });
+
+            this._pushMarker(marker);
+        }
     }
 
     @catchError
@@ -549,18 +616,19 @@ class LeafletMap extends Events {
         layer: string | undefined = undefined,
         mutable: boolean = true,
         command: boolean = false,
-        zoom: number = this.zoom.max
-    ): ILeafletMarker {
-        let mapIcon = this.markerIcons.find(
-                ({ type }) => type === "default"
-            ).icon,
-            type = "default";
+        zoom: number = this.zoom.max,
+        description: string = null
+    ): MarkerDefinition {
+        let mapIcon = this.defaultIcon.icon,
+            type;
 
         if (markerIcon && markerIcon.type) {
-            mapIcon = this.markerIcons.find(
-                ({ type }) => type == markerIcon.type ?? "default"
-            )?.icon;
+            mapIcon = this.markerIcons.get(markerIcon.type ?? "default")?.icon;
             type = markerIcon.type;
+        }
+        if (!this.markerTypes.includes(type)) {
+            new Notice(`Marker type "${type}" does not exist.`);
+            type = "default";
         }
 
         const marker = new Marker(this, {
@@ -573,7 +641,8 @@ class LeafletMap extends Events {
             mutable: mutable,
             command: command,
             zoom: zoom ?? this.zoom.max,
-            percent: percent
+            percent: percent,
+            description: description
         });
 
         this._pushMarker(marker);
@@ -592,32 +661,6 @@ class LeafletMap extends Events {
             marker.leafletInstance.closeTooltip();
         }
         this.markers.push(marker);
-    }
-
-    @catchError
-    loadData(data: any): Promise<void> {
-        return new Promise((resolve) => {
-            data?.markers?.forEach((marker: IMarkerData) => {
-                if (!marker.layer && this.group) {
-                    marker.layer = this.group.id;
-                }
-                this.createMarker(
-                    this.markerIcons.find((icon) => icon.type == marker.type),
-                    L.latLng(marker.loc),
-                    marker.percent,
-                    marker.link,
-                    marker.id,
-                    marker.layer,
-                    true,
-                    marker.command,
-                    marker.zoom ?? this.zoom.max
-                );
-            });
-            data?.overlays?.forEach((circle: IOverlayData) => {
-                this.addOverlay(circle);
-            });
-            resolve();
-        });
     }
 
     @catchError
@@ -696,7 +739,7 @@ class LeafletMap extends Events {
 
             markers.forEach((marker) => {
                 this.createMarker(
-                    this.markerIcons.find(({ type }) => type == marker.type),
+                    this.markerIcons.get(marker.type),
                     marker.loc,
                     marker.percent,
                     marker.link,
@@ -880,8 +923,8 @@ class LeafletMap extends Events {
             return;
         }
 
-        if (this.markerIcons.length <= 1) {
-            this.createMarker(this.markerIcons[0], evt.latlng, undefined);
+        if (this.markerIcons.size <= 1) {
+            this.createMarker(this.defaultIcon, evt.latlng, undefined);
             return;
         }
 
@@ -983,7 +1026,7 @@ class LeafletMap extends Events {
             });
 
             const markerGroups = Object.fromEntries(
-                this.markerIcons.map(({ type }) => [type, L.layerGroup()])
+                this.markerTypes.map((type) => [type, L.layerGroup()])
             );
             const group = L.layerGroup([
                 this.layer,
@@ -1056,7 +1099,7 @@ class LeafletMap extends Events {
             className: this.options.darkMode ? "dark-mode" : ""
         });
         const markerGroups = Object.fromEntries(
-            this.markerIcons.map(({ type }) => [type, L.layerGroup()])
+            this.markerTypes.map((type) => [type, L.layerGroup()])
         );
         const group = L.layerGroup([mapLayer, ...Object.values(markerGroups)]);
 
@@ -1298,7 +1341,7 @@ class LeafletMap extends Events {
 
     @catchError
     openPopup(
-        target: ILeafletMarker | ILeafletOverlay | L.LatLng,
+        target: MarkerDefinition | ILeafletOverlay | L.LatLng,
         content: ((source: L.Layer) => L.Content) | L.Content
     ) {
         if (this._timeoutHandler) {
@@ -1382,7 +1425,7 @@ class LeafletMap extends Events {
 
     @catchError
     private _getPopup(
-        target: ILeafletMarker | ILeafletOverlay | L.LatLng
+        target: MarkerDefinition | ILeafletOverlay | L.LatLng
     ): L.Popup {
         if (this.popup.isOpen() && this._popupTarget == target) {
             return this.popup;

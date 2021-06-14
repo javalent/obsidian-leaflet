@@ -71,6 +71,7 @@ export class Marker implements MarkerDefinition {
     command: boolean;
     zoom: number;
     maxZoom: number;
+    description: string;
     divIcon: MarkerDivIcon;
     constructor(
         private map: LeafletMap,
@@ -85,6 +86,7 @@ export class Marker implements MarkerDefinition {
             command,
             zoom,
             percent,
+            description,
             maxZoom = zoom
         }: {
             id: string;
@@ -97,6 +99,7 @@ export class Marker implements MarkerDefinition {
             command: boolean;
             zoom: number;
             percent: [number, number];
+            description: string;
             maxZoom?: number;
         }
     ) {
@@ -124,6 +127,7 @@ export class Marker implements MarkerDefinition {
         this.command = command;
         this.divIcon = icon;
         this.percent = percent;
+        this.description = description;
 
         this.zoom = zoom;
         this.maxZoom = maxZoom;
@@ -173,6 +177,15 @@ export class Marker implements MarkerDefinition {
         const point = this.map.map.project(this.loc, this.map.zoom.max - 1);
         return [point.x, point.y];
     }
+    get display() {
+        const ret = [this.link];
+        if (this.description) {
+            ret.unshift(`${this.description} `, "(");
+            ret.push(")");
+        }
+        return ret.join("");
+    }
+
     setLatLng(latlng: L.LatLng) {
         this.loc = latlng;
         if (this.map.rendered && this.map.type === "image") {

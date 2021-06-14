@@ -299,9 +299,7 @@ class EditMarkerControl extends FontAwesomeControl {
                     d.setValue(marker.type);
                     d.onChange((value) => {
                         marker.type = value;
-                        marker.icon = this.map.markerIcons.find(
-                            ({ type }) => type === value
-                        );
+                        marker.icon = this.map.markerIcons.get(value);
                     });
                 })
                 .addText((t) => {
@@ -502,9 +500,7 @@ class SimpleLeafletMap extends Events {
         command: boolean,
         percent: [number, number] = undefined
     ) {
-        const mapIcon = this.original.markerIcons.find(
-            ({ type: t }) => t == type
-        ).icon;
+        const mapIcon = this.original.markerIcons.get(type).icon;
 
         const marker = new Marker(this.original, {
             id: id,
@@ -516,7 +512,8 @@ class SimpleLeafletMap extends Events {
             mutable: mutable,
             command: command,
             zoom: this.original.zoom.max,
-            percent: percent
+            percent: percent,
+            description: null
         });
 
         //marker.leafletInstance.addTo(this.map);
@@ -746,8 +743,7 @@ class FilterMarkers extends FontAwesomeControl {
 
         const ul = this.section.createEl("ul", "contains-task-list");
 
-        for (let i = 0; i < this.map.markerIcons.length; i++) {
-            const type = this.map.markerIcons[i].type;
+        for (let [type, markerIcon] of this.map.markerIcons.entries()) {
             if (
                 this.map.group.markers[type] &&
                 this.map.group.markers[type].getLayers().length
@@ -771,7 +767,7 @@ class FilterMarkers extends FontAwesomeControl {
                 });
                 label.createDiv({
                     cls: "leaflet-control-filter-icon"
-                }).innerHTML = this.map.markerIcons[i].html;
+                }).innerHTML = markerIcon.html;
 
                 label.createDiv({
                     text: type[0].toUpperCase() + type.slice(1).toLowerCase()

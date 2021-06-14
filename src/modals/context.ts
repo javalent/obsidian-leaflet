@@ -10,7 +10,7 @@ import {
     setValidationError
 } from "src/utils";
 
-import { DISTANCE_DECIMALS, UNIT_NAME_ALIASES } from "src/utils/constants";
+import { UNIT_NAME_ALIASES } from "src/utils";
 import convert from "convert";
 export class MarkerContextModal extends Modal {
     deleted: boolean = false;
