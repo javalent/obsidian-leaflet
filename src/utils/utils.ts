@@ -192,7 +192,7 @@ export async function getImmutableItems(
         long: number,
         link: string,
         layer: string,
-        mutable: boolean,
+        command: boolean,
         id: string,
         desc: string
     ][];
@@ -212,7 +212,7 @@ export async function getImmutableItems(
                 long: number,
                 link: string,
                 layer: string,
-                mutable: boolean,
+                command: boolean,
                 id: string,
                 desc: string
             ][] = [],

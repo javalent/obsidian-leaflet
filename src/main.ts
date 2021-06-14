@@ -27,7 +27,6 @@ import {
 } from "./utils";
 import {
     IMapInterface,
-    ILeafletMarker,
     IMarkerData,
     IMarkerIcon,
     IObsidianAppData,
@@ -134,7 +133,7 @@ export default class ObsidianLeaflet extends Plugin {
                 zoomDelta = 1,
                 lat = `${this.AppData.lat}`,
                 long = `${this.AppData.long}`,
-                coordinates,
+                coordinates = undefined,
                 id = undefined,
                 scale = 1,
                 unit = "m",
@@ -144,7 +143,7 @@ export default class ObsidianLeaflet extends Plugin {
                 layers = [],
                 overlay = [],
                 overlayColor = "blue",
-                bounds,
+                bounds = undefined,
                 linksFrom = [],
                 linksTo = []
             } = params;
@@ -187,6 +186,7 @@ export default class ObsidianLeaflet extends Plugin {
                     overlays: data.overlays || []
                 });
             }
+
             const renderer = new LeafletRenderer(this, ctx.sourcePath, el, {
                 height: getHeight(view, height) ?? "500px",
                 type: image != "real" ? "image" : "real",
@@ -221,30 +221,24 @@ export default class ObsidianLeaflet extends Plugin {
                 params.overlayTag,
                 overlayColor
             );
-            for (let [
-                type,
-                lat,
-                long,
-                link,
-                layer = layers[0],
-                command = false,
-                id = getId(),
-                description
-            ] of immutableMarkers) {
-                map.createMarker(
-                    this.markerIcons.find(({ type: t }) => t == type),
-                    latLng([Number(lat), Number(long)]),
-                    undefined,
-                    link?.trim(),
-                    id,
-                    layer,
-                    false,
-                    command,
-                    null,
-                    description
-                );
-            }
-            const overlayArray: IOverlayData[] = [
+
+            let markerArray: IMarkerData[] = immutableMarkers.map(
+                ([type, lat, long, link, layer, command, id, desc]) => {
+                    return {
+                        type: type,
+                        loc: [Number(lat), Number(long)],
+                        percent: undefined,
+                        link: link?.trim(),
+                        id: id,
+                        layer: layer,
+                        mutable: false,
+                        command: command,
+                        description: desc
+                    };
+                }
+            );
+
+            let overlayArray: IOverlayData[] = [
                 ...overlay,
                 ...immutableOverlays
             ].map(([color, loc, length, desc, id = getId()]) => {
@@ -264,10 +258,6 @@ export default class ObsidianLeaflet extends Plugin {
                     desc: desc,
                     id: id
                 };
-            });
-            map.addOverlays(overlayArray, {
-                mutable: false,
-                sort: true
             });
 
             const { coords, distanceToZoom, file } = await this._getCoordinates(
@@ -436,41 +426,6 @@ export default class ObsidianLeaflet extends Plugin {
                                 mutable: false,
                                 sort: true
                             });
-
-                            /* overlays.forEach(
-                                ([
-                                    color = overlayColor ?? "blue",
-                                    loc = [0, 0],
-                                    length = "1 m",
-                                    desc
-                                ]: [
-                                    color: string,
-                                    loc: [number, number],
-                                    length: string,
-                                    desc: string
-                                ]) => {
-                                    const [, radius, unit = "m"] =
-                                        length.match(OVERLAY_TAG_REGEX) ?? [];
-                                    if (!radius || isNaN(Number(radius))) {
-                                        new Notice(
-                                            `Could not parse map overlay length in ${file.name}. Please ensure it is in the format: <distance> <unit>`
-                                        );
-                                        return;
-                                    }
-                                    map.addOverlay(
-                                        {
-                                            color: color,
-                                            loc: loc,
-                                            radius: Number(radius),
-                                            unit: unit as Length,
-                                            desc: desc,
-                                            layer: map.mapLayers[0].id,
-                                            id: fileIds.get("overlay")
-                                        },
-                                        false
-                                    );
-                                }
-                            ); */
                         } catch (e) {
                             new Notice(
                                 `There was an error updating the overlays for ${file.name}.`
@@ -525,7 +480,13 @@ export default class ObsidianLeaflet extends Plugin {
                 ({ id: mapId }) => mapId == id
             );
 
-            await map.loadData(mapData);
+            map.addOverlays([...overlayArray, ...(mapData?.overlays ?? [])], {
+                mutable: false,
+                sort: true
+            });
+            map.addMarkers([...markerArray, ...(mapData?.markers ?? [])]);
+
+            /* await map.loadData(mapData); */
 
             let layerData: {
                 data: string;
@@ -779,7 +740,7 @@ export default class ObsidianLeaflet extends Plugin {
         this.markerIcons = this.generateMarkerMarkup(this.AppData.markerIcons);
 
         this.maps.forEach((map) => {
-            map.map.updateMarkerIcons(this.markerIcons);
+            map.map.updateMarkerIcons();
         });
     }
 
@@ -847,7 +808,7 @@ export default class ObsidianLeaflet extends Plugin {
                 .pop();
 
             let marker = map.createMarker(
-                map.markerIcons[0],
+                map.defaultIcon,
                 map.map.mouseEventToLatLng(evt),
                 undefined,
                 file
@@ -856,7 +817,7 @@ export default class ObsidianLeaflet extends Plugin {
         });
 
         this.registerEvent(
-            map.on("marker-added", async (marker: ILeafletMarker) => {
+            map.on("marker-added", async (marker: Marker) => {
                 marker.leafletInstance.closeTooltip();
                 marker.leafletInstance.unbindTooltip();
                 this.maps
@@ -865,14 +826,25 @@ export default class ObsidianLeaflet extends Plugin {
                             id == map.id && m.contentEl != map.contentEl
                     )
                     .forEach((map) => {
-                        map.map.addMarker(marker);
+                        map.map.addMarker({
+                            type: marker.type,
+                            loc: [marker.loc.lat, marker.loc.lng],
+                            percent: marker.percent,
+                            id: marker.id,
+                            link: marker.link,
+                            layer: marker.layer,
+                            command: marker.command,
+                            mutable: marker.mutable,
+                            zoom: marker.zoom,
+                            description: marker.description
+                        });
                     });
                 await this.saveSettings();
             })
         );
 
         this.registerEvent(
-            map.on("marker-dragging", (marker: ILeafletMarker) => {
+            map.on("marker-dragging", (marker: Marker) => {
                 this.maps
                     .filter(
                         ({ id, map: m }) =>
@@ -893,28 +865,25 @@ export default class ObsidianLeaflet extends Plugin {
         );
 
         this.registerEvent(
-            map.on(
-                "marker-data-updated",
-                async (marker: ILeafletMarker, old: any) => {
-                    await this.saveSettings();
-                    this.maps
-                        .filter(
-                            ({ id, map: m }) =>
-                                id == map.id && m.contentEl != map.contentEl
-                        )
-                        .forEach((map) => {
-                            let existingMarker = map.map.markers.find(
-                                (m) => m.id == marker.id
-                            );
-                            if (!existingMarker) return;
+            map.on("marker-data-updated", async (marker: Marker) => {
+                await this.saveSettings();
+                this.maps
+                    .filter(
+                        ({ id, map: m }) =>
+                            id == map.id && m.contentEl != map.contentEl
+                    )
+                    .forEach((map) => {
+                        let existingMarker = map.map.markers.find(
+                            (m) => m.id == marker.id
+                        );
+                        if (!existingMarker) return;
 
-                            existingMarker.leafletInstance.setLatLng(
-                                marker.leafletInstance.getLatLng()
-                            );
-                            existingMarker.loc = marker.loc;
-                        });
-                }
-            )
+                        existingMarker.leafletInstance.setLatLng(
+                            marker.leafletInstance.getLatLng()
+                        );
+                        existingMarker.loc = marker.loc;
+                    });
+            })
         );
 
         this.registerEvent(
@@ -1123,8 +1092,8 @@ export default class ObsidianLeaflet extends Plugin {
                 });
                 markersToUpdate.forEach((m) => {
                     m.link = markerSettingsModal.tempMarker.link;
-                    m.icon = map.markerIcons.find(
-                        (i) => i.type === markerSettingsModal.tempMarker.type
+                    m.icon = map.markerIcons.get(
+                        markerSettingsModal.tempMarker.type
                     );
 
                     m.command = markerSettingsModal.tempMarker.command;

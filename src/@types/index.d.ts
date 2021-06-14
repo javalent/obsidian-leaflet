@@ -107,18 +107,6 @@ export interface IMarker {
     layer?: boolean;
     transform?: { size: number; x: number; y: number };
 }
-export interface ILeafletMarker {
-    type: string;
-    loc: L.LatLng;
-    percent: [number, number];
-    id: string;
-    link?: string;
-    leafletInstance: DivIconMarker;
-    layer: string;
-    mutable: boolean;
-    command: boolean;
-    description: string;
-}
 
 export interface IMarkerData {
     type: string;
@@ -128,6 +116,7 @@ export interface IMarkerData {
     link: string;
     layer: string;
     command: boolean;
+    mutable?: boolean;
     zoom?: number;
     description: string;
 }

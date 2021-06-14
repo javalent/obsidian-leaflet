@@ -6,10 +6,10 @@ import {
     DivIconMarkerOptions,
     ILayerGroup,
     ILeafletMapOptions,
-    ILeafletMarker,
     IMarkerIcon,
     ILeafletOverlay,
-    MarkerDivIconOptions
+    MarkerDivIconOptions,
+    IMarkerData
 } from ".";
 import { ObsidianLeaflet } from "./main";
 
@@ -33,6 +33,7 @@ declare class LeafletMap extends Events {
     isDrawing: boolean;
 
     overlays: ILeafletOverlay[];
+    get markerIcons(): Map<string, IMarkerIcon>;
 
     unit: Length;
 
@@ -53,7 +54,6 @@ declare class LeafletMap extends Events {
     get rendered(): boolean;
     set rendered(v: boolean);
 
-    get markerIcons(): IMarkerIcon[];
     get displayedMarkers(): Marker[];
 
     get scale(): number;
@@ -73,9 +73,11 @@ declare class LeafletMap extends Events {
         }
     ): Promise<void>;
 
-    updateMarkerIcons(newIcons: IMarkerIcon[]): void;
+    updateMarkerIcons(): void;
 
-    addMarker(markerToBeAdded: ILeafletMarker): void;
+    addMarker(markerToBeAdded: IMarkerData): void;
+
+    addMarkers(markersToBeAdded: IMarkerData[]): void;
 
     createMarker(
         markerIcon: IMarkerIcon,
@@ -87,7 +89,7 @@ declare class LeafletMap extends Events {
         mutable?: boolean,
         command?: boolean,
         zoom?: number
-    ): ILeafletMarker;
+    ): Marker;
 
     removeMarker(marker: Marker): void;
 
@@ -96,15 +98,13 @@ declare class LeafletMap extends Events {
 
     getMarkerById(id: string): Marker;
 
-    loadData(data: any): Promise<void>;
-
     distance(latlng1: L.LatLng, latlng2: L.LatLng): string;
 
     stopDrawing(): void;
     copyLatLngToClipboard(loc: L.LatLng): Promise<void>;
 
     openPopup(
-        target: ILeafletMarker | L.LatLng,
+        target: Marker | L.LatLng,
         content: ((source: L.Layer) => L.Content) | L.Content
     ): void;
 
