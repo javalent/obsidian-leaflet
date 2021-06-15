@@ -440,8 +440,14 @@ export async function getImmutableItems(
                 );
 
                 const idMap = new Map<string, string>();
-                if (!file || !(file instanceof TFile)) continue;
-                let { frontmatter } = app.metadataCache.getFileCache(file);
+                if (
+                    !file ||
+                    !(file instanceof TFile) ||
+                    file.extension !== "md"
+                )
+                    continue;
+                let { frontmatter } =
+                    app.metadataCache.getFileCache(file) ?? {};
 
                 if (
                     !frontmatter ||
