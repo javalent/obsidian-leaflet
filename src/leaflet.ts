@@ -33,7 +33,8 @@ import {
     BASE_POPUP_OPTIONS,
     renderError,
     MAP_OVERLAY_STROKE_OPACITY,
-    MAP_OVERLAY_STROKE_WIDTH
+    MAP_OVERLAY_STROKE_WIDTH,
+    getHex
 } from "./utils";
 
 import {
@@ -166,6 +167,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
  */
 class LeafletMap extends Events {
     private _geojson: any[];
+    private _geojsonColor: string;
     getMarkerById(id: string): Marker[] {
         return this.markers.filter(({ id: marker }) => marker === id);
     }
@@ -276,6 +278,8 @@ class LeafletMap extends Events {
         });
 
         this._geojson = options.geojson;
+
+        this._geojsonColor = getHex(options.geojsonColor);
 
         this.map = L.map(this.contentEl, {
             crs: this.CRS,
@@ -482,7 +486,7 @@ class LeafletMap extends Events {
                         if (!feature || !feature.properties) return {};
 
                         const {
-                            stroke: color = "#3388ff",
+                            stroke: color = this._geojsonColor,
                             "stroke-opacity":
                                 opacity = MAP_OVERLAY_STROKE_OPACITY,
                             "stroke-width": weight = MAP_OVERLAY_STROKE_WIDTH,

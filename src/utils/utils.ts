@@ -8,6 +8,7 @@ import {
     TFolder,
     Vault
 } from "obsidian";
+import Color from "color";
 import { nanoid } from "nanoid";
 import { getType as lookupMimeType } from "mime/lite";
 import { parse as parseCSV } from "papaparse";
@@ -23,6 +24,10 @@ There was an error rendering the map:
 ${error}
 \`\`\``);
     el.replaceWith(pre);
+}
+
+export function getHex(color: string): string {
+    return Color(color).hex();
 }
 
 export function getImageDimensions(url: string): Promise<any> {

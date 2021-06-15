@@ -123,7 +123,7 @@ export default class ObsidianLeaflet extends Plugin {
         el: HTMLElement,
         ctx: MarkdownPostProcessorContext
     ): Promise<void> {
-/*         try { */
+        try {
             /** Get Parameters from Source */
             let params = getParamsFromSource(source);
             let {
@@ -147,7 +147,8 @@ export default class ObsidianLeaflet extends Plugin {
                 bounds = undefined,
                 linksFrom = [],
                 linksTo = [],
-                geojson = []
+                geojson = [],
+                geojsonColor = "#3388ff"
             } = params;
             if (!id) {
                 new Notice(
@@ -223,7 +224,8 @@ export default class ObsidianLeaflet extends Plugin {
                 darkMode: `${darkMode}` === "true",
                 overlayColor: overlayColor,
                 bounds: bounds,
-                geojson: geojsonData
+                geojson: geojsonData,
+                geojsonColor: geojsonColor
             });
             const map = renderer.map;
 
@@ -615,11 +617,11 @@ export default class ObsidianLeaflet extends Plugin {
                     map.loadAdditionalMapLayers(layerData.slice(1));
                 await this.saveSettings();
             });
-        /* } catch (e) {
+        } catch (e) {
             console.error(e);
             new Notice("There was an error loading the map.");
             renderError(el, e.message);
-        } */
+        }
     }
     private async _getCoordinates(
         lat: string,
