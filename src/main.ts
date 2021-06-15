@@ -147,7 +147,8 @@ export default class ObsidianLeaflet extends Plugin {
                 bounds = undefined,
                 linksFrom = [],
                 linksTo = [],
-                geojson = []
+                geojson = [],
+                geojsonColor = "#3388ff"
             } = params;
             if (!id) {
                 new Notice(
@@ -223,7 +224,8 @@ export default class ObsidianLeaflet extends Plugin {
                 darkMode: `${darkMode}` === "true",
                 overlayColor: overlayColor,
                 bounds: bounds,
-                geojson: geojsonData
+                geojson: geojsonData,
+                geojsonColor: geojsonColor
             });
             const map = renderer.map;
 

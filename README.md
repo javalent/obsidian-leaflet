@@ -59,7 +59,7 @@ darkMode: true
 | bounds        | Set image map bounds to specified coordinates instead of default                     |                                            |
 | coordinates   | Read location data from a note and use it as initial coordinates                     |                                            |
 | zoomTag       | Read distance-to-zoom data from a note and use it as default initial zoom            |                                            |
-| geojson       | Load GeoJSON files onto maps.                                              |
+| geojson       | Load GeoJSON files onto maps.                                                        |
 
 > \*: Requires the [DataView plugin](https://github.com/blacksmithgu/obsidian-dataview).
 
@@ -343,17 +343,29 @@ geojson: [[GeoJSON_File.json]]
 ```
 ````
 
-or 
+or
 
 ````
 ```leaflet
-geojson: 
+geojson:
   - [[GeoJSON_File.json]]
   - [[GeoJSON_File_2.json]]
 ```
 ````
 
+_Please note that GeoJSON is drawn in the order it is provided. If a smaller file overlaps a larger file, you may not be able to interact with it._
+
 Especially large or a large number of GeoJSON files could slow down initial rendering.
+
+### Styles and Color
+
+The default color for GeoJSON features can be defined in the map's code block using the `geojsonColor` parameter. This color must be a valid CSS color.
+
+Additionally, the map will attempt to read the style properties defined for the GeoJSON features to apply styles. Styles should be defined using the [MapBox SimpleStyle specification](https://github.com/mapbox/simplestyle-spec/tree/master/1.1.0).
+
+### Tooltip
+
+The map will attempt to read the title of the GeoJSON feature to display the tooltip when hovered. This title should be defined in the `title`, `description` or `name` field of the GeoJSON feature properties.
 
 ## Objects Defined in the Code Block
 
@@ -508,7 +520,6 @@ would search for notes that
 Distances are displayed in meters, unless a scale factor and/or unit is specified in the map block.
 
 A control box in the bottom-left corner of the map displays the last-calculated distance. Hovering on this will display the distance line on the map, and clicking on it will zoom the map to those coordinates.
-
 
 ## Dark Mode
 

@@ -8,6 +8,7 @@ import {
     TFolder,
     Vault
 } from "obsidian";
+import Color from "color";
 import { nanoid } from "nanoid";
 import { getType as lookupMimeType } from "mime/lite";
 import { parse as parseCSV } from "papaparse";
@@ -23,6 +24,10 @@ There was an error rendering the map:
 ${error}
 \`\`\``);
     el.replaceWith(pre);
+}
+
+export function getHex(color: string): string {
+    return Color(color).hex();
 }
 
 export function getImageDimensions(url: string): Promise<any> {
@@ -440,8 +445,14 @@ export async function getImmutableItems(
                 );
 
                 const idMap = new Map<string, string>();
-                if (!file || !(file instanceof TFile)) continue;
-                let { frontmatter } = app.metadataCache.getFileCache(file);
+                if (
+                    !file ||
+                    !(file instanceof TFile) ||
+                    file.extension !== "md"
+                )
+                    continue;
+                let { frontmatter } =
+                    app.metadataCache.getFileCache(file) ?? {};
 
                 if (
                     !frontmatter ||

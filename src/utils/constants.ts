@@ -2,6 +2,9 @@ import { ILeafletMapOptions, IObsidianAppData } from "src/@types";
 
 export const OVERLAY_TAG_REGEX = /^(\d+(?:\.\d+)?)\s?(\w*)/;
 
+export const MAP_OVERLAY_STROKE_WIDTH = 2;
+export const MAP_OVERLAY_STROKE_OPACITY = 0.6;
+
 export const LAT_LONG_DECIMALS = 4;
 export const DISTANCE_DECIMALS = 1;
 export const DEFAULT_MAP_OPTIONS: ILeafletMapOptions = {
@@ -42,7 +45,6 @@ export const BASE_POPUP_OPTIONS = {
     closeOnClick: false,
     autoPan: false
 };
-
 
 /** From https://github.com/leaflet-extras/leaflet-providers/blob/master/leaflet-providers.js */
 /** CURRENTLY UNUSED */

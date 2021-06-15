@@ -31,7 +31,10 @@ import {
     LAT_LONG_DECIMALS,
     DEFAULT_MAP_OPTIONS,
     BASE_POPUP_OPTIONS,
-    renderError
+    renderError,
+    MAP_OVERLAY_STROKE_OPACITY,
+    MAP_OVERLAY_STROKE_WIDTH,
+    getHex
 } from "./utils";
 
 import {
@@ -63,6 +66,7 @@ function catchError(
                 return original.apply(this, args);
             } catch (e) {
                 //throw error here
+                console.error(e);
                 renderError(
                     this.contentEl?.parentElement ?? this.contentEl,
                     e.message
@@ -84,6 +88,7 @@ function catchErrorAsync(
                 return await original.apply(this, args);
             } catch (e) {
                 //throw error here
+                console.error(e);
                 renderError(
                     this.contentEl?.parentElement ?? this.contentEl,
                     e.message
@@ -92,6 +97,11 @@ function catchErrorAsync(
         };
     }
 }
+
+L.Circle.mergeOptions({
+    weight: MAP_OVERLAY_STROKE_WIDTH,
+    opacity: MAP_OVERLAY_STROKE_OPACITY
+});
 
 export class LeafletRenderer extends MarkdownRenderChild {
     map: LeafletMap;
@@ -157,6 +167,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
  */
 class LeafletMap extends Events {
     private _geojson: any[];
+    private _geojsonColor: string;
     getMarkerById(id: string): Marker[] {
         return this.markers.filter(({ id: marker }) => marker === id);
     }
@@ -216,7 +227,11 @@ class LeafletMap extends Events {
         }
     );
     private _timeoutHandler: ReturnType<typeof setTimeout>;
-    private _popupTarget: MarkerDefinition | ILeafletOverlay | L.LatLng;
+    private _popupTarget:
+        | MarkerDefinition
+        | ILeafletOverlay
+        | L.LatLng
+        | L.Layer;
     private _scale: number;
     private _hoveringOnMarker: boolean = false;
     private _distanceDisplay: DistanceDisplay;
@@ -263,6 +278,8 @@ class LeafletMap extends Events {
         });
 
         this._geojson = options.geojson;
+
+        this._geojsonColor = getHex(options.geojsonColor);
 
         this.map = L.map(this.contentEl, {
             crs: this.CRS,
@@ -458,9 +475,52 @@ class LeafletMap extends Events {
             });
 
         /** Add GeoJSON to map */
+        if (this._geojson.length > 0) {
+            this.map.createPane("geojson");
+        }
         this._geojson.forEach((geoJSON) => {
             try {
-                L.geoJSON(geoJSON).addTo(this.group.group);
+                L.geoJSON(geoJSON, {
+                    pane: "geojson",
+                    style: (feature) => {
+                        if (!feature || !feature.properties) return {};
+
+                        const {
+                            stroke: color = this._geojsonColor,
+                            "stroke-opacity":
+                                opacity = MAP_OVERLAY_STROKE_OPACITY,
+                            "stroke-width": weight = MAP_OVERLAY_STROKE_WIDTH,
+                            fill: fillColor = null,
+                            "fill-opacity": fillOpacity = 0.2
+                        } = feature.properties;
+                        return {
+                            color,
+                            opacity,
+                            weight,
+                            fillColor,
+                            fillOpacity
+                        };
+                    },
+                    onEachFeature: (feature, layer) => {
+                        if (!feature.properties) return;
+                        if (feature.properties.title) {
+                            layer.on("mouseover", () => {
+                                this.openPopup(layer, feature.properties.title);
+                            });
+                        } else if (feature.properties.description) {
+                            layer.on("mouseover", () => {
+                                this.openPopup(
+                                    layer,
+                                    feature.properties.description
+                                );
+                            });
+                        } else if (feature.properties.name) {
+                            layer.on("mouseover", () => {
+                                this.openPopup(layer, feature.properties.name);
+                            });
+                        }
+                    }
+                }).addTo(this.group.group);
             } catch (e) {
                 new Notice(
                     "There was an error adding GeoJSON to map " + this.id
@@ -1341,7 +1401,7 @@ class LeafletMap extends Events {
 
     @catchError
     openPopup(
-        target: MarkerDefinition | ILeafletOverlay | L.LatLng,
+        target: MarkerDefinition | ILeafletOverlay | L.LatLng | L.Layer,
         content: ((source: L.Layer) => L.Content) | L.Content
     ) {
         if (this._timeoutHandler) {
@@ -1359,15 +1419,15 @@ class LeafletMap extends Events {
         }
 
         this.popup = this._getPopup(target).setContent(content);
-        this.map.openPopup(this.popup);
+        if (!(target instanceof L.Layer)) this.map.openPopup(this.popup);
 
-        const popupElement = this.popup.getElement();
+        let popupElement: HTMLElement;
 
         let _this = this;
 
         const zoomAnimHandler = function () {
             if (
-                !(target instanceof L.LatLng) &&
+                !(target instanceof L.LatLng || target instanceof L.Layer) &&
                 target.leafletInstance instanceof L.Circle
             ) {
                 _this.popup.options.offset = new L.Point(
@@ -1386,10 +1446,18 @@ class LeafletMap extends Events {
         const mouseOutHandler = function () {
             clearTimeout(_this._timeoutHandler);
             _this._timeoutHandler = setTimeout(function () {
-                if (!(target instanceof L.LatLng)) {
+                if (
+                    !(target instanceof L.LatLng || target instanceof L.Layer)
+                ) {
                     target.leafletInstance.off("mouseenter", mouseOverHandler);
                     target.leafletInstance.off("mouseout", mouseOutHandler);
                 }
+                if (target instanceof L.Layer) {
+                    target
+                        .off("mouseout", mouseOutHandler)
+                        .off("mouseenter", mouseOverHandler);
+                }
+                popupElement = _this.popup.getElement();
                 popupElement.removeEventListener(
                     "mouseenter",
                     mouseOverHandler
@@ -1403,6 +1471,13 @@ class LeafletMap extends Events {
         const mouseOverHandler = function () {
             clearTimeout(_this._timeoutHandler);
         };
+
+        this.map.on("popupopen", () => {
+            popupElement = this.popup.getElement();
+            popupElement.addEventListener("mouseenter", mouseOverHandler);
+            popupElement.addEventListener("mouseleave", mouseOutHandler);
+        });
+
         if (target instanceof L.LatLng) {
             this._timeoutHandler = setTimeout(function () {
                 popupElement.removeEventListener(
@@ -1413,19 +1488,22 @@ class LeafletMap extends Events {
 
                 _this.map.closePopup(_this.popup);
             }, 1000);
+        } else if (target instanceof L.Layer) {
+            target
+                .on("mouseout", mouseOutHandler)
+                .on("mouseenter", mouseOverHandler);
+            target.bindPopup(this.popup).openPopup();
         } else {
             target.leafletInstance
                 .on("mouseout", mouseOutHandler)
                 .on("mouseenter", mouseOverHandler);
             this.map.on("zoomend", zoomAnimHandler);
         }
-        popupElement.addEventListener("mouseenter", mouseOverHandler);
-        popupElement.addEventListener("mouseleave", mouseOutHandler);
     }
 
     @catchError
     private _getPopup(
-        target: MarkerDefinition | ILeafletOverlay | L.LatLng
+        target: MarkerDefinition | ILeafletOverlay | L.LatLng | L.Layer
     ): L.Popup {
         if (this.popup.isOpen() && this._popupTarget == target) {
             return this.popup;
@@ -1440,6 +1518,10 @@ class LeafletMap extends Events {
             return L.popup({
                 ...BASE_POPUP_OPTIONS
             }).setLatLng(target);
+        } else if (target instanceof L.Layer) {
+            return L.popup({
+                ...BASE_POPUP_OPTIONS
+            });
         } else if (target.leafletInstance instanceof L.Circle) {
             return L.popup({
                 ...BASE_POPUP_OPTIONS,

@@ -5,8 +5,6 @@ import { LeafletMap } from "./map";
 export { ObsidianLeaflet } from "./main";
 export { LeafletMap, Marker } from "./map";
 
-
-
 /** Recreate Length Alias Types from "convert" */
 declare type UnitsCombined = typeof allUnits;
 declare type UnitKeys = Exclude<keyof UnitsCombined, "__proto__">;
@@ -45,6 +43,7 @@ export interface ILeafletMapOptions {
     overlayColor?: string;
     bounds?: [[number, number], [number, number]];
     geojson?: any[];
+    geojsonColor?: string;
 }
 
 export interface IBlockParameters {
@@ -76,6 +75,7 @@ export interface IBlockParameters {
     linksTo?: string[];
     linksFrom?: string[];
     geojson?: string[];
+    geojsonColor?: string;
 }
 export interface ILeafletOverlay {
     leafletInstance: L.Circle;
