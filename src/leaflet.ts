@@ -63,6 +63,7 @@ function catchError(
                 return original.apply(this, args);
             } catch (e) {
                 //throw error here
+                console.error(e);
                 renderError(
                     this.contentEl?.parentElement ?? this.contentEl,
                     e.message
@@ -84,6 +85,7 @@ function catchErrorAsync(
                 return await original.apply(this, args);
             } catch (e) {
                 //throw error here
+                console.error(e);
                 renderError(
                     this.contentEl?.parentElement ?? this.contentEl,
                     e.message
@@ -458,9 +460,32 @@ class LeafletMap extends Events {
             });
 
         /** Add GeoJSON to map */
+        if (this._geojson.length > 0) {
+            this.map.createPane("geojson");
+        }
         this._geojson.forEach((geoJSON) => {
             try {
-                L.geoJSON(geoJSON).addTo(this.group.group);
+                L.geoJSON(geoJSON, {
+                    pane: "geojson",
+                    style: function (feature) {
+                        if (!feature || !feature.properties) return {};
+
+                        const {
+                            stroke: color = "#3388ff",
+                            "stroke-opacity": opacity = 1,
+                            "stroke-width": weight = 3,
+                            fill: fillColor = null,
+                            "fill-opacity": fillOpacity = 0.2
+                        } = feature.properties;
+                        return {
+                            color,
+                            opacity,
+                            weight,
+                            fillColor,
+                            fillOpacity
+                        };
+                    }
+                }).addTo(this.group.group);
             } catch (e) {
                 new Notice(
                     "There was an error adding GeoJSON to map " + this.id

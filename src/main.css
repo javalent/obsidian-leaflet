@@ -244,24 +244,6 @@ input.is-invalid {
 .leaflet-file-upload > input[type="file"] {
     display: none;
 }
-/* .leaflet-file-upload {
-    font-family: Ubuntu, Arial, sans-serif;
-    color: var(--text-normal);
-    background-color: var(--background-secondary-alt);
-    font-size: 15px;
-    padding: 6px 20px;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-    margin-right: 12px;
-    outline: none;
-    user-select: none;
-    max-height: 29px;
-    text-align: center;
-    display: flex;
-    white-space: nowrap;
-    align-items: center;
-} */
 
 /** Bulk Marker Edit Settings */
 .bulk-setting-hover:not(.marker) {
@@ -356,4 +338,8 @@ input.is-invalid {
     .leaflet-control-filter-button-group
     button:last-child {
     margin-right: 0px;
+}
+
+.leaflet-pane.leaflet-geojson-pane {
+    z-index: 399;
 }
