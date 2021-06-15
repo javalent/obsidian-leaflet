@@ -31,7 +31,9 @@ import {
     LAT_LONG_DECIMALS,
     DEFAULT_MAP_OPTIONS,
     BASE_POPUP_OPTIONS,
-    renderError
+    renderError,
+    MAP_OVERLAY_STROKE_OPACITY,
+    MAP_OVERLAY_STROKE_WIDTH
 } from "./utils";
 
 import {
@@ -94,6 +96,11 @@ function catchErrorAsync(
         };
     }
 }
+
+L.Circle.mergeOptions({
+    weight: MAP_OVERLAY_STROKE_WIDTH,
+    opacity: MAP_OVERLAY_STROKE_OPACITY
+});
 
 export class LeafletRenderer extends MarkdownRenderChild {
     map: LeafletMap;
@@ -472,8 +479,9 @@ class LeafletMap extends Events {
 
                         const {
                             stroke: color = "#3388ff",
-                            "stroke-opacity": opacity = 1,
-                            "stroke-width": weight = 3,
+                            "stroke-opacity":
+                                opacity = MAP_OVERLAY_STROKE_OPACITY,
+                            "stroke-width": weight = MAP_OVERLAY_STROKE_WIDTH,
                             fill: fillColor = null,
                             "fill-opacity": fillOpacity = 0.2
                         } = feature.properties;
