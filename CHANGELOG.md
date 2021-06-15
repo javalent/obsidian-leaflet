@@ -1,5 +1,40 @@
 # Version History
 
+## 3.18.0
+
+- Added support for GeoJSON styling using the MapBox SimpleStyle specification
+- GeoJSON now displays a tooltip if the features have a `title`, `description` or `name` specified
+- The default GeoJSON color can be set with the new `geojsonColor` parameter
+- Fixed issue where maps would not load if a non-markdown file was present in the immutable file list
+
+## 3.17.0
+
+-   Added support for GeoJSON files
+-   Added support for `mapmarkers` frontmatter tag
+-   Backend updates
+
+## 3.16.0
+
+-   Added file watchers to automatically update immutable markers and overlays when note frontmatter changes
+-   Fixed issue where `zoomDelta` was not respected when using scroll wheel
+-   Fixes issue where markerFiles, markerFolders and markerTags were not rendered
+
+## 3.15.0
+
+-   Added `linksTo` and `linksFrom` parameters
+-   Map overlays from note frontmatter will filter with the `mapmarker` type
+-   Add new `coordinates` and `zoomTag` parameter
+    -   `coordinates` can be used in lieu of `lat` and `long` parameters
+    -   If the `coordinates` is a note file wikilink, it will read the note file's `location` frontmatter tag and use that for initial starting coordinates
+    -   If `zoomTag` is specified, it will read the tag from the frontmatter of the _same_ file specified in `coordinates`. If `coordinates` is not a file, `zoomTag` does nothing. - It will use the tag (formatted the same as `overlayTag` - `<distance> <unit>`) to calculate the default zoom level to display
+
+## 3.14.0
+
+-   Close #74 - Added `bounds` parameter to set custom image map coordinates
+-   Greatly improved error reporting
+-   Fixed an issue where maps were defaulting to dark mode
+-   Fixed issue where canceling drawing an overlay could cause an error on the next click
+
 ## 3.13.0
 
 -   Added overlay descriptions
