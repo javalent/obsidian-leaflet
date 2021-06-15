@@ -52,14 +52,15 @@ darkMode: true
 | markerTags\*  | Create immutable markers from _all_ of the notes with the given tags.                |                                            |
 | linksTo\*     | Create immutable markers from _all_ of the notes linking **TO** a note               |                                            |
 | linksFrom\*   | Create immutable markers from _all_ of the notes linking **FROM** a note             |                                            |
-| darkMode      | Invert map colors                                                                    |                                            |
+| darkMode      | Invert map colors                                                                    | false                                      |
 | overlay       | Add a circle overlay to the map                                                      |                                            |
 | overlayTag    | Define a YAML tag to search for in specified marker notes                            |                                            |
-| overlayColor  | Change default overlay color                                                         |                                            |
+| overlayColor  | Change default overlay color                                                         | blue                                       |
 | bounds        | Set image map bounds to specified coordinates instead of default                     |                                            |
 | coordinates   | Read location data from a note and use it as initial coordinates                     |                                            |
 | zoomTag       | Read distance-to-zoom data from a note and use it as default initial zoom            |                                            |
-| geojson       | Load GeoJSON files onto maps.                                                        |
+| geojson       | Load GeoJSON files onto maps.                                                        |                                            |
+| geojsonColor  | Change the default color of the GeoJSON features.                                    | #3388ff                                    |
 
 > \*: Requires the [DataView plugin](https://github.com/blacksmithgu/obsidian-dataview).
 
