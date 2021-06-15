@@ -1550,9 +1550,10 @@ class LeafletMap extends Events {
         }
     }
 
-    @catchError
     remove() {
-        this.map?.remove();
+        try {
+            this.map?.remove();
+        } catch (e) {}
         this._resize?.disconnect();
         this.rendered = false;
 
