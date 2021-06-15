@@ -342,11 +342,23 @@ export default class ObsidianLeaflet extends Plugin {
                                     params.overlayTag
                                 )
                             ) {
+                                map.overlays
+                                    .filter(
+                                        ({ id }) =>
+                                            id === fileIds.get("overlayTag")
+                                    )
+                                    ?.forEach((overlay) => {
+                                        overlay.leafletInstance.remove();
+                                    });
+                                map.overlays = map.overlays.filter(
+                                    ({ id }) => id != fileIds.get("overlayTag")
+                                );
                                 overlays.push([
                                     overlayColor ?? "blue",
                                     frontmatter.location ?? [0, 0],
                                     frontmatter[params.overlayTag],
-                                    `${file.basename}: ${params.overlayTag}`
+                                    `${file.basename}: ${params.overlayTag}`,
+                                    fileIds.get("overlayTag")
                                 ]);
                             }
                         }

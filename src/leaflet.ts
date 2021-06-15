@@ -908,6 +908,13 @@ class LeafletMap extends Events {
         options: { mutable: boolean; sort: boolean }
     ) {
         if (options.sort) {
+            const original = this.overlays.map(({ data }) => data);
+            this.overlays.forEach((overlay) => {
+                overlay.leafletInstance.remove();
+            });
+            this.overlays = [];
+
+            overlayArray = [...original, ...overlayArray];
             overlayArray.sort((a, b) => {
                 const radiusA = convert(a.radius)
                     .from(a.unit as Length)
