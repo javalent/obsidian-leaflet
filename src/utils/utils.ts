@@ -573,6 +573,7 @@ export async function getImmutableItems(
                         );
                         continue;
                     }
+                    const id = getId();
                     overlaysToReturn.push([
                         overlayColor,
                         frontmatter.location,
@@ -581,7 +582,7 @@ export async function getImmutableItems(
                         id
                     ]);
 
-                    idMap.set("overlayTag", "overlayTag");
+                    idMap.set("overlayTag", id);
                     //watchers.set(file, `overlayTag|${id}`);
                 }
                 watchers.set(file, idMap);
