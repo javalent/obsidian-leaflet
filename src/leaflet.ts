@@ -229,11 +229,7 @@ class LeafletMap extends Events {
         }
     );
     private _timeoutHandler: ReturnType<typeof setTimeout>;
-    private _popupTarget:
-        | MarkerDefinition
-        | ILeafletOverlay
-        | L.LatLng
-        | L.Layer;
+    private _popupTarget: MarkerDefinition | ILeafletOverlay | L.LatLng;
     private _scale: number;
     private _hoveringOnMarker: boolean = false;
     private _distanceDisplay: DistanceDisplay;
@@ -1553,7 +1549,7 @@ class LeafletMap extends Events {
 
     @catchError
     private _getPopup(
-        target: MarkerDefinition | ILeafletOverlay | L.LatLng | L.Layer
+        target: MarkerDefinition | ILeafletOverlay | L.LatLng
     ): L.Popup {
         if (this.popup.isOpen() && this._popupTarget == target) {
             return this.popup;
@@ -1568,10 +1564,6 @@ class LeafletMap extends Events {
             return L.popup({
                 ...BASE_POPUP_OPTIONS
             }).setLatLng(target);
-        } else if (target instanceof L.Layer) {
-            return L.popup({
-                ...BASE_POPUP_OPTIONS
-            });
         } else if (target.leafletInstance instanceof L.Circle) {
             return L.popup({
                 ...BASE_POPUP_OPTIONS,
