@@ -553,7 +553,9 @@ class LeafletMap extends Events {
                     this.map.getCenter().lat,
                     this.map.getCenter().lng
                 ]);
-                this.zoom.default = this.map.getZoom();
+                this.zoom.default = this.map.getBoundsZoom(
+                    geoJSONLayer.getBounds()
+                );
             }
         }
         /** Register Resize Handler */
