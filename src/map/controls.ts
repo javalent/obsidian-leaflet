@@ -136,8 +136,10 @@ abstract class FontAwesomeControl extends L.Control {
     tooltip: string;
     leafletInstance: L.Map;
     link: HTMLElement;
-    constructor(opts: FontAwesomeControlOptions) {
+    enabled: boolean = true;
+    constructor(opts: FontAwesomeControlOptions, leafletMap: L.Map) {
         super(opts);
+        this.leafletInstance = leafletMap;
         this.icon = opts.icon;
         this.cls = opts.cls;
         this.tooltip = opts.tooltip;
@@ -167,6 +169,18 @@ abstract class FontAwesomeControl extends L.Control {
     }
     abstract onClick(evt: MouseEvent): void;
     added() {}
+    disable() {
+        if (!this.enabled) return;
+        this.controlEl.addClass("disabled");
+        this.controlEl.detach();
+        this.enabled = false;
+    }
+    enable() {
+        if (this.enabled) return;
+        this.controlEl.removeClass("disabled");
+        this.addTo(this.leafletInstance);
+        this.enabled = true;
+    }
 }
 
 class EditMarkerControl extends FontAwesomeControl {
@@ -180,9 +194,17 @@ class EditMarkerControl extends FontAwesomeControl {
         map: LeafletMap,
         plugin: ObsidianLeaflet
     ) {
-        super(opts);
+        super(opts, map.map);
         this.map = map;
         this.plugin = plugin;
+
+        this.map.on("markers-updated", (markers) => {
+            if (markers.length) {
+                this.enable();
+            } else {
+                this.disable();
+            }
+        });
     }
 
     async onClick(evt: MouseEvent) {
@@ -397,14 +419,6 @@ class EditMarkerControl extends FontAwesomeControl {
             });
         }
     }
-    disable() {
-        this.controlEl.addClass("disabled");
-        this.controlEl.detach();
-    }
-    enable() {
-        this.controlEl.removeClass("disabled");
-        this.addTo(this.map.map);
-    }
 }
 
 export function editMarkers(
@@ -599,8 +613,16 @@ class ZoomControl extends FontAwesomeControl {
     controlEl: any;
     map: LeafletMap;
     constructor(opts: FontAwesomeControlOptions, map: LeafletMap) {
-        super(opts);
+        super(opts, map.map);
         this.map = map;
+
+        this.map.on("markers-updated", (markers) => {
+            if (markers.length) {
+                this.enable();
+            } else {
+                this.disable();
+            }
+        });
     }
     onClick(evt: MouseEvent) {
         const group = L.featureGroup(
@@ -639,7 +661,7 @@ export function zoomControl(opts: L.ControlOptions, map: LeafletMap) {
 class ResetZoomControl extends FontAwesomeControl {
     map: LeafletMap;
     constructor(opts: FontAwesomeControlOptions, map: LeafletMap) {
-        super(opts);
+        super(opts, map.map);
         this.map = map;
     }
     onClick(evt: MouseEvent) {
@@ -665,8 +687,15 @@ class FilterMarkers extends FontAwesomeControl {
     section: HTMLElement;
     inputs: HTMLInputElement[];
     constructor(opts: FontAwesomeControlOptions, map: LeafletMap) {
-        super(opts);
+        super(opts, map.map);
         this.map = map;
+        this.map.on("markers-updated", (markers) => {
+            if (this.map.displaying.size) {
+                this.enable();
+            } else {
+                this.disable();
+            }
+        });
     }
     onClick(evt: MouseEvent) {}
     added() {
