@@ -456,7 +456,7 @@ class LeafletMap extends Events {
                     !overlay.layer || overlay.layer === this.mapLayers[0].id
             )
             .forEach((overlay) => {
-                let group;
+                let group = this.group.group;
                 if (overlay.id) {
                     const marker = this.markers.find(
                         ({ id }) => id === overlay.id
@@ -465,14 +465,8 @@ class LeafletMap extends Events {
                         group = this.group.markers[marker.type].addLayer(
                             marker.leafletInstance
                         );
-                } else {
-                    group =
-                        this.mapLayers.find(({ id }) => id === overlay.layer)
-                            ?.group ?? this.mapLayers[0].group;
                 }
-                overlay.leafletInstance.addTo(group ?? this.group.group);
-
-                /* overlay.leafletInstance.addTo(this.mapLayers[0].group); */
+                overlay.leafletInstance.addTo(group);
             });
 
         /** Add GeoJSON to map */
@@ -882,19 +876,15 @@ class LeafletMap extends Events {
         this._bindOverlayEvents(overlay);
         this.overlays.push(overlay);
         if (this.rendered) {
-            let group;
+            let group = this.group.group;
             if (overlay.id) {
                 const marker = this.markers.find(({ id }) => id === overlay.id);
                 if (marker)
                     group = this.group.markers[marker.type].addLayer(
                         marker.leafletInstance
                     );
-            } else {
-                group =
-                    this.mapLayers.find(({ id }) => id === overlay.layer)
-                        ?.group ?? this.mapLayers[0].group;
             }
-            overlay.leafletInstance.addTo(group ?? this.group.group);
+            overlay.leafletInstance.addTo(group);
         }
     }
 
@@ -903,6 +893,7 @@ class LeafletMap extends Events {
         let radius = convert(circle.radius)
             .from((circle.unit as Length) ?? "m")
             .to(this.type == "image" ? this.unit : "m");
+
         if (this.type == "image" && !mutable) {
             radius = radius / this.scale;
         }
