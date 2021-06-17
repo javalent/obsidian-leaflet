@@ -229,11 +229,7 @@ class LeafletMap extends Events {
         }
     );
     private _timeoutHandler: ReturnType<typeof setTimeout>;
-    private _popupTarget:
-        | MarkerDefinition
-        | ILeafletOverlay
-        | L.LatLng
-        | L.Layer;
+    private _popupTarget: MarkerDefinition | ILeafletOverlay | L.LatLng;
     private _scale: number;
     private _hoveringOnMarker: boolean = false;
     private _distanceDisplay: DistanceDisplay;
@@ -500,9 +496,17 @@ class LeafletMap extends Events {
                                 fillOpacity
                             };
                         },
-                        onEachFeature: (feature, layer) => {
+                        onEachFeature: (feature, layer: L.GeoJSON) => {
                             /** Propogate click */
                             layer.on("click", (evt: L.LeafletMouseEvent) => {
+                                if (
+                                    evt.originalEvent.getModifierState(
+                                        "Control"
+                                    )
+                                ) {
+                                    this.map.fitBounds(layer.getBounds());
+                                    return;
+                                }
                                 if (
                                     (!evt.originalEvent.getModifierState(
                                         "Shift"
@@ -525,16 +529,12 @@ class LeafletMap extends Events {
                             if (!display) return;
                             layer.on("mouseover", () => {
                                 if (this.isDrawing) return;
-                                layer
-                                    .bindPopup("fake", {
-                                        maxHeight: 0,
-                                        maxWidth: 0,
-                                        className: "hidden-leaflet-popup"
-                                    })
-                                    .openPopup();
-                                const latlng = layer.getPopup().getLatLng();
-                                layer.unbindPopup();
-                                this.openPopup(latlng, display, layer);
+
+                                this.openPopup(
+                                    layer.getBounds().getCenter(),
+                                    display,
+                                    layer
+                                );
                             });
                         }
                     }).addTo(geoJSONLayer);
@@ -549,6 +549,11 @@ class LeafletMap extends Events {
 
             if (this._zoomFeatures) {
                 this.map.fitBounds(geoJSONLayer.getBounds());
+                this.setInitialCoords([
+                    this.map.getCenter().lat,
+                    this.map.getCenter().lng
+                ]);
+                this.zoom.default = this.map.getZoom();
             }
         }
         /** Register Resize Handler */
@@ -590,6 +595,8 @@ class LeafletMap extends Events {
         this.group.markers[marker.type].removeLayer(marker.leafletInstance);
 
         this.markers = this.markers.filter(({ id }) => id != marker.id);
+
+        this.trigger("markers-updated", this.markers);
     }
 
     @catchError
@@ -743,6 +750,7 @@ class LeafletMap extends Events {
             marker.leafletInstance.closeTooltip();
         }
         this.markers.push(marker);
+        this.trigger("markers-updated", this.markers);
     }
 
     @catchError
@@ -839,6 +847,8 @@ class LeafletMap extends Events {
         zoomControl({ position: "topleft" }, this).addTo(this.map);
         //Zoom to initial
         resetZoomControl({ position: "topleft" }, this).addTo(this.map);
+
+        this.trigger("markers-updated", this.markers);
 
         //Distance Display
         this._distanceDisplay = distanceDisplay(
@@ -1539,7 +1549,7 @@ class LeafletMap extends Events {
 
     @catchError
     private _getPopup(
-        target: MarkerDefinition | ILeafletOverlay | L.LatLng | L.Layer
+        target: MarkerDefinition | ILeafletOverlay | L.LatLng
     ): L.Popup {
         if (this.popup.isOpen() && this._popupTarget == target) {
             return this.popup;
@@ -1554,10 +1564,6 @@ class LeafletMap extends Events {
             return L.popup({
                 ...BASE_POPUP_OPTIONS
             }).setLatLng(target);
-        } else if (target instanceof L.Layer) {
-            return L.popup({
-                ...BASE_POPUP_OPTIONS
-            });
         } else if (target.leafletInstance instanceof L.Circle) {
             return L.popup({
                 ...BASE_POPUP_OPTIONS,
