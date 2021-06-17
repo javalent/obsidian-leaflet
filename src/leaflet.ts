@@ -34,7 +34,8 @@ import {
     renderError,
     MAP_OVERLAY_STROKE_OPACITY,
     MAP_OVERLAY_STROKE_WIDTH,
-    getHex
+    getHex,
+    log
 } from "./utils";
 
 import {
@@ -105,6 +106,7 @@ L.Circle.mergeOptions({
 
 export class LeafletRenderer extends MarkdownRenderChild {
     map: LeafletMap;
+    verbose: boolean;
     constructor(
         public plugin: ObsidianLeaflet,
         sourcePath: string,
@@ -113,6 +115,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
     ) {
         super(container);
         this.map = new LeafletMap(plugin, options);
+        this.verbose = options.verbose;
 
         this.containerEl.style.height = options.height;
         this.containerEl.style.width = "100%";
@@ -155,6 +158,11 @@ export class LeafletRenderer extends MarkdownRenderChild {
         });
     }
     async onload() {
+        log(
+            this.verbose,
+            this.map.id,
+            "MarkdownRenderChild loaded. Appending map."
+        );
         this.containerEl.appendChild(this.map.contentEl);
     }
 }
@@ -170,6 +178,7 @@ class LeafletMap extends Events {
     private _geojsonColor: string;
     private _canShowGeoJSONPopup: boolean = true;
     private _zoomFeatures: boolean;
+    verbose: boolean;
     getMarkerById(id: string): Marker[] {
         return this.markers.filter(({ id: marker }) => marker === id);
     }
@@ -244,6 +253,7 @@ class LeafletMap extends Events {
         super();
 
         this.plugin = plugin;
+        this.verbose = this.options.verbose;
 
         this.contentEl = createDiv();
         this.contentEl.style.height = options.height;
@@ -280,6 +290,7 @@ class LeafletMap extends Events {
 
         this._geojsonColor = getHex(options.geojsonColor);
 
+        log(this.verbose, this.id, "Building map instance.");
         this.map = L.map(this.contentEl, {
             crs: this.CRS,
             maxZoom: this.zoom.max,
@@ -377,6 +388,8 @@ class LeafletMap extends Events {
         /** Get layers
          *  Returns TileLayer (real) or ImageOverlay (image)
          */
+
+        log(this.verbose, this.id, "Beginning render process.");
         this.layer = await this._buildLayersForType(options.layer);
 
         /** Render map */
@@ -391,8 +404,12 @@ class LeafletMap extends Events {
             }
         }
         /** Move to supplied coordinates */
+        log(
+            this.verbose,
+            this.id,
+            `Moving to supplied coordinates: ${options.coords}`
+        );
         this.setInitialCoords(options.coords);
-
         this.map.panTo(this.initialCoords);
 
         if (options.zoomDistance) {
@@ -420,6 +437,7 @@ class LeafletMap extends Events {
                 });
         }
         /** Add markers to map */
+        log(this.verbose, this.id, `Adding markers to map.`);
         this.markers
             .filter(
                 (marker) =>
@@ -448,6 +466,7 @@ class LeafletMap extends Events {
             });
 
         /** Add Overlays to map */
+        log(this.verbose, this.id, `Adding overlays to map.`);
         this.overlays
             .filter(
                 (overlay) =>
@@ -465,6 +484,7 @@ class LeafletMap extends Events {
         this.sortOverlays();
         /** Add GeoJSON to map */
         if (this._geojson.length > 0) {
+            log(this.verbose, this.id, `Adding GeoJSON to map.`);
             this.map.createPane("geojson");
 
             const geoJSONLayer = L.featureGroup();
@@ -500,6 +520,14 @@ class LeafletMap extends Events {
                                         "Control"
                                     )
                                 ) {
+                                    const { lat, lng } = layer
+                                        .getBounds()
+                                        .getCenter();
+                                    log(
+                                        this.verbose,
+                                        this.id,
+                                        `Feature was Control clicked. Moving to bounds [${lat}, ${lng}]`
+                                    );
                                     this.map.fitBounds(layer.getBounds());
                                     return;
                                 }
@@ -544,11 +572,12 @@ class LeafletMap extends Events {
             geoJSONLayer.addTo(this.group.group);
 
             if (this._zoomFeatures) {
+                log(this.verbose, this.id, `Zooming to features.`);
                 this.map.fitBounds(geoJSONLayer.getBounds());
-                this.setInitialCoords([
-                    this.map.getCenter().lat,
-                    this.map.getCenter().lng
-                ]);
+                const { lat, lng } = this.map.getCenter();
+
+                log(this.verbose, this.id, `Features center: [${lat}, ${lng}]`);
+                this.setInitialCoords([lat, lng]);
                 this.zoom.default = this.map.getBoundsZoom(
                     geoJSONLayer.getBounds()
                 );
@@ -882,6 +911,11 @@ class LeafletMap extends Events {
             evt.originalEvent.getModifierState("Shift") ||
             evt.originalEvent.getModifierState("Alt")
         ) {
+            log(
+                this.verbose,
+                this.id,
+                `Map popup context detected. Opening popup.`
+            );
             this.openPopup(
                 evt.latlng,
                 `[${this.latLngFormatter.format(
@@ -892,6 +926,11 @@ class LeafletMap extends Events {
                 this.data.copyOnClick &&
                 evt.originalEvent.getModifierState("Control")
             ) {
+                log(
+                    this.verbose,
+                    this.id,
+                    `Copying coordinates of click to clipboard.`
+                );
                 await this.copyLatLngToClipboard(evt.latlng);
             }
         }
@@ -974,6 +1013,7 @@ class LeafletMap extends Events {
     @catchError
     private _handleMapContext(evt: L.LeafletMouseEvent) {
         if (evt.originalEvent.getModifierState("Shift")) {
+            log(this.verbose, this.id, `Beginning overlay drawing context.`);
             //begin drawing context
             this.plugin.app.keymap.pushScope(this._escapeScope);
 
@@ -985,6 +1025,7 @@ class LeafletMap extends Events {
             });
             this.map.once("click", async () => {
                 if (this._tempCircle) {
+                    log(this.verbose, this.id, `Overlay drawing complete.`);
                     this._tempCircle.remove();
                     const circle = L.circle(this._tempCircle.getLatLng(), {
                         radius: this._tempCircle.getRadius(),
@@ -1032,6 +1073,11 @@ class LeafletMap extends Events {
         }
 
         if (this.markerIcons.size <= 1) {
+            log(
+                this.verbose,
+                this.id,
+                `No additional marker types defined. Adding default marker.`
+            );
             this.createMarker(this.defaultIcon, evt.latlng, undefined);
             return;
         }
@@ -1039,6 +1085,8 @@ class LeafletMap extends Events {
         let contextMenu = new Menu(this.plugin.app);
 
         contextMenu.setNoIcon();
+
+        log(this.verbose, this.id, `Opening marker context menu.`);
         this.markerIcons.forEach((marker: IMarkerIcon) => {
             if (!marker.type || !marker.html) return;
             contextMenu.addItem((item) => {
@@ -1047,6 +1095,11 @@ class LeafletMap extends Events {
                 );
                 item.setActive(true);
                 item.onClick(async () => {
+                    log(
+                        this.verbose,
+                        this.id,
+                        `${marker.type} selected. Creating marker.`
+                    );
                     this.createMarker(marker, evt.latlng, undefined);
                     await this.plugin.saveSettings();
                 });
@@ -1072,11 +1125,17 @@ class LeafletMap extends Events {
             return;
         }
         if (this._distanceEvent != undefined) {
+            log(this.verbose, this.id, `Distance measurement context ending.`);
             this._previousDistanceLine.setLatLngs(
                 this._distanceLine.getLatLngs()
             );
             this.stopDrawing();
         } else {
+            log(
+                this.verbose,
+                this.id,
+                `Distance measurement context starting.`
+            );
             this._distanceEvent = evt.latlng;
 
             this.isDrawing = true;
@@ -1126,6 +1185,7 @@ class LeafletMap extends Events {
         /* type: string, */
         layer?: { data: string; id: string }
     ): Promise<L.TileLayer | L.ImageOverlay> {
+        log(this.verbose, this.id, "Building initial map layer.");
         if (this.type === "real") {
             this.layer = L.tileLayer(this.tileServer, {
                 attribution:
@@ -1168,6 +1228,8 @@ class LeafletMap extends Events {
 
         this.mapLayers[0].layer.once("load", () => {
             this.rendered = true;
+
+            log(this.verbose, this.id, "Initial map layer has rendered.");
             this.trigger("rendered");
         });
         return this.mapLayers[0].layer;
@@ -1175,6 +1237,11 @@ class LeafletMap extends Events {
 
     @catchErrorAsync
     async loadAdditionalMapLayers(layers: { data: string; id: string }[]) {
+        log(
+            this.verbose,
+            this.id,
+            "Building additional map layers in background."
+        );
         for (let layer of layers) {
             const newLayer = await this._buildMapLayer(layer);
 

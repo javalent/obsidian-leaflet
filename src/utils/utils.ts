@@ -26,6 +26,11 @@ ${error}
     el.replaceWith(pre);
 }
 
+export function log(verbose: boolean, id: string, message: string) {
+    if (!verbose) return;
+    console.log(`Obsidian Leaflet Map ${id}: ${message}`);
+}
+
 export function getHex(color: string): string {
     return Color(color).hex();
 }

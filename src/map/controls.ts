@@ -1,6 +1,6 @@
 import { LAT_LONG_DECIMALS } from "../utils/constants";
 import { icon } from "../utils/icons";
-import { getId, getImageDimensions } from "../utils";
+import { getId, getImageDimensions, log } from "../utils";
 
 import { CommandSuggestionModal, PathSuggestionModal } from "../modals";
 
@@ -634,6 +634,11 @@ class ZoomControl extends FontAwesomeControl {
             this.leafletInstance.fitWorld();
             return;
         }
+        log(
+            this.map.verbose,
+            this.map.id,
+            `Moving to display ${group.getLayers().length} markers.`
+        );
         this.leafletInstance.fitBounds(
             group.getBounds(),
             {
@@ -665,6 +670,11 @@ class ResetZoomControl extends FontAwesomeControl {
         this.map = map;
     }
     onClick(evt: MouseEvent) {
+        log(
+            this.map.verbose,
+            this.map.id,
+            `Resetting map view to [${this.map.initialCoords[0]}, ${this.map.initialCoords[1]}].`
+        );
         this.leafletInstance.setView(
             this.map.initialCoords,
             this.map.zoom.default
@@ -815,6 +825,7 @@ class FilterMarkers extends FontAwesomeControl {
         { target }: { target: HTMLInputElement }
     ) {
         if (!target.checked) {
+            log(this.map.verbose, this.map.id, `Filtering out ${type}.`);
             //remove
             this.map.displaying.set(type, false);
             this.map.group.markers[type].remove();
@@ -824,6 +835,7 @@ class FilterMarkers extends FontAwesomeControl {
                     overlay.leafletInstance.remove();
                 });
         } else {
+            log(this.map.verbose, this.map.id, `Filtering in ${type}.`);
             this.map.displaying.set(type, true);
             this.map.group.markers[type].addTo(this.map.group.group);
             this.map.overlays

@@ -45,6 +45,7 @@ export interface ILeafletMapOptions {
     geojson?: any[];
     geojsonColor?: string;
     zoomFeatures?: boolean;
+    verbose?: boolean;
 }
 
 export interface IBlockParameters {
@@ -78,6 +79,7 @@ export interface IBlockParameters {
     geojson?: string[];
     geojsonColor?: string;
     zoomFeatures?: boolean;
+    verbose?: boolean;
 }
 export interface ILeafletOverlay {
     leafletInstance: L.Circle;

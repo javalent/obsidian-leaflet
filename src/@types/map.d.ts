@@ -33,6 +33,9 @@ declare class LeafletMap extends Events {
     isDrawing: boolean;
 
     overlays: ILeafletOverlay[];
+
+    verbose: boolean;
+
     get markerIcons(): Map<string, IMarkerIcon>;
 
     unit: Length;
