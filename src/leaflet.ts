@@ -574,7 +574,7 @@ class LeafletMap extends Events {
             if (this._zoomFeatures) {
                 log(this.verbose, this.id, `Zooming to features.`);
                 this.map.fitBounds(geoJSONLayer.getBounds());
-                const { lat, lng } = this.map.getCenter();
+                const { lat, lng } = geoJSONLayer.getBounds().getCenter();
 
                 log(this.verbose, this.id, `Features center: [${lat}, ${lng}]`);
                 this.setInitialCoords([lat, lng]);
