@@ -85,6 +85,7 @@ export interface ILeafletOverlay {
     data: IOverlayData;
     mutable: boolean;
     id: string;
+    marker?: string;
 }
 export interface IOverlayData {
     radius: number;
