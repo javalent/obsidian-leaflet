@@ -168,6 +168,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
 class LeafletMap extends Events {
     private _geojson: any[];
     private _geojsonColor: string;
+    private _zoomFeatures: any;
     getMarkerById(id: string): Marker[] {
         return this.markers.filter(({ id: marker }) => marker === id);
     }
@@ -261,6 +262,9 @@ class LeafletMap extends Events {
             default: this.options.defaultZoom,
             delta: this.options.zoomDelta
         };
+
+        this._zoomFeatures = this.options.zoomFeatures;
+
         this.unit = this.options.unit as Length;
         this._scale = this.options.scale;
         this._distanceMultipler = this.options.distanceMultiplier;
@@ -477,57 +481,70 @@ class LeafletMap extends Events {
         /** Add GeoJSON to map */
         if (this._geojson.length > 0) {
             this.map.createPane("geojson");
-        }
-        this._geojson.forEach((geoJSON) => {
-            try {
-                L.geoJSON(geoJSON, {
-                    pane: "geojson",
-                    style: (feature) => {
-                        if (!feature || !feature.properties) return {};
 
-                        const {
-                            stroke: color = this._geojsonColor,
-                            "stroke-opacity":
-                                opacity = MAP_OVERLAY_STROKE_OPACITY,
-                            "stroke-width": weight = MAP_OVERLAY_STROKE_WIDTH,
-                            fill: fillColor = null,
-                            "fill-opacity": fillOpacity = 0.2
-                        } = feature.properties;
-                        return {
-                            color,
-                            opacity,
-                            weight,
-                            fillColor,
-                            fillOpacity
-                        };
-                    },
-                    onEachFeature: (feature, layer) => {
-                        if (!feature.properties) return;
-                        if (feature.properties.title) {
-                            layer.on("mouseover", () => {
-                                this.openPopup(layer, feature.properties.title);
-                            });
-                        } else if (feature.properties.description) {
-                            layer.on("mouseover", () => {
-                                this.openPopup(
-                                    layer,
-                                    feature.properties.description
-                                );
-                            });
-                        } else if (feature.properties.name) {
-                            layer.on("mouseover", () => {
-                                this.openPopup(layer, feature.properties.name);
-                            });
+            const geoJSONLayer = L.featureGroup();
+            this._geojson.forEach((geoJSON) => {
+                try {
+                    L.geoJSON(geoJSON, {
+                        pane: "geojson",
+                        style: (feature) => {
+                            if (!feature || !feature.properties) return {};
+
+                            const {
+                                stroke: color = this._geojsonColor,
+                                "stroke-opacity":
+                                    opacity = MAP_OVERLAY_STROKE_OPACITY,
+                                "stroke-width":
+                                    weight = MAP_OVERLAY_STROKE_WIDTH,
+                                fill: fillColor = null,
+                                "fill-opacity": fillOpacity = 0.2
+                            } = feature.properties;
+                            return {
+                                color,
+                                opacity,
+                                weight,
+                                fillColor,
+                                fillOpacity
+                            };
+                        },
+                        onEachFeature: (feature, layer) => {
+                            if (!feature.properties) return;
+                            if (feature.properties.title) {
+                                layer.on("mouseover", () => {
+                                    this.openPopup(
+                                        layer,
+                                        feature.properties.title
+                                    );
+                                });
+                            } else if (feature.properties.description) {
+                                layer.on("mouseover", () => {
+                                    this.openPopup(
+                                        layer,
+                                        feature.properties.description
+                                    );
+                                });
+                            } else if (feature.properties.name) {
+                                layer.on("mouseover", () => {
+                                    this.openPopup(
+                                        layer,
+                                        feature.properties.name
+                                    );
+                                });
+                            }
                         }
-                    }
-                }).addTo(this.group.group);
-            } catch (e) {
-                new Notice(
-                    "There was an error adding GeoJSON to map " + this.id
-                );
-                return;
+                    }).addTo(geoJSONLayer);
+                } catch (e) {
+                    new Notice(
+                        "There was an error adding GeoJSON to map " + this.id
+                    );
+                    return;
+                }
+            });
+            geoJSONLayer.addTo(this.group.group);
+            if (this._zoomFeatures) {
+                this.map.fitBounds(geoJSONLayer.getBounds());
             }
-        });
+        }
 
         /** Register Resize Handler */
         this._handleResize();
