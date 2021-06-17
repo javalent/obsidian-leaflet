@@ -462,7 +462,7 @@ class LeafletMap extends Events {
                 }
                 overlay.leafletInstance.addTo(this.group.group);
             });
-
+        this.sortOverlays();
         /** Add GeoJSON to map */
         if (this._geojson.length > 0) {
             this.map.createPane("geojson");
@@ -565,6 +565,23 @@ class LeafletMap extends Events {
         this.map.on("click", this._handleMapClick.bind(this));
 
         this.group.group.addTo(this.map);
+    }
+    sortOverlays() {
+        let overlays = [...this.overlays];
+
+        overlays.sort((a, b) => {
+            const radiusA = convert(a.data.radius)
+                .from(a.data.unit as Length)
+                .to("m");
+            const radiusB = convert(b.data.radius)
+                .from(b.data.unit as Length)
+                .to("m");
+            return radiusB - radiusA;
+        });
+
+        for (let overlay of overlays) {
+            overlay.leafletInstance.bringToFront();
+        }
     }
     setZoomByDistance(zoomDistance: number) {
         if (!zoomDistance) {
@@ -900,6 +917,7 @@ class LeafletMap extends Events {
                 if (marker) overlay.marker = marker.type;
             }
             overlay.leafletInstance.addTo(this.group.group);
+            this.sortOverlays();
         }
     }
 

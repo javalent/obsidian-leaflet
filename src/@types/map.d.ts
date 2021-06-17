@@ -100,6 +100,8 @@ declare class LeafletMap extends Events {
 
     distance(latlng1: L.LatLng, latlng2: L.LatLng): string;
 
+    sortOverlays(): void;
+
     stopDrawing(): void;
     copyLatLngToClipboard(loc: L.LatLng): Promise<void>;
 

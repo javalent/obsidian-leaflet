@@ -831,6 +831,7 @@ class FilterMarkers extends FontAwesomeControl {
                 .forEach((overlay) => {
                     overlay.leafletInstance.addTo(this.map.group.group);
                 });
+            this.map.sortOverlays();
         }
 
         this.update();
