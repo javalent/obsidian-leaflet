@@ -454,17 +454,13 @@ class LeafletMap extends Events {
                     !overlay.layer || overlay.layer === this.mapLayers[0].id
             )
             .forEach((overlay) => {
-                let group = this.group.group;
                 if (overlay.id) {
                     const marker = this.markers.find(
                         ({ id }) => id === overlay.id
                     );
-                    if (marker)
-                        group = this.group.markers[marker.type].addLayer(
-                            marker.leafletInstance
-                        );
+                    if (marker) overlay.marker = marker.type;
                 }
-                overlay.leafletInstance.addTo(group);
+                overlay.leafletInstance.addTo(this.group.group);
             });
 
         /** Add GeoJSON to map */
@@ -899,15 +895,11 @@ class LeafletMap extends Events {
         this._bindOverlayEvents(overlay);
         this.overlays.push(overlay);
         if (this.rendered) {
-            let group = this.group.group;
             if (overlay.id) {
                 const marker = this.markers.find(({ id }) => id === overlay.id);
-                if (marker)
-                    group = this.group.markers[marker.type].addLayer(
-                        marker.leafletInstance
-                    );
+                if (marker) overlay.marker = marker.type;
             }
-            overlay.leafletInstance.addTo(group);
+            overlay.leafletInstance.addTo(this.group.group);
         }
     }
 
