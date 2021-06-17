@@ -168,6 +168,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
 class LeafletMap extends Events {
     private _geojson: any[];
     private _geojsonColor: string;
+    private _canShowGeoJSONPopup: boolean = true;
     getMarkerById(id: string): Marker[] {
         return this.markers.filter(({ id: marker }) => marker === id);
     }
@@ -502,23 +503,39 @@ class LeafletMap extends Events {
                         };
                     },
                     onEachFeature: (feature, layer) => {
+                        /** Propogate click */
+                        layer.on("click", (evt: L.LeafletMouseEvent) => {
+                            if (
+                                (!evt.originalEvent.getModifierState("Shift") ||
+                                    !evt.originalEvent.getModifierState(
+                                        "Alt"
+                                    )) &&
+                                display
+                            ) {
+                                this.openPopup(evt.latlng, display, layer);
+                                return;
+                            }
+                            this.map.fire("click", evt, true);
+                        });
                         if (!feature.properties) return;
-                        if (feature.properties.title) {
-                            layer.on("mouseover", () => {
-                                this.openPopup(layer, feature.properties.title);
-                            });
-                        } else if (feature.properties.description) {
-                            layer.on("mouseover", () => {
-                                this.openPopup(
-                                    layer,
-                                    feature.properties.description
-                                );
-                            });
-                        } else if (feature.properties.name) {
-                            layer.on("mouseover", () => {
-                                this.openPopup(layer, feature.properties.name);
-                            });
-                        }
+                        const display =
+                            feature.properties.title ??
+                            feature.properties.name ??
+                            feature.properties.description;
+                        if (!display) return;
+                        layer.on("mouseover", () => {
+                            if (this.isDrawing) return;
+                            layer
+                                .bindPopup("fake", {
+                                    maxHeight: 0,
+                                    maxWidth: 0,
+                                    className: "hidden-leaflet-popup"
+                                })
+                                .openPopup();
+                            const latlng = layer.getPopup().getLatLng();
+                            layer.unbindPopup();
+                            this.openPopup(latlng, display, layer);
+                        });
                     }
                 }).addTo(this.group.group);
             } catch (e) {
@@ -1408,8 +1425,9 @@ class LeafletMap extends Events {
 
     @catchError
     openPopup(
-        target: MarkerDefinition | ILeafletOverlay | L.LatLng | L.Layer,
-        content: ((source: L.Layer) => L.Content) | L.Content
+        target: MarkerDefinition | ILeafletOverlay | L.LatLng,
+        content: ((source: L.Layer) => L.Content) | L.Content,
+        handler?: L.Layer
     ) {
         if (this._timeoutHandler) {
             clearTimeout(this._timeoutHandler);
@@ -1421,20 +1439,20 @@ class LeafletMap extends Events {
 
         this._popupTarget = target;
 
+        const handlerTarget = handler ?? target;
+
         if (this.popup && this.popup.isOpen()) {
             this.map.closePopup(this.popup);
+            if (target instanceof L.Layer) target.closePopup();
         }
 
         this.popup = this._getPopup(target).setContent(content);
-        if (!(target instanceof L.Layer)) this.map.openPopup(this.popup);
-
         let popupElement: HTMLElement;
-
         let _this = this;
 
         const zoomAnimHandler = function () {
             if (
-                !(target instanceof L.LatLng || target instanceof L.Layer) &&
+                !(target instanceof L.LatLng) &&
                 target.leafletInstance instanceof L.Circle
             ) {
                 _this.popup.options.offset = new L.Point(
@@ -1454,13 +1472,22 @@ class LeafletMap extends Events {
             clearTimeout(_this._timeoutHandler);
             _this._timeoutHandler = setTimeout(function () {
                 if (
-                    !(target instanceof L.LatLng || target instanceof L.Layer)
+                    !(
+                        handlerTarget instanceof L.LatLng ||
+                        handlerTarget instanceof L.Layer
+                    )
                 ) {
-                    target.leafletInstance.off("mouseenter", mouseOverHandler);
-                    target.leafletInstance.off("mouseout", mouseOutHandler);
+                    handlerTarget.leafletInstance.off(
+                        "mouseenter",
+                        mouseOverHandler
+                    );
+                    handlerTarget.leafletInstance.off(
+                        "mouseout",
+                        mouseOutHandler
+                    );
                 }
-                if (target instanceof L.Layer) {
-                    target
+                if (handlerTarget instanceof L.Layer) {
+                    handlerTarget
                         .off("mouseout", mouseOutHandler)
                         .off("mouseenter", mouseOverHandler);
                 }
@@ -1484,8 +1511,9 @@ class LeafletMap extends Events {
             popupElement.addEventListener("mouseenter", mouseOverHandler);
             popupElement.addEventListener("mouseleave", mouseOutHandler);
         });
+        this.map.openPopup(this.popup);
 
-        if (target instanceof L.LatLng) {
+        if (handlerTarget instanceof L.LatLng) {
             this._timeoutHandler = setTimeout(function () {
                 popupElement.removeEventListener(
                     "mouseenter",
@@ -1495,13 +1523,12 @@ class LeafletMap extends Events {
 
                 _this.map.closePopup(_this.popup);
             }, 1000);
-        } else if (target instanceof L.Layer) {
-            target
+        } else if (handlerTarget instanceof L.Layer) {
+            handlerTarget
                 .on("mouseout", mouseOutHandler)
                 .on("mouseenter", mouseOverHandler);
-            target.bindPopup(this.popup).openPopup();
         } else {
-            target.leafletInstance
+            handlerTarget.leafletInstance
                 .on("mouseout", mouseOutHandler)
                 .on("mouseenter", mouseOverHandler);
             this.map.on("zoomend", zoomAnimHandler);
