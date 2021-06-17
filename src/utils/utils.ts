@@ -573,7 +573,7 @@ export async function getImmutableItems(
                         );
                         continue;
                     }
-                    const id = getId();
+                    /* const id = getId(); */
                     overlaysToReturn.push([
                         overlayColor,
                         frontmatter.location,
