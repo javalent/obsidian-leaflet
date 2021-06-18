@@ -612,10 +612,10 @@ class LeafletMap extends Events {
                 style: "display: flex; justify-content: space-between;"
             }
         });
-        titleEl.createEl("label", {
+        const labelEl = titleEl.createEl("label", {
             text: title,
             attr: {
-                style: "font-weight: bolder; text-align: left;"
+                style: "text-align: left;"
             }
         });
         if (icon) {
@@ -628,13 +628,15 @@ class LeafletMap extends Events {
                 DESCRIPTION_ICON
             );
         }
-        if (description)
+        if (description) {
+            labelEl.setAttr("style", "font-weight: bolder; text-align: left;");
             display.createEl("p", {
                 attr: {
                     style: "margin: 0.25rem 0; text-align: left;"
                 },
                 text: description
             });
+        }
         return display;
     }
     private _focusOnLayer(layer: L.GeoJSON<any> | L.Circle<any>) {
