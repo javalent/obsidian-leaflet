@@ -493,6 +493,73 @@ class LeafletMap extends Events {
                 try {
                     L.geoJSON(geoJSON, {
                         pane: "geojson",
+                        pointToLayer: (geojsonPoint, latlng) => {
+                            const type =
+                                geojsonPoint?.properties["marker-symbol"] ??
+                                "default";
+                            const icon =
+                                this.markerIcons.get(type) ??
+                                this.markerIcons.get("default");
+                            const title =
+                                geojsonPoint.properties.title ??
+                                geojsonPoint.properties.name;
+                            const description =
+                                geojsonPoint.properties.description;
+                            let display;
+                            if (title)
+                                display = this._buildDisplayForTooltip(title, {
+                                    icon: description
+                                });
+
+                            const marker = this.createMarker(
+                                icon,
+                                latlng,
+                                null,
+                                display.outerHTML,
+                                getId(),
+                                this.group.id,
+                                false,
+                                false
+                            );
+
+                            marker.leafletInstance.off("mouseover");
+                            marker.leafletInstance.off("click");
+                            marker.leafletInstance.on(
+                                "click",
+                                (evt: L.LeafletMouseEvent) => {
+                                    if (
+                                        (!evt.originalEvent.getModifierState(
+                                            "Shift"
+                                        ) ||
+                                            !evt.originalEvent.getModifierState(
+                                                "Alt"
+                                            )) &&
+                                        title
+                                    ) {
+                                        let display =
+                                            this._buildDisplayForTooltip(
+                                                title,
+                                                { description }
+                                            );
+
+                                        this.openPopup(marker, display);
+                                        return;
+                                    }
+                                }
+                            );
+                            marker.leafletInstance.on("mouseover", () => {
+                                if (this.isDrawing) return;
+                                let display = this._buildDisplayForTooltip(
+                                    title,
+                                    {
+                                        icon: description
+                                    }
+                                );
+                                this.openPopup(marker, display);
+                            });
+
+                            return marker.leafletInstance;
+                        },
                         style: (feature) => {
                             if (!feature || !feature.properties) return {};
 
@@ -515,6 +582,7 @@ class LeafletMap extends Events {
                         },
                         onEachFeature: (feature, layer: L.GeoJSON) => {
                             /** Propogate click */
+                            if (feature.geometry?.type == "Point") return;
                             layer.on("click", (evt: L.LeafletMouseEvent) => {
                                 if (
                                     evt.originalEvent.getModifierState(
@@ -797,7 +865,7 @@ class LeafletMap extends Events {
         markerIcon: IMarkerIcon,
         loc: L.LatLng,
         percent: [number, number],
-        link: string | undefined = undefined,
+        link: string = undefined,
         id: string = getId(),
         layer: string | undefined = undefined,
         mutable: boolean = true,
