@@ -11,6 +11,9 @@ import { IMarker } from "src/@types";
 
 library.add(fas);
 
+export const DESCRIPTION_ICON = Symbol("description-icon").toString();
+export const DESCRIPTION_ICON_SVG = icon(getIcon("info-circle")).html[0];
+
 export const iconNames = Object.values(fas).map((i) => i.iconName);
 
 export function getIcon(iconName: string): IconDefinition {

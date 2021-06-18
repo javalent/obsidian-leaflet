@@ -5,7 +5,8 @@ import {
     setIcon,
     Plugin,
     TFile,
-    CachedMetadata
+    CachedMetadata,
+    addIcon
 } from "obsidian";
 import { latLng, Circle, LatLngTuple } from "leaflet";
 
@@ -24,7 +25,9 @@ import {
     getMarkerIcon,
     renderError,
     OVERLAY_TAG_REGEX,
-    getId
+    getId,
+    DESCRIPTION_ICON,
+    DESCRIPTION_ICON_SVG
 } from "./utils";
 import {
     IMapInterface,
@@ -70,6 +73,9 @@ export default class ObsidianLeaflet extends Plugin {
         console.log("Loading Obsidian Leaflet v" + this.manifest.version);
 
         await this.loadSettings();
+
+        addIcon(DESCRIPTION_ICON, DESCRIPTION_ICON_SVG);
+
         this.markerIcons = this.generateMarkerMarkup(this.AppData.markerIcons);
 
         this.registerMarkdownCodeBlockProcessor(
