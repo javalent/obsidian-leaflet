@@ -10,7 +10,8 @@ import {
     Point,
     MarkdownRenderChild,
     TFile,
-    Scope
+    Scope,
+    setIcon
 } from "obsidian";
 
 import {
@@ -35,7 +36,8 @@ import {
     MAP_OVERLAY_STROKE_OPACITY,
     MAP_OVERLAY_STROKE_WIDTH,
     getHex,
-    log
+    log,
+    DESCRIPTION_ICON
 } from "./utils";
 
 import {
@@ -176,12 +178,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
 class LeafletMap extends Events {
     private _geojson: any[];
     private _geojsonColor: string;
-    private _canShowGeoJSONPopup: boolean = true;
     private _zoomFeatures: boolean;
     verbose: boolean;
-    getMarkerById(id: string): Marker[] {
-        return this.markers.filter(({ id: marker }) => marker === id);
-    }
     id: string;
     contentEl: HTMLElement;
     rendered: boolean;
@@ -377,6 +375,9 @@ class LeafletMap extends Events {
         }
         return mult;
     }
+    getMarkerById(id: string): Marker[] {
+        return this.markers.filter(({ id: marker }) => marker === id);
+    }
 
     @catchErrorAsync
     async render(options: {
@@ -520,15 +521,7 @@ class LeafletMap extends Events {
                                         "Control"
                                     )
                                 ) {
-                                    const { lat, lng } = layer
-                                        .getBounds()
-                                        .getCenter();
-                                    log(
-                                        this.verbose,
-                                        this.id,
-                                        `Feature was Control clicked. Moving to bounds [${lat}, ${lng}]`
-                                    );
-                                    this.map.fitBounds(layer.getBounds());
+                                    this._focusOnLayer(layer);
                                     return;
                                 }
                                 if (
@@ -538,22 +531,34 @@ class LeafletMap extends Events {
                                         !evt.originalEvent.getModifierState(
                                             "Alt"
                                         )) &&
-                                    display
+                                    title
                                 ) {
+                                    let display = this._buildDisplayForTooltip(
+                                        title,
+                                        { description }
+                                    );
+
                                     this.openPopup(evt.latlng, display, layer);
                                     return;
                                 }
                                 this.map.fire("click", evt, true);
                             });
                             if (!feature.properties) return;
-                            const display =
+                            const title =
                                 feature.properties.title ??
-                                feature.properties.name ??
-                                feature.properties.description;
-                            if (!display) return;
+                                feature.properties.name;
+                            const description = feature.properties.description;
+
+                            if (!title && !description) return;
+
                             layer.on("mouseover", () => {
                                 if (this.isDrawing) return;
-
+                                let display = this._buildDisplayForTooltip(
+                                    title,
+                                    {
+                                        icon: description
+                                    }
+                                );
                                 this.openPopup(
                                     layer.getBounds().getCenter(),
                                     display,
@@ -594,6 +599,52 @@ class LeafletMap extends Events {
         this.map.on("click", this._handleMapClick.bind(this));
 
         this.group.group.addTo(this.map);
+    }
+    private _buildDisplayForTooltip(
+        title: string,
+        { icon, description }: { icon?: boolean; description?: string }
+    ): HTMLDivElement {
+        let display: HTMLDivElement = createDiv({
+            attr: { style: "text-align: left;" }
+        });
+        const titleEl = display.createDiv({
+            attr: {
+                style: "display: flex; justify-content: space-between;"
+            }
+        });
+        titleEl.createEl("label", {
+            text: title,
+            attr: {
+                style: "font-weight: bolder; text-align: left;"
+            }
+        });
+        if (icon) {
+            setIcon(
+                titleEl.createDiv({
+                    attr: {
+                        style: "margin-left: 0.5rem;"
+                    }
+                }),
+                DESCRIPTION_ICON
+            );
+        }
+        if (description)
+            display.createEl("p", {
+                attr: {
+                    style: "margin: 0.25rem 0; text-align: left;"
+                },
+                text: description
+            });
+        return display;
+    }
+    private _focusOnLayer(layer: L.GeoJSON<any> | L.Circle<any>) {
+        const { lat, lng } = layer.getBounds().getCenter();
+        log(
+            this.verbose,
+            this.id,
+            `Feature was Control clicked. Moving to bounds [${lat}, ${lng}]`
+        );
+        this.map.fitBounds(layer.getBounds());
     }
     sortOverlays() {
         let overlays = [...this.overlays];
@@ -1400,6 +1451,32 @@ class LeafletMap extends Events {
                 } else {
                     this.openPopup(
                         overlay,
+                        `${this.distanceFormatter.format(radius)} ${this.unit}`
+                    );
+                }
+            })
+            .on("click", (evt: L.LeafletMouseEvent) => {
+                if (evt.originalEvent.getModifierState("Control")) {
+                    this._focusOnLayer(overlay.leafletInstance);
+                    return;
+                }
+                let radius = convert(overlay.data.radius)
+                    .from(overlay.data.unit)
+                    .to(this.unit);
+                if (this.type == "image") {
+                    radius = radius * this.scale;
+                }
+                if (overlay.data.desc) {
+                    this.openPopup(
+                        evt.latlng,
+                        overlay.data.desc +
+                            ` (${this.distanceFormatter.format(radius)} ${
+                                this.unit
+                            })`
+                    );
+                } else {
+                    this.openPopup(
+                        evt.latlng,
                         `${this.distanceFormatter.format(radius)} ${this.unit}`
                     );
                 }
