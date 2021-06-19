@@ -170,9 +170,9 @@ abstract class FontAwesomeControl extends L.Control {
     abstract onClick(evt: MouseEvent): void;
     added() {}
     disable() {
-        if (!this.enabled) return;
+        if (!this.enabled) {return;}
         this.controlEl.addClass("disabled");
-        this.controlEl.detach();
+        //this.controlEl.detach();
         this.enabled = false;
     }
     enable() {
@@ -208,6 +208,9 @@ class EditMarkerControl extends FontAwesomeControl {
     }
 
     async onClick(evt: MouseEvent) {
+        if (!this.enabled) {
+            new Notice("No markers to edit.")
+            return;}
         if (this.isOpen) return;
         const modal = new Modal(this.plugin.app);
         modal.contentEl.empty();
@@ -625,6 +628,10 @@ class ZoomControl extends FontAwesomeControl {
         });
     }
     onClick(evt: MouseEvent) {
+        if (!this.enabled) {
+            
+            new Notice("No markers to zoom.")
+            return;}
         const group = L.featureGroup(
             this.map.displayedMarkers.map(
                 ({ leafletInstance }) => leafletInstance
@@ -730,6 +737,10 @@ class FilterMarkers extends FontAwesomeControl {
         );
     }
     private expand() {
+        if (!this.enabled) {
+            new Notice("No markers or overlays to filter.")
+            return;
+        }
         this.update();
 
         L.DomUtil.addClass(this.controlEl, "expanded");
