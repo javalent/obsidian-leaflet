@@ -662,7 +662,10 @@ export default class ObsidianLeaflet extends Plugin {
         let distanceToZoom, file;
         if (coordinates instanceof Array && coordinates.length) {
             file = await this.app.metadataCache.getFirstLinkpathDest(
-                coordinates.flat()[0].replace(/(\[|\])/, ""),
+                coordinates
+                    .flat()
+                    .join(", ")
+                    .replace(/(\[|\])/, ""),
                 ""
             );
             if (file && file instanceof TFile) {
