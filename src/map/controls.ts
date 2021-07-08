@@ -446,8 +446,9 @@ class SimpleLeafletMap extends Events {
 
     async render(): Promise<void> {
         return new Promise(async (resolve) => {
-            const layerData = this.original.mapLayers.map(({ data, id }) => {
-                return { data, id };
+            const layerData = this.original.mapLayers.map(({ data, id, layer }) => {
+                const bounds = layer instanceof L.ImageOverlay ? layer.getBounds() : this.original.bounds
+                return { data, id, bounds };
             });
             this.layer = await this.getLayerData(layerData);
 
@@ -534,7 +535,7 @@ class SimpleLeafletMap extends Events {
 
         this.markers.push(marker);
     }
-    async getLayerData(layerData: { data: string; id: string }[]) {
+    async getLayerData(layerData: { data: string; id: string, bounds: L.LatLngBounds }[]) {
         let layer, mapLayers;
         if (this.original.type === "real") {
             layer = L.tileLayer(
@@ -557,20 +558,18 @@ class SimpleLeafletMap extends Events {
         } else {
             mapLayers = await Promise.all(
                 layerData.map(async (layer) => {
-                    let { h, w } = await getImageDimensions(layer.data);
-
-                    let southWest = this.original.map.unproject(
+                    /* let southWest = this.original.map.unproject(
                         [0, h],
                         this.original.zoom.max - 1
                     );
                     let northEast = this.original.map.unproject(
                         [w, 0],
                         this.original.zoom.max - 1
-                    );
+                    ); */
 
                     let mapLayer = L.imageOverlay(
                         layer.data,
-                        new L.LatLngBounds(southWest, northEast)
+                        layer.bounds
                     );
                     return {
                         group: L.layerGroup([mapLayer]),
