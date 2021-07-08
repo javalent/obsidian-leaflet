@@ -282,21 +282,17 @@ Please note that due to the YAML syntax, strings starting with `#` and entries w
 Examples:
 
 ````
-
 ```leaflet
 overlay: [blue, [32, -89], 25 mi, 'This is my overlay!']
 ```
-
 ````
 
 ````
-
 ```leaflet
 overlay:
   - ['rgb(255, 255, 0)', [32, -89], 25 km, 'This is also my overlay!']
   - ['#00FF00', [32, -89], 500 ft, 'This is a third overlay!']
 ```
-
 ````
 
 ### Editing the Overlay
@@ -318,11 +314,9 @@ The overlay tag parameter can be used to auto-generate an overlay from a tag in 
 Example:
 
 ````
-
 ```leaflet
 overlayTag: nearby
 ```
-
 ````
 
 Note frontmatter:
