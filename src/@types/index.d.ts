@@ -57,6 +57,7 @@ export interface IBlockParameters {
     markerFolder?: string | string[];
     markerFile?: string | string[];
     markerTag?: string | string[][];
+    imageOverlay?: Array<[string, [number, number], [number, number]]>;
     overlay?: Array<[string, [number, number], string, string]>;
     overlayTag?: string;
     overlayColor?: string;
@@ -168,6 +169,9 @@ export interface ILayerGroup {
 
     /** Only used for image maps -> dimensions of image */
     dimensions?: [number, number];
+
+    /** Alias */
+    alias?: string;
 }
 
 /** Settings Interfaces */

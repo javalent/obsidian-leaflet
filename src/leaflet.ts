@@ -2,6 +2,7 @@ import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import convert from "convert";
 import "leaflet-fullscreen";
+
 import {
     Events,
     Notice,
@@ -91,7 +92,7 @@ function catchErrorAsync(
                 return await original.apply(this, args);
             } catch (e) {
                 //throw error here
-                console.error(e);
+                console.error(e, original);
                 renderError(
                     this.contentEl?.parentElement ?? this.contentEl,
                     e.message
@@ -244,6 +245,7 @@ class LeafletMap extends Events {
     private _escapeScope: Scope;
     private _tempCircle: L.Circle;
     private _userBounds: [[number, number], [number, number]];
+    private _layerControlAdded: boolean = false;
     constructor(
         public plugin: ObsidianLeaflet,
         public options: ILeafletMapOptions = {}
@@ -312,7 +314,7 @@ class LeafletMap extends Events {
         if (this.layer instanceof L.ImageOverlay) {
             return this.layer.getBounds();
         }
-        return;
+        return this.map.getBounds();
     }
 
     /* get markerIcons() {
@@ -385,12 +387,20 @@ class LeafletMap extends Events {
         zoomDistance: number;
         layer: { data: string; id: string };
         hasAdditional?: boolean;
+        imageOverlays?: {
+            id: string;
+            data: string;
+            alias: string;
+            bounds: [[number, number], [number, number]];
+        }[];
     }) {
         /** Get layers
          *  Returns TileLayer (real) or ImageOverlay (image)
          */
 
         log(this.verbose, this.id, "Beginning render process.");
+
+        this.map.createPane("base-layer");
         this.layer = await this._buildLayersForType(options.layer);
 
         /** Render map */
@@ -523,16 +533,7 @@ class LeafletMap extends Events {
                                 zoom: this.zoom.max,
                                 percent: undefined,
                                 description: undefined
-                            });/* this.createMarker(
-                                icon,
-                                latlng,
-                                null,
-                                display.outerHTML,
-                                getId(),
-                                this.group.id,
-                                false,
-                                false
-                            ); */
+                            });
 
                             marker.leafletInstance.off("mouseover");
                             marker.leafletInstance.off("click");
@@ -668,6 +669,24 @@ class LeafletMap extends Events {
                 );
             }
         }
+
+        /** Add Image Overlays to Map */
+        if (options.imageOverlays.length) {
+            this._addLayerControl();
+            this.map.createPane("image-overlay");
+            for (let overlay of options.imageOverlays) {
+                let bounds = overlay.bounds.length
+                    ? overlay.bounds
+                    : this.bounds;
+
+                const image = L.imageOverlay(overlay.data, bounds, {
+                    pane: "image-overlay"
+                });
+
+                this._layerControl.addOverlay(image, overlay.alias);
+            }
+        }
+
         /** Register Resize Handler */
         this._handleResize();
 
@@ -1316,7 +1335,7 @@ class LeafletMap extends Events {
     @catchErrorAsync
     private async _buildLayersForType(
         /* type: string, */
-        layer?: { data: string; id: string }
+        layer?: { data: string; id: string; alias?: string }
     ): Promise<L.TileLayer | L.ImageOverlay> {
         log(this.verbose, this.id, "Building initial map layer.");
         if (this.type === "real") {
@@ -1369,7 +1388,9 @@ class LeafletMap extends Events {
     }
 
     @catchErrorAsync
-    async loadAdditionalMapLayers(layers: { data: string; id: string }[]) {
+    async loadAdditionalMapLayers(
+        layers: { data: string; id: string; alias: string }[]
+    ) {
         log(
             this.verbose,
             this.id,
@@ -1382,7 +1403,27 @@ class LeafletMap extends Events {
 
             this._layerControl.addBaseLayer(
                 newLayer.group,
-                `Layer ${this.mapLayers.length}`
+                layer.alias ?? `Layer ${this.mapLayers.length}`
+            );
+        }
+    }
+    @catchErrorAsync
+    async loadImageOverlays(
+        layers: { data: string; id: string; alias: string }[]
+    ) {
+        log(
+            this.verbose,
+            this.id,
+            "Building additional map layers in background."
+        );
+        for (let layer of layers) {
+            const newLayer = await this._buildMapLayer(layer);
+
+            this.mapLayers.push(newLayer);
+
+            this._layerControl.addBaseLayer(
+                newLayer.group,
+                layer.alias ?? `Layer ${this.mapLayers.length}`
             );
         }
     }
@@ -1391,6 +1432,7 @@ class LeafletMap extends Events {
     private async _buildMapLayer(layer: {
         data: string;
         id: string;
+        alias?: string;
     }): Promise<ILayerGroup> {
         const { h, w } = await getImageDimensions(layer.data);
 
@@ -1404,7 +1446,8 @@ class LeafletMap extends Events {
         }
 
         const mapLayer = L.imageOverlay(layer.data, bounds, {
-            className: this.options.darkMode ? "dark-mode" : ""
+            className: this.options.darkMode ? "dark-mode" : "",
+            pane: "base-layer"
         });
         const markerGroups = Object.fromEntries(
             this.markerTypes.map((type) => [type, L.layerGroup()])
@@ -1432,7 +1475,8 @@ class LeafletMap extends Events {
             id: layer.id,
             data: layer.data,
             markers: markerGroups,
-            dimensions: [w, h]
+            dimensions: [w, h],
+            alias: layer.alias
         };
     }
 
@@ -1446,18 +1490,22 @@ class LeafletMap extends Events {
         this.map.setZoom(this.zoom.default, { animate: false });
 
         if (this.mapLayers.length > 1 || hasAdditional) {
-            this._layerControl.addBaseLayer(this.mapLayers[0].group, `Layer 1`);
-            const layerIcon = icon({ iconName: "layer-group", prefix: "fas" })
-                .node[0];
-            layerIcon.setAttr(
-                `style`,
-                "color: var(--text-normal);margin: auto;"
+            this._layerControl.addBaseLayer(
+                this.mapLayers[0].group,
+                this.mapLayers[0].alias ?? `Layer 1`
             );
-            this._layerControl.addTo(this.map);
-            this._layerControl
-                .getContainer()
-                .children[0].appendChild(layerIcon);
+
+            this._addLayerControl();
         }
+    }
+    private _addLayerControl() {
+        if (this._layerControlAdded) return;
+        this._layerControlAdded = true;
+        const layerIcon = icon({ iconName: "layer-group", prefix: "fas" })
+            .node[0];
+        layerIcon.setAttr(`style`, "color: var(--text-normal);margin: auto;");
+        this._layerControl.addTo(this.map);
+        this._layerControl.getContainer().children[0].appendChild(layerIcon);
     }
 
     @catchErrorAsync
@@ -1606,7 +1654,8 @@ class LeafletMap extends Events {
                     this.trigger(
                         "marker-click",
                         marker.link,
-                        evt.originalEvent.ctrlKey,
+                        evt.originalEvent.getModifierState("Control") ||
+                            evt.originalEvent.getModifierState("Meta"),
                         marker.command
                     );
                 } else {
