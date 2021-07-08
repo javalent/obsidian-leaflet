@@ -792,7 +792,7 @@ class LeafletMap extends Events {
 
         this.markers = this.markers.filter(({ id }) => id != marker.id);
 
-        this.trigger("markers-updated", this.markers);
+        this.trigger("markers-updated");
     }
 
     @catchError
@@ -946,7 +946,7 @@ class LeafletMap extends Events {
             marker.leafletInstance.closeTooltip();
         }
         this.markers.push(marker);
-        this.trigger("markers-updated", this.markers);
+        this.trigger("markers-updated");
     }
 
     @catchError
@@ -1044,7 +1044,7 @@ class LeafletMap extends Events {
         //Zoom to initial
         resetZoomControl({ position: "topleft" }, this).addTo(this.map);
 
-        this.trigger("markers-updated", this.markers);
+        this.trigger("markers-updated");
 
         //Distance Display
         this._distanceDisplay = distanceDisplay(
@@ -1109,6 +1109,8 @@ class LeafletMap extends Events {
             }
             overlay.leafletInstance.addTo(this.group.group);
             this.sortOverlays();
+
+            this.trigger("markers-updated");
         }
     }
 
@@ -1548,6 +1550,8 @@ class LeafletMap extends Events {
                         this.overlays = this.overlays.filter((o) => {
                             o != overlay;
                         });
+
+                        this.trigger("markers-updated");
                         return;
                     }
 

@@ -163,6 +163,9 @@ abstract class FontAwesomeControl extends L.Control {
         });
         L.DomEvent.on(this.controlEl, "click", this.onClick.bind(this));
 
+        L.DomEvent.disableClickPropagation(this.controlEl);
+        L.DomEvent.disableScrollPropagation(this.controlEl);
+
         this.added();
 
         return this.controlEl;
@@ -170,17 +173,13 @@ abstract class FontAwesomeControl extends L.Control {
     abstract onClick(evt: MouseEvent): void;
     added() {}
     disable() {
-        if (!this.enabled) {
-            return;
-        }
+        if (!this.enabled) return;
         this.controlEl.addClass("disabled");
-        //this.controlEl.detach();
         this.enabled = false;
     }
     enable() {
         if (this.enabled) return;
         this.controlEl.removeClass("disabled");
-        this.addTo(this.leafletInstance);
         this.enabled = true;
     }
 }
@@ -200,13 +199,6 @@ class EditMarkerControl extends FontAwesomeControl {
         this.map = map;
         this.plugin = plugin;
 
-        this.map.on("markers-updated", (markers) => {
-            if (markers.length) {
-                this.enable();
-            } else {
-                this.disable();
-            }
-        });
     }
 
     async onClick(evt: MouseEvent) {
@@ -621,8 +613,8 @@ class ZoomControl extends FontAwesomeControl {
         super(opts, map.map);
         this.map = map;
 
-        this.map.on("markers-updated", (markers) => {
-            if (markers.length) {
+        this.map.on("markers-updated", () => {
+            if (this.map.markers.length) {
                 this.enable();
             } else {
                 this.disable();
@@ -707,8 +699,8 @@ class FilterMarkers extends FontAwesomeControl {
     constructor(opts: FontAwesomeControlOptions, map: LeafletMap) {
         super(opts, map.map);
         this.map = map;
-        this.map.on("markers-updated", (markers) => {
-            if (this.map.displaying.size) {
+        this.map.on("markers-updated", () => {
+            if (this.map.markers.length || this.map.overlays.length) {
                 this.enable();
             } else {
                 this.disable();
