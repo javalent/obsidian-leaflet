@@ -61,6 +61,7 @@ darkMode: true
 | zoomTag       | Read distance-to-zoom data from a note and use it as default initial zoom            |                                            |
 | geojson       | Load GeoJSON files onto maps.                                                        |                                            |
 | geojsonColor  | Change the default color of the GeoJSON features.                                    | #3388ff                                    |
+| imageOverlay  | Add an image overlay to the map.                                                     |                                            |
 
 > \*: Requires the [DataView plugin](https://github.com/blacksmithgu/obsidian-dataview).
 
@@ -152,7 +153,7 @@ Images can be layered on top of each other by providing multiple images to the p
 ```leaflet
 id: Map With Layered Images
 image:
-    - [[Image1.jpg]]
+    - [[Image1.jpg|Optional Alias]]
     - [[Image2.jpg]]
     - [[Image3.jpg]]
 ```
@@ -163,6 +164,8 @@ This will generate a map with 3 layers. Image 1 will be on top, Image 2 in the m
 The control box in the top right of the map will allow you to change layers.
 
 Markers can be created and saved on each layer separately from one another.
+
+If given an alias, the layer control box will display the given name instead of the file name.
 
 ### Bounds
 
@@ -331,6 +334,28 @@ nearby: 50 km
 ### Overlay Color
 
 The overlay color tag may be used to specify the default overlay color when drawing on the map or when using the overlay tag parameter.
+
+## Image Overlays
+
+Image overlays can be added to the map using the `imageOverlay` parameter in the code block.
+
+This parameter uses the following syntax:
+
+````
+```leaflet
+imageOverlay:
+ - [ [[ImageFile|Optional Alias]], [Top Left Coordinates], [Bottom Right Coordinates] ]
+ - [ [[ImageFile2|Optional Alias]], [Top Left Coordinates], [Bottom Right Coordinates] ]
+ - ...
+```
+````
+
+This will add an image overlay positioned between the two coordinate bounds. If the coordinate bounds are not provided, the overlay will:
+
+1. On Image maps, overlay the entire image.
+2. On Real maps, overlay the initial map view.
+
+Image overlays can be toggled on or off using the layer control box in the top-right. Similarly to maps with multiple layers, if the optional alias is provided, the layer box will display the alias instead of the file name.
 
 ## GeoJSON
 
