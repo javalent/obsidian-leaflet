@@ -1,7 +1,6 @@
 import {
     App,
     MarkdownView,
-    MetadataCache,
     Notice,
     parseYaml,
     TextComponent,
@@ -57,10 +56,15 @@ export function getId() {
     return nanoid(6);
 }
 
-export async function toDataURL(url: string, app: App): Promise<string> {
+export async function toDataURL(
+    url: string,
+    app: App
+): Promise<{ id: string; data: string; alias: string }> {
     //determine link type
     try {
         let response, blob: Blob, mimeType: string;
+        let id = url,
+            alias: string;
         url = decodeURIComponent(url);
         if (/https?:/.test(url)) {
             //url
@@ -78,8 +82,9 @@ export async function toDataURL(url: string, app: App): Promise<string> {
             blob = new Blob([new Uint8Array(buffer)]);
         } else {
             //file exists on disk
+            url = url.replace(/(\[|\])/g, "");
             let file = app.metadataCache.getFirstLinkpathDest(
-                url.replace(/(\[|\])/g, ""),
+                url.split("|").shift(),
                 ""
             );
             if (!file || !(file instanceof TFile)) throw new Error();
@@ -88,17 +93,18 @@ export async function toDataURL(url: string, app: App): Promise<string> {
                 lookupMimeType(file.extension) || "application/octet-stream";
             let buffer = await app.vault.readBinary(file);
             blob = new Blob([new Uint8Array(buffer)]);
+            alias = url.includes("|") ? url.split("|").pop() : file.basename;
         }
 
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onloadend = () => {
                 if (typeof reader.result === "string") {
-                    let base64 =
+                    let data =
                         "data:" +
                         mimeType +
                         reader.result.slice(reader.result.indexOf(";base64,"));
-                    resolve(base64);
+                    resolve({ data, id, alias });
                 } else {
                     new Notice("There was an error reading the image file.");
                     reject();

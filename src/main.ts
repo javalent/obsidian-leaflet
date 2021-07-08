@@ -1,44 +1,45 @@
+import "./main.css";
+
 import {
-	Notice,
-	MarkdownView,
-	MarkdownPostProcessorContext,
-	setIcon,
-	Plugin,
-	TFile,
-	CachedMetadata,
-	addIcon,
+    Notice,
+    MarkdownView,
+    MarkdownPostProcessorContext,
+    setIcon,
+    Plugin,
+    TFile,
+    CachedMetadata,
+    addIcon
 } from "obsidian";
 import { latLng, Circle, LatLngTuple } from "leaflet";
 
 //Local Imports
-import "./main.css";
 
 import { ObsidianLeafletSettingTab } from "./settings";
 
 import {
-	getIcon,
-	DEFAULT_SETTINGS,
-	toDataURL,
-	getHeight,
-	getParamsFromSource,
-	getImmutableItems,
-	getMarkerIcon,
-	renderError,
-	OVERLAY_TAG_REGEX,
-	getId,
-	DESCRIPTION_ICON,
-	DESCRIPTION_ICON_SVG,
+    getIcon,
+    DEFAULT_SETTINGS,
+    toDataURL,
+    getHeight,
+    getParamsFromSource,
+    getImmutableItems,
+    getMarkerIcon,
+    renderError,
+    OVERLAY_TAG_REGEX,
+    getId,
+    DESCRIPTION_ICON,
+    DESCRIPTION_ICON_SVG
 } from "./utils";
 import {
-	IMapInterface,
-	IMarkerData,
-	IMarkerIcon,
-	IObsidianAppData,
-	IMarker,
-	Marker,
-	LeafletMap,
-	Length,
-	IOverlayData,
+    IMapInterface,
+    IMarkerData,
+    IMarkerIcon,
+    IObsidianAppData,
+    IMarker,
+    Marker,
+    LeafletMap,
+    Length,
+    IOverlayData
 } from "./@types";
 import { MarkerContextModal } from "./modals";
 
@@ -48,18 +49,18 @@ import convert from "convert";
 
 //add commands to app interface
 declare module "obsidian" {
-	interface App {
-		commands: {
-			listCommands(): Command[];
-			executeCommandById(id: string): void;
-			findCommand(id: string): Command;
-			commands: { [id: string]: Command };
-		};
-		keymap: {
-			pushScope(scope: Scope): void;
-			popScope(scope: Scope): void;
-		};
-	}
+    interface App {
+        commands: {
+            listCommands(): Command[];
+            executeCommandById(id: string): void;
+            findCommand(id: string): Command;
+            commands: { [id: string]: Command };
+        };
+        keymap: {
+            pushScope(scope: Scope): void;
+            popScope(scope: Scope): void;
+        };
+    }
 }
 
 export default class ObsidianLeaflet extends Plugin {
@@ -148,6 +149,7 @@ export default class ObsidianLeaflet extends Plugin {
                 darkMode = "false",
                 image = "real",
                 layers = [],
+                imageOverlay = [],
                 overlay = [],
                 overlayColor = "blue",
                 bounds = undefined,
@@ -202,7 +204,7 @@ export default class ObsidianLeaflet extends Plugin {
             if (geojson.length) {
                 for (let link of geojson.flat(Infinity)) {
                     const file = this.app.metadataCache.getFirstLinkpathDest(
-                        link,
+                        link.replace(/(\[|\])/g, ""),
                         ""
                     );
                     if (file && file instanceof TFile) {
@@ -576,25 +578,28 @@ export default class ObsidianLeaflet extends Plugin {
                 mutable: false,
                 sort: true
             });
-            map.addMarkers([...markerArray, ...(mapData?.markers ?? [])]);
+            map.addMarkers([
+                ...markerArray,
+                ...(mapData?.markers.map((m) => {
+                    return { ...m, mutable: true };
+                }) ?? [])
+            ]);
 
             /* await map.loadData(mapData); */
 
             let layerData: {
                 data: string;
                 id: string;
+                alias: string;
             }[] = [];
 
             if (image != "real") {
                 layerData = await Promise.all(
                     layers.map(async (image) => {
-                        return {
-                            id: image,
-                            data: await toDataURL(
-                                encodeURIComponent(image),
-                                this.app
-                            )
-                        };
+                        return await toDataURL(
+                            encodeURIComponent(image),
+                            this.app
+                        );
                     })
                 );
                 if (layerData.filter((d) => !d.data).length) {
@@ -603,6 +608,26 @@ export default class ObsidianLeaflet extends Plugin {
                     );
                 }
             }
+            let imageOverlayData: {
+                data: string;
+                id: string;
+                alias: string;
+                bounds: [[number, number], [number, number]];
+            }[] = [];
+
+            if (imageOverlay.length) {
+                imageOverlayData = await Promise.all(
+                    imageOverlay.map(async ([image, ...bounds]) => {
+                        return {
+                            ...(await toDataURL(
+                                encodeURIComponent(image),
+                                this.app
+                            )),
+                            bounds
+                        };
+                    })
+                );
+            }
 
             this.registerMapEvents(map);
 
@@ -610,7 +635,8 @@ export default class ObsidianLeaflet extends Plugin {
                 coords: coords,
                 zoomDistance: distanceToZoom,
                 layer: layerData[0],
-                hasAdditional: layerData.length > 1
+                hasAdditional: layerData.length > 1,
+                imageOverlays: imageOverlayData
             });
 
             ctx.addChild(renderer);
