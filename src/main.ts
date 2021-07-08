@@ -648,7 +648,7 @@ export default class ObsidianLeaflet extends Plugin {
     private async _getCoordinates(
         lat: string,
         long: string,
-        coordinates: [string, string] | [[string]],
+        coordinates: [string, string] | string,
         zoomTag: string,
         map: LeafletMap
     ): Promise<{
@@ -660,9 +660,9 @@ export default class ObsidianLeaflet extends Plugin {
         let longitude = long;
         let coords: [number, number] = [undefined, undefined];
         let distanceToZoom, file;
-        if (coordinates instanceof Array && coordinates.length) {
+        if (typeof coordinates == "string" && coordinates.length) {
             file = await this.app.metadataCache.getFirstLinkpathDest(
-                coordinates.flat()[0].replace(/(\[|\])/, ""),
+                coordinates.replace(/(\[|\])/g, ""),
                 ""
             );
             if (file && file instanceof TFile) {
@@ -673,10 +673,10 @@ export default class ObsidianLeaflet extends Plugin {
                         zoomTag,
                         map
                     ));
-            } else if (coordinates.length == 2) {
-                latitude = coordinates[0];
-                longitude = coordinates[1];
             }
+        } else if (coordinates && coordinates.length == 2) {
+            latitude = coordinates[0];
+            longitude = coordinates[1];
         }
 
         let err: boolean = false;

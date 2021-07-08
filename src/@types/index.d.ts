@@ -72,7 +72,7 @@ export interface IBlockParameters {
     distanceMultiplier?: number;
     darkMode?: string;
     bounds?: [[number, number], [number, number]];
-    coordinates?: [string, string] | [[string]];
+    coordinates?: [string, string] | string;
     zoomTag?: string;
     linksTo?: string[];
     linksFrom?: string[];
