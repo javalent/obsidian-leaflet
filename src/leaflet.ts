@@ -371,8 +371,8 @@ class LeafletMap extends Events {
         let mult: [number, number] = [1, 1];
         if (this.type == "image") {
             mult = [
-                this.bounds.getSouthEast().lat / 100,
-                this.bounds.getSouthEast().lng / 100
+                this.bounds.getCenter().lat / 50,
+                this.bounds.getCenter().lng / 50
             ];
         }
         return mult;
