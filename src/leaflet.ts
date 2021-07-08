@@ -511,7 +511,19 @@ class LeafletMap extends Events {
                                     icon: description
                                 });
 
-                            const marker = this.createMarker(
+                            const marker = new Marker(this, {
+                                id: getId(),
+                                type: type,
+                                loc: latlng,
+                                link: display.outerHTML,
+                                icon: icon.icon,
+                                layer: this.group?.id,
+                                mutable: false,
+                                command: false,
+                                zoom: this.zoom.max,
+                                percent: undefined,
+                                description: undefined
+                            });/* this.createMarker(
                                 icon,
                                 latlng,
                                 null,
@@ -520,7 +532,7 @@ class LeafletMap extends Events {
                                 this.group.id,
                                 false,
                                 false
-                            );
+                            ); */
 
                             marker.leafletInstance.off("mouseover");
                             marker.leafletInstance.off("click");
@@ -781,7 +793,7 @@ class LeafletMap extends Events {
         /** Remove Old Marker Types From Filter List */
         [...this.displaying].forEach(([type]) => {
             if (this._markerTypesOnMap.has(type)) return;
-            if (!this.markerTypes.includes(type)) return;
+            if (this.markerTypes.includes(type)) return;
 
             this.displaying.delete(type);
 

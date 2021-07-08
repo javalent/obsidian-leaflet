@@ -1,12 +1,12 @@
 import {
-    Notice,
-    MarkdownView,
-    MarkdownPostProcessorContext,
-    setIcon,
-    Plugin,
-    TFile,
-    CachedMetadata,
-    addIcon
+	Notice,
+	MarkdownView,
+	MarkdownPostProcessorContext,
+	setIcon,
+	Plugin,
+	TFile,
+	CachedMetadata,
+	addIcon,
 } from "obsidian";
 import { latLng, Circle, LatLngTuple } from "leaflet";
 
@@ -16,29 +16,29 @@ import "./main.css";
 import { ObsidianLeafletSettingTab } from "./settings";
 
 import {
-    getIcon,
-    DEFAULT_SETTINGS,
-    toDataURL,
-    getHeight,
-    getParamsFromSource,
-    getImmutableItems,
-    getMarkerIcon,
-    renderError,
-    OVERLAY_TAG_REGEX,
-    getId,
-    DESCRIPTION_ICON,
-    DESCRIPTION_ICON_SVG
+	getIcon,
+	DEFAULT_SETTINGS,
+	toDataURL,
+	getHeight,
+	getParamsFromSource,
+	getImmutableItems,
+	getMarkerIcon,
+	renderError,
+	OVERLAY_TAG_REGEX,
+	getId,
+	DESCRIPTION_ICON,
+	DESCRIPTION_ICON_SVG,
 } from "./utils";
 import {
-    IMapInterface,
-    IMarkerData,
-    IMarkerIcon,
-    IObsidianAppData,
-    IMarker,
-    Marker,
-    LeafletMap,
-    Length,
-    IOverlayData
+	IMapInterface,
+	IMarkerData,
+	IMarkerIcon,
+	IObsidianAppData,
+	IMarker,
+	Marker,
+	LeafletMap,
+	Length,
+	IOverlayData,
 } from "./@types";
 import { MarkerContextModal } from "./modals";
 
@@ -48,18 +48,18 @@ import convert from "convert";
 
 //add commands to app interface
 declare module "obsidian" {
-    interface App {
-        commands: {
-            listCommands(): Command[];
-            executeCommandById(id: string): void;
-            findCommand(id: string): Command;
-            commands: { [id: string]: Command };
-        };
-        keymap: {
-            pushScope(scope: Scope): void;
-            popScope(scope: Scope): void;
-        };
-    }
+	interface App {
+		commands: {
+			listCommands(): Command[];
+			executeCommandById(id: string): void;
+			findCommand(id: string): Command;
+			commands: { [id: string]: Command };
+		};
+		keymap: {
+			pushScope(scope: Scope): void;
+			popScope(scope: Scope): void;
+		};
+	}
 }
 
 export default class ObsidianLeaflet extends Plugin {

@@ -227,8 +227,8 @@ input.is-invalid {
     height: 30px !important;
 }
 
-.leaflet-control-edit-markers {
-    cursor: pointer !important;
+.leaflet-control.disabled {
+    pointer-events: hover;
 }
 
 .leaflet-distance-control {
