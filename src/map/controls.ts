@@ -163,6 +163,9 @@ abstract class FontAwesomeControl extends L.Control {
         });
         L.DomEvent.on(this.controlEl, "click", this.onClick.bind(this));
 
+        L.DomEvent.disableClickPropagation(this.controlEl);
+        L.DomEvent.disableScrollPropagation(this.controlEl);
+
         this.added();
 
         return this.controlEl;
@@ -170,15 +173,13 @@ abstract class FontAwesomeControl extends L.Control {
     abstract onClick(evt: MouseEvent): void;
     added() {}
     disable() {
-        if (!this.enabled) {return;}
+        if (!this.enabled) return;
         this.controlEl.addClass("disabled");
-        //this.controlEl.detach();
         this.enabled = false;
     }
     enable() {
         if (this.enabled) return;
         this.controlEl.removeClass("disabled");
-        this.addTo(this.leafletInstance);
         this.enabled = true;
     }
 }
@@ -198,19 +199,12 @@ class EditMarkerControl extends FontAwesomeControl {
         this.map = map;
         this.plugin = plugin;
 
-        this.map.on("markers-updated", (markers) => {
-            if (markers.length) {
-                this.enable();
-            } else {
-                this.disable();
-            }
-        });
     }
 
     async onClick(evt: MouseEvent) {
         if (!this.enabled) {
-            new Notice("No markers to edit.")
-            return;}
+            return;
+        }
         if (this.isOpen) return;
         const modal = new Modal(this.plugin.app);
         modal.contentEl.empty();
@@ -452,8 +446,9 @@ class SimpleLeafletMap extends Events {
 
     async render(): Promise<void> {
         return new Promise(async (resolve) => {
-            const layerData = this.original.mapLayers.map(({ data, id }) => {
-                return { data, id };
+            const layerData = this.original.mapLayers.map(({ data, id, layer }) => {
+                const bounds = layer instanceof L.ImageOverlay ? layer.getBounds() : this.original.bounds
+                return { data, id, bounds };
             });
             this.layer = await this.getLayerData(layerData);
 
@@ -540,7 +535,7 @@ class SimpleLeafletMap extends Events {
 
         this.markers.push(marker);
     }
-    async getLayerData(layerData: { data: string; id: string }[]) {
+    async getLayerData(layerData: { data: string; id: string, bounds: L.LatLngBounds }[]) {
         let layer, mapLayers;
         if (this.original.type === "real") {
             layer = L.tileLayer(
@@ -563,20 +558,18 @@ class SimpleLeafletMap extends Events {
         } else {
             mapLayers = await Promise.all(
                 layerData.map(async (layer) => {
-                    let { h, w } = await getImageDimensions(layer.data);
-
-                    let southWest = this.original.map.unproject(
+                    /* let southWest = this.original.map.unproject(
                         [0, h],
                         this.original.zoom.max - 1
                     );
                     let northEast = this.original.map.unproject(
                         [w, 0],
                         this.original.zoom.max - 1
-                    );
+                    ); */
 
                     let mapLayer = L.imageOverlay(
                         layer.data,
-                        new L.LatLngBounds(southWest, northEast)
+                        layer.bounds
                     );
                     return {
                         group: L.layerGroup([mapLayer]),
@@ -619,8 +612,8 @@ class ZoomControl extends FontAwesomeControl {
         super(opts, map.map);
         this.map = map;
 
-        this.map.on("markers-updated", (markers) => {
-            if (markers.length) {
+        this.map.on("markers-updated", () => {
+            if (this.map.markers.length) {
                 this.enable();
             } else {
                 this.disable();
@@ -629,9 +622,8 @@ class ZoomControl extends FontAwesomeControl {
     }
     onClick(evt: MouseEvent) {
         if (!this.enabled) {
-            
-            new Notice("No markers to zoom.")
-            return;}
+            return;
+        }
         const group = L.featureGroup(
             this.map.displayedMarkers.map(
                 ({ leafletInstance }) => leafletInstance
@@ -706,15 +698,17 @@ class FilterMarkers extends FontAwesomeControl {
     constructor(opts: FontAwesomeControlOptions, map: LeafletMap) {
         super(opts, map.map);
         this.map = map;
-        this.map.on("markers-updated", (markers) => {
-            if (this.map.displaying.size) {
+        this.map.on("markers-updated", () => {
+            if (this.map.markers.length || this.map.overlays.length) {
                 this.enable();
             } else {
                 this.disable();
             }
         });
     }
-    onClick(evt: MouseEvent) {}
+    onClick(evt: MouseEvent) {
+        this.expand();
+    }
     added() {
         //add hidden filter objects
 
@@ -727,7 +721,8 @@ class FilterMarkers extends FontAwesomeControl {
         L.DomEvent.disableClickPropagation(this.controlEl);
         L.DomEvent.disableScrollPropagation(this.controlEl);
 
-        L.DomEvent.on(this.link, "click", this.expand, this);
+        this.link.dataset["draggable"] = "false";
+
         L.DomEvent.on(
             this.controlEl,
             {
@@ -738,7 +733,6 @@ class FilterMarkers extends FontAwesomeControl {
     }
     private expand() {
         if (!this.enabled) {
-            new Notice("No markers or overlays to filter.")
             return;
         }
         this.update();

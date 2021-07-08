@@ -227,6 +227,10 @@ input.is-invalid {
     height: 30px !important;
 }
 
+.leaflet-control-layers .leaflet-control-layers-selector {
+    appearance: auto;
+}
+
 .leaflet-control.disabled {
     pointer-events: hover;
 }
@@ -343,8 +347,18 @@ input.is-invalid {
 .leaflet-pane.leaflet-geojson-pane {
     z-index: 399;
 }
+.leaflet-pane.leaflet-image-overlay-pane {
+    z-index: 398;
+}
+.leaflet-pane.leaflet-base-layer-pane {
+    z-index: 397;
+}
 
 .hidden-leaflet-popup {
     display: none;
     visibility: hidden;
 }
+/* 
+.leaflet-control-fullscreen a {
+    background-image: unset;
+} */

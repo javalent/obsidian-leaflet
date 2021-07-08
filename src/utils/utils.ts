@@ -56,10 +56,15 @@ export function getId() {
     return nanoid(6);
 }
 
-export async function toDataURL(url: string, app: App): Promise<string> {
+export async function toDataURL(
+    url: string,
+    app: App
+): Promise<{ id: string; data: string; alias: string }> {
     //determine link type
     try {
         let response, blob: Blob, mimeType: string;
+        let id = url,
+            alias: string;
         url = decodeURIComponent(url);
         if (/https?:/.test(url)) {
             //url
@@ -77,8 +82,9 @@ export async function toDataURL(url: string, app: App): Promise<string> {
             blob = new Blob([new Uint8Array(buffer)]);
         } else {
             //file exists on disk
+            url = url.replace(/(\[|\])/g, "");
             let file = app.metadataCache.getFirstLinkpathDest(
-                url.replace(/(\[|\])/g, ""),
+                url.split("|").shift(),
                 ""
             );
             if (!file || !(file instanceof TFile)) throw new Error();
@@ -87,17 +93,18 @@ export async function toDataURL(url: string, app: App): Promise<string> {
                 lookupMimeType(file.extension) || "application/octet-stream";
             let buffer = await app.vault.readBinary(file);
             blob = new Blob([new Uint8Array(buffer)]);
+            alias = url.includes("|") ? url.split("|").pop() : file.basename;
         }
 
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onloadend = () => {
                 if (typeof reader.result === "string") {
-                    let base64 =
+                    let data =
                         "data:" +
                         mimeType +
                         reader.result.slice(reader.result.indexOf(";base64,"));
-                    resolve(base64);
+                    resolve({ data, id, alias });
                 } else {
                     new Notice("There was an error reading the image file.");
                     reject();
@@ -353,12 +360,16 @@ export async function getImmutableItems(
                 if (markerTags.length > 0) {
                     const tagSet = new Set();
                     for (let tags of markerTags) {
-                        tags.map((tag) => {
-                            if (!tag.includes("#")) {
-                                tag = `#${tag}`;
-                            }
-                            return cache.tags.getInverse(tag.trim());
-                        })
+                        const filtered = tags
+                            .filter((tag) => tag)
+                            .map((tag) => {
+                                if (!tag.includes("#")) {
+                                    tag = `#${tag}`;
+                                }
+                                return cache.tags.getInverse(tag.trim());
+                            });
+                        if (!filtered.length) continue;
+                        filtered
                             .reduce(
                                 (a, b) =>
                                     new Set(
@@ -600,6 +611,12 @@ export async function getImmutableItems(
         });
     });
 }
+type MarkerType =
+    | "marker"
+    | "markerFile"
+    | "markerFolder"
+    | "markerTag"
+    | "commandMarker";
 
 /** Parses source block and returns an object of block parameters
  * 1. First, it tries to parse the source as YAML. If the YAML parser fails, it tries to parse it manually.
@@ -609,6 +626,29 @@ export async function getImmutableItems(
  */
 export function getParamsFromSource(source: string): IBlockParameters {
     let params: IBlockParameters = {};
+
+    /** Pull out links */
+
+    const links = source.match(/\[\[([^\[\]]*?)\]\]/g);
+    for (let link of links) {
+        source = source.replace(
+            link,
+            `LEAFLET_INTERNAL_LINK_${links.indexOf(link)}`
+        );
+    }
+
+    /** Pull out tags */
+    const tags = [
+        ...(source.match(/(?<=markerTag:\s?\n)(^ - (?:.+?)\n)+/gm) ?? []),
+        ...(source.match(/markerTag: \[?(.+?)\]?\n/gm) ?? [])
+    ];
+    for (let tagString of tags) {
+        source = source.replace(
+            tagString,
+            tagString.replace(/#/g, "LEAFLET_TAG_ICON")
+        );
+    }
+
     try {
         params = parseYaml(source);
     } catch (e) {
@@ -619,6 +659,27 @@ export function getParamsFromSource(source: string): IBlockParameters {
         if (!params) params = {};
         let image = "real",
             layers: string[] = [];
+
+        if (links.length) {
+            let stringified = JSON.stringify(params);
+
+            for (let link of links) {
+                stringified = stringified.replace(
+                    `LEAFLET_INTERNAL_LINK_${links.indexOf(link)}`,
+                    link
+                );
+                source = source.replace(
+                    `LEAFLET_INTERNAL_LINK_${links.indexOf(link)}`,
+                    link
+                );
+            }
+            params = JSON.parse(stringified);
+        }
+        if (tags.length) {
+            let stringified = JSON.stringify(params);
+            stringified = stringified.replace(/LEAFLET_TAG_ICON/g, "#");
+            params = JSON.parse(stringified);
+        }
 
         /** Get Images from Parameters */
         if (source.match(/^\bimage\b:[\s\S]*?$/gm)) {
@@ -634,12 +695,6 @@ export function getParamsFromSource(source: string): IBlockParameters {
         params.image = image;
         params.layers = layers;
 
-        type MarkerType =
-            | "marker"
-            | "markerFile"
-            | "markerFolder"
-            | "markerTag"
-            | "commandMarker";
         let obj: {
             marker: string[];
             markerFile: string[];
@@ -653,6 +708,7 @@ export function getParamsFromSource(source: string): IBlockParameters {
             markerTag: [],
             commandMarker: []
         };
+
         if (/(command)?[mM]arker(File|Folder|Tag)?:/.test(source)) {
             //markers defined in code block;
 
