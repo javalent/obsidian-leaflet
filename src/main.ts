@@ -594,7 +594,6 @@ export default class ObsidianLeaflet extends Plugin {
             }[] = [];
 
             if (image != "real") {
-                console.log("🚀 ~ file: main.ts ~ line 597 ~ image", layers);
                 layerData = await Promise.all(
                     layers.map(async (img) => {
                         return await toDataURL(
