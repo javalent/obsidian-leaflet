@@ -28,7 +28,8 @@ import {
     OVERLAY_TAG_REGEX,
     getId,
     DESCRIPTION_ICON,
-    DESCRIPTION_ICON_SVG
+    DESCRIPTION_ICON_SVG,
+    parseLink
 } from "./utils";
 import {
     IMapInterface,
@@ -160,6 +161,7 @@ export default class ObsidianLeaflet extends Plugin {
                 zoomFeatures = false,
                 verbose = false
             } = params;
+            console.log("🚀 ~ file: main.ts ~ line 163 ~ params", params);
             if (!id) {
                 new Notice(
                     "As of version 3.0.0, Obsidian Leaflet maps must have an ID."
@@ -201,10 +203,11 @@ export default class ObsidianLeaflet extends Plugin {
             }
 
             let geojsonData: any[] = [];
+
             if (geojson.length) {
                 for (let link of geojson.flat(Infinity)) {
                     const file = this.app.metadataCache.getFirstLinkpathDest(
-                        link.replace(/(\[|\])/g, ""),
+                        parseLink(link),
                         ""
                     );
                     if (file && file instanceof TFile) {
@@ -687,8 +690,8 @@ export default class ObsidianLeaflet extends Plugin {
         let coords: [number, number] = [undefined, undefined];
         let distanceToZoom, file;
         if (typeof coordinates == "string" && coordinates.length) {
-            file = await this.app.metadataCache.getFirstLinkpathDest(
-                coordinates.replace(/(\[|\])/g, ""),
+            file = this.app.metadataCache.getFirstLinkpathDest(
+                parseLink(coordinates),
                 ""
             );
             if (file && file instanceof TFile) {
@@ -1024,11 +1027,10 @@ export default class ObsidianLeaflet extends Plugin {
                         }
                         return;
                     }
-                    let internal =
-                        await this.app.metadataCache.getFirstLinkpathDest(
-                            link.split(/(\^|\||#)/).shift(),
-                            ""
-                        );
+                    let internal = this.app.metadataCache.getFirstLinkpathDest(
+                        link.split(/(\^|\||#)/).shift(),
+                        ""
+                    );
 
                     if (
                         /(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/.test(
@@ -1041,7 +1043,7 @@ export default class ObsidianLeaflet extends Plugin {
                             /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))/
                         );
 
-                        let [, text = l] = link.match(/\[([\s\S]+)\]/) || l;
+                        let [, text = l] = link.match(/\[([\s\S]+)\]/) || [, l];
 
                         const a = createEl("a", { href: l, text: text });
 
@@ -1120,11 +1122,10 @@ export default class ObsidianLeaflet extends Plugin {
                         return;
                     }
 
-                    let internal =
-                        await this.app.metadataCache.getFirstLinkpathDest(
-                            marker.link.split(/(\^|\||#)/).shift(),
-                            ""
-                        );
+                    let internal = this.app.metadataCache.getFirstLinkpathDest(
+                        marker.link.split(/(\^|\||#)/).shift(),
+                        ""
+                    );
 
                     if (
                         /(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/.test(

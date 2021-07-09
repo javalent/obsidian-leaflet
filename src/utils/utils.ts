@@ -81,10 +81,9 @@ export async function toDataURL(
             let buffer = await app.vault.readBinary(file);
             blob = new Blob([new Uint8Array(buffer)]);
         } else {
-            //file exists on disk
-            url = url.replace(/(\[|\])/g, "");
+            //file exists on disk;
             let file = app.metadataCache.getFirstLinkpathDest(
-                url.split("|").shift(),
+                parseLink(url).split("|").shift(),
                 ""
             );
             if (!file || !(file instanceof TFile)) throw new Error();
@@ -190,6 +189,10 @@ export function getHeight(view: MarkdownView, height: string): string {
     }
 }
 
+export function parseLink(link: string) {
+    return link.replace(/(\[|\])/g, "");
+}
+
 export async function getImmutableItems(
     /* source: string */
     app: App,
@@ -267,7 +270,7 @@ export async function getImmutableItems(
                 link = undefined;
             } else if (/\[\[[\s\S]+\]\]/.test(link)) {
                 //obsidian wiki-link
-                [, link] = link.match(/\[\[([\s\S]+)\]\]/);
+                link = parseLink(link);
             }
 
             if (!layer || !layer.length || layer === "undefined") {
@@ -311,7 +314,7 @@ export async function getImmutableItems(
                 link = undefined;
             } else if (/\[\[[\s\S]+\]\]/.test(link)) {
                 //obsidian wiki-link
-                [, link] = link.match(/\[\[([\s\S]+)\]\]/);
+                link = parseLink(link);
             }
 
             //find command id
@@ -390,8 +393,8 @@ export async function getImmutableItems(
                 }
                 for (let link of linksTo) {
                     //invMap -> linksTo
-                    const file = await app.metadataCache.getFirstLinkpathDest(
-                        link,
+                    const file = app.metadataCache.getFirstLinkpathDest(
+                        parseLink(link),
                         ""
                     );
                     if (!file) continue;
@@ -404,8 +407,8 @@ export async function getImmutableItems(
                 }
                 for (let link of linksFrom) {
                     //map -> linksFrom
-                    const file = await app.metadataCache.getFirstLinkpathDest(
-                        link,
+                    const file = app.metadataCache.getFirstLinkpathDest(
+                        parseLink(link),
                         ""
                     );
                     if (!file) continue;
@@ -450,8 +453,8 @@ export async function getImmutableItems(
             }
 
             for (let path of files) {
-                const file = await app.metadataCache.getFirstLinkpathDest(
-                    path.replace(/(^\[{1,2}|\]{1,2}$)/g, ""),
+                const file = app.metadataCache.getFirstLinkpathDest(
+                    parseLink(path),
                     ""
                 );
                 const linkText = app.metadataCache.fileToLinktext(
@@ -695,7 +698,7 @@ export function getParamsFromSource(source: string): IBlockParameters {
         } else {
             image = ["real"];
         }
-        
+
         params.layers = layers ?? [...image];
 
         params.image = params.layers[0];
@@ -706,15 +709,25 @@ export function getParamsFromSource(source: string): IBlockParameters {
             markerFolder: string[];
             markerTag: string[][];
             commandMarker: string[];
+            geojson: string[];
+            linksTo: string[];
+            linksFrom: string[];
         } = {
             marker: [],
             markerFile: [],
             markerFolder: [],
             markerTag: [],
-            commandMarker: []
+            commandMarker: [],
+            geojson: [],
+            linksTo: [],
+            linksFrom: []
         };
 
-        if (/(command)?[mM]arker(File|Folder|Tag)?:/.test(source)) {
+        if (
+            /* /(command)?[mM]arker(File|Folder|Tag)?:/ */ new RegExp(
+                `(${Object.keys(obj).join("|")})`
+            ).test(source)
+        ) {
             //markers defined in code block;
 
             //Pull Markers
