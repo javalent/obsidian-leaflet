@@ -246,6 +246,7 @@ class LeafletMap extends Events {
     private _tempCircle: L.Circle;
     private _userBounds: [[number, number], [number, number]];
     private _layerControlAdded: boolean = false;
+    private _start: number;
     constructor(
         public plugin: ObsidianLeaflet,
         public options: ILeafletMapOptions = {}
@@ -291,6 +292,7 @@ class LeafletMap extends Events {
         this._geojsonColor = getHex(options.geojsonColor);
 
         log(this.verbose, this.id, "Building map instance.");
+        this._start = Date.now();
         this.map = L.map(this.contentEl, {
             crs: this.CRS,
             maxZoom: this.zoom.max,
@@ -447,57 +449,124 @@ class LeafletMap extends Events {
                     ];
                 });
         }
+        let added = 0;
         /** Add markers to map */
-        log(this.verbose, this.id, `Adding markers to map.`);
-        this.markers
-            .filter(
+        if (
+            this.markers.filter(
                 (marker) =>
                     !marker.layer || marker.layer === this.mapLayers[0].id
-            )
-            .forEach((marker) => {
-                if (marker.percent) {
-                    const latlng = this.map.unproject(
-                        [
-                            marker.percent[0] * this.group.dimensions[0],
-                            marker.percent[1] * this.group.dimensions[1]
-                        ],
-                        this.zoom.max - 1
-                    );
-                    if (latlng != marker.loc) marker.loc = latlng;
-                }
+            ).length
+        ) {
+            log(
+                this.verbose,
+                this.id,
+                `Adding ${
+                    this.markers.filter(
+                        (marker) =>
+                            !marker.layer ||
+                            marker.layer === this.mapLayers[0].id
+                    ).length
+                } markers to map.`
+            );
+            this.markers
+                .filter(
+                    (marker) =>
+                        !marker.layer || marker.layer === this.mapLayers[0].id
+                )
+                .forEach((marker) => {
+                    try {
+                        if (marker.percent) {
+                            const latlng = this.map.unproject(
+                                [
+                                    marker.percent[0] *
+                                        this.group.dimensions[0],
+                                    marker.percent[1] * this.group.dimensions[1]
+                                ],
+                                this.zoom.max - 1
+                            );
+                            if (latlng != marker.loc) marker.loc = latlng;
+                        }
 
-                const layer = this.mapLayers[0];
-                const markerGroup =
-                    layer.markers[marker.type] || layer.markers["default"];
+                        const layer = this.mapLayers[0];
+                        const markerGroup =
+                            layer.markers[marker.type] ||
+                            layer.markers["default"];
 
-                marker.leafletInstance.setLatLng(marker.latLng);
-                markerGroup.addLayer(marker.leafletInstance);
+                        marker.leafletInstance.setLatLng(marker.latLng);
+                        markerGroup.addLayer(marker.leafletInstance);
 
-                this.displaying.set(marker.type, true);
-            });
+                        this.displaying.set(marker.type, true);
+                        added++;
+                    } catch (e) {
+                        log(
+                            this.verbose,
+                            this.id,
+                            `Failed to add ${
+                                marker.id
+                            } at ${marker.loc.toString()} (${e.message})`
+                        );
+                    }
+                });
+
+            log(
+                this.verbose,
+                this.id,
+                `${added} marker${added == 1 ? "" : "s"} added to map.`
+            );
+        }
 
         /** Add Overlays to map */
-        log(this.verbose, this.id, `Adding overlays to map.`);
-        this.overlays
-            .filter(
+        if (
+            this.overlays.filter(
                 (overlay) =>
                     !overlay.layer || overlay.layer === this.mapLayers[0].id
-            )
-            .forEach((overlay) => {
-                if (overlay.id) {
-                    const marker = this.markers.find(
-                        ({ id }) => id === overlay.id
-                    );
-                    if (marker) overlay.marker = marker.type;
-                }
-                overlay.leafletInstance.addTo(this.group.group);
-            });
-        this.sortOverlays();
+            ).length
+        ) {
+            log(
+                this.verbose,
+                this.id,
+                `Adding ${
+                    this.overlays.filter(
+                        (overlay) =>
+                            !overlay.layer ||
+                            overlay.layer === this.mapLayers[0].id
+                    ).length
+                } overlays to map.`
+            );
+            added = 0;
+            this.overlays
+                .filter(
+                    (overlay) =>
+                        !overlay.layer || overlay.layer === this.mapLayers[0].id
+                )
+                .forEach((overlay) => {
+                    if (overlay.id) {
+                        const marker = this.markers.find(
+                            ({ id }) => id === overlay.id
+                        );
+                        if (marker) overlay.marker = marker.type;
+                    }
+                    overlay.leafletInstance.addTo(this.group.group);
+                    added++;
+                });
+
+            log(
+                this.verbose,
+                this.id,
+                `${added} overlay${added == 1 ? "" : "s"} added to map.`
+            );
+            this.sortOverlays();
+        }
         /** Add GeoJSON to map */
         if (this._geojson.length > 0) {
-            log(this.verbose, this.id, `Adding GeoJSON to map.`);
+            log(
+                this.verbose,
+                this.id,
+                `Adding ${this._geojson.length} GeoJSON features to map.`
+            );
             this.map.createPane("geojson");
 
+            added = 0;
             const geoJSONLayer = L.featureGroup();
             this._geojson.forEach((geoJSON) => {
                 try {
@@ -648,6 +717,7 @@ class LeafletMap extends Events {
                             });
                         }
                     }).addTo(geoJSONLayer);
+                    added++;
                 } catch (e) {
                     new Notice(
                         "There was an error adding GeoJSON to map " + this.id
@@ -656,6 +726,12 @@ class LeafletMap extends Events {
                 }
             });
             geoJSONLayer.addTo(this.group.group);
+
+            log(
+                this.verbose,
+                this.id,
+                `${added} GeoJSON feature${added == 1 ? "" : "s"} added to map.`
+            );
 
             if (this._zoomFeatures) {
                 log(this.verbose, this.id, `Zooming to features.`);
@@ -748,6 +824,7 @@ class LeafletMap extends Events {
         this.map.fitBounds(layer.getBounds());
     }
     sortOverlays() {
+        log(this.verbose, this.id, `Sorting overlays.`);
         let overlays = [...this.overlays];
 
         overlays.sort((a, b) => {
@@ -763,6 +840,8 @@ class LeafletMap extends Events {
         for (let overlay of overlays) {
             overlay.leafletInstance.bringToFront();
         }
+
+        log(this.verbose, this.id, `Overlays sorted.`);
     }
     setZoomByDistance(zoomDistance: number) {
         if (!zoomDistance) {
@@ -1383,7 +1462,13 @@ class LeafletMap extends Events {
         this.mapLayers[0].layer.once("load", () => {
             this.rendered = true;
 
-            log(this.verbose, this.id, "Initial map layer has rendered.");
+            log(
+                this.verbose,
+                this.id,
+                `Initial map layer rendered in ${
+                    (Date.now() - this._start) / 1000
+                } seconds.`
+            );
             this.trigger("rendered");
         });
         return this.mapLayers[0].layer;
@@ -1398,6 +1483,7 @@ class LeafletMap extends Events {
             this.id,
             "Building additional map layers in background."
         );
+        const start = Date.now();
         for (let layer of layers) {
             const newLayer = await this._buildMapLayer(layer);
 
@@ -1408,6 +1494,14 @@ class LeafletMap extends Events {
                 layer.alias ?? `Layer ${this.mapLayers.length}`
             );
         }
+
+        log(
+            this.verbose,
+            this.id,
+            `Additional map layers built in ${
+                (Date.now() - start) / 1000
+            } seconds.`
+        );
     }
     @catchErrorAsync
     async loadImageOverlays(
