@@ -638,10 +638,11 @@ export function getParamsFromSource(source: string): IBlockParameters {
     }
 
     /** Pull out tags */
-    const tags = [
-        ...(source.match(/(?<=markerTag:\s?\n)(^ - (?:.+?)\n)+/gm) ?? []),
-        ...(source.match(/markerTag: \[?(.+?)\]?\n/gm) ?? [])
-    ];
+    const tags =
+        [
+            ...(source.match(/(?<=markerTag:\s?\n)(^ - (?:.+?)\n)+/gm) ?? []),
+            ...(source.match(/markerTag: \[?(.+?)\]?\n/gm) ?? [])
+        ] ?? [];
     for (let tagString of tags) {
         source = source.replace(
             tagString,
@@ -657,8 +658,7 @@ export function getParamsFromSource(source: string): IBlockParameters {
         );
     } finally {
         if (!params) params = {};
-        let image = "real",
-            layers: string[] = [];
+        let image: string[], layers: string[];
 
         if (links.length) {
             let stringified = JSON.stringify(params);
@@ -682,18 +682,23 @@ export function getParamsFromSource(source: string): IBlockParameters {
         }
 
         /** Get Images from Parameters */
-        if (source.match(/^\bimage\b:[\s\S]*?$/gm)) {
-            //image map
-            layers = (source.match(/^\bimage\b:[\s\S]*?$/gm) || []).map((p) =>
-                p.split(/(?:image):\s?/)[1]?.trim()
+        if ((source.match(/^\bimage\b:[\s\S]*?$/gm) ?? []).length > 1) {
+            layers = (source.match(/^\bimage\b:([\s\S]*?)$/gm) || []).map(
+                (p) => p.split("image: ")[1]
             );
-            if (typeof params.image !== "string" && params.image.length > 1) {
-                layers = params.image.flat(2);
-            }
-            image = layers[0];
         }
-        params.image = image;
-        params.layers = layers;
+
+        if (typeof params.image === "string") {
+            image = [params.image];
+        } else if (params.image instanceof Array) {
+            image = [...params.image];
+        } else {
+            image = ["real"];
+        }
+        
+        params.layers = layers ?? [...image];
+
+        params.image = params.layers[0];
 
         let obj: {
             marker: string[];
@@ -725,7 +730,6 @@ export function getParamsFromSource(source: string): IBlockParameters {
                                 p
                                     .split(new RegExp(`(?:${type}):\\s?`))[1]
                                     ?.trim()
-                                    .replace(/(\[|\])/g, "")
                                     .split(/,\s?/)
                             );
                         } else if (params[type] instanceof Array) {
