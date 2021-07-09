@@ -161,7 +161,6 @@ export default class ObsidianLeaflet extends Plugin {
                 zoomFeatures = false,
                 verbose = false
             } = params;
-            console.log("🚀 ~ file: main.ts ~ line 163 ~ params", params);
             if (!id) {
                 new Notice(
                     "As of version 3.0.0, Obsidian Leaflet maps must have an ID."
