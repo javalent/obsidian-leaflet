@@ -629,7 +629,7 @@ export function getParamsFromSource(source: string): IBlockParameters {
 
     /** Pull out links */
 
-    const links = source.match(/\[\[([^\[\]]*?)\]\]/g);
+    const links = source.match(/\[\[([^\[\]]*?)\]\]/g) ?? [];
     for (let link of links) {
         source = source.replace(
             link,
