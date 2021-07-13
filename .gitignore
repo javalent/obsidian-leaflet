@@ -13,3 +13,4 @@ main.js
 *build.js
 rollup.config-dev.js
 .hotreload
+webpack.dev.js

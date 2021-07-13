@@ -10,7 +10,6 @@ import {
     CachedMetadata,
     addIcon
 } from "obsidian";
-import { latLng, Circle, LatLngTuple } from "leaflet";
 
 //Local Imports
 
@@ -47,6 +46,10 @@ import { MarkerContextModal } from "./modals";
 import { LeafletRenderer } from "./leaflet";
 import { markerDivIcon } from "./map";
 import convert from "convert";
+import { latLng, LatLngTuple, Circle } from "leaflet";
+import { LeafletSymbol } from "./utils/leaflet-import";
+
+const L = window[LeafletSymbol];
 
 //add commands to app interface
 declare module "obsidian" {

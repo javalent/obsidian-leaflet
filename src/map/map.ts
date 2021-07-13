@@ -1,5 +1,4 @@
-import L from "leaflet";
-import { DivIcon } from "leaflet";
+import { LeafletSymbol } from "src/utils/leaflet-import";
 import {
     DivIconMarkerOptions,
     IMarkerIcon,
@@ -8,7 +7,8 @@ import {
     LeafletMap
 } from "../@types";
 
-class MarkerDivIcon extends DivIcon {
+const L = window[LeafletSymbol];
+class MarkerDivIcon extends L.DivIcon {
     options: MarkerDivIconOptions;
     div: HTMLElement;
     constructor(options: MarkerDivIconOptions) {
