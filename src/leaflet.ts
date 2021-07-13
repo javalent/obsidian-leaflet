@@ -1,7 +1,5 @@
-import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import convert from "convert";
-import "leaflet-fullscreen";
 
 import {
     Events,
@@ -52,6 +50,10 @@ import {
 } from "./map";
 import { ILeafletOverlay } from "./@types/";
 import { OverlayContextModal } from "./modals/context";
+
+import { LeafletSymbol } from "./utils/leaflet-import";
+let L = window[LeafletSymbol];
+
 declare module "leaflet" {
     interface Map {
         isFullscreen(): boolean;
@@ -101,11 +103,6 @@ function catchErrorAsync(
         };
     }
 }
-
-L.Circle.mergeOptions({
-    weight: MAP_OVERLAY_STROKE_WIDTH,
-    opacity: MAP_OVERLAY_STROKE_OPACITY
-});
 
 export class LeafletRenderer extends MarkdownRenderChild {
     map: LeafletMap;

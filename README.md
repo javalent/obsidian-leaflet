@@ -49,7 +49,7 @@ darkMode: true
 | commandMarker | Create immutable markers that execute commands                                       |                                            |
 | markerFile    | Create immutable marker from a note's frontmatter                                    |                                            |
 | markerFolder  | Create immutable markers from _all_ of the notes in a given folder                   |                                            |
-| markerTags\*  | Create immutable markers from _all_ of the notes with the given tags.                |                                            |
+| markerTag\*  | Create immutable markers from _all_ of the notes with the given tags.                |                                            |
 | linksTo\*     | Create immutable markers from _all_ of the notes linking **TO** a note               |                                            |
 | linksFrom\*   | Create immutable markers from _all_ of the notes linking **FROM** a note             |                                            |
 | darkMode      | Invert map colors                                                                    | false                                      |
@@ -412,7 +412,7 @@ _Please note that until I implement some form of caching, having a large amount 
 
 #### Note Frontmatter
 
-The `markerFile`, `markerFolder`, `markerTags`, `linksTo`, and `linksFrom` parameters tell the plugin _where to look for notes_. The notes themselves determine how the markers are created, using note frontmatter tags.
+The `markerFile`, `markerFolder`, `markerTag`, `linksTo`, and `linksFrom` parameters tell the plugin _where to look for notes_. The notes themselves determine how the markers are created, using note frontmatter tags.
 
 All markers created from the note will automatically have their link set to the note.
 
@@ -524,8 +524,8 @@ would
 ```
 markerFolder: People and Locations
 markerFolder: Interests/Maps of the World
-markerTags: #people, #friends
-markerTags: #Paris
+markerTag: #people, #friends
+markerTag: #Paris
 ```
 
 would search for notes that
@@ -671,7 +671,4 @@ If you're using Obsidian to run/plan a TTRPG, you may find my other plugin usefu
 
 -   [5e Statblocks](https://github.com/valentine195/obsidian-5e-statblocks/) - Create 5e-styled statblocks inside notes
 -   [Dice Roller](https://github.com/valentine195/obsidian-dice-roller) - Roll & re-roll dice in notes
-
-```
-
-```
+-   [Initiative Tracker](https://github.com/valentine195/obsidian-initiative-tracker) - Initiative Tracker view in Obsidian

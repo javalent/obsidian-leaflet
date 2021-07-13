@@ -1,14 +1,17 @@
 import { LAT_LONG_DECIMALS } from "../utils/constants";
 import { icon } from "../utils/icons";
-import { getId, getImageDimensions, log } from "../utils";
+import { getId, log } from "../utils";
 
 import { CommandSuggestionModal, PathSuggestionModal } from "../modals";
 
 import { Events, Modal, Notice, Setting, TextComponent } from "obsidian";
 import { IconName } from "@fortawesome/free-solid-svg-icons";
-import L, { latLng } from "leaflet";
+
 import { LeafletMap, ObsidianLeaflet } from "../@types";
 import { Marker } from "./map";
+import { LeafletSymbol } from "src/utils/leaflet-import";
+
+const L = window[LeafletSymbol];
 
 export class DistanceDisplay extends L.Control {
     controlEl: HTMLElement;
@@ -198,7 +201,6 @@ class EditMarkerControl extends FontAwesomeControl {
         super(opts, map.map);
         this.map = map;
         this.plugin = plugin;
-
     }
 
     async onClick(evt: MouseEvent) {
@@ -285,7 +287,7 @@ class EditMarkerControl extends FontAwesomeControl {
                     .onClick(() => {
                         this.simple.createMarker(
                             "default",
-                            latLng(
+                            L.latLng(
                                 this.map.initialCoords[0],
                                 this.map.initialCoords[1]
                             ),
@@ -446,10 +448,15 @@ class SimpleLeafletMap extends Events {
 
     async render(): Promise<void> {
         return new Promise(async (resolve) => {
-            const layerData = this.original.mapLayers.map(({ data, id, layer }) => {
-                const bounds = layer instanceof L.ImageOverlay ? layer.getBounds() : this.original.bounds
-                return { data, id, bounds };
-            });
+            const layerData = this.original.mapLayers.map(
+                ({ data, id, layer }) => {
+                    const bounds =
+                        layer instanceof L.ImageOverlay
+                            ? layer.getBounds()
+                            : this.original.bounds;
+                    return { data, id, bounds };
+                }
+            );
             this.layer = await this.getLayerData(layerData);
 
             this.map = L.map(this.containerEl, {
@@ -535,7 +542,9 @@ class SimpleLeafletMap extends Events {
 
         this.markers.push(marker);
     }
-    async getLayerData(layerData: { data: string; id: string, bounds: L.LatLngBounds }[]) {
+    async getLayerData(
+        layerData: { data: string; id: string; bounds: L.LatLngBounds }[]
+    ) {
         let layer, mapLayers;
         if (this.original.type === "real") {
             layer = L.tileLayer(
@@ -567,10 +576,7 @@ class SimpleLeafletMap extends Events {
                         this.original.zoom.max - 1
                     ); */
 
-                    let mapLayer = L.imageOverlay(
-                        layer.data,
-                        layer.bounds
-                    );
+                    let mapLayer = L.imageOverlay(layer.data, layer.bounds);
                     return {
                         group: L.layerGroup([mapLayer]),
                         layer: mapLayer,

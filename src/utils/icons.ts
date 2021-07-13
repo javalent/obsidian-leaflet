@@ -1,11 +1,13 @@
 import { fas } from "@fortawesome/free-solid-svg-icons";
 import {
-    IconDefinition,
-    IconName,
     findIconDefinition,
     icon,
     library,
     IconParams
+} from "@fortawesome/fontawesome-svg-core";
+import type {
+    IconDefinition,
+    IconName
 } from "@fortawesome/fontawesome-svg-core";
 import { IMarker } from "src/@types";
 
