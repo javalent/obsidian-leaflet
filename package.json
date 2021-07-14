@@ -1,6 +1,6 @@
 {
     "name": "obsidian-leaflet-plugin",
-    "version": "3.19.5",
+    "version": "3.19.6",
     "description": "Leaflet integration for Obsidian.md",
     "main": "main.js",
     "scripts": {
@@ -37,6 +37,7 @@
         "leaflet": "^1.7.1",
         "leaflet-fullscreen": "^1.0.2",
         "mime": "^2.5.2",
+        "mini-css-extract-plugin": "^2.1.0",
         "nanoid": "^3.1.22",
         "obsidian": "https://github.com/obsidianmd/obsidian-api/tarball/master",
         "papaparse": "^5.3.0",

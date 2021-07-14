@@ -1,3 +1,4 @@
+import "../node_modules/leaflet/dist/leaflet.css";
 import "./main.css";
 
 import {
@@ -46,8 +47,9 @@ import { MarkerContextModal } from "./modals";
 import { LeafletRenderer } from "./leaflet";
 import { markerDivIcon } from "./map";
 import convert from "convert";
-import { latLng, LatLngTuple, Circle } from "leaflet";
+
 import { LeafletSymbol } from "./utils/leaflet-import";
+import type * as Leaflet from "leaflet";
 
 const L = window[LeafletSymbol];
 
@@ -395,11 +397,15 @@ export default class ObsidianLeaflet extends Plugin {
                                 ) {
                                     if (
                                         !marker[0].loc.equals(
-                                            latLng(<LatLngTuple>location)
+                                            L.latLng(
+                                                <Leaflet.LatLngTuple>location
+                                            )
                                         )
                                     ) {
                                         marker[0].setLatLng(
-                                            latLng(<LatLngTuple>location)
+                                            L.latLng(
+                                                <Leaflet.LatLngTuple>location
+                                            )
                                         );
                                     }
                                 }
@@ -830,7 +836,7 @@ export default class ObsidianLeaflet extends Plugin {
                 overlays: map.map.overlays
                     .filter(({ mutable }) => mutable)
                     .map((overlay) => {
-                        if (overlay.leafletInstance instanceof Circle) {
+                        if (overlay.leafletInstance instanceof L.Circle) {
                             return {
                                 radius: overlay.data.radius,
                                 loc: [

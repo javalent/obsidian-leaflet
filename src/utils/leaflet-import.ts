@@ -3,7 +3,7 @@ import type * as Leaflet from "leaflet";
 
 declare global {
     interface Window {
-        "obsidian-leaflet-plugin": typeof Leaflet;
+        [LeafletSymbol]: typeof Leaflet;
     }
 }
 
@@ -18,6 +18,7 @@ window.L.Circle.mergeOptions({
     weight: MAP_OVERLAY_STROKE_WIDTH,
     opacity: MAP_OVERLAY_STROKE_OPACITY
 });
+
 window[LeafletSymbol] = window.L;
 
 window.L = WindowL;

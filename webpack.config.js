@@ -1,5 +1,6 @@
 const path = require("path");
 const CopyPlugin = require("copy-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const webpack = require("webpack");
 
 const isDevMode = process.env.NODE_ENV === "development";
@@ -24,12 +25,16 @@ module.exports = {
                 }
             },
             {
-                test: /\.(jpe?g|png|gif)$/,
-                use: "ignore-loader"
-            },
-            {
                 test: /\.css?$/,
-                loader: "css-loader"
+                use: [
+                    MiniCssExtractPlugin.loader,
+                    {
+                        loader: "css-loader",
+                        options: {
+                            url: false
+                        }
+                    }
+                ]
             },
             {
                 test: /\.(svg|njk|html)$/,
@@ -40,12 +45,14 @@ module.exports = {
     plugins: [
         new CopyPlugin({
             patterns: [
-                { from: "./manifest.json", to: "." },
-                { from: "./src/main.css", to: "./styles.css" }
+                { from: "./manifest.json", to: "." }
             ]
         }),
         new webpack.optimize.LimitChunkCountPlugin({
             maxChunks: 1
+        }),
+        new MiniCssExtractPlugin({
+            filename: "styles.css"
         })
     ],
     resolve: {
