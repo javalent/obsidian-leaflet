@@ -213,7 +213,7 @@ class EditMarkerControl extends FontAwesomeControl {
         modal.titleEl.setText("Bulk Edit Markers");
 
         const mapEl = modal.contentEl.createDiv({
-            cls: "bulk-edit-map",
+            cls: "bulk-edit-map block-language-leaflet",
             attr: {
                 style: "height: 250px;width: auto;margin: auto;margin-bottom: 1rem; "
             }

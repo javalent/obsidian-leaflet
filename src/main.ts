@@ -592,7 +592,11 @@ export default class ObsidianLeaflet extends Plugin {
             map.addMarkers([
                 ...markerArray,
                 ...(mapData?.markers.map((m) => {
-                    return { ...m, mutable: true };
+                    const layer =
+                        decodeURIComponent(m.layer) === m.layer
+                            ? encodeURIComponent(m.layer)
+                            : m.layer;
+                    return { ...m, mutable: true, layer };
                 }) ?? [])
             ]);
 
