@@ -245,7 +245,7 @@ input.is-invalid {
     cursor: pointer !important;
 }
 
-.block-language-leaflet .leaflet-file-upload > input[type="file"] {
+.leaflet-file-upload > input[type="file"] {
     display: none;
 }
 

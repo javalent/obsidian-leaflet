@@ -29,7 +29,8 @@ import {
     getId,
     DESCRIPTION_ICON,
     DESCRIPTION_ICON_SVG,
-    parseLink
+    parseLink,
+    log
 } from "./utils";
 import {
     IMapInterface,
@@ -66,6 +67,9 @@ declare module "obsidian" {
             pushScope(scope: Scope): void;
             popScope(scope: Scope): void;
         };
+    }
+    interface MarkdownPostProcessorContext {
+        containerEl: HTMLElement;
     }
 }
 
@@ -175,6 +179,7 @@ export default class ObsidianLeaflet extends Plugin {
                 );
                 throw new Error("ID required");
             }
+            log(verbose, id, "Beginning Markdown Postprocessor.");
             let view = this.app.workspace.getActiveViewOfType(MarkdownView);
 
             /** Get Markers from Parameters */
@@ -187,6 +192,11 @@ export default class ObsidianLeaflet extends Plugin {
                         path == `${ctx.sourcePath}/${id}`
                 )
             ) {
+                log(
+                    verbose,
+                    id,
+                    "Map data found in an old format. Converting."
+                );
                 let data = this.AppData.mapMarkers.find(
                     ({ path }) =>
                         path == `${ctx.sourcePath}/${image}` ||
@@ -209,6 +219,7 @@ export default class ObsidianLeaflet extends Plugin {
             let geojsonData: any[] = [];
 
             if (geojson.length) {
+                log(verbose, id, "Loading GeoJSON files.");
                 for (let link of geojson.flat(Infinity)) {
                     const file = this.app.metadataCache.getFirstLinkpathDest(
                         parseLink(link),
@@ -227,7 +238,7 @@ export default class ObsidianLeaflet extends Plugin {
                 }
             }
 
-            const renderer = new LeafletRenderer(this, ctx.sourcePath, el, {
+            const renderer = new LeafletRenderer(this, ctx, el, {
                 height: getHeight(view, height) ?? "500px",
                 type: image != "real" ? "image" : "real",
                 minZoom: +minZoom,
@@ -248,6 +259,18 @@ export default class ObsidianLeaflet extends Plugin {
             });
             const map = renderer.map;
 
+            if (
+                (params.marker ?? []).length ||
+                (params.commandMarker ?? []).length ||
+                (params.markerTag ?? []).length ||
+                (params.markerFile ?? []).length ||
+                (params.markerFolder ?? []).length ||
+                (params.linksTo ?? []).length ||
+                (params.linksFrom ?? []).length ||
+                (params.overlayTag ?? []).length
+            ) {
+                log(verbose, id, "Loading immutable items.");
+            }
             let {
                 markers: immutableMarkers,
                 overlays: immutableOverlays,
@@ -266,6 +289,22 @@ export default class ObsidianLeaflet extends Plugin {
                 overlayColor
             );
 
+            if (
+                (params.marker ?? []).length ||
+                (params.commandMarker ?? []).length ||
+                (params.markerTag ?? []).length ||
+                (params.markerFile ?? []).length ||
+                (params.markerFolder ?? []).length ||
+                (params.linksTo ?? []).length ||
+                (params.linksFrom ?? []).length ||
+                (params.overlayTag ?? []).length
+            ) {
+                log(
+                    verbose,
+                    id,
+                    `Found ${immutableMarkers.length} markers and ${immutableOverlays.length} overlays from ${watchers.size} files.`
+                );
+            }
             /** Build arrays of markers and overlays to pass to map */
             let markerArray: IMarkerData[] = immutableMarkers.map(
                 ([type, lat, long, link, layer, command, id, desc]) => {
@@ -306,6 +345,7 @@ export default class ObsidianLeaflet extends Plugin {
             });
 
             /** Get initial coordinates and zoom level */
+            log(verbose, id, "Getting initiatial coordinates.");
             const { coords, distanceToZoom, file } = await this._getCoordinates(
                 lat,
                 long,
@@ -714,10 +754,18 @@ export default class ObsidianLeaflet extends Plugin {
                         zoomTag,
                         map
                     ));
+
+                log(map.verbose, map.id, "Coordinates file found.");
             }
         } else if (coordinates && coordinates.length == 2) {
             latitude = coordinates[0];
             longitude = coordinates[1];
+
+            log(
+                map.verbose,
+                map.id,
+                `Using supplied coordinates [${latitude}, ${longitude}]`
+            );
         }
 
         let err: boolean = false;
