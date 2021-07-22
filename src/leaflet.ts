@@ -9,7 +9,8 @@ import {
     MarkdownRenderChild,
     TFile,
     Scope,
-    setIcon
+    setIcon,
+    MarkdownPostProcessorContext
 } from "obsidian";
 
 import {
@@ -106,9 +107,10 @@ function catchErrorAsync(
 export class LeafletRenderer extends MarkdownRenderChild {
     map: LeafletMap;
     verbose: boolean;
+    parentEl: HTMLElement;
     constructor(
-        public plugin: ObsidianLeaflet,
-        sourcePath: string,
+        private plugin: ObsidianLeaflet,
+        ctx: MarkdownPostProcessorContext,
         container: HTMLElement,
         options: ILeafletMapOptions = {}
     ) {
@@ -125,7 +127,9 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 this.map.remove();
             } catch (e) {}
 
-            let file = this.plugin.app.vault.getAbstractFileByPath(sourcePath);
+            let file = this.plugin.app.vault.getAbstractFileByPath(
+                ctx.sourcePath
+            );
             if (!file || !(file instanceof TFile)) {
                 return;
             }
@@ -142,7 +146,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 //Block was deleted or id was changed
 
                 let mapFile = this.plugin.mapFiles.find(
-                    ({ file: f }) => f === sourcePath
+                    ({ file: f }) => f === ctx.sourcePath
                 );
                 mapFile.maps = mapFile.maps.filter(
                     (mapId) => mapId != this.map.id
@@ -155,6 +159,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 return m.map != this.map;
             });
         });
+
+        this.parentEl = ctx.containerEl;
     }
     async onload() {
         log(
@@ -163,6 +169,34 @@ export class LeafletRenderer extends MarkdownRenderChild {
             "MarkdownRenderChild loaded. Appending map."
         );
         this.containerEl.appendChild(this.map.contentEl);
+
+        if (!Array.from(this.parentEl.children).includes(this.containerEl)) {
+            log(
+                this.verbose,
+                this.map.id,
+                "Map element is off the page and not loaded into DOM. Will auto-detect and reset zoom."
+                
+            );
+            const observer = new MutationObserver((mutationsList, observer) => {
+                // Use traditional 'for loops' for IE 11
+                for (const mutation of mutationsList) {
+                    if (
+                        mutation.type === "childList" &&
+                        Array.from(this.parentEl.children).includes(
+                            this.containerEl.parentElement
+                        )
+                    ) {
+                        this.map.resetZoom();
+                        observer.disconnect();
+                    }
+                }
+            });
+            observer.observe(this.parentEl, {
+                attributes: false,
+                childList: true,
+                subtree: false
+            });
+        }
     }
 }
 
@@ -243,6 +277,8 @@ class LeafletMap extends Events {
     private _userBounds: [[number, number], [number, number]];
     private _layerControlAdded: boolean = false;
     private _start: number;
+    geoJSONLayer: any;
+    private _zoomDistance: number;
     constructor(
         public plugin: ObsidianLeaflet,
         public options: ILeafletMapOptions = {}
@@ -367,7 +403,7 @@ class LeafletMap extends Events {
     }
     private get _coordMult(): [number, number] {
         let mult: [number, number] = [1, 1];
-        if (this.type == "image") {
+        if (this.type == "image" && !this._userBounds) {
             mult = [
                 this.bounds.getCenter().lat / 50,
                 this.bounds.getCenter().lng / 50
@@ -422,6 +458,7 @@ class LeafletMap extends Events {
         this.map.panTo(this.initialCoords);
 
         if (options.zoomDistance) {
+            this._zoomDistance = options.zoomDistance;
             this.setZoomByDistance(options.zoomDistance);
         }
         this.map.setZoom(this.zoom.default, {
@@ -563,7 +600,7 @@ class LeafletMap extends Events {
             this.map.createPane("geojson");
 
             added = 0;
-            const geoJSONLayer = L.featureGroup();
+            this.geoJSONLayer = L.featureGroup();
             this._geojson.forEach((geoJSON) => {
                 try {
                     L.geoJSON(geoJSON, {
@@ -666,9 +703,7 @@ class LeafletMap extends Events {
                                     evt.originalEvent.getModifierState(
                                         "Control"
                                     ) ||
-                                    evt.originalEvent.getModifierState(
-                                        "Meta"
-                                    )
+                                    evt.originalEvent.getModifierState("Meta")
                                 ) {
                                     this._focusOnLayer(layer);
                                     return;
@@ -715,7 +750,7 @@ class LeafletMap extends Events {
                                 );
                             });
                         }
-                    }).addTo(geoJSONLayer);
+                    }).addTo(this.geoJSONLayer);
                     added++;
                 } catch (e) {
                     new Notice(
@@ -724,7 +759,7 @@ class LeafletMap extends Events {
                     return;
                 }
             });
-            geoJSONLayer.addTo(this.group.group);
+            this.geoJSONLayer.addTo(this.group.group);
 
             log(
                 this.verbose,
@@ -734,13 +769,13 @@ class LeafletMap extends Events {
 
             if (this._zoomFeatures) {
                 log(this.verbose, this.id, `Zooming to features.`);
-                this.map.fitBounds(geoJSONLayer.getBounds());
-                const { lat, lng } = geoJSONLayer.getBounds().getCenter();
+                this.map.fitBounds(this.geoJSONLayer.getBounds());
+                const { lat, lng } = this.geoJSONLayer.getBounds().getCenter();
 
                 log(this.verbose, this.id, `Features center: [${lat}, ${lng}]`);
                 this.setInitialCoords([lat, lng]);
                 this.zoom.default = this.map.getBoundsZoom(
-                    geoJSONLayer.getBounds()
+                    this.geoJSONLayer.getBounds()
                 );
             }
         }
@@ -860,6 +895,32 @@ class LeafletMap extends Events {
             coords[0] * this._coordMult[0],
             coords[1] * this._coordMult[1]
         ];
+    }
+
+    resetZoom() {
+        this.map.invalidateSize();
+        log(this.verbose, this.id, `Element added to note, resetting zoom.`);
+        if (this._zoomDistance) {
+            log(this.verbose, this.id, `Zooming by distance.`);
+            this.setZoomByDistance(this._zoomDistance);
+        }
+        if (this._zoomFeatures) {
+            log(this.verbose, this.id, `Zooming to features.`);
+            this.map.fitBounds(this.geoJSONLayer.getBounds());
+            const { lat, lng } = this.geoJSONLayer.getBounds().getCenter();
+
+            log(this.verbose, this.id, `Features center: [${lat}, ${lng}]`);
+            this.setInitialCoords([lat, lng]);
+            this.zoom.default = this.map.getBoundsZoom(
+                this.geoJSONLayer.getBounds()
+            );
+        }
+        log(
+            this.verbose,
+            this.id,
+            `Resetting map view to [${this.initialCoords[0]}, ${this.initialCoords[1]}], zoom ${this.zoom.default}.`
+        );
+        this.map.setView(this.initialCoords, this.zoom.default);
     }
 
     @catchError
@@ -1155,7 +1216,7 @@ class LeafletMap extends Events {
             if (
                 this.data.copyOnClick &&
                 (evt.originalEvent.getModifierState("Control") ||
-                evt.originalEvent.getModifierState("Meta"))
+                    evt.originalEvent.getModifierState("Meta"))
             ) {
                 log(
                     this.verbose,
@@ -1744,7 +1805,8 @@ class LeafletMap extends Events {
 
                     if (
                         this.data.copyOnClick &&
-                        (evt.originalEvent.getModifierState("Control") || evt.originalEvent.getModifierState("Meta"))
+                        (evt.originalEvent.getModifierState("Control") ||
+                            evt.originalEvent.getModifierState("Meta"))
                     ) {
                         await this.copyLatLngToClipboard(marker.loc);
                     }

@@ -675,15 +675,12 @@ class ResetZoomControl extends FontAwesomeControl {
         this.map = map;
     }
     onClick(evt: MouseEvent) {
-        log(
-            this.map.verbose,
-            this.map.id,
-            `Resetting map view to [${this.map.initialCoords[0]}, ${this.map.initialCoords[1]}].`
-        );
-        this.leafletInstance.setView(
+
+        /* this.leafletInstance.setView(
             this.map.initialCoords,
             this.map.zoom.default
-        );
+        ); */
+        this.map.resetZoom();
     }
 }
 
