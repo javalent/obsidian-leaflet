@@ -69,7 +69,9 @@ export class MarkerContextModal extends Modal {
                     text.inputEl.onblur = async () => {
                         this.tempMarker.link =
                             commands.find(
-                                ({ name }) => name == text.inputEl.value
+                                ({ name, id }) =>
+                                    name == text.inputEl.value ||
+                                    id == text.inputEl.value
                             )?.id ?? text.inputEl.value;
                     };
                 });
