@@ -13,7 +13,7 @@ import {
     MarkdownPostProcessorContext
 } from "obsidian";
 
-import {
+import type {
     ILayerGroup,
     ILeafletMapOptions,
     IMarkerData,
@@ -175,7 +175,6 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 this.verbose,
                 this.map.id,
                 "Map element is off the page and not loaded into DOM. Will auto-detect and reset zoom."
-                
             );
             const observer = new MutationObserver((mutationsList, observer) => {
                 // Use traditional 'for loops' for IE 11
@@ -701,9 +700,8 @@ class LeafletMap extends Events {
                             layer.on("click", (evt: L.LeafletMouseEvent) => {
                                 if (
                                     evt.originalEvent.getModifierState(
-                                        "Control"
-                                    ) ||
-                                    evt.originalEvent.getModifierState("Meta")
+                                        this.plugin.modifierKey
+                                    )
                                 ) {
                                     this._focusOnLayer(layer);
                                     return;
@@ -1215,8 +1213,7 @@ class LeafletMap extends Events {
             );
             if (
                 this.data.copyOnClick &&
-                (evt.originalEvent.getModifierState("Control") ||
-                    evt.originalEvent.getModifierState("Meta"))
+                evt.originalEvent.getModifierState(this.plugin.modifierKey)
             ) {
                 log(
                     this.verbose,
@@ -1746,8 +1743,7 @@ class LeafletMap extends Events {
             })
             .on("click", (evt: L.LeafletMouseEvent) => {
                 if (
-                    evt.originalEvent.getModifierState("Control") ||
-                    evt.originalEvent.getModifierState("Meta")
+                    evt.originalEvent.getModifierState(this.plugin.modifierKey)
                 ) {
                     this._focusOnLayer(overlay.leafletInstance);
                     return;
@@ -1805,8 +1801,9 @@ class LeafletMap extends Events {
 
                     if (
                         this.data.copyOnClick &&
-                        (evt.originalEvent.getModifierState("Control") ||
-                            evt.originalEvent.getModifierState("Meta"))
+                        evt.originalEvent.getModifierState(
+                            this.plugin.modifierKey
+                        )
                     ) {
                         await this.copyLatLngToClipboard(marker.loc);
                     }
@@ -1817,8 +1814,9 @@ class LeafletMap extends Events {
                     this.trigger(
                         "marker-click",
                         marker.link,
-                        evt.originalEvent.getModifierState("Control") ||
-                            evt.originalEvent.getModifierState("Meta"),
+                        evt.originalEvent.getModifierState(
+                            this.plugin.modifierKey
+                        ),
                         marker.command
                     );
                 } else {

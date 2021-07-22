@@ -9,7 +9,8 @@ import {
     Plugin,
     TFile,
     CachedMetadata,
-    addIcon
+    addIcon,
+    Platform
 } from "obsidian";
 
 //Local Imports
@@ -41,7 +42,8 @@ import {
     Marker,
     LeafletMap,
     Length,
-    IOverlayData
+    IOverlayData,
+    ObsidianLeaflet as ObsidianLeafletImplementation
 } from "./@types";
 import { MarkerContextModal } from "./modals";
 
@@ -73,13 +75,23 @@ declare module "obsidian" {
     }
 }
 
-export default class ObsidianLeaflet extends Plugin {
+export default class ObsidianLeaflet
+    extends Plugin
+    implements ObsidianLeafletImplementation
+{
     AppData: IObsidianAppData;
     markerIcons: IMarkerIcon[];
     maps: IMapInterface[] = [];
     mapFiles: { file: string; maps: string[] }[] = [];
     watchers: Set<TFile> = new Set();
+    Platform = Platform;
+    isMobile = Platform.isMobileApp;
+    isMacOS = Platform.isMacOS;
+    get modifierKey() {
+        return this.isMacOS ? "Meta" : "Control";
+    }
     /* escapeScope: Scope; */
+
     async onload(): Promise<void> {
         console.log("Loading Obsidian Leaflet v" + this.manifest.version);
 
