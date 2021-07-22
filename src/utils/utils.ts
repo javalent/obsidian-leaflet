@@ -323,7 +323,9 @@ export async function getImmutableItems(
 
             //find command id
             const commands = app.commands.listCommands();
-            const { id } = commands.find(({ name: n }) => n == link);
+            const { id } = commands.find(
+                ({ name: n, id }) => n == link || id == link
+            );
 
             if (!layer || !layer.length || layer === "undefined") {
                 layer = undefined;
