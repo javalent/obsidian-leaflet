@@ -9,7 +9,7 @@ import {
     Vault
 } from "obsidian";
 import Color from "color";
-import { nanoid } from "nanoid";
+
 import { getType as lookupMimeType } from "mime/lite";
 import { parse as parseCSV } from "papaparse";
 
@@ -53,7 +53,11 @@ export function getImageDimensions(url: string): Promise<any> {
 }
 
 export function getId() {
-    return nanoid(6);
+    return "ID_xyxyxyxyxyxy".replace(/[xy]/g, function (c) {
+        var r = (Math.random() * 16) | 0,
+            v = c == "x" ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+    });
 }
 
 export async function toDataURL(
@@ -641,17 +645,6 @@ export function getParamsFromSource(source: string): IBlockParameters {
     }
 
     /** Pull out tags */
-    const tags =
-        [
-            ...(source.match(/(?<=markerTag:\s?\n)(^ - (?:.+?)\n)+/gm) ?? []),
-            ...(source.match(/markerTag: \[?(.+?)\]?\n/gm) ?? [])
-        ] ?? [];
-    for (let tagString of tags) {
-        source = source.replace(
-            tagString,
-            tagString.replace(/#/g, "LEAFLET_TAG_ICON")
-        );
-    }
 
     try {
         params = parseYaml(source);
@@ -676,11 +669,6 @@ export function getParamsFromSource(source: string): IBlockParameters {
                     link
                 );
             }
-            params = JSON.parse(stringified);
-        }
-        if (tags.length) {
-            let stringified = JSON.stringify(params);
-            stringified = stringified.replace(/LEAFLET_TAG_ICON/g, "#");
             params = JSON.parse(stringified);
         }
 

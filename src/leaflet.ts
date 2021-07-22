@@ -665,6 +665,9 @@ class LeafletMap extends Events {
                                 if (
                                     evt.originalEvent.getModifierState(
                                         "Control"
+                                    ) ||
+                                    evt.originalEvent.getModifierState(
+                                        "Meta"
                                     )
                                 ) {
                                     this._focusOnLayer(layer);
@@ -1151,7 +1154,8 @@ class LeafletMap extends Events {
             );
             if (
                 this.data.copyOnClick &&
-                evt.originalEvent.getModifierState("Control")
+                (evt.originalEvent.getModifierState("Control") ||
+                evt.originalEvent.getModifierState("Meta"))
             ) {
                 log(
                     this.verbose,
@@ -1680,7 +1684,10 @@ class LeafletMap extends Events {
                 }
             })
             .on("click", (evt: L.LeafletMouseEvent) => {
-                if (evt.originalEvent.getModifierState("Control")) {
+                if (
+                    evt.originalEvent.getModifierState("Control") ||
+                    evt.originalEvent.getModifierState("Meta")
+                ) {
                     this._focusOnLayer(overlay.leafletInstance);
                     return;
                 }
@@ -1737,7 +1744,7 @@ class LeafletMap extends Events {
 
                     if (
                         this.data.copyOnClick &&
-                        evt.originalEvent.getModifierState("Control")
+                        (evt.originalEvent.getModifierState("Control") || evt.originalEvent.getModifierState("Meta"))
                     ) {
                         await this.copyLatLngToClipboard(marker.loc);
                     }
