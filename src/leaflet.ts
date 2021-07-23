@@ -805,6 +805,11 @@ class LeafletMap extends Events {
         this.map.on("contextmenu", this._handleMapContext.bind(this));
         this.map.on("click", this._handleMapClick.bind(this));
 
+        /** Stop Touchmove Propagation for Mobile */
+        this.contentEl.addEventListener("touchmove", (evt) => {
+            evt.stopPropagation();
+        });
+
         this.group.group.addTo(this.map);
     }
     private _buildDisplayForTooltip(
