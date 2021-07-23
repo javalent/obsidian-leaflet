@@ -7,6 +7,7 @@ declare class ObsidianLeaflet extends Plugin {
     markerIcons: IMarkerIcon[];
     maps: IMapInterface[];
     mapFiles: { file: string; maps: string[] }[];
+    modifierKey: "Meta" | "Control";
     /* escapeScope: Scope; */
     onload(): Promise<void>;
     onunload(): Promise<void>;
