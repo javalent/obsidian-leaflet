@@ -1147,7 +1147,10 @@ export default class ObsidianLeaflet
                 ({ id, map: m }) => id == map.id && m.contentEl != map.contentEl
             );
             for (let { map } of otherMaps) {
-                map.removeMarker(marker);
+                /* map.removeMarker(marker); */
+                let existing = map.markers.find((m) => m.id === marker.id);
+                existing.hide();
+                map.markers = map.markers.filter((m) => m != existing);
             }
         });
 

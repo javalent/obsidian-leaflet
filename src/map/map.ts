@@ -204,7 +204,7 @@ export class Marker implements MarkerDefinition {
         this.leafletInstance.setLatLng(latlng);
     }
     remove() {
-        this.leafletInstance.remove();
+        this.group && this.group.removeLayer(this.leafletInstance);
     }
 
     show() {

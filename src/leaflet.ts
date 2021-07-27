@@ -529,6 +529,7 @@ class LeafletMap extends Events {
                         marker.group = markerGroup;
                         if (!marker.layer) marker.layer = this.group.id;
 
+                        marker.show();
                         if (marker.shouldHide(this.zoom.default)) {
                             marker.hide();
                         }
@@ -1666,24 +1667,26 @@ class LeafletMap extends Events {
         const group = L.layerGroup([mapLayer, ...Object.values(markerGroups)]);
 
         //add any markers to new layer
-        this.markers
-            .filter((marker) => marker.layer && marker.layer == layer.id)
-            .forEach((marker) => {
-                const markerGroup =
-                    markerGroups[marker.type] || markerGroups["default"];
+        if (this.group && layer.id != this.group.id) {
+            this.markers
+                .filter((marker) => marker.layer && marker.layer == layer.id)
+                .forEach((marker) => {
+                    const markerGroup =
+                        markerGroups[marker.type] || markerGroups["default"];
 
-                marker.group = markerGroup;
-                marker.show();
-                if (marker.shouldHide(this.zoom.default)) {
-                    marker.hide();
-                }
-            });
-        //add any overlays to new layer
-        this.overlays
-            .filter((overlay) => overlay.layer && overlay.layer == layer.id)
-            .forEach((overlay) => {
-                overlay.leafletInstance.addTo(group);
-            });
+                    marker.group = markerGroup;
+                    marker.show();
+                    if (marker.shouldHide(this.zoom.default)) {
+                        marker.hide();
+                    }
+                });
+            //add any overlays to new layer
+            this.overlays
+                .filter((overlay) => overlay.layer && overlay.layer == layer.id)
+                .forEach((overlay) => {
+                    overlay.leafletInstance.addTo(group);
+                });
+        }
         return {
             group: group,
             layer: mapLayer,
