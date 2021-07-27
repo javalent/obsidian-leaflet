@@ -332,7 +332,7 @@ class LeafletMap extends Events {
             zoomSnap: this.zoom.delta,
             wheelPxPerZoomLevel: 60 * (1 / this.zoom.delta),
             worldCopyJump: this.type === "real",
-            fullscreenControl: true
+            ...(this.plugin.isDesktop ? { fullscreenControl: true } : {})
         });
     }
 
@@ -1178,26 +1178,28 @@ class LeafletMap extends Events {
     @catchError
     private _buildControls() {
         //Full screen
-        const fsButton = this.contentEl.querySelector(
-            ".leaflet-control-fullscreen-button"
-        );
-        if (fsButton) {
-            fsButton.setAttr("aria-label", "Toggle Full Screen");
-            const expand = icon({ iconName: "expand", prefix: "fas" }).node[0];
-            const compress = icon({ iconName: "compress", prefix: "fas" })
-                .node[0];
-            fsButton.appendChild(expand);
-            this.map.on("fullscreenchange", () => {
-                if (this.isFullscreen) {
-                    fsButton.replaceChild(compress, fsButton.children[0]);
-                    editMarkerControl.disable();
-                } else {
-                    fsButton.replaceChild(expand, fsButton.children[0]);
-                    editMarkerControl.enable();
-                }
-            });
+        if (this.plugin.isDesktop) {
+            const fsButton = this.contentEl.querySelector(
+                ".leaflet-control-fullscreen-button"
+            );
+            if (fsButton) {
+                fsButton.setAttr("aria-label", "Toggle Full Screen");
+                const expand = icon({ iconName: "expand", prefix: "fas" })
+                    .node[0];
+                const compress = icon({ iconName: "compress", prefix: "fas" })
+                    .node[0];
+                fsButton.appendChild(expand);
+                this.map.on("fullscreenchange", () => {
+                    if (this.isFullscreen) {
+                        fsButton.replaceChild(compress, fsButton.children[0]);
+                        editMarkerControl.disable();
+                    } else {
+                        fsButton.replaceChild(expand, fsButton.children[0]);
+                        editMarkerControl.enable();
+                    }
+                });
+            }
         }
-
         //Filter Markers
         filterMarkerControl({ position: "topright" }, this).addTo(this.map);
 
