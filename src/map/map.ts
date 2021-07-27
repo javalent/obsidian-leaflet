@@ -70,9 +70,12 @@ export class Marker implements MarkerDefinition {
     layer: string;
     command: boolean;
     zoom: number;
+    minZoom: number;
     maxZoom: number;
     description: string;
     divIcon: MarkerDivIcon;
+    displayed: boolean;
+    group: L.LayerGroup;
     constructor(
         private map: LeafletMap,
         {
@@ -87,7 +90,8 @@ export class Marker implements MarkerDefinition {
             zoom,
             percent,
             description,
-            maxZoom = zoom
+            minZoom,
+            maxZoom
         }: {
             id: string;
             icon: MarkerDivIcon;
@@ -100,6 +104,7 @@ export class Marker implements MarkerDefinition {
             zoom: number;
             percent: [number, number];
             description: string;
+            minZoom?: number;
             maxZoom?: number;
         }
     ) {
@@ -130,6 +135,7 @@ export class Marker implements MarkerDefinition {
         this.description = description;
 
         this.zoom = zoom;
+        this.minZoom = minZoom;
         this.maxZoom = maxZoom;
     }
     get link() {
@@ -173,10 +179,7 @@ export class Marker implements MarkerDefinition {
     get latLng() {
         return this.loc;
     }
-    get pixels(): [number, number] {
-        const point = this.map.map.project(this.loc, this.map.zoom.max - 1);
-        return [point.x, point.y];
-    }
+
     get display() {
         const ret = [this.link];
         if (this.description) {
@@ -202,5 +205,41 @@ export class Marker implements MarkerDefinition {
     }
     remove() {
         this.leafletInstance.remove();
+    }
+
+    show() {
+        if (this.group && !this.displayed) {
+            this.group.addLayer(this.leafletInstance);
+            this.displayed = true;
+        }
+    }
+
+    hide() {
+        if (this.group && this.displayed) {
+            this.remove();
+            this.displayed = false;
+        }
+    }
+    shouldShow(zoom: number) {
+        if (!this.displayed) {
+            if (
+                this.minZoom != null &&
+                this.minZoom <= zoom &&
+                this.maxZoom != null &&
+                zoom <= this.maxZoom
+            ) {
+                return true;
+            }
+        }
+    }
+    shouldHide(zoom: number) {
+        if (this.displayed) {
+            if (
+                (this.minZoom != null && this.minZoom > zoom) ||
+                (this.maxZoom != null && zoom > this.maxZoom)
+            ) {
+                return true;
+            }
+        }
     }
 }

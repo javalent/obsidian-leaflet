@@ -49,7 +49,7 @@ darkMode: true
 | commandMarker | Create immutable markers that execute commands                                       |                                            |
 | markerFile    | Create immutable marker from a note's frontmatter                                    |                                            |
 | markerFolder  | Create immutable markers from _all_ of the notes in a given folder                   |                                            |
-| markerTag\*  | Create immutable markers from _all_ of the notes with the given tags.                |                                            |
+| markerTag\*   | Create immutable markers from _all_ of the notes with the given tags.                |                                            |
 | linksTo\*     | Create immutable markers from _all_ of the notes linking **TO** a note               |                                            |
 | linksFrom\*   | Create immutable markers from _all_ of the notes linking **FROM** a note             |                                            |
 | darkMode      | Invert map colors                                                                    | false                                      |
@@ -206,6 +206,14 @@ Once a marker has been created, it can be dragged to a different location.
 
 Markers created on the map will be saved to the map instance. Marker data saved this way will persist as long as the map is associated with a note - if the map blocks are removed from notes, or if all of the notes containing map blocks are removed, **the data associated with it will be deleted after 7 days.**
 
+### Marker Zoom Level Breakpoints
+
+Markers given zoom level breakpoints will be removed from the map when the map is zoomed above or below the breakpoints.
+
+These breakpoints can be set in right-click menu of markers created on the map as well as using parameters for markers created in the source block (see [Objects Defined in the Code Block](#objects-defined-in-the-code-block) for more information).
+
+Be careful! Make sure the breakpoints are within the map's zoom boundaries, otherwise the marker might never be displayed!
+
 ### Marker Coordinates
 
 <kbd>Alt</kbd> or <kbd>Shift</kbd>-clicking on a marker will reveal its coordinates.
@@ -307,8 +315,6 @@ The plugin will scan the frontmatter of the notes and generate an overlay from a
 
 ### Overlay Tag
 
-
-
 The overlay tag parameter can be used to auto-generate an overlay from a tag in a note's frontmatter.
 
 Example:
@@ -391,14 +397,17 @@ The map will attempt to read the title of the GeoJSON feature to display the too
 
 Markers and overlays may be defined directly in the code block using the following syntax:
 
-| Type    | Syntax                                                     |
-| ------- | ---------------------------------------------------------- |
-| Marker  | `marker: <type>,<latitude>,<longitude>,<link>`             |
-| Overlay | `overlay: [blue, [32, -89], 25 mi, 'This is my overlay!']` |
+| Type    | Syntax                                                                                |
+| ------- | ------------------------------------------------------------------------------------- |
+| Marker  | `marker: <type*>,<latitude>,<longitude>,<link*>,<description*>,<minZoom*>,<maxZoom*>` |
+| Overlay | `overlay: [<color*>, [<latitude, longitude>], <radius*>, <description*>]`             |
 
 An arbitrary number of objects can be defined, but _none of these objects will be editable._ If a change needs to be made to these objects, the code block must be edited.
 
 The marker link may be defined as an Obsidian wikilink.
+
+> \*: These parameters are optional and can be left blank in the definition.
+> For example, `marker: ,25,25,,,3` will use the default marker type, latitude and longitude 25, no link, no description, minZoom 3, no maxZoom.
 
 **These will not be included in exported data.**
 
@@ -420,6 +429,7 @@ All markers created from the note will automatically have their link set to the 
 | --------------- | ----------------------------------------------------------------------------------------------- |
 | location        | Create a marker at this location. Also used if the `coordinates` parameter points to this note. |
 | mapmarker       | Use this marker type for the marker created using `location`. Optional.                         |
+| mapzoom         | Marker created from this note will have its zoom breakpoint set to `[min, max]`. Optional.      |
 | mapmarkers      | Array of markers to create. See below for syntax.                                               |
 | mapoverlay      | Array of overlays to create. See below for syntax.                                              |
 
@@ -432,8 +442,8 @@ A marker defined using `mapmarkers` should have the following syntax:
 ```
 ---
 mapmarkers:
-  - [<type>, [<latitude>, <longitude>], <optional description>]
-  - [<type>, [<latitude>, <longitude>], <optional description>]
+  - [<type>, [<latitude>, <longitude>], <optional description>, <optional minZoom>, <optional maxZoom>]
+  - [<type>, [<latitude>, <longitude>], <optional description>, <optional minZoom>, <optional maxZoom>]
   - ...
 ---
 ```

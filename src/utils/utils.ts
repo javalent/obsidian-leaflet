@@ -218,7 +218,9 @@ export async function getImmutableItems(
         layer: string,
         command: boolean,
         id: string,
-        desc: string
+        desc: string,
+        minZoom: number,
+        maxZoom: number
     ][];
     overlays: [
         color: string,
@@ -238,7 +240,9 @@ export async function getImmutableItems(
                 layer: string,
                 command: boolean,
                 id: string,
-                desc: string
+                desc: string,
+                minZoom: number,
+                maxZoom: number
             ][] = [],
             overlaysToReturn: [
                 color: string,
@@ -256,7 +260,7 @@ export async function getImmutableItems(
                 continue;
             }
 
-            let [type, lat, long, link, layer] = data[0];
+            let [type, lat, long, link, layer, minZoom, maxZoom] = data[0];
 
             if (!type || !type.length || type === "undefined") {
                 type = "default";
@@ -268,6 +272,17 @@ export async function getImmutableItems(
             if (!long || !long.length || isNaN(Number(long))) {
                 new Notice("Could not parse longitude");
                 continue;
+            }
+            let min, max;
+            if (isNaN(Number(minZoom))) {
+                min = undefined;
+            } else {
+                min = Number(minZoom);
+            }
+            if (isNaN(Number(maxZoom))) {
+                max = undefined;
+            } else {
+                max = Number(maxZoom);
             }
 
             if (!link || !link.length || link === "undefined") {
@@ -288,7 +303,9 @@ export async function getImmutableItems(
                 layer,
                 false,
                 null,
-                null
+                null,
+                min,
+                max
             ]);
         }
 
@@ -300,7 +317,7 @@ export async function getImmutableItems(
                 continue;
             }
 
-            let [type, lat, long, link, layer] = data[0];
+            let [type, lat, long, link, layer, minZoom, maxZoom] = data[0];
 
             if (!type || !type.length || type === "undefined") {
                 type = "default";
@@ -312,6 +329,17 @@ export async function getImmutableItems(
             if (!long || !long.length || isNaN(Number(long))) {
                 new Notice("Could not parse longitude");
                 continue;
+            }
+            let min, max;
+            if (isNaN(Number(minZoom))) {
+                min = undefined;
+            } else {
+                min = Number(minZoom);
+            }
+            if (isNaN(Number(maxZoom))) {
+                max = undefined;
+            } else {
+                max = Number(maxZoom);
             }
 
             if (!link || !link.length || link === "undefined") {
@@ -338,7 +366,9 @@ export async function getImmutableItems(
                 layer,
                 true,
                 null,
-                null
+                null,
+                min,
+                max
             ]);
         }
         let watchers = new Map<TFile, Map<string, string>>();
@@ -486,6 +516,7 @@ export async function getImmutableItems(
                     continue;
 
                 const id = getId();
+
                 if (frontmatter.location) {
                     let err = false,
                         [lat, long] = frontmatter.location;
@@ -510,6 +541,21 @@ export async function getImmutableItems(
                         continue;
                     }
 
+                    let min, max;
+                    if (frontmatter.mapzoom) {
+                        let [minZoom, maxZoom] = frontmatter.mapzoom;
+                        if (isNaN(Number(minZoom))) {
+                            min = undefined;
+                        } else {
+                            min = Number(minZoom);
+                        }
+                        if (isNaN(Number(maxZoom))) {
+                            max = undefined;
+                        } else {
+                            max = Number(maxZoom);
+                        }
+                    }
+
                     markersToReturn.push([
                         frontmatter.mapmarker || "default",
                         lat,
@@ -518,7 +564,9 @@ export async function getImmutableItems(
                         undefined,
                         false,
                         id,
-                        null
+                        null,
+                        min,
+                        max
                     ]);
 
                     /* watchers.set(file, watchers.get(file).add(id)); */
@@ -528,11 +576,24 @@ export async function getImmutableItems(
                 if (frontmatter.mapmarkers) {
                     const id = getId();
                     frontmatter.mapmarkers.forEach(
-                        ([type, location, description]: [
+                        ([type, location, description, minZoom, maxZoom]: [
                             type: string,
                             location: number[],
-                            description: string
+                            description: string,
+                            minZoom: number,
+                            maxZoom: number
                         ]) => {
+                            let min, max;
+                            if (isNaN(Number(minZoom))) {
+                                min = undefined;
+                            } else {
+                                min = Number(minZoom);
+                            }
+                            if (isNaN(Number(maxZoom))) {
+                                max = undefined;
+                            } else {
+                                max = Number(maxZoom);
+                            }
                             markersToReturn.push([
                                 type || "default",
                                 location[0],
@@ -541,7 +602,9 @@ export async function getImmutableItems(
                                 undefined,
                                 false,
                                 id,
-                                description
+                                description,
+                                min,
+                                max
                             ]);
                         }
                     );

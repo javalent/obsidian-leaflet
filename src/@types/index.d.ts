@@ -129,6 +129,8 @@ export interface IMarkerData {
     mutable?: boolean;
     zoom?: number;
     description: string;
+    minZoom?: number;
+    maxZoom?: number;
 }
 
 export interface IMapInterface {

@@ -23,6 +23,4 @@ declare class ObsidianLeaflet extends Plugin {
     generateMarkerMarkup(markers: IMarker[]): IMarkerIcon[];
 
     registerMapEvents(map: LeafletMap): void;
-
-    handleMarkerContext(map: LeafletMap, marker: Marker): void;
 }
