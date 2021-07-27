@@ -1,4 +1,4 @@
-import { Modal, Setting, TextComponent } from "obsidian";
+import { Modal, Notice, Setting, TextComponent } from "obsidian";
 
 import { ObsidianLeaflet, LeafletMap, IOverlayData, Marker } from "../@types";
 
@@ -116,6 +116,63 @@ export class MarkerContextModal extends Modal {
                               );
                     this.tempMarker.type = newMarker.type;
                 });
+            });
+
+        new Setting(this.contentEl)
+            .setName("Min Zoom")
+            .setDesc(
+                "Only display above this zoom. Current map minimum: " +
+                    this.map.zoom.min
+            )
+            .addText((text) => {
+                let warned = false;
+                text.inputEl.onkeydown = (evt) => {
+                    if (
+                        !/^(\d*\.?\d*|Backspace|Delete|Arrow\w+|\-|Tab)$/.test(
+                            evt.key
+                        )
+                    ) {
+                        if (!warned) {
+                            warned = true;
+                            new Notice("Minimum zoom must be a number.");
+                        }
+                        evt.preventDefault();
+                        return false;
+                    }
+                };
+                if (this.tempMarker.minZoom != null)
+                    text.setValue(`${this.tempMarker.minZoom}`);
+                text.onChange((v) => {
+                    this.tempMarker.minZoom = Number(v);
+                });
+            });
+        new Setting(this.contentEl)
+            .setName("Max Zoom")
+            .setDesc(
+                "Only display below this zoom. Current map maximum: " +
+                    this.map.zoom.max
+            )
+            .addText((text) => {
+                let warned = false;
+                text.inputEl.onkeydown = (evt) => {
+                    if (
+                        !/^(\d*\.?\d*|Backspace|Delete|Arrow\w+|\-|Tab)$/.test(
+                            evt.key
+                        )
+                    ) {
+                        if (!warned) {
+                            warned = true;
+                            new Notice("Maximum zoom must be a number.");
+                        }
+                        evt.preventDefault();
+                        return false;
+                    }
+                };
+                text.onChange((v) => {
+                    this.tempMarker.maxZoom = Number(v);
+                });
+                if (this.tempMarker.maxZoom != null)
+                    text.setValue(`${this.tempMarker.maxZoom}`);
             });
 
         new Setting(this.contentEl).addButton((b) => {

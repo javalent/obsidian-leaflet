@@ -49,7 +49,7 @@ import {
     zoomControl
 } from "./map";
 import { ILeafletOverlay } from "./@types/";
-import { OverlayContextModal } from "./modals/context";
+import { MarkerContextModal, OverlayContextModal } from "./modals/context";
 
 import { LeafletSymbol } from "./utils/leaflet-import";
 let L = window[LeafletSymbol];
@@ -72,7 +72,7 @@ function catchError(
                 return original.apply(this, args);
             } catch (e) {
                 //throw error here
-                console.error(e);
+                console.error(e, original);
                 renderError(
                     this.contentEl?.parentElement ?? this.contentEl,
                     e.message
@@ -525,7 +525,16 @@ class LeafletMap extends Events {
                             layer.markers["default"];
 
                         marker.leafletInstance.setLatLng(marker.latLng);
-                        markerGroup.addLayer(marker.leafletInstance);
+
+                        marker.group = markerGroup;
+                        if (!marker.layer) marker.layer = this.group.id;
+
+                        marker.show();
+                        if (marker.shouldHide(this.zoom.default)) {
+                            marker.hide();
+                        }
+
+                        //markerGroup.addLayer(marker.leafletInstance);
 
                         this.displaying.set(marker.type, true);
                         added++;
@@ -805,6 +814,17 @@ class LeafletMap extends Events {
         this.map.on("contextmenu", this._handleMapContext.bind(this));
         this.map.on("click", this._handleMapClick.bind(this));
 
+        this.map.on("zoomanim", (evt: L.ZoomAnimEvent) => {
+            //check markers
+            this.markers.forEach((marker) => {
+                if (marker.shouldShow(evt.zoom)) {
+                    this.map.once("zoomend", () => marker.show());
+                } else if (marker.shouldHide(evt.zoom)) {
+                    marker.hide();
+                }
+            });
+        });
+
         /** Stop Touchmove Propagation for Mobile */
         this.contentEl.addEventListener("touchmove", (evt) => {
             evt.stopPropagation();
@@ -1026,7 +1046,9 @@ class LeafletMap extends Events {
                 command: markerToBeAdded.command ?? false,
                 zoom: this.map.getMaxZoom(),
                 percent: markerToBeAdded.percent,
-                description: markerToBeAdded.description
+                description: markerToBeAdded.description,
+                minZoom: markerToBeAdded.minZoom,
+                maxZoom: markerToBeAdded.maxZoom
             });
 
             this._pushMarker(marker);
@@ -1044,7 +1066,9 @@ class LeafletMap extends Events {
         mutable: boolean = true,
         command: boolean = false,
         zoom: number = this.zoom.max,
-        description: string = null
+        description: string = null,
+        minZoom: number = null,
+        maxZoom: number = null
     ): MarkerDefinition {
         let mapIcon = this.defaultIcon.icon,
             type;
@@ -1069,7 +1093,9 @@ class LeafletMap extends Events {
             command: command,
             zoom: zoom ?? this.zoom.max,
             percent: percent,
-            description: description
+            description: description,
+            minZoom,
+            maxZoom
         });
 
         this._pushMarker(marker);
@@ -1080,11 +1106,33 @@ class LeafletMap extends Events {
     }
 
     @catchError
+    updateMarker(marker: Marker) {
+        const existing = this.markers.find((m) => m.id == marker.id);
+
+        this.displaying.delete(existing.type);
+        this.displaying.set(marker.type, true);
+
+        existing.link = marker.link;
+        existing.icon = this.markerIcons.get(marker.type);
+        existing.minZoom = marker.minZoom;
+        existing.maxZoom = marker.maxZoom;
+        existing.command = marker.command;
+
+        if (existing.shouldShow(this.map.getZoom())) {
+            existing.show();
+        } else if (existing.shouldHide(this.map.getZoom())) {
+            existing.hide();
+        }
+    }
+
+    @catchError
     private _pushMarker(marker: Marker) {
         this._bindMarkerEvents(marker);
         if (this.rendered) {
             this.displaying.set(marker.type, true);
-            this.group.markers[marker.type].addLayer(marker.leafletInstance);
+            /* this.group.markers[marker.type].addLayer(marker.leafletInstance); */
+            marker.group = this.group.markers[marker.type];
+            marker.show();
             marker.leafletInstance.closeTooltip();
         }
         this.markers.push(marker);
@@ -1507,15 +1555,20 @@ class LeafletMap extends Events {
                 }
             ];
         } else if (this.type === "image") {
-            this.map.on("baselayerchange", ({ layer }) => {
-                // need to do this to prevent panning animation for some reason
-                this.map.setMaxBounds([undefined, undefined]);
-                this.layer = layer.getLayers()[0];
-                this.map.panTo(this.bounds.getCenter(), {
-                    animate: false
-                });
-                this.map.setMaxBounds(this.bounds);
-            });
+            this.map.on(
+                "baselayerchange",
+                ({ layer }: L.LayersControlEvent) => {
+                    // need to do this to prevent panning animation for some reason
+                    this.map.setMaxBounds([undefined, undefined]);
+                    this.layer = (
+                        layer as L.LayerGroup
+                    ).getLayers()[0] as L.ImageOverlay;
+                    this.map.panTo(this.bounds.getCenter(), {
+                        animate: false
+                    });
+                    this.map.setMaxBounds(this.bounds);
+                }
+            );
 
             const newLayer = await this._buildMapLayer(layer);
 
@@ -1614,20 +1667,26 @@ class LeafletMap extends Events {
         const group = L.layerGroup([mapLayer, ...Object.values(markerGroups)]);
 
         //add any markers to new layer
-        this.markers
-            .filter((marker) => marker.layer && marker.layer == layer.id)
-            .forEach((marker) => {
-                const markerGroup =
-                    markerGroups[marker.type] || markerGroups["default"];
+        if (this.group && layer.id != this.group.id) {
+            this.markers
+                .filter((marker) => marker.layer && marker.layer == layer.id)
+                .forEach((marker) => {
+                    const markerGroup =
+                        markerGroups[marker.type] || markerGroups["default"];
 
-                markerGroup.addLayer(marker.leafletInstance);
-            });
-        //add any overlays to new layer
-        this.overlays
-            .filter((overlay) => overlay.layer && overlay.layer == layer.id)
-            .forEach((overlay) => {
-                overlay.leafletInstance.addTo(group);
-            });
+                    marker.group = markerGroup;
+                    marker.show();
+                    if (marker.shouldHide(this.zoom.default)) {
+                        marker.hide();
+                    }
+                });
+            //add any overlays to new layer
+            this.overlays
+                .filter((overlay) => overlay.layer && overlay.layer == layer.id)
+                .forEach((overlay) => {
+                    overlay.leafletInstance.addTo(group);
+                });
+        }
         return {
             group: group,
             layer: mapLayer,
@@ -1782,8 +1841,46 @@ class LeafletMap extends Events {
             .on("contextmenu", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
 
-                if (marker.mutable) this.trigger("marker-context", marker);
-                else {
+                if (marker.mutable) {
+                    let markerSettingsModal = new MarkerContextModal(
+                        this.plugin,
+                        marker,
+                        this
+                    );
+
+                    markerSettingsModal.onClose = async () => {
+                        if (markerSettingsModal.deleted) {
+                            this.removeMarker(marker);
+                            this.trigger("marker-deleted", marker);
+                        } else {
+                            this.displaying.delete(marker.type);
+                            this.displaying.set(
+                                markerSettingsModal.tempMarker.type,
+                                true
+                            );
+                            marker.link = markerSettingsModal.tempMarker.link;
+                            marker.icon = this.markerIcons.get(
+                                markerSettingsModal.tempMarker.type
+                            );
+                            marker.minZoom =
+                                markerSettingsModal.tempMarker.minZoom;
+                            marker.maxZoom =
+                                markerSettingsModal.tempMarker.maxZoom;
+                            marker.command =
+                                markerSettingsModal.tempMarker.command;
+
+                            if (marker.shouldShow(this.map.getZoom())) {
+                                marker.show();
+                            } else if (marker.shouldHide(this.map.getZoom())) {
+                                marker.hide();
+                            }
+
+                            this.trigger("marker-updated", marker);
+                            await this.plugin.saveSettings();
+                        }
+                    };
+                    markerSettingsModal.open();
+                } else {
                     new Notice(
                         "This marker cannot be edited because it was defined in the code block."
                     );

@@ -25,13 +25,13 @@ import {
     getParamsFromSource,
     getImmutableItems,
     getMarkerIcon,
-    renderError,
     OVERLAY_TAG_REGEX,
     getId,
     DESCRIPTION_ICON,
     DESCRIPTION_ICON_SVG,
     parseLink,
-    log
+    log,
+    renderError
 } from "./utils";
 import {
     IMapInterface,
@@ -319,7 +319,18 @@ export default class ObsidianLeaflet
             }
             /** Build arrays of markers and overlays to pass to map */
             let markerArray: IMarkerData[] = immutableMarkers.map(
-                ([type, lat, long, link, layer, command, id, desc]) => {
+                ([
+                    type,
+                    lat,
+                    long,
+                    link,
+                    layer,
+                    command,
+                    id,
+                    desc,
+                    minZoom,
+                    maxZoom
+                ]) => {
                     return {
                         type: type,
                         loc: [Number(lat), Number(long)],
@@ -329,7 +340,9 @@ export default class ObsidianLeaflet
                         layer: layer,
                         mutable: false,
                         command: command,
-                        description: desc
+                        description: desc,
+                        minZoom,
+                        maxZoom
                     };
                 }
             );
@@ -517,7 +530,9 @@ export default class ObsidianLeaflet
                                             layer: map.group.id,
                                             command: false,
                                             mutable: false,
-                                            description: description
+                                            description: description,
+                                            minZoom: null,
+                                            maxZoom: null
                                         });
                                     }
                                 );
@@ -894,7 +909,9 @@ export default class ObsidianLeaflet
                             layer: marker.layer,
                             command: marker.command || false,
                             zoom: marker.zoom ?? 0,
-                            description: marker.description ?? null
+                            description: marker.description ?? null,
+                            minZoom: marker.minZoom ?? null,
+                            maxZoom: marker.maxZoom ?? null
                         };
                     }),
                 overlays: map.map.overlays
@@ -1009,290 +1026,250 @@ export default class ObsidianLeaflet
             marker.leafletInstance.closeTooltip();
         });
 
-        this.registerEvent(
-            map.on("marker-added", async (marker: Marker) => {
-                marker.leafletInstance.closeTooltip();
-                marker.leafletInstance.unbindTooltip();
-                this.maps
-                    .filter(
-                        ({ id, map: m }) =>
-                            id == map.id && m.contentEl != map.contentEl
-                    )
-                    .forEach((map) => {
-                        map.map.addMarker({
-                            type: marker.type,
-                            loc: [marker.loc.lat, marker.loc.lng],
-                            percent: marker.percent,
-                            id: marker.id,
-                            link: marker.link,
-                            layer: marker.layer,
-                            command: marker.command,
-                            mutable: marker.mutable,
-                            zoom: marker.zoom,
-                            description: marker.description
-                        });
+        map.on("marker-added", async (marker: Marker) => {
+            marker.leafletInstance.closeTooltip();
+            marker.leafletInstance.unbindTooltip();
+            this.maps
+                .filter(
+                    ({ id, map: m }) =>
+                        id == map.id && m.contentEl != map.contentEl
+                )
+                .forEach((map) => {
+                    map.map.addMarker({
+                        type: marker.type,
+                        loc: [marker.loc.lat, marker.loc.lng],
+                        percent: marker.percent,
+                        id: marker.id,
+                        link: marker.link,
+                        layer: marker.layer,
+                        command: marker.command,
+                        mutable: marker.mutable,
+                        zoom: marker.zoom,
+                        description: marker.description,
+                        minZoom: marker.minZoom,
+                        maxZoom: marker.maxZoom
                     });
-                await this.saveSettings();
-            })
-        );
+                });
+            await this.saveSettings();
+        });
 
-        this.registerEvent(
-            map.on("marker-dragging", (marker: Marker) => {
-                this.maps
-                    .filter(
-                        ({ id, map: m }) =>
-                            id == map.id && m.contentEl != map.contentEl
-                    )
-                    .forEach((otherMap) => {
-                        let existingMarker = otherMap.map.markers.find(
-                            (m) => m.id == marker.id
-                        );
-                        if (!existingMarker) return;
-
-                        existingMarker.leafletInstance.setLatLng(
-                            marker.leafletInstance.getLatLng()
-                        );
-                        existingMarker.loc = marker.loc;
-                    });
-            })
-        );
-
-        this.registerEvent(
-            map.on("marker-data-updated", async (marker: Marker) => {
-                await this.saveSettings();
-                this.maps
-                    .filter(
-                        ({ id, map: m }) =>
-                            id == map.id && m.contentEl != map.contentEl
-                    )
-                    .forEach((map) => {
-                        let existingMarker = map.map.markers.find(
-                            (m) => m.id == marker.id
-                        );
-                        if (!existingMarker) return;
-
-                        existingMarker.leafletInstance.setLatLng(
-                            marker.leafletInstance.getLatLng()
-                        );
-                        existingMarker.loc = marker.loc;
-                    });
-            })
-        );
-
-        this.registerEvent(
-            map.on(
-                "marker-click",
-                async (link: string, newWindow: boolean, command: boolean) => {
-                    if (command) {
-                        const commands = this.app.commands.listCommands();
-
-                        if (
-                            commands.find(
-                                ({ id }) =>
-                                    id.toLowerCase() ===
-                                    link.toLowerCase().trim()
-                            )
-                        ) {
-                            this.app.commands.executeCommandById(link);
-                        } else {
-                            new Notice(`Command ${link} could not be found.`);
-                        }
-                        return;
-                    }
-                    let internal = this.app.metadataCache.getFirstLinkpathDest(
-                        link.split(/(\^|\||#)/).shift(),
-                        ""
-                    );
-
-                    if (
-                        /(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/.test(
-                            link
-                        ) &&
-                        !internal
-                    ) {
-                        //external url
-                        let [, l] = link.match(
-                            /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))/
-                        );
-
-                        let [, text = l] = link.match(/\[([\s\S]+)\]/) || [, l];
-
-                        const a = createEl("a", { href: l, text: text });
-
-                        a.click();
-                        a.detach();
-                    } else {
-                        await this.app.workspace.openLinkText(
-                            link.replace("^", "#^").split(/\|/).shift(),
-                            this.app.workspace.getActiveFile()?.path,
-                            newWindow
-                        );
-                    }
-                }
-            )
-        );
-
-        this.registerEvent(
-            map.on("marker-context", (marker) =>
-                this.handleMarkerContext(map, marker)
-            )
-        );
-
-        this.registerEvent(
-            map.on(
-                "marker-mouseover",
-                async (evt: L.LeafletMouseEvent, marker: Marker) => {
-                    if (marker.command) {
-                        const commands = this.app.commands.listCommands();
-
-                        if (
-                            commands.find(
-                                ({ id }) =>
-                                    id.toLowerCase() ===
-                                    marker.link.toLowerCase().trim()
-                            )
-                        ) {
-                            const command = commands.find(
-                                ({ id }) =>
-                                    id.toLowerCase() ===
-                                    marker.link.toLowerCase().trim()
-                            );
-                            const div = createDiv({
-                                attr: {
-                                    style: "display: flex; align-items: center;"
-                                }
-                            });
-                            setIcon(
-                                div.createSpan({
-                                    attr: {
-                                        style: "margin-right: 0.5em; display: flex; align-items: center;"
-                                    }
-                                }),
-                                "run-command"
-                            );
-                            div.createSpan({ text: command.name });
-
-                            map.openPopup(marker, div);
-                        } else {
-                            const div = createDiv({
-                                attr: {
-                                    style: "display: flex; align-items: center;"
-                                }
-                            });
-                            setIcon(
-                                div.createSpan({
-                                    attr: {
-                                        style: "margin-right: 0.5em; display: flex; align-items: center;"
-                                    }
-                                }),
-                                "cross"
-                            );
-                            div.createSpan({ text: "No command found!" });
-
-                            map.openPopup(marker, div);
-                        }
-                        return;
-                    }
-
-                    let internal = this.app.metadataCache.getFirstLinkpathDest(
-                        marker.link.split(/(\^|\||#)/).shift(),
-                        ""
-                    );
-
-                    if (
-                        /(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/.test(
-                            marker.link
-                        ) &&
-                        !internal
-                    ) {
-                        //external url
-                        let [, link] = marker.link.match(
-                            /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))/
-                        );
-
-                        let [, text] = marker.link.match(/\[([\s\S]+)\]/) || [
-                            ,
-                            link
-                        ];
-
-                        let el = evt.originalEvent.target as SVGElement;
-                        const a = createEl("a", {
-                            text: text,
-                            href: link,
-                            cls: "external-link"
-                        });
-
-                        map.openPopup(marker, a);
-                    } else {
-                        if (this.AppData.notePreview && !map.isFullscreen) {
-                            marker.leafletInstance.unbindTooltip();
-
-                            this.app.workspace.trigger(
-                                "link-hover",
-                                this, //not sure
-                                marker.leafletInstance.getElement(), //targetEl
-                                marker.link
-                                    .replace("^", "#^")
-                                    .split("|")
-                                    .shift(), //linkText
-                                this.app.workspace.getActiveFile()?.path //source
-                            );
-                        } else {
-                            map.openPopup(
-                                marker,
-                                marker.display
-                                    .replace(/(\^)/, " > ^")
-                                    .replace(/#/, " > ")
-                                    .split("|")
-                                    .pop()
-                            );
-                        }
-                    }
-                }
-            )
-        );
-    }
-    handleMarkerContext(map: LeafletMap, marker: Marker) {
-        let markerSettingsModal = new MarkerContextModal(this, marker, map);
-        const otherMaps = this.maps.filter(
-            ({ id, map: m }) => id == map.id && m.contentEl != map.contentEl
-        );
-        const markersToUpdate = [
-            marker,
-            ...otherMaps.map((map) =>
-                map.map.markers.find((m) => m.id == marker.id)
-            )
-        ];
-
-        markerSettingsModal.onClose = async () => {
-            if (markerSettingsModal.deleted) {
-                map.removeMarker(marker);
-                otherMaps.forEach((oM) => {
-                    let otherMarker = oM.map.markers.find(
+        map.on("marker-dragging", (marker: Marker) => {
+            this.maps
+                .filter(
+                    ({ id, map: m }) =>
+                        id == map.id && m.contentEl != map.contentEl
+                )
+                .forEach((otherMap) => {
+                    let existingMarker = otherMap.map.markers.find(
                         (m) => m.id == marker.id
                     );
-                    oM.map.removeMarker(otherMarker);
-                });
-            } else {
-                [map, ...otherMaps.map((m) => m.map)].forEach((map) => {
-                    map.displaying.delete(marker.type);
-                    map.displaying.set(
-                        markerSettingsModal.tempMarker.type,
-                        true
+                    if (!existingMarker) return;
+
+                    existingMarker.leafletInstance.setLatLng(
+                        marker.leafletInstance.getLatLng()
                     );
+                    existingMarker.loc = marker.loc;
                 });
-                markersToUpdate.forEach((m) => {
-                    m.link = markerSettingsModal.tempMarker.link;
-                    m.icon = map.markerIcons.get(
-                        markerSettingsModal.tempMarker.type
+        });
+
+        map.on("marker-data-updated", async (marker: Marker) => {
+            await this.saveSettings();
+            this.maps
+                .filter(
+                    ({ id, map: m }) =>
+                        id == map.id && m.contentEl != map.contentEl
+                )
+                .forEach((map) => {
+                    let existingMarker = map.map.markers.find(
+                        (m) => m.id == marker.id
+                    );
+                    if (!existingMarker) return;
+
+                    existingMarker.leafletInstance.setLatLng(
+                        marker.leafletInstance.getLatLng()
+                    );
+                    existingMarker.loc = marker.loc;
+                });
+        });
+
+        map.on(
+            "marker-click",
+            async (link: string, newWindow: boolean, command: boolean) => {
+                if (command) {
+                    const commands = this.app.commands.listCommands();
+
+                    if (
+                        commands.find(
+                            ({ id }) =>
+                                id.toLowerCase() === link.toLowerCase().trim()
+                        )
+                    ) {
+                        this.app.commands.executeCommandById(link);
+                    } else {
+                        new Notice(`Command ${link} could not be found.`);
+                    }
+                    return;
+                }
+                let internal = this.app.metadataCache.getFirstLinkpathDest(
+                    link.split(/(\^|\||#)/).shift(),
+                    ""
+                );
+
+                if (
+                    /(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/.test(
+                        link
+                    ) &&
+                    !internal
+                ) {
+                    //external url
+                    let [, l] = link.match(
+                        /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))/
                     );
 
-                    m.command = markerSettingsModal.tempMarker.command;
-                });
-                await this.saveSettings();
+                    let [, text = l] = link.match(/\[([\s\S]+)\]/) || [, l];
+
+                    const a = createEl("a", { href: l, text: text });
+
+                    a.click();
+                    a.detach();
+                } else {
+                    await this.app.workspace.openLinkText(
+                        link.replace("^", "#^").split(/\|/).shift(),
+                        this.app.workspace.getActiveFile()?.path,
+                        newWindow
+                    );
+                }
             }
-        };
+        );
 
-        markerSettingsModal.open();
+        map.on("marker-deleted", (marker) => {
+            const otherMaps = this.maps.filter(
+                ({ id, map: m }) => id == map.id && m.contentEl != map.contentEl
+            );
+            for (let { map } of otherMaps) {
+                /* map.removeMarker(marker); */
+                let existing = map.markers.find((m) => m.id === marker.id);
+                existing.hide();
+                map.markers = map.markers.filter((m) => m != existing);
+            }
+        });
+
+        map.on("marker-updated", (marker) => {
+            const otherMaps = this.maps.filter(
+                ({ id, map: m }) => id == map.id && m.contentEl != map.contentEl
+            );
+            for (let { map } of otherMaps) {
+                map.updateMarker(marker);
+            }
+        });
+
+        map.on(
+            "marker-mouseover",
+            async (evt: L.LeafletMouseEvent, marker: Marker) => {
+                if (marker.command) {
+                    const commands = this.app.commands.listCommands();
+
+                    if (
+                        commands.find(
+                            ({ id }) =>
+                                id.toLowerCase() ===
+                                marker.link.toLowerCase().trim()
+                        )
+                    ) {
+                        const command = commands.find(
+                            ({ id }) =>
+                                id.toLowerCase() ===
+                                marker.link.toLowerCase().trim()
+                        );
+                        const div = createDiv({
+                            attr: {
+                                style: "display: flex; align-items: center;"
+                            }
+                        });
+                        setIcon(
+                            div.createSpan({
+                                attr: {
+                                    style: "margin-right: 0.5em; display: flex; align-items: center;"
+                                }
+                            }),
+                            "run-command"
+                        );
+                        div.createSpan({ text: command.name });
+
+                        map.openPopup(marker, div);
+                    } else {
+                        const div = createDiv({
+                            attr: {
+                                style: "display: flex; align-items: center;"
+                            }
+                        });
+                        setIcon(
+                            div.createSpan({
+                                attr: {
+                                    style: "margin-right: 0.5em; display: flex; align-items: center;"
+                                }
+                            }),
+                            "cross"
+                        );
+                        div.createSpan({ text: "No command found!" });
+
+                        map.openPopup(marker, div);
+                    }
+                    return;
+                }
+
+                let internal = this.app.metadataCache.getFirstLinkpathDest(
+                    marker.link.split(/(\^|\||#)/).shift(),
+                    ""
+                );
+
+                if (
+                    /(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/.test(
+                        marker.link
+                    ) &&
+                    !internal
+                ) {
+                    //external url
+                    let [, link] = marker.link.match(
+                        /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))/
+                    );
+
+                    let [, text] = marker.link.match(/\[([\s\S]+)\]/) || [
+                        ,
+                        link
+                    ];
+
+                    let el = evt.originalEvent.target as SVGElement;
+                    const a = createEl("a", {
+                        text: text,
+                        href: link,
+                        cls: "external-link"
+                    });
+
+                    map.openPopup(marker, a);
+                } else {
+                    if (this.AppData.notePreview && !map.isFullscreen) {
+                        marker.leafletInstance.unbindTooltip();
+
+                        this.app.workspace.trigger(
+                            "link-hover",
+                            this, //not sure
+                            marker.leafletInstance.getElement(), //targetEl
+                            marker.link.replace("^", "#^").split("|").shift(), //linkText
+                            this.app.workspace.getActiveFile()?.path //source
+                        );
+                    } else {
+                        map.openPopup(
+                            marker,
+                            marker.display
+                                .replace(/(\^)/, " > ^")
+                                .replace(/#/, " > ")
+                                .split("|")
+                                .pop()
+                        );
+                    }
+                }
+            }
+        );
     }
 }

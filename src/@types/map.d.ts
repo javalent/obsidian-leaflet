@@ -94,6 +94,8 @@ declare class LeafletMap extends Events {
         zoom?: number
     ): Marker;
 
+    updateMarker(marker: Marker): void;
+
     removeMarker(marker: Marker): void;
 
     setInitialCoords(coords: [number, number]): void;
@@ -127,6 +129,7 @@ declare class Marker {
     command: boolean;
     zoom: number;
     maxZoom: number;
+    minZoom: number;
     divIcon: MarkerDivIcon;
     description: string;
     constructor(
@@ -157,6 +160,7 @@ declare class Marker {
             percent: [number, number];
             description: string;
             maxZoom?: number;
+            minZoom?: number;
         }
     );
     get link(): string;
@@ -170,9 +174,13 @@ declare class Marker {
     get type(): string;
     set type(x: string);
     set icon(x: IMarkerIcon);
-    get pixels(): [number, number];
+    /* get pixels(): [number, number]; */
     setLatLng(latlng: L.LatLng): void;
     remove(): void;
+    show(): void;
+    hide(): void;
+    shouldShow(zoom: number): boolean;
+    shouldHide(zoom: number): boolean;
 }
 
 declare class MarkerDivIcon extends DivIcon {
