@@ -675,11 +675,6 @@ class ResetZoomControl extends FontAwesomeControl {
         this.map = map;
     }
     onClick(evt: MouseEvent) {
-
-        /* this.leafletInstance.setView(
-            this.map.initialCoords,
-            this.map.zoom.default
-        ); */
         this.map.resetZoom();
     }
 }
@@ -697,7 +692,9 @@ export function resetZoomControl(opts: L.ControlOptions, map: LeafletMap) {
 class FilterMarkers extends FontAwesomeControl {
     map: LeafletMap;
     section: HTMLElement;
-    inputs: HTMLInputElement[];
+    inputs: Map<string, HTMLInputElement>;
+    expanded: boolean;
+    drawn: boolean;
     constructor(opts: FontAwesomeControlOptions, map: LeafletMap) {
         super(opts, map.map);
         this.map = map;
@@ -715,32 +712,43 @@ class FilterMarkers extends FontAwesomeControl {
     added() {
         //add hidden filter objects
 
-        this.section = L.DomUtil.create(
-            "section",
-            this.cls + "-list",
-            this.controlEl
-        );
+        this.section = this.controlEl.createEl("section", {
+            cls: this.cls + "-list"
+        });
 
         L.DomEvent.disableClickPropagation(this.controlEl);
         L.DomEvent.disableScrollPropagation(this.controlEl);
 
         this.link.dataset["draggable"] = "false";
 
+        this.map.on("click", this.collapse, this);
+
         L.DomEvent.on(
             this.controlEl,
             {
+                mouseenter: this.expand,
                 mouseleave: this.collapse
             },
             this
         );
+
+        if (L.Browser.touch) {
+            L.DomEvent.on(this.controlEl, "click", this.expand, this);
+        } else {
+            L.DomEvent.on(this.controlEl, "focus", this.expand, this);
+        }
     }
     private expand() {
         if (!this.enabled) {
             return;
         }
-        this.update();
+        if (this.expanded) {
+            L.DomUtil.addClass(this.controlEl, "expanded");
+            return;
+        }
+        this.expanded = true;
+        this.draw();
 
-        L.DomUtil.addClass(this.controlEl, "expanded");
         this.section.style.height = null;
         var acceptableHeight =
             this.leafletInstance.getSize().y - (this.controlEl.offsetTop + 50);
@@ -763,15 +771,19 @@ class FilterMarkers extends FontAwesomeControl {
 
     private collapse() {
         L.DomUtil.removeClass(this.controlEl, "expanded");
+        this.expanded = false;
         return this;
     }
-    private update() {
+    private draw() {
+        if (this.drawn) return;
+        this.drawn = true;
         this.section.empty();
-
+        this.inputs = new Map();
         const buttons = this.section.createDiv(
             "leaflet-control-filter-button-group"
         );
-        buttons.createEl("button", { text: "All" }).onclick = () => {
+        buttons.createEl("button", { text: "All" }).onclick = (evt) => {
+            evt.stopPropagation();
             this.map.markerIcons.forEach(({ type }) => {
                 if (!this.map.displaying.get(type))
                     this.map.group.markers[type].addTo(this.leafletInstance);
@@ -779,7 +791,8 @@ class FilterMarkers extends FontAwesomeControl {
             });
             this.update();
         };
-        buttons.createEl("button", { text: "None" }).onclick = () => {
+        buttons.createEl("button", { text: "None" }).onclick = (evt) => {
+            evt.stopPropagation();
             this.map.markerIcons.forEach(({ type }) => {
                 if (this.map.displaying.get(type))
                     this.map.group.markers[type].remove();
@@ -788,25 +801,24 @@ class FilterMarkers extends FontAwesomeControl {
             this.update();
         };
 
-        const ul = this.section.createEl("ul", "contains-task-list");
+        const ul = this.section.createEl("div", "input-container");
 
         for (let [type, markerIcon] of this.map.markerIcons.entries()) {
             if (
                 this.map.group.markers[type] &&
                 this.map.group.markers[type].getLayers().length
             ) {
-                const li = ul.createEl("li", "task-list-item");
+                const li = ul.createEl("div", "input-item");
 
                 const id = getId();
                 const input = li.createEl("input", {
                     attr: {
                         id: "leaflet-control-filter-item-label-" + id,
-                        ...(this.map.displaying.get(type) && {
-                            checked: true
-                        })
+                        ...(this.map.displaying.get(type)
+                            ? { checked: true }
+                            : {})
                     },
-                    type: "checkbox",
-                    cls: "task-list-item-checkbox"
+                    type: "checkbox"
                 });
 
                 const label = li.createEl("label", {
@@ -820,41 +832,26 @@ class FilterMarkers extends FontAwesomeControl {
                     text: type[0].toUpperCase() + type.slice(1).toLowerCase()
                 });
 
-                L.DomEvent.on(
-                    input,
-                    "click",
-                    this._onInputClick.bind(this, type)
-                );
+                input.addEventListener("click", (evt) => {
+                    if (input.checked) {
+                        this.map.group.markers[type].addTo(
+                            this.leafletInstance
+                        );
+                    } else {
+                        if (this.map.displaying.get(type))
+                            this.map.group.markers[type].remove();
+                    }
+                    this.map.displaying.set(type, input.checked);
+                });
+
+                this.inputs.set(type, input);
             }
         }
     }
-    private _onInputClick(
-        type: string,
-        { target }: { target: HTMLInputElement }
-    ) {
-        if (!target.checked) {
-            log(this.map.verbose, this.map.id, `Filtering out ${type}.`);
-            //remove
-            this.map.displaying.set(type, false);
-            this.map.group.markers[type].remove();
-            this.map.overlays
-                .filter((overlay) => overlay.marker && overlay.marker === type)
-                .forEach((overlay) => {
-                    overlay.leafletInstance.remove();
-                });
-        } else {
-            log(this.map.verbose, this.map.id, `Filtering in ${type}.`);
-            this.map.displaying.set(type, true);
-            this.map.group.markers[type].addTo(this.map.group.group);
-            this.map.overlays
-                .filter((overlay) => overlay.marker && overlay.marker === type)
-                .forEach((overlay) => {
-                    overlay.leafletInstance.addTo(this.map.group.group);
-                });
-            this.map.sortOverlays();
+    private update() {
+        for (let [type, input] of this.inputs) {
+            input.checked = this.map.displaying.get(type);
         }
-
-        this.update();
     }
 }
 

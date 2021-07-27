@@ -329,28 +329,37 @@ input.is-invalid {
     cursor: pointer;
 }
 
-.block-language-leaflet .leaflet-control-filter ul {
+.block-language-leaflet .leaflet-control-filter .input-container {
     margin: 0;
 }
 
-.block-language-leaflet .leaflet-control-filter-list li {
+.block-language-leaflet .leaflet-control-filter-list .input-item {
     display: flex;
     justify-content: flex-start;
     align-items: center;
 }
 
-.block-language-leaflet .leaflet-control-filter-list ul li > input {
+.block-language-leaflet
+    .leaflet-control-filter-list
+    .input-container
+    .input-item
+    > input {
     top: 0px;
+    appearance: auto;
 }
-.block-language-leaflet .leaflet-control-filter-list ul li > label {
+.block-language-leaflet
+    .leaflet-control-filter-list
+    .input-container
+    .input-item
+    > label {
     display: flex;
     align-items: center;
     justify-content: flex-start;
 }
 .block-language-leaflet
     .leaflet-control-filter-list
-    ul
-    li
+    .input-container
+    .input-item
     .leaflet-control-filter-icon {
     width: 18px;
     height: 18px;

@@ -85,6 +85,7 @@ export default class ObsidianLeaflet
     mapFiles: { file: string; maps: string[] }[] = [];
     watchers: Set<TFile> = new Set();
     Platform = Platform;
+    isDesktop = Platform.isDesktopApp;
     isMobile = Platform.isMobileApp;
     isMacOS = Platform.isMacOS;
     get modifierKey() {
