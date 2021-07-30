@@ -348,8 +348,28 @@ export default class ObsidianLeaflet
                 }
             );
 
-            let overlayArray: IOverlayData[] = [
-                ...overlay,
+            let overlayArray: IOverlayData[] = [...overlay].map(
+                ([color, loc, length, desc, id = getId()]) => {
+                    const match = length.match(OVERLAY_TAG_REGEX);
+                    if (!match || isNaN(Number(match[1]))) {
+                        throw new Error(
+                            "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`."
+                        );
+                    }
+                    const [, radius, unit = "m"] = match;
+                    return {
+                        radius: Number(radius),
+                        loc: loc,
+                        color: color,
+                        unit: unit as Length,
+                        layer: layers[0],
+                        desc: desc,
+                        id: id
+                    };
+                }
+            );
+
+            let immutableOverlayArray: IOverlayData[] = [
                 ...immutableOverlays
             ].map(([color, loc, length, desc, id = getId()]) => {
                 const match = length.match(OVERLAY_TAG_REGEX);
@@ -653,8 +673,12 @@ export default class ObsidianLeaflet
                 ({ id: mapId }) => mapId == id
             );
 
-            map.addOverlays([...overlayArray, ...(mapData?.overlays ?? [])], {
+            map.addOverlays([...immutableOverlayArray], {
                 mutable: false,
+                sort: true
+            });
+            map.addOverlays([...overlayArray, ...(mapData?.overlays ?? [])], {
+                mutable: true,
                 sort: true
             });
             map.addMarkers([
