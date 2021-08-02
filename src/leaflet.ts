@@ -278,6 +278,9 @@ class LeafletMap extends Events {
     private _start: number;
     geoJSONLayer: any;
     private _zoomDistance: number;
+
+    private _drawingLayers = new L.LayerGroup([],{ pmIgnore: false });
+
     constructor(
         public plugin: ObsidianLeaflet,
         public options: ILeafletMapOptions = {}
@@ -334,6 +337,9 @@ class LeafletMap extends Events {
             worldCopyJump: this.type === "real",
             ...(this.plugin.isDesktop ? { fullscreenControl: true } : {})
         });
+
+        this.map.addLayer(this._drawingLayers);
+
     }
 
     get data() {
