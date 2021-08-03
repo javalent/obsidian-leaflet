@@ -120,13 +120,6 @@ export class MarkerContextModal extends Modal {
             });
         new Setting(this.contentEl)
             .setName("Display Tooltip")
-            .setDesc(
-                !this.plugin.AppData.displayMarkerTooltips &&
-                    (!this.tempMarker.tooltip ||
-                        this.tempMarker.tooltip === "hover")
-                    ? "This tooltip will not display because marker tooltips are turned off globally."
-                    : ""
-            )
             .addDropdown((drop) => {
                 drop.addOption("hover", "Hover");
                 drop.addOption("always", "Always");
@@ -134,7 +127,6 @@ export class MarkerContextModal extends Modal {
                 drop.setValue(this.tempMarker.tooltip ?? "hover").onChange(
                     async (value: TooltipDisplay) => {
                         this.tempMarker.tooltip = value;
-                        this.display();
                     }
                 );
             });
@@ -320,22 +312,13 @@ export class OverlayContextModal extends Modal {
 
         new Setting(this.contentEl)
             .setName("Display Tooltip")
-            .setDesc(
-                !this.plugin.AppData.displayOverlayTooltips &&
-                    (!this.tempOverlay.tooltip ||
-                        this.tempOverlay.tooltip === "hover")
-                    ? "This tooltip will not display because overlay tooltips are turned off globally."
-                    : ""
-            )
             .addDropdown((drop) => {
                 drop.addOption("hover", "Hover");
                 drop.addOption("always", "Always");
                 drop.addOption("never", "Never");
                 drop.setValue(this.tempOverlay.tooltip ?? "hover").onChange(
-                    async (value: TooltipDisplay) => {
+                    (value: TooltipDisplay) => {
                         this.tempOverlay.tooltip = value;
-
-                        this.display();
                     }
                 );
             });

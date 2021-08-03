@@ -1776,60 +1776,72 @@ class LeafletMap extends Events {
                         overlay.data,
                         this
                     );
-                    modal.onClose = () => {
+                    modal.onClose = async () => {
                         if (modal.deleted) {
+                            log(
+                                this.verbose,
+                                this.id,
+                                "Overlay deleted in context menu. Removing."
+                            );
                             overlay.leafletInstance.remove();
-                            this.overlays = this.overlays.filter((o) => {
-                                o != overlay;
-                            });
-
+                            this.overlays = this.overlays.filter(
+                                (o) => o != overlay
+                            );
                             this.trigger("markers-updated");
+
                             return;
                         }
+                        try {
+                            overlay.data.color = modal.tempOverlay.color;
+                            overlay.data.radius = modal.tempOverlay.radius;
+                            overlay.data.desc = modal.tempOverlay.desc;
+                            overlay.data.tooltip = modal.tempOverlay.tooltip;
+                            overlay.tooltip = modal.tempOverlay.tooltip;
+                            overlay.leafletInstance.setRadius(
+                                Number(overlay.data.radius)
+                            );
+                            overlay.leafletInstance.setStyle({
+                                color: overlay.data.color
+                            });
 
-                        overlay.data.color = modal.tempOverlay.color;
-                        overlay.data.radius = modal.tempOverlay.radius;
-                        overlay.data.desc = modal.tempOverlay.desc;
-
-                        overlay.leafletInstance.setRadius(overlay.data.radius);
-                        overlay.leafletInstance.setStyle({
-                            color: overlay.data.color
-                        });
+                            await this.plugin.saveSettings();
+                        } catch (e) {
+                            console.error(
+                                "There was an error saving the overlay.\n\n" + e
+                            );
+                        }
                     };
                     modal.open();
                 };
-                if (under.length === 1) {
-                    openOverlayContext(under[0]);
-                } else {
-                    let contextMenu = new Menu(this.plugin.app);
 
-                    contextMenu.setNoIcon();
+                let contextMenu = new Menu(this.plugin.app);
+
+                contextMenu.setNoIcon();
+                contextMenu.addItem((item) => {
+                    item.setTitle("Create Marker");
+                    item.onClick(() => {
+                        contextMenu.hide();
+                        this._handleMapContext(evt);
+                    });
+                });
+                under.forEach((overlay, index) => {
                     contextMenu.addItem((item) => {
-                        item.setTitle("Create Marker");
+                        item.setTitle("Overlay " + `${index + 1}`);
                         item.onClick(() => {
-                            contextMenu.hide();
-                            this._handleMapContext(evt);
+                            openOverlayContext(overlay);
                         });
+                        item.dom.onmouseenter = () => {
+                            this.map.fitBounds(
+                                overlay.leafletInstance.getBounds()
+                            );
+                        };
                     });
-                    under.forEach((overlay, index) => {
-                        contextMenu.addItem((item) => {
-                            item.setTitle("Overlay " + `${index + 1}`);
-                            item.onClick(() => {
-                                openOverlayContext(overlay);
-                            });
-                            item.dom.onmouseenter = () => {
-                                this.map.fitBounds(
-                                    overlay.leafletInstance.getBounds()
-                                );
-                            };
-                        });
-                    });
+                });
 
-                    contextMenu.showAtPosition({
-                        x: evt.originalEvent.clientX,
-                        y: evt.originalEvent.clientY
-                    });
-                }
+                contextMenu.showAtPosition({
+                    x: evt.originalEvent.clientX,
+                    y: evt.originalEvent.clientY
+                });
             })
             .on("mouseover", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
@@ -2225,8 +2237,8 @@ class LeafletMap extends Events {
     private _getOverlaysUnderClick(evt: L.LeafletMouseEvent) {
         const { clientX, clientY } = evt.originalEvent;
 
-        return [...this.overlays]
-            .filter(({ mutable, leafletInstance }) => {
+        const overlays = [...this.overlays].filter(
+            ({ mutable, leafletInstance }) => {
                 const element = leafletInstance.getElement();
                 const { x, y, width, height } = element.getBoundingClientRect();
                 const radius = width / 2;
@@ -2238,16 +2250,19 @@ class LeafletMap extends Events {
                         Math.pow(clientY - center[1], 2) <
                         Math.pow(radius, 2)
                 );
-            })
-            .sort((a, b) => {
-                const radiusA = convert(a.data.radius)
-                    .from(a.data.unit as Length)
-                    .to("m");
-                const radiusB = convert(b.data.radius)
-                    .from(b.data.unit as Length)
-                    .to("m");
-                return radiusA - radiusB;
-            });
+            }
+        );
+        overlays.sort((a, b) => {
+            const radiusA = convert(a.data.radius)
+                .from(a.data.unit as Length)
+                .to("m");
+            const radiusB = convert(b.data.radius)
+                .from(b.data.unit as Length)
+                .to("m");
+            return radiusA - radiusB;
+        });
+
+        return overlays;
     }
 
     remove() {

@@ -983,8 +983,7 @@ export default class ObsidianLeaflet
                 marker.layer && !this.AppData.defaultMarker.isImage
                     ? {
                           transform: marker.transform,
-                          mask: getIcon(this.AppData.defaultMarker.iconName),
-                          
+                          mask: getIcon(this.AppData.defaultMarker.iconName)
                       }
                     : {};
             let node = getMarkerIcon(marker, {
