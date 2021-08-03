@@ -13,6 +13,10 @@ const WindowL = window.L;
 
 require("leaflet");
 require("leaflet-fullscreen");
+require("@geoman-io/leaflet-geoman-free");
+require("@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css");
+
+window.L.PM.setOptIn(true);
 
 window.L.Circle.mergeOptions({
     weight: MAP_OVERLAY_STROKE_WIDTH,

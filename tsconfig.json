@@ -11,7 +11,8 @@
         "importHelpers": true,
         "experimentalDecorators": true,
         "allowSyntheticDefaultImports": true,
-        "lib": ["dom", "esnext", "scripthost", "es2019"]
+        "lib": ["dom", "esnext", "scripthost", "es2019"],
+        "types": ["@geoman-io/leaflet-geoman-free"]
     },
     "include": ["**/src/*", "**/modals/*", "**/utils/*", "**/map/*"],
 }
