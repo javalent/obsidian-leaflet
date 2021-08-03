@@ -1595,6 +1595,14 @@ class LeafletMap extends Events {
                 } seconds.`
             );
             this.trigger("rendered");
+
+            this.displayedMarkers.forEach((marker) => {
+                if (marker.tooltip === "always") {
+                    const popup = this._buildPopup(marker);
+                    const content = this._getPopup;
+                    this.map.openPopup(popup);
+                }
+            });
         });
         return this.mapLayers[0].layer;
     }
@@ -2037,6 +2045,7 @@ class LeafletMap extends Events {
             target instanceof Marker
                 ? this.plugin.AppData.displayMarkerTooltips
                 : this.plugin.AppData.displayOverlayTooltips;
+        if (tooltip === "always") return true;
         if (tooltip === "hover" && global) return true;
         if (tooltip === "never") return false;
         return global;
@@ -2157,9 +2166,7 @@ class LeafletMap extends Events {
         }
     }
     @catchError
-    private _closePopup(
-        popup: L.Popup
-    ) {
+    private _closePopup(popup: L.Popup) {
         this.map.closePopup(popup);
     }
 
@@ -2176,6 +2183,13 @@ class LeafletMap extends Events {
         if (this.popup && this.popup.isOpen()) {
             this._closePopup(this.popup);
         }
+
+        return this._buildPopup(target);
+    }
+    @catchError
+    private _buildPopup(
+        target: MarkerDefinition | ILeafletOverlay | L.LatLng
+    ): L.Popup {
         if (target instanceof L.LatLng) {
             return L.popup({
                 ...BASE_POPUP_OPTIONS
@@ -2244,6 +2258,102 @@ class LeafletMap extends Events {
         this.rendered = false;
 
         this.plugin.app.keymap.popScope(this._escapeScope);
+    }
+
+    private async _buildMarkerPopupDisplay(marker: MarkerDefinition) {
+        let display: HTMLElement;
+        if (marker.command) {
+            const commands = this.plugin.app.commands.listCommands();
+
+            if (
+                commands.find(
+                    ({ id }) =>
+                        id.toLowerCase() === marker.link.toLowerCase().trim()
+                )
+            ) {
+                const command = commands.find(
+                    ({ id }) =>
+                        id.toLowerCase() === marker.link.toLowerCase().trim()
+                );
+                const div = createDiv({
+                    attr: {
+                        style: "display: flex; align-items: center;"
+                    }
+                });
+                setIcon(
+                    div.createSpan({
+                        attr: {
+                            style: "margin-right: 0.5em; display: flex; align-items: center;"
+                        }
+                    }),
+                    "run-command"
+                );
+                display = div.createSpan({ text: command.name });
+            } else {
+                const div = createDiv({
+                    attr: {
+                        style: "display: flex; align-items: center;"
+                    }
+                });
+                setIcon(
+                    div.createSpan({
+                        attr: {
+                            style: "margin-right: 0.5em; display: flex; align-items: center;"
+                        }
+                    }),
+                    "cross"
+                );
+                display = div.createSpan({ text: "No command found!" });
+            }
+            return;
+        }
+
+        let internal = this.plugin.app.metadataCache.getFirstLinkpathDest(
+            marker.link.split(/(\^|\||#)/).shift(),
+            ""
+        );
+
+        if (
+            /(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/.test(
+                marker.link
+            ) &&
+            !internal
+        ) {
+            //external url
+            let [, link] = marker.link.match(
+                /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))/
+            );
+
+            let [, text] = marker.link.match(/\[([\s\S]+)\]/) || [, link];
+
+            let el = marker.leafletInstance.getElement();
+            display = createEl("a", {
+                text: text,
+                href: link,
+                cls: "external-link"
+            });
+        } else {
+            if (this.plugin.AppData.notePreview && !this.isFullscreen) {
+                marker.leafletInstance.unbindTooltip();
+
+                this.plugin.app.workspace.trigger(
+                    "link-hover",
+                    this, //not sure
+                    marker.leafletInstance.getElement(), //targetEl
+                    marker.link.replace("^", "#^").split("|").shift(), //linkText
+                    this.plugin.app.workspace.getActiveFile()?.path //source
+                );
+            } else {
+                this.openPopup(
+                    marker,
+                    marker.display
+                        .replace(/(\^)/, " > ^")
+                        .replace(/#/, " > ")
+                        .split("|")
+                        .pop()
+                );
+            }
+        }
     }
 
     private async _onMarkerMouseover(
