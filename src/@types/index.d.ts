@@ -98,6 +98,7 @@ export interface IOverlayData {
     unit: Length;
     desc: string;
     id?: string;
+    mutable: boolean;
 }
 
 export interface MarkerDivIconOptions extends L.DivIconOptions {
