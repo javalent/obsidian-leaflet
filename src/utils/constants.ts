@@ -36,7 +36,9 @@ export const DEFAULT_SETTINGS: IObsidianAppData = {
     layerMarkers: true,
     previousVersion: null,
     warnedAboutMapMarker: false,
-    copyOnClick: false
+    copyOnClick: false,
+    displayMarkerTooltips: true,
+    displayOverlayTooltips: true
 };
 export const BASE_POPUP_OPTIONS = {
     className: "leaflet-marker-link-popup",
