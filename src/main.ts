@@ -920,7 +920,8 @@ export default class ObsidianLeaflet
                             zoom: marker.zoom ?? 0,
                             description: marker.description ?? null,
                             minZoom: marker.minZoom ?? null,
-                            maxZoom: marker.maxZoom ?? null
+                            maxZoom: marker.maxZoom ?? null,
+                            tooltip: marker.tooltip ?? null
                         };
                     }),
                 overlays: map.map.overlays
@@ -937,7 +938,8 @@ export default class ObsidianLeaflet
                                 layer: overlay.layer,
                                 unit: overlay.data.unit,
                                 desc: overlay.data.desc,
-                                mutable: overlay.mutable
+                                mutable: overlay.mutable,
+                                tooltip: overlay.tooltip ?? null
                             };
                         }
                     })

@@ -52,6 +52,7 @@ import { ILeafletOverlay } from "./@types/";
 import { MarkerContextModal, OverlayContextModal } from "./modals/context";
 
 import { LeafletSymbol } from "./utils/leaflet-import";
+import { TooltipDisplay } from "./@types/map";
 let L = window[LeafletSymbol];
 
 declare module "leaflet" {
@@ -279,7 +280,7 @@ class LeafletMap extends Events {
     geoJSONLayer: any;
     private _zoomDistance: number;
 
-    private _drawingLayers = new L.LayerGroup([],{ pmIgnore: false });
+    private _drawingLayers = new L.LayerGroup([], { pmIgnore: false });
 
     constructor(
         public plugin: ObsidianLeaflet,
@@ -339,7 +340,6 @@ class LeafletMap extends Events {
         });
 
         this.map.addLayer(this._drawingLayers);
-
     }
 
     get data() {
@@ -1020,7 +1020,8 @@ class LeafletMap extends Events {
             command: markerToBeAdded.command ?? false,
             zoom: this.map.getMaxZoom(),
             percent: markerToBeAdded.percent,
-            description: markerToBeAdded.description
+            description: markerToBeAdded.description,
+            tooltip: markerToBeAdded.tooltip
         });
 
         this._pushMarker(marker);
@@ -1054,7 +1055,8 @@ class LeafletMap extends Events {
                 percent: markerToBeAdded.percent,
                 description: markerToBeAdded.description,
                 minZoom: markerToBeAdded.minZoom,
-                maxZoom: markerToBeAdded.maxZoom
+                maxZoom: markerToBeAdded.maxZoom,
+                tooltip: markerToBeAdded.tooltip
             });
 
             this._pushMarker(marker);
@@ -1298,7 +1300,6 @@ class LeafletMap extends Events {
 
     @catchError
     private _pushOverlay(overlay: ILeafletOverlay) {
-
         this._bindOverlayEvents(overlay);
         this.overlays.push(overlay);
         if (this.rendered) {
@@ -1331,7 +1332,8 @@ class LeafletMap extends Events {
             layer: circle.layer,
             data: circle,
             mutable: mutable,
-            id: circle.id
+            id: circle.id,
+            tooltip: circle.tooltip
         });
     }
 
@@ -1340,7 +1342,6 @@ class LeafletMap extends Events {
         overlayArray: IOverlayData[],
         options: { mutable: boolean; sort: boolean }
     ) {
-
         if (options.sort) {
             const original = this.overlays.map(({ data }) => data);
             this.overlays.forEach((overlay) => {
@@ -1874,6 +1875,8 @@ class LeafletMap extends Events {
                             marker.icon = this.markerIcons.get(
                                 markerSettingsModal.tempMarker.type
                             );
+                            marker.tooltip =
+                                markerSettingsModal.tempMarker.tooltip;
                             marker.minZoom =
                                 markerSettingsModal.tempMarker.minZoom;
                             marker.maxZoom =
@@ -1959,7 +1962,8 @@ class LeafletMap extends Events {
             .on("mouseover", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
                 if (marker.link) {
-                    this.trigger("marker-mouseover", evt, marker);
+                    /* this.trigger("marker-mouseover", evt, marker); */
+                    this._onMarkerMouseover(marker);
                 }
                 this._hoveringOnMarker = true;
                 if (this._distanceLine) {
@@ -1997,12 +2001,28 @@ class LeafletMap extends Events {
         });
     }
 
+    private canShowTooltip(
+        target: MarkerDefinition | ILeafletOverlay,
+        tooltip?: TooltipDisplay
+    ) {
+        const global =
+            target instanceof Marker
+                ? this.plugin.AppData.displayMarkerTooltips
+                : this.plugin.AppData.displayOverlayTooltips;
+        if (tooltip === "hover" && global) return true;
+        if (tooltip === "never") return false;
+        return global;
+    }
+
     @catchError
     openPopup(
         target: MarkerDefinition | ILeafletOverlay | L.LatLng,
         content: ((source: L.Layer) => L.Content) | L.Content,
         handler?: L.Layer
     ) {
+        if ("tooltip" in target && !this.canShowTooltip(target, target.tooltip))
+            return;
+
         if (this._timeoutHandler) {
             clearTimeout(this._timeoutHandler);
         }
@@ -2016,7 +2036,7 @@ class LeafletMap extends Events {
         const handlerTarget = handler ?? target;
 
         if (this.popup && this.popup.isOpen()) {
-            this.map.closePopup(this.popup);
+            this._closePopup(this.popup);
             if (target instanceof L.Layer) target.closePopup();
         }
 
@@ -2073,7 +2093,7 @@ class LeafletMap extends Events {
                 popupElement.removeEventListener("mouseleave", mouseOutHandler);
 
                 _this.map.off("zoomend", zoomAnimHandler);
-                _this.map.closePopup(_this.popup);
+                _this._closePopup(_this.popup);
             }, 500);
         };
         const mouseOverHandler = function () {
@@ -2095,7 +2115,7 @@ class LeafletMap extends Events {
                 );
                 popupElement.removeEventListener("mouseleave", mouseOutHandler);
 
-                _this.map.closePopup(_this.popup);
+                _this._closePopup(_this.popup);
             }, 1000);
         } else if (handlerTarget instanceof L.Layer) {
             handlerTarget
@@ -2107,6 +2127,12 @@ class LeafletMap extends Events {
                 .on("mouseenter", mouseOverHandler);
             this.map.on("zoomend", zoomAnimHandler);
         }
+    }
+    @catchError
+    private _closePopup(
+        popup: L.Popup
+    ) {
+        this.map.closePopup(popup);
     }
 
     @catchError
@@ -2120,7 +2146,7 @@ class LeafletMap extends Events {
         this._popupTarget = target;
 
         if (this.popup && this.popup.isOpen()) {
-            this.map.closePopup(this.popup);
+            this._closePopup(this.popup);
         }
         if (target instanceof L.LatLng) {
             return L.popup({
@@ -2162,5 +2188,109 @@ class LeafletMap extends Events {
         this.rendered = false;
 
         this.plugin.app.keymap.popScope(this._escapeScope);
+    }
+
+    private async _onMarkerMouseover(
+        /* evt: L.LeafletMouseEvent, */
+        marker: MarkerDefinition
+    ) {
+        if (marker.command) {
+            const commands = this.plugin.app.commands.listCommands();
+
+            if (
+                commands.find(
+                    ({ id }) =>
+                        id.toLowerCase() === marker.link.toLowerCase().trim()
+                )
+            ) {
+                const command = commands.find(
+                    ({ id }) =>
+                        id.toLowerCase() === marker.link.toLowerCase().trim()
+                );
+                const div = createDiv({
+                    attr: {
+                        style: "display: flex; align-items: center;"
+                    }
+                });
+                setIcon(
+                    div.createSpan({
+                        attr: {
+                            style: "margin-right: 0.5em; display: flex; align-items: center;"
+                        }
+                    }),
+                    "run-command"
+                );
+                div.createSpan({ text: command.name });
+
+                this.openPopup(marker, div);
+            } else {
+                const div = createDiv({
+                    attr: {
+                        style: "display: flex; align-items: center;"
+                    }
+                });
+                setIcon(
+                    div.createSpan({
+                        attr: {
+                            style: "margin-right: 0.5em; display: flex; align-items: center;"
+                        }
+                    }),
+                    "cross"
+                );
+                div.createSpan({ text: "No command found!" });
+
+                this.openPopup(marker, div);
+            }
+            return;
+        }
+
+        let internal = this.plugin.app.metadataCache.getFirstLinkpathDest(
+            marker.link.split(/(\^|\||#)/).shift(),
+            ""
+        );
+
+        if (
+            /(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/.test(
+                marker.link
+            ) &&
+            !internal
+        ) {
+            //external url
+            let [, link] = marker.link.match(
+                /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))/
+            );
+
+            let [, text] = marker.link.match(/\[([\s\S]+)\]/) || [, link];
+
+            let el = marker.leafletInstance.getElement();
+            const a = createEl("a", {
+                text: text,
+                href: link,
+                cls: "external-link"
+            });
+
+            this.openPopup(marker, a);
+        } else {
+            if (this.plugin.AppData.notePreview && !this.isFullscreen) {
+                marker.leafletInstance.unbindTooltip();
+
+                this.plugin.app.workspace.trigger(
+                    "link-hover",
+                    this, //not sure
+                    marker.leafletInstance.getElement(), //targetEl
+                    marker.link.replace("^", "#^").split("|").shift(), //linkText
+                    this.plugin.app.workspace.getActiveFile()?.path //source
+                );
+            } else {
+                this.openPopup(
+                    marker,
+                    marker.display
+                        .replace(/(\^)/, " > ^")
+                        .replace(/#/, " > ")
+                        .split("|")
+                        .pop()
+                );
+            }
+        }
     }
 }

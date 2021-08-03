@@ -1,3 +1,4 @@
+import { TooltipDisplay } from "src/@types/map";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import {
     DivIconMarkerOptions,
@@ -76,6 +77,7 @@ export class Marker implements MarkerDefinition {
     divIcon: MarkerDivIcon;
     displayed: boolean;
     group: L.LayerGroup;
+    tooltip?: TooltipDisplay;
     constructor(
         private map: LeafletMap,
         {
@@ -91,7 +93,8 @@ export class Marker implements MarkerDefinition {
             percent,
             description,
             minZoom,
-            maxZoom
+            maxZoom,
+            tooltip
         }: {
             id: string;
             icon: MarkerDivIcon;
@@ -106,6 +109,7 @@ export class Marker implements MarkerDefinition {
             description: string;
             minZoom?: number;
             maxZoom?: number;
+            tooltip?: TooltipDisplay;
         }
     ) {
         this.leafletInstance = divIconMarker(
@@ -133,6 +137,7 @@ export class Marker implements MarkerDefinition {
         this.divIcon = icon;
         this.percent = percent;
         this.description = description;
+        this.tooltip = tooltip;
 
         this.zoom = zoom;
         this.minZoom = minZoom;

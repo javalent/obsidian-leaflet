@@ -412,6 +412,23 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
     }
     createMarkerSettings(containerEl: HTMLElement) {
         new Setting(containerEl)
+            .setName("Display Marker Tooltips")
+            .setDesc(
+                "Marker tooltips will display when hovered. Note previews will still be displayed."
+            )
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(this.data.displayMarkerTooltips)
+
+                    .onChange(async (v) => {
+                        this.data.displayMarkerTooltips = v;
+
+                        await this.plugin.saveSettings();
+
+                        this.display();
+                    })
+            );
+        new Setting(containerEl)
             .setName("Display Note Preview")
             .setDesc(
                 "Markers linked to notes will show a note preview when hovered."
@@ -421,8 +438,22 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     this.data.notePreview = v;
 
                     await this.plugin.saveSettings();
+
                     this.display();
                 })
+            );
+        new Setting(containerEl)
+            .setName("Display Overlay Tooltips")
+            .setDesc("Overlay tooltips will display when hovered.")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(this.data.displayOverlayTooltips)
+                    .onChange(async (v) => {
+                        this.data.displayOverlayTooltips = v;
+
+                        await this.plugin.saveSettings();
+                        this.display();
+                    })
             );
         new Setting(containerEl)
             .setName("Copy Coordinates on Shift-Click")

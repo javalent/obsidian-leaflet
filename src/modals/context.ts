@@ -12,6 +12,7 @@ import {
 
 import { UNIT_NAME_ALIASES } from "src/utils";
 import convert from "convert";
+import { TooltipDisplay } from "src/@types/map";
 export class MarkerContextModal extends Modal {
     deleted: boolean = false;
     tempMarker: Marker;
@@ -116,6 +117,25 @@ export class MarkerContextModal extends Modal {
                               );
                     this.tempMarker.type = newMarker.type;
                 });
+            });
+        new Setting(this.contentEl)
+            .setName("Display Tooltip")
+            .setDesc(
+                !this.plugin.AppData.displayMarkerTooltips &&
+                    (!this.tempMarker.tooltip ||
+                        this.tempMarker.tooltip === "hover")
+                    ? "This tooltip will not display because marker tooltips are turned off globally."
+                    : ""
+            )
+            .addDropdown((drop) => {
+                drop.addOption("hover", "Hover");
+                drop.addOption("never", "Never");
+                drop.setValue(this.tempMarker.tooltip ?? "hover").onChange(
+                    async (value: TooltipDisplay) => {
+                        this.tempMarker.tooltip = value;
+                        this.display();
+                    }
+                );
             });
 
         new Setting(this.contentEl)
@@ -296,6 +316,28 @@ export class OverlayContextModal extends Modal {
 
             this.display();
         };
+
+        new Setting(this.contentEl)
+            .setName("Display Tooltip")
+            .setDesc(
+                !this.plugin.AppData.displayMarkerTooltips &&
+                    (!this.tempOverlay.tooltip ||
+                        this.tempOverlay.tooltip === "hover")
+                    ? "This tooltip will not display because marker tooltips are turned off globally."
+                    : ""
+            )
+            .addDropdown((drop) => {
+                drop.addOption("hover", "Hover");
+                drop.addOption("never", "Never");
+                drop.setValue(this.tempOverlay.tooltip ?? "hover").onChange(
+                    async (value: TooltipDisplay) => {
+                        this.tempOverlay.tooltip = value;
+
+                        this.display();
+                    }
+                );
+            });
+
         new Setting(this.contentEl).addButton((b) => {
             b.setIcon("trash")
                 .setWarning()
