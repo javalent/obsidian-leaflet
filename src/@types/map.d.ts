@@ -120,6 +120,8 @@ declare class LeafletMap extends Events {
     remove(): void;
 }
 
+export type TooltipDisplay = "hover" | "never";
+
 declare class Marker {
     leafletInstance: DivIconMarker;
     loc: L.LatLng;
@@ -132,6 +134,7 @@ declare class Marker {
     minZoom: number;
     divIcon: MarkerDivIcon;
     description: string;
+    tooltip?: TooltipDisplay;
     constructor(
         map: L.Map,
         {
