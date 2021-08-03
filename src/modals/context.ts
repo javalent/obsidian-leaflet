@@ -129,6 +129,7 @@ export class MarkerContextModal extends Modal {
             )
             .addDropdown((drop) => {
                 drop.addOption("hover", "Hover");
+                drop.addOption("always", "Always");
                 drop.addOption("never", "Never");
                 drop.setValue(this.tempMarker.tooltip ?? "hover").onChange(
                     async (value: TooltipDisplay) => {
@@ -320,14 +321,15 @@ export class OverlayContextModal extends Modal {
         new Setting(this.contentEl)
             .setName("Display Tooltip")
             .setDesc(
-                !this.plugin.AppData.displayMarkerTooltips &&
+                !this.plugin.AppData.displayOverlayTooltips &&
                     (!this.tempOverlay.tooltip ||
                         this.tempOverlay.tooltip === "hover")
-                    ? "This tooltip will not display because marker tooltips are turned off globally."
+                    ? "This tooltip will not display because overlay tooltips are turned off globally."
                     : ""
             )
             .addDropdown((drop) => {
                 drop.addOption("hover", "Hover");
+                drop.addOption("always", "Always");
                 drop.addOption("never", "Never");
                 drop.setValue(this.tempOverlay.tooltip ?? "hover").onChange(
                     async (value: TooltipDisplay) => {

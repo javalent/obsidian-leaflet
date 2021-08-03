@@ -120,7 +120,7 @@ declare class LeafletMap extends Events {
     remove(): void;
 }
 
-export type TooltipDisplay = "hover" | "never";
+export type TooltipDisplay = "always" | "hover" | "never";
 
 declare class Marker {
     leafletInstance: DivIconMarker;
