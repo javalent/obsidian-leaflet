@@ -28,6 +28,7 @@ import {
 } from "./@types/";
 
 import { latLng } from "leaflet";
+import { TooltipDisplay } from "./@types/map";
 
 export class ObsidianLeafletSettingTab extends PluginSettingTab {
     plugin: ObsidianLeaflet;
@@ -412,6 +413,21 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
     }
     createMarkerSettings(containerEl: HTMLElement) {
         new Setting(containerEl)
+            .setName("Default Marker Tooltip Behavior")
+            .setDesc(
+                "New markers will be created to this setting by default. Can be overridden per-marker."
+            )
+            .addDropdown((drop) => {
+                drop.addOption("always", "Always");
+                drop.addOption("hover", "Hover");
+                drop.addOption("never", "Never");
+                drop.setValue(
+                    this.plugin.AppData.displayMarkerTooltips ?? "hover"
+                ).onChange((value: TooltipDisplay) => {
+                    this.plugin.AppData.displayMarkerTooltips = value;
+                });
+            });
+        /* new Setting(containerEl)
             .setName("Display Marker Tooltips")
             .setDesc(
                 "Marker tooltips will display when hovered. Note previews will still be displayed."
@@ -427,7 +443,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 
                         this.display();
                     })
-            );
+            ); */
         new Setting(containerEl)
             .setName("Display Note Preview")
             .setDesc(

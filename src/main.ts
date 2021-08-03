@@ -888,6 +888,12 @@ export default class ObsidianLeaflet
             await this.loadData()
         );
         this.AppData.previousVersion = this.manifest.version;
+        if (typeof this.AppData.displayMarkerTooltips === "boolean") {
+            this.AppData.displayMarkerTooltips = this.AppData
+                .displayMarkerTooltips
+                ? "hover"
+                : "never";
+        }
         if (
             !this.AppData.defaultMarker ||
             !this.AppData.defaultMarker.iconName

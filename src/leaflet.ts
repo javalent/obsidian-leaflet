@@ -1017,7 +1017,9 @@ class LeafletMap extends Events {
             zoom: this.map.getMaxZoom(),
             percent: markerToBeAdded.percent,
             description: markerToBeAdded.description,
-            tooltip: markerToBeAdded.tooltip
+            tooltip:
+                markerToBeAdded.tooltip ??
+                this.plugin.AppData.displayMarkerTooltips
         });
 
         this._pushMarker(marker);
@@ -1052,7 +1054,9 @@ class LeafletMap extends Events {
                 description: markerToBeAdded.description,
                 minZoom: markerToBeAdded.minZoom,
                 maxZoom: markerToBeAdded.maxZoom,
-                tooltip: markerToBeAdded.tooltip
+                tooltip:
+                    markerToBeAdded.tooltip ??
+                    this.plugin.AppData.displayMarkerTooltips
             });
 
             this._pushMarker(marker);
@@ -1099,7 +1103,9 @@ class LeafletMap extends Events {
             percent: percent,
             description: description,
             minZoom,
-            maxZoom
+            maxZoom,
+
+            tooltip: this.plugin.AppData.displayMarkerTooltips
         });
 
         this._pushMarker(marker);
@@ -1595,6 +1601,15 @@ class LeafletMap extends Events {
                 } seconds.`
             );
             this.trigger("rendered");
+
+            this.displayedMarkers.forEach(async (marker) => {
+                if (marker.tooltip === "always") {
+                    marker.popup = this._buildPopup(marker);
+                    const content = await this._buildMarkerPopupDisplay(marker);
+                    marker.popup.setContent(content);
+                    this.map.openPopup(marker.popup);
+                }
+            });
         });
         return this.mapLayers[0].layer;
     }
@@ -1930,6 +1945,20 @@ class LeafletMap extends Events {
                                 marker.hide();
                             }
 
+                            if (marker.tooltip === "always" && !marker.popup) {
+                                marker.popup = this._buildPopup(marker);
+                                const content =
+                                    await this._buildMarkerPopupDisplay(marker);
+                                marker.popup.setContent(content);
+                                this.map.openPopup(marker.popup);
+                            } else if (
+                                marker.tooltip !== "always" &&
+                                marker.popup
+                            ) {
+                                this.map.closePopup(marker.popup);
+                                delete marker.popup;
+                            }
+
                             this.trigger("marker-updated", marker);
                             await this.plugin.saveSettings();
                         }
@@ -1989,7 +2018,10 @@ class LeafletMap extends Events {
             })
             .on("drag", (evt: L.LeafletMouseEvent) => {
                 this.trigger("marker-dragging", marker);
-                if (this.popup.isOpen()) {
+
+                if (marker.tooltip === "always" && marker.popup) {
+                    marker.popup.setLatLng(evt.latlng);
+                } else if (this.popup.isOpen()) {
                     this.popup.setLatLng(evt.latlng);
                 }
             })
@@ -2049,6 +2081,7 @@ class LeafletMap extends Events {
             target instanceof Marker
                 ? this.plugin.AppData.displayMarkerTooltips
                 : this.plugin.AppData.displayOverlayTooltips;
+        if (tooltip === "always") return false;
         if (tooltip === "hover" && global) return true;
         if (tooltip === "never") return false;
         return global;
@@ -2186,6 +2219,13 @@ class LeafletMap extends Events {
         if (this.popup && this.popup.isOpen()) {
             this._closePopup(this.popup);
         }
+
+        return this._buildPopup(target);
+    }
+    @catchError
+    private _buildPopup(
+        target: MarkerDefinition | ILeafletOverlay | L.LatLng
+    ): L.Popup {
         if (target instanceof L.LatLng) {
             return L.popup({
                 ...BASE_POPUP_OPTIONS
@@ -2257,6 +2297,90 @@ class LeafletMap extends Events {
         this.rendered = false;
 
         this.plugin.app.keymap.popScope(this._escapeScope);
+    }
+
+    private async _buildMarkerPopupDisplay(marker: MarkerDefinition) {
+        let display: HTMLElement;
+        if (marker.command) {
+            const commands = this.plugin.app.commands.listCommands();
+
+            if (
+                commands.find(
+                    ({ id }) =>
+                        id.toLowerCase() === marker.link.toLowerCase().trim()
+                )
+            ) {
+                const command = commands.find(
+                    ({ id }) =>
+                        id.toLowerCase() === marker.link.toLowerCase().trim()
+                );
+                const div = createDiv({
+                    attr: {
+                        style: "display: flex; align-items: center;"
+                    }
+                });
+                setIcon(
+                    div.createSpan({
+                        attr: {
+                            style: "margin-right: 0.5em; display: flex; align-items: center;"
+                        }
+                    }),
+                    "run-command"
+                );
+                display = div.createSpan({ text: command.name });
+            } else {
+                const div = createDiv({
+                    attr: {
+                        style: "display: flex; align-items: center;"
+                    }
+                });
+                setIcon(
+                    div.createSpan({
+                        attr: {
+                            style: "margin-right: 0.5em; display: flex; align-items: center;"
+                        }
+                    }),
+                    "cross"
+                );
+                display = div.createSpan({ text: "No command found!" });
+            }
+            return;
+        }
+
+        let internal = this.plugin.app.metadataCache.getFirstLinkpathDest(
+            marker.link.split(/(\^|\||#)/).shift(),
+            ""
+        );
+
+        if (
+            /(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/.test(
+                marker.link
+            ) &&
+            !internal
+        ) {
+            //external url
+            let [, link] = marker.link.match(
+                /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))/
+            );
+
+            let [, text] = marker.link.match(/\[([\s\S]+)\]/) || [, link];
+
+            let el = marker.leafletInstance.getElement();
+            display = createEl("a", {
+                text: text,
+                href: link,
+                cls: "external-link"
+            });
+        } else {
+            display = createSpan({
+                text: marker.display
+                    .replace(/(\^)/, " > ^")
+                    .replace(/#/, " > ")
+                    .split("|")
+                    .pop()
+            });
+        }
+        return display;
     }
 
     private async _onMarkerMouseover(

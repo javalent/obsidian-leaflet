@@ -37,7 +37,7 @@ export const DEFAULT_SETTINGS: IObsidianAppData = {
     previousVersion: null,
     warnedAboutMapMarker: false,
     copyOnClick: false,
-    displayMarkerTooltips: true,
+    displayMarkerTooltips: "hover",
     displayOverlayTooltips: true
 };
 export const BASE_POPUP_OPTIONS = {

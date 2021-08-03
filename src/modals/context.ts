@@ -122,6 +122,7 @@ export class MarkerContextModal extends Modal {
             .setName("Display Tooltip")
             .addDropdown((drop) => {
                 drop.addOption("hover", "Hover");
+                drop.addOption("always", "Always");
                 drop.addOption("never", "Never");
                 drop.setValue(this.tempMarker.tooltip ?? "hover").onChange(
                     async (value: TooltipDisplay) => {

@@ -78,6 +78,7 @@ export class Marker implements MarkerDefinition {
     displayed: boolean;
     group: L.LayerGroup;
     tooltip?: TooltipDisplay;
+    popup?: L.Popup;
     constructor(
         private map: LeafletMap,
         {
