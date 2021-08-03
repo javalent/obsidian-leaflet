@@ -1,5 +1,5 @@
 import { allUnits, UnitFamilies } from "convert";
-import { MarkerDivIcon } from "./map";
+import { MarkerDivIcon, TooltipDisplay } from "./map";
 import { LeafletMap } from "./map";
 
 export { ObsidianLeaflet } from "./main";
@@ -89,6 +89,7 @@ export interface ILeafletOverlay {
     mutable: boolean;
     id: string;
     marker?: string;
+    tooltip?: TooltipDisplay;
 }
 export interface IOverlayData {
     radius: number;
@@ -99,6 +100,7 @@ export interface IOverlayData {
     desc: string;
     id?: string;
     mutable: boolean;
+    tooltip?: TooltipDisplay;
 }
 
 export interface MarkerDivIconOptions extends L.DivIconOptions {
@@ -132,6 +134,7 @@ export interface IMarkerData {
     description: string;
     minZoom?: number;
     maxZoom?: number;
+    tooltip?: TooltipDisplay;
 }
 
 export interface IMapInterface {
@@ -190,4 +193,6 @@ export interface IObsidianAppData {
     previousVersion: string;
     warnedAboutMapMarker: boolean;
     copyOnClick: boolean;
+    displayOverlayTooltips: boolean;
+    displayMarkerTooltips: boolean;
 }
