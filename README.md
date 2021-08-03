@@ -583,11 +583,11 @@ For new markers, Marker ID may be kept blank.
 
 Marker data in this format can then be re-imported. This feature is still under development and may not work as expected.
 
-### Display Marker Tooltip
+### Default Marker Tooltip Behavior
 
-If disabled, marker tooltips will not be displayed by default. This can be changed on a per-marker basis inside the marker context menu.
+Setting this will cause marker tooltips to default to this behavior.
 
-It is not currently possible to change this setting on immutable markers.
+You can override this behavior in the right-click context menu of a marker.
 
 ### Display Note Preview
 
