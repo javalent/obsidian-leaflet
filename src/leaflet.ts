@@ -1017,7 +1017,9 @@ class LeafletMap extends Events {
             zoom: this.map.getMaxZoom(),
             percent: markerToBeAdded.percent,
             description: markerToBeAdded.description,
-            tooltip: markerToBeAdded.tooltip
+            tooltip:
+                markerToBeAdded.tooltip ??
+                this.plugin.AppData.displayMarkerTooltips
         });
 
         this._pushMarker(marker);
@@ -1052,7 +1054,9 @@ class LeafletMap extends Events {
                 description: markerToBeAdded.description,
                 minZoom: markerToBeAdded.minZoom,
                 maxZoom: markerToBeAdded.maxZoom,
-                tooltip: markerToBeAdded.tooltip
+                tooltip:
+                    markerToBeAdded.tooltip ??
+                    this.plugin.AppData.displayMarkerTooltips
             });
 
             this._pushMarker(marker);
@@ -1099,7 +1103,9 @@ class LeafletMap extends Events {
             percent: percent,
             description: description,
             minZoom,
-            maxZoom
+            maxZoom,
+
+            tooltip: this.plugin.AppData.displayMarkerTooltips
         });
 
         this._pushMarker(marker);

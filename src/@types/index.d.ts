@@ -194,5 +194,5 @@ export interface IObsidianAppData {
     warnedAboutMapMarker: boolean;
     copyOnClick: boolean;
     displayOverlayTooltips: boolean;
-    displayMarkerTooltips: boolean;
+    displayMarkerTooltips: TooltipDisplay;
 }
