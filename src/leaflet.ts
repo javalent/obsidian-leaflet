@@ -1596,11 +1596,12 @@ class LeafletMap extends Events {
             );
             this.trigger("rendered");
 
-            this.displayedMarkers.forEach((marker) => {
+            this.displayedMarkers.forEach(async (marker) => {
                 if (marker.tooltip === "always") {
-                    const popup = this._buildPopup(marker);
-                    const content = this._getPopup;
-                    this.map.openPopup(popup);
+                    marker.popup = this._buildPopup(marker);
+                    const content = await this._buildMarkerPopupDisplay(marker);
+                    marker.popup.setContent(content);
+                    this.map.openPopup(marker.popup);
                 }
             });
         });
@@ -1938,6 +1939,20 @@ class LeafletMap extends Events {
                                 marker.hide();
                             }
 
+                            if (marker.tooltip === "always" && !marker.popup) {
+                                marker.popup = this._buildPopup(marker);
+                                const content =
+                                    await this._buildMarkerPopupDisplay(marker);
+                                marker.popup.setContent(content);
+                                this.map.openPopup(marker.popup);
+                            } else if (
+                                marker.tooltip !== "always" &&
+                                marker.popup
+                            ) {
+                                this.map.closePopup(marker.popup);
+                                delete marker.popup;
+                            }
+
                             this.trigger("marker-updated", marker);
                             await this.plugin.saveSettings();
                         }
@@ -1997,7 +2012,10 @@ class LeafletMap extends Events {
             })
             .on("drag", (evt: L.LeafletMouseEvent) => {
                 this.trigger("marker-dragging", marker);
-                if (this.popup.isOpen()) {
+
+                if (marker.tooltip === "always" && marker.popup) {
+                    marker.popup.setLatLng(evt.latlng);
+                } else if (this.popup.isOpen()) {
                     this.popup.setLatLng(evt.latlng);
                 }
             })
@@ -2057,7 +2075,7 @@ class LeafletMap extends Events {
             target instanceof Marker
                 ? this.plugin.AppData.displayMarkerTooltips
                 : this.plugin.AppData.displayOverlayTooltips;
-        if (tooltip === "always") return true;
+        if (tooltip === "always") return false;
         if (tooltip === "hover" && global) return true;
         if (tooltip === "never") return false;
         return global;
@@ -2348,27 +2366,15 @@ class LeafletMap extends Events {
                 cls: "external-link"
             });
         } else {
-            if (this.plugin.AppData.notePreview && !this.isFullscreen) {
-                marker.leafletInstance.unbindTooltip();
-
-                this.plugin.app.workspace.trigger(
-                    "link-hover",
-                    this, //not sure
-                    marker.leafletInstance.getElement(), //targetEl
-                    marker.link.replace("^", "#^").split("|").shift(), //linkText
-                    this.plugin.app.workspace.getActiveFile()?.path //source
-                );
-            } else {
-                this.openPopup(
-                    marker,
-                    marker.display
-                        .replace(/(\^)/, " > ^")
-                        .replace(/#/, " > ")
-                        .split("|")
-                        .pop()
-                );
-            }
+            display = createSpan({
+                text: marker.display
+                    .replace(/(\^)/, " > ^")
+                    .replace(/#/, " > ")
+                    .split("|")
+                    .pop()
+            });
         }
+        return display;
     }
 
     private async _onMarkerMouseover(

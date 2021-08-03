@@ -314,7 +314,6 @@ export class OverlayContextModal extends Modal {
             .setName("Display Tooltip")
             .addDropdown((drop) => {
                 drop.addOption("hover", "Hover");
-                drop.addOption("always", "Always");
                 drop.addOption("never", "Never");
                 drop.setValue(this.tempOverlay.tooltip ?? "hover").onChange(
                     (value: TooltipDisplay) => {
