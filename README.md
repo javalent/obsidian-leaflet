@@ -583,11 +583,23 @@ For new markers, Marker ID may be kept blank.
 
 Marker data in this format can then be re-imported. This feature is still under development and may not work as expected.
 
+### Display Marker Tooltip
+
+If disabled, marker tooltips will not be displayed by default. This can be changed on a per-marker basis inside the marker context menu.
+
+It is not currently possible to change this setting on immutable markers.
+
 ### Display Note Preview
 
 Use Obsidian's note preview when hovering a linked marker.
 
 **Please note, the Obsidian Page preview core plugin must be enabled to use this feature.**
+
+### Display Overlay Tooltip
+
+If disabled, overlay tooltips will not be displayed by default. This can be changed on a per-overlay basis inside the overlay context menu.
+
+It is not currently possible to change this setting on immutable overlay.
 
 ### Copy Coordinates on Shift-Click
 
