@@ -45,7 +45,6 @@ import {
     IOverlayData,
     ObsidianLeaflet as ObsidianLeafletImplementation
 } from "./@types";
-import { MarkerContextModal } from "./modals";
 
 import { LeafletRenderer } from "./leaflet";
 import { markerDivIcon } from "./map";
@@ -72,6 +71,10 @@ declare module "obsidian" {
     }
     interface MarkdownPostProcessorContext {
         containerEl: HTMLElement;
+    }
+
+    interface MenuItem {
+        dom: HTMLDivElement;
     }
 }
 
