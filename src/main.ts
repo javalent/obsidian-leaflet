@@ -983,11 +983,13 @@ export default class ObsidianLeaflet
                 marker.layer && !this.AppData.defaultMarker.isImage
                     ? {
                           transform: marker.transform,
-                          mask: getIcon(this.AppData.defaultMarker.iconName),
-                          classes: ["full-width-height"]
+                          mask: getIcon(this.AppData.defaultMarker.iconName)
                       }
                     : {};
-            let node = getMarkerIcon(marker, params).node as HTMLElement;
+            let node = getMarkerIcon(marker, {
+                ...params,
+                classes: ["full-width-height"]
+            }).node as HTMLElement;
             node.style.color = marker.color
                 ? marker.color
                 : this.AppData.defaultMarker.color;

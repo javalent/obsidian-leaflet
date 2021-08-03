@@ -1768,60 +1768,60 @@ class LeafletMap extends Events {
                         overlay.data,
                         this
                     );
-                    modal.onClose = () => {
+                    modal.onClose = async () => {
                         if (modal.deleted) {
-                            overlay.leafletInstance.remove();
                             this.overlays = this.overlays.filter((o) => {
                                 o != overlay;
                             });
-
+                            overlay.leafletInstance.remove();
                             this.trigger("markers-updated");
+
                             return;
                         }
 
                         overlay.data.color = modal.tempOverlay.color;
                         overlay.data.radius = modal.tempOverlay.radius;
                         overlay.data.desc = modal.tempOverlay.desc;
-
+                        overlay.data.tooltip = modal.tempOverlay.tooltip;
+                        overlay.tooltip = modal.tempOverlay.tooltip;
                         overlay.leafletInstance.setRadius(overlay.data.radius);
                         overlay.leafletInstance.setStyle({
                             color: overlay.data.color
                         });
+
+                        await this.plugin.saveSettings();
                     };
                     modal.open();
                 };
-                if (under.length === 1) {
-                    openOverlayContext(under[0]);
-                } else {
-                    let contextMenu = new Menu(this.plugin.app);
+                
+                let contextMenu = new Menu(this.plugin.app);
 
-                    contextMenu.setNoIcon();
+                contextMenu.setNoIcon();
+                contextMenu.addItem((item) => {
+                    item.setTitle("Create Marker");
+                    item.onClick(() => {
+                        contextMenu.hide();
+                        this._handleMapContext(evt);
+                    });
+                });
+                under.forEach((overlay, index) => {
                     contextMenu.addItem((item) => {
-                        item.setTitle("Create Marker");
+                        item.setTitle("Overlay " + `${index + 1}`);
                         item.onClick(() => {
-                            contextMenu.hide();
-                            this._handleMapContext(evt);
+                            openOverlayContext(overlay);
                         });
+                        item.dom.onmouseenter = () => {
+                            this.map.fitBounds(
+                                overlay.leafletInstance.getBounds()
+                            );
+                        };
                     });
-                    under.forEach((overlay, index) => {
-                        contextMenu.addItem((item) => {
-                            item.setTitle("Overlay " + `${index + 1}`);
-                            item.onClick(() => {
-                                openOverlayContext(overlay);
-                            });
-                            item.dom.onmouseenter = () => {
-                                this.map.fitBounds(
-                                    overlay.leafletInstance.getBounds()
-                                );
-                            };
-                        });
-                    });
+                });
 
-                    contextMenu.showAtPosition({
-                        x: evt.originalEvent.clientX,
-                        y: evt.originalEvent.clientY
-                    });
-                }
+                contextMenu.showAtPosition({
+                    x: evt.originalEvent.clientX,
+                    y: evt.originalEvent.clientY
+                });
             })
             .on("mouseover", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
@@ -2157,9 +2157,7 @@ class LeafletMap extends Events {
         }
     }
     @catchError
-    private _closePopup(
-        popup: L.Popup
-    ) {
+    private _closePopup(popup: L.Popup) {
         this.map.closePopup(popup);
     }
 
