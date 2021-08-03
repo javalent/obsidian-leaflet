@@ -1298,6 +1298,7 @@ class LeafletMap extends Events {
 
     @catchError
     private _pushOverlay(overlay: ILeafletOverlay) {
+
         this._bindOverlayEvents(overlay);
         this.overlays.push(overlay);
         if (this.rendered) {
@@ -1315,7 +1316,7 @@ class LeafletMap extends Events {
     @catchError
     addOverlay(circle: IOverlayData, mutable = true) {
         let radius = convert(circle.radius)
-            .from((circle.unit as Length) ?? "m")
+            .from(circle.unit ?? "m")
             .to(this.type == "image" ? this.unit : "m");
 
         if (this.type == "image" && !mutable) {
@@ -1339,6 +1340,7 @@ class LeafletMap extends Events {
         overlayArray: IOverlayData[],
         options: { mutable: boolean; sort: boolean }
     ) {
+
         if (options.sort) {
             const original = this.overlays.map(({ data }) => data);
             this.overlays.forEach((overlay) => {
@@ -1349,16 +1351,17 @@ class LeafletMap extends Events {
             overlayArray = [...original, ...overlayArray];
             overlayArray.sort((a, b) => {
                 const radiusA = convert(a.radius)
-                    .from(a.unit as Length)
+                    .from(a.unit ?? "m")
                     .to("m");
                 const radiusB = convert(b.radius)
-                    .from(b.unit as Length)
+                    .from(b.unit ?? "m")
                     .to("m");
                 return radiusB - radiusA;
             });
         }
+
         for (let overlay of overlayArray) {
-            this.addOverlay(overlay, options.mutable);
+            this.addOverlay(overlay, overlay.mutable ?? options.mutable);
         }
     }
 
@@ -1404,7 +1407,8 @@ class LeafletMap extends Events {
                             ],
                             layer: this.group.id,
                             unit: this.unit,
-                            desc: ""
+                            desc: "",
+                            mutable: true
                         },
                         mutable: true,
                         id: null

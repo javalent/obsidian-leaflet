@@ -348,45 +348,27 @@ export default class ObsidianLeaflet
                 }
             );
 
-            let overlayArray: IOverlayData[] = [...overlay].map(
-                ([color, loc, length, desc, id = getId()]) => {
-                    const match = length.match(OVERLAY_TAG_REGEX);
-                    if (!match || isNaN(Number(match[1]))) {
-                        throw new Error(
-                            "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`."
-                        );
-                    }
-                    const [, radius, unit = "m"] = match;
-                    return {
-                        radius: Number(radius),
-                        loc: loc,
-                        color: color,
-                        unit: unit as Length,
-                        layer: layers[0],
-                        desc: desc,
-                        id: id
-                    };
-                }
-            );
-
             let immutableOverlayArray: IOverlayData[] = [
-                ...immutableOverlays
+                ...immutableOverlays,
+                ...overlay
             ].map(([color, loc, length, desc, id = getId()]) => {
-                const match = length.match(OVERLAY_TAG_REGEX);
+                const match = `${length}`.match(OVERLAY_TAG_REGEX) ?? [];
+
                 if (!match || isNaN(Number(match[1]))) {
                     throw new Error(
                         "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`."
                     );
                 }
-                const [, radius, unit = "m"] = match;
+                const [, radius, unit] = match ?? [];
                 return {
                     radius: Number(radius),
                     loc: loc,
                     color: color,
-                    unit: unit as Length,
+                    unit: unit && unit.length ? (unit as Length) : undefined,
                     layer: layers[0],
                     desc: desc,
-                    id: id
+                    id: id,
+                    mutable: false
                 };
             });
 
@@ -610,7 +592,8 @@ export default class ObsidianLeaflet
                                             unit: unit as Length,
                                             layer: layers[0],
                                             desc: desc,
-                                            id: id
+                                            id: id,
+                                            mutable: false
                                         };
                                     }
                                 );
@@ -673,11 +656,12 @@ export default class ObsidianLeaflet
                 ({ id: mapId }) => mapId == id
             );
 
-            map.addOverlays([...immutableOverlayArray], {
+            map.addOverlays(immutableOverlayArray, {
                 mutable: false,
                 sort: true
             });
-            map.addOverlays([...overlayArray, ...(mapData?.overlays ?? [])], {
+            const mutableOverlays = new Set(mapData?.overlays ?? []);
+            map.addOverlays([...mutableOverlays], {
                 mutable: true,
                 sort: true
             });
@@ -952,7 +936,8 @@ export default class ObsidianLeaflet
                                 color: overlay.leafletInstance.options.color,
                                 layer: overlay.layer,
                                 unit: overlay.data.unit,
-                                desc: overlay.data.desc
+                                desc: overlay.data.desc,
+                                mutable: overlay.mutable
                             };
                         }
                     })
