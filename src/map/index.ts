@@ -7,4 +7,6 @@ export {
     zoomControl
 } from "./controls";
 
-export { Marker, divIconMarker, markerDivIcon } from "./map";
+export { divIconMarker, markerDivIcon } from "./map";
+export { Marker } from "./marker";
+export { Overlay } from "./overlay";

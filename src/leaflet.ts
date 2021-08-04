@@ -10,8 +10,7 @@ import {
     TFile,
     Scope,
     setIcon,
-    MarkdownPostProcessorContext,
-    MenuItem
+    MarkdownPostProcessorContext
 } from "obsidian";
 
 import type {
@@ -22,7 +21,7 @@ import type {
     Length,
     ObsidianLeaflet,
     Marker as MarkerDefinition,
-    IOverlayData
+    SavedOverlayData
 } from "./@types";
 import {
     getId,
@@ -1317,7 +1316,7 @@ class LeafletMap extends Events {
     }
 
     @catchError
-    addOverlay(circle: IOverlayData, mutable = true) {
+    addOverlay(circle: SavedOverlayData, mutable = true) {
         let radius = convert(circle.radius)
             .from(circle.unit ?? "m")
             .to(this.type == "image" ? this.unit : "m");
@@ -1341,7 +1340,7 @@ class LeafletMap extends Events {
 
     @catchError
     addOverlays(
-        overlayArray: IOverlayData[],
+        overlayArray: SavedOverlayData[],
         options: { mutable: boolean; sort: boolean }
     ) {
         if (options.sort) {
@@ -1799,6 +1798,10 @@ class LeafletMap extends Events {
                             return;
                         }
                         try {
+                            console.log(
+                                "🚀 ~ file: leaflet.ts ~ line 1804 ~ modal.tempOverlay.radius",
+                                modal.tempOverlay.radius
+                            );
                             overlay.data.color = modal.tempOverlay.color;
                             overlay.data.radius = modal.tempOverlay.radius;
                             overlay.data.desc = modal.tempOverlay.desc;

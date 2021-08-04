@@ -1,6 +1,6 @@
 import { MarkdownPostProcessorContext, Platform, Plugin } from "obsidian";
 import { IMapInterface, IMarker, IMarkerIcon, IObsidianAppData } from ".";
-import { LeafletMap, Marker } from "./map";
+import { LeafletMap } from "./map";
 
 declare class ObsidianLeaflet extends Plugin {
     AppData: IObsidianAppData;

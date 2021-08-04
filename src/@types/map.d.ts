@@ -121,6 +121,26 @@ declare class LeafletMap extends Events {
 }
 
 export type TooltipDisplay = "always" | "hover" | "never";
+export interface MarkerProperties {
+    id: string;
+    icon: MarkerDivIcon;
+    type: string;
+    loc: L.LatLng;
+    link: string;
+    layer: string;
+    mutable: boolean;
+    command: boolean;
+    zoom: number;
+    percent: [number, number];
+    description: string;
+    minZoom?: number;
+    maxZoom?: number;
+    tooltip?: TooltipDisplay;
+}
+
+export interface SavedMarkerProperties extends Omit<MarkerProperties, "icon"> {
+    icon: string;
+}
 
 declare class Marker {
     leafletInstance: DivIconMarker;
@@ -150,21 +170,7 @@ declare class Marker {
             percent,
             description,
             maxZoom
-        }: {
-            id: string;
-            icon: MarkerDivIcon;
-            type: string;
-            loc: L.LatLng;
-            link: string;
-            layer: string;
-            mutable: boolean;
-            command: boolean;
-            zoom: number;
-            percent: [number, number];
-            description: string;
-            maxZoom?: number;
-            minZoom?: number;
-        }
+        }: MarkerProperties
     );
     get link(): string;
     set link(x: string);
@@ -184,6 +190,10 @@ declare class Marker {
     hide(): void;
     shouldShow(zoom: number): boolean;
     shouldHide(zoom: number): boolean;
+
+    toProperties(): SavedMarkerProperties;
+
+    static from(map: LeafletMap, properties: MarkerProperties): Marker;
 }
 
 declare class MarkerDivIcon extends DivIcon {

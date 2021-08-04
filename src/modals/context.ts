@@ -1,6 +1,6 @@
 import { Modal, Notice, Setting, TextComponent } from "obsidian";
 
-import { ObsidianLeaflet, LeafletMap, IOverlayData, Marker } from "../@types";
+import { ObsidianLeaflet, LeafletMap, SavedOverlayData, Marker } from "../@types";
 
 import { PathSuggestionModal } from "./path";
 import { CommandSuggestionModal } from "./command";
@@ -208,12 +208,12 @@ export class MarkerContextModal extends Modal {
 
 export class OverlayContextModal extends Modal {
     deleted: boolean = false;
-    tempOverlay: IOverlayData;
+    tempOverlay: SavedOverlayData;
     modal: CommandSuggestionModal | PathSuggestionModal;
     limit: number = 100;
     constructor(
         public plugin: ObsidianLeaflet,
-        public overlay: IOverlayData,
+        public overlay: SavedOverlayData,
         public map: LeafletMap
     ) {
         super(plugin.app);

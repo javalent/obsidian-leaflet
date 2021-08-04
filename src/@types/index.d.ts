@@ -85,13 +85,13 @@ export interface IBlockParameters {
 export interface ILeafletOverlay {
     leafletInstance: L.Circle;
     layer: string;
-    data: IOverlayData;
+    data: SavedOverlayData;
     mutable: boolean;
     id: string;
     marker?: string;
     tooltip?: TooltipDisplay;
 }
-export interface IOverlayData {
+export interface SavedOverlayData {
     radius: number;
     loc: [number, number];
     color: string;
@@ -149,7 +149,7 @@ export interface IMapMarkerData {
     lastAccessed: number;
     id: string;
     markers: IMarkerData[];
-    overlays: IOverlayData[];
+    overlays: SavedOverlayData[];
 }
 export interface IMarkerIcon {
     readonly type: string;

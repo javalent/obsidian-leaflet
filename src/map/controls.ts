@@ -8,7 +8,7 @@ import { Events, Modal, Notice, Setting, TextComponent } from "obsidian";
 import { IconName } from "@fortawesome/free-solid-svg-icons";
 
 import { LeafletMap, ObsidianLeaflet } from "../@types";
-import { Marker } from "./map";
+import { Marker } from ".";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 
 const L = window[LeafletSymbol];

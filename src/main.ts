@@ -42,7 +42,7 @@ import {
     Marker,
     LeafletMap,
     Length,
-    IOverlayData,
+    SavedOverlayData,
     ObsidianLeaflet as ObsidianLeafletImplementation
 } from "./@types";
 
@@ -351,7 +351,7 @@ export default class ObsidianLeaflet
                 }
             );
 
-            let immutableOverlayArray: IOverlayData[] = [
+            let immutableOverlayArray: SavedOverlayData[] = [
                 ...immutableOverlays,
                 ...overlay
             ].map(([color, loc, length, desc, id = getId()]) => {
@@ -570,7 +570,7 @@ export default class ObsidianLeaflet
                                     overlays.push(...frontmatter.mapoverlay);
                                 }
 
-                                const overlayArray: IOverlayData[] = [
+                                const overlayArray: SavedOverlayData[] = [
                                     ...overlays
                                 ].map(
                                     ([
