@@ -1799,15 +1799,36 @@ class LeafletMap extends Events {
                             return;
                         }
                         try {
-                            console.log(
-                                "🚀 ~ file: leaflet.ts ~ line 1804 ~ modal.tempOverlay.radius",
-                                modal.tempOverlay.radius
+                            log(
+                                this.verbose,
+                                this.id,
+                                "Updating the overlay data."
                             );
                             overlay.data.color = modal.tempOverlay.color;
+                            log(
+                                this.verbose,
+                                this.id,
+                                `Overlay color set to: ${overlay.data.color}`
+                            );
                             overlay.data.radius = modal.tempOverlay.radius;
+                            log(
+                                this.verbose,
+                                this.id,
+                                `Overlay radius set to: ${overlay.data.radius}`
+                            );
                             overlay.data.desc = modal.tempOverlay.desc;
+                            log(
+                                this.verbose,
+                                this.id,
+                                `Overlay description set to: ${overlay.data.desc}`
+                            );
                             overlay.data.tooltip = modal.tempOverlay.tooltip;
                             overlay.tooltip = modal.tempOverlay.tooltip;
+                            log(
+                                this.verbose,
+                                this.id,
+                                `Overlay tooltip set to: ${overlay.data.tooltip}`
+                            );
                             overlay.leafletInstance.setRadius(
                                 Number(overlay.data.radius)
                             );
