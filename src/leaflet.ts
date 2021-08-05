@@ -1032,8 +1032,7 @@ class LeafletMap extends Events {
     removeMarker(marker: MarkerDefinition) {
         if (!marker) return;
 
-        this.group.markers[marker.type].removeLayer(marker.leafletInstance);
-
+        marker.remove();
         this.markers = this.markers.filter(({ id }) => id != marker.id);
 
         this.trigger("markers-updated");
@@ -2220,7 +2219,7 @@ class LeafletMap extends Events {
         const handlerTarget = handler ?? target;
 
         if (this.popup && this.popup.isOpen()) {
-            this._closePopup(this.popup);
+            this.closePopup(this.popup);
             if (target instanceof L.Layer) target.closePopup();
         }
 
@@ -2277,7 +2276,7 @@ class LeafletMap extends Events {
                 popupElement.removeEventListener("mouseleave", mouseOutHandler);
 
                 _this.map.off("zoomend", zoomAnimHandler);
-                _this._closePopup(_this.popup);
+                _this.closePopup(_this.popup);
             }, 500);
         };
         const mouseOverHandler = function () {
@@ -2299,7 +2298,7 @@ class LeafletMap extends Events {
                 );
                 popupElement.removeEventListener("mouseleave", mouseOutHandler);
 
-                _this._closePopup(_this.popup);
+                _this.closePopup(_this.popup);
             }, 1000);
         } else if (handlerTarget instanceof L.Layer) {
             handlerTarget
@@ -2313,7 +2312,8 @@ class LeafletMap extends Events {
         }
     }
     @catchError
-    private _closePopup(popup: L.Popup) {
+    closePopup(popup: L.Popup) {
+        if (!popup) return;
         this.map.closePopup(popup);
     }
 
@@ -2328,7 +2328,7 @@ class LeafletMap extends Events {
         this._popupTarget = target;
 
         if (this.popup && this.popup.isOpen()) {
-            this._closePopup(this.popup);
+            this.closePopup(this.popup);
         }
 
         return this._buildPopup(target);

@@ -116,6 +116,7 @@ declare class LeafletMap extends Events {
         target: Marker | L.LatLng,
         content: ((source: L.Layer) => L.Content) | L.Content
     ): void;
+    closePopup(popup: L.Popup): void;
 
     remove(): void;
 }
@@ -135,6 +136,7 @@ declare class Marker {
     divIcon: MarkerDivIcon;
     description: string;
     tooltip?: TooltipDisplay;
+    popup?: L.Popup;
     constructor(
         map: L.Map,
         {

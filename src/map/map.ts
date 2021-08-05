@@ -210,6 +210,7 @@ export class Marker implements MarkerDefinition {
         this.leafletInstance.setLatLng(latlng);
     }
     remove() {
+        this.popup && this.map.closePopup(this.popup);
         this.group && this.group.removeLayer(this.leafletInstance);
     }
 
