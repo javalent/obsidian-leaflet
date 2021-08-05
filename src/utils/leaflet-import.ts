@@ -13,6 +13,7 @@ const WindowL = window.L;
 
 require("leaflet");
 require("leaflet-fullscreen");
+require("leaflet-gpx");
 
 window.L.Circle.mergeOptions({
     weight: MAP_OVERLAY_STROKE_WIDTH,
