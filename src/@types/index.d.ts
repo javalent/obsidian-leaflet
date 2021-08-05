@@ -45,6 +45,11 @@ export interface ILeafletMapOptions {
     geojson?: any[];
     geojsonColor?: string;
     gpx?: any[];
+    gpxIcons?: {
+        start: string;
+        end: string;
+        waypoint: string;
+    };
     zoomFeatures?: boolean;
     verbose?: boolean;
 }
@@ -81,6 +86,11 @@ export interface IBlockParameters {
     geojson?: string[];
     geojsonColor?: string;
     gpx?: string[];
+    gpxMarkers?: {
+        start: string;
+        end: string;
+        waypoint: string;
+    };
     zoomFeatures?: boolean;
     verbose?: boolean;
 }

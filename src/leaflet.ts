@@ -53,12 +53,24 @@ import { ILeafletOverlay } from "./@types/";
 import { MarkerContextModal, OverlayContextModal } from "./modals/context";
 
 import { LeafletSymbol } from "./utils/leaflet-import";
-import { TooltipDisplay } from "./@types/map";
+import { MarkerDivIcon, TooltipDisplay } from "./@types/map";
+import { MarkerOptions } from "leaflet";
 let L = window[LeafletSymbol];
 
 declare module "leaflet" {
     interface Map {
         isFullscreen(): boolean;
+    }
+    interface MarkerOptions {
+        startIcon?: MarkerDivIcon;
+        endIcon?: MarkerDivIcon;
+        wptIcons?: { [key: string]: MarkerDivIcon };
+        startIconUrl?: null;
+        endIconUrl?: null;
+        shadowUrl?: null;
+        wptIconUrls?: {
+            "": null;
+        };
     }
 }
 
@@ -281,6 +293,11 @@ class LeafletMap extends Events {
     featureLayer: any;
     private _zoomDistance: number;
     private _gpx: any[];
+    private _gpxIcons: {
+        waypoint: string;
+        start: string;
+        end: string;
+    };
     constructor(
         public plugin: ObsidianLeaflet,
         public options: ILeafletMapOptions = {}
@@ -326,6 +343,7 @@ class LeafletMap extends Events {
         this._geojsonColor = getHex(options.geojsonColor);
 
         this._gpx = options.gpx;
+        this._gpxIcons = options.gpxIcons;
 
         log(this.verbose, this.id, "Building map instance.");
         this._start = Date.now();
@@ -786,8 +804,53 @@ class LeafletMap extends Events {
                 this.id,
                 `Adding ${this._gpx.length} GPX features to map.`
             );
+            /** Build Icon Parameter
+             *  Module is annoying..........
+             */
+
+            const MarkerOptions: MarkerOptions = {
+                startIconUrl: null,
+                endIconUrl: null,
+                shadowUrl: null,
+                wptIconUrls: {
+                    "": null
+                },
+                startIcon: null,
+                endIcon: null,
+                wptIcons: {
+                    "": null
+                }
+            };
+            if (
+                this._gpxIcons.start &&
+                this.markerIcons.has(this._gpxIcons.start)
+            ) {
+                MarkerOptions.startIcon = this.markerIcons.get(
+                    this._gpxIcons.start
+                ).icon;
+            }
+            if (
+                this._gpxIcons.end &&
+                this.markerIcons.has(this._gpxIcons.end)
+            ) {
+                MarkerOptions.endIcon = this.markerIcons.get(
+                    this._gpxIcons.end
+                ).icon;
+            }
+            if (
+                this._gpxIcons.waypoint &&
+                this.markerIcons.has(this._gpxIcons.waypoint)
+            ) {
+                MarkerOptions.wptIcons = {
+                    "": this.markerIcons.get(this._gpxIcons.waypoint).icon
+                };
+            }
+
             for (let gpx of this._gpx) {
-                new L.GPX(gpx).addTo(this.featureLayer);
+                new L.GPX(gpx, {
+                    /* async: true, */
+                    marker_options: MarkerOptions
+                }).addTo(this.featureLayer);
             }
         }
 

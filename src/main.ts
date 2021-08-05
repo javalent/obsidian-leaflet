@@ -185,7 +185,8 @@ export default class ObsidianLeaflet
                 geojsonColor = "#3388ff",
                 zoomFeatures = false,
                 verbose = false,
-                gpx = []
+                gpx = [],
+                gpxMarkers
             } = params;
             if (!id) {
                 new Notice(
@@ -255,7 +256,16 @@ export default class ObsidianLeaflet
                 }
             }
             let gpxData: any[] = [];
+            let gpxIcons: {
+                start: string;
+                end: string;
+                waypoint: string;
+            } = {
+                ...{ start: "default", end: "default", waypoint: "default" },
+                ...gpxMarkers
+            };
 
+            console.log("🚀 ~ file: main.ts ~ line 803 ~ gpxIcons", gpxIcons);
             if (gpx.length) {
                 log(verbose, id, "Loading GeoJSON files.");
                 for (let link of gpx.flat(Infinity)) {
@@ -265,10 +275,6 @@ export default class ObsidianLeaflet
                     );
                     if (file && file instanceof TFile) {
                         let data = await this.app.vault.read(file);
-                        console.log(
-                            "🚀 ~ file: main.ts ~ line 268 ~ data",
-                            data
-                        );
                         /* try {
                             data = JSON.parse(data);
                         } catch (e) {
@@ -297,6 +303,7 @@ export default class ObsidianLeaflet
                 geojson: geojsonData,
                 geojsonColor: geojsonColor,
                 gpx: gpxData,
+                gpxIcons: gpxIcons,
                 zoomFeatures: zoomFeatures,
                 verbose: verbose
             });
