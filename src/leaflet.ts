@@ -1829,9 +1829,15 @@ class LeafletMap extends Events {
                                 this.id,
                                 `Overlay tooltip set to: ${overlay.data.tooltip}`
                             );
-                            overlay.leafletInstance.setRadius(
-                                Number(overlay.data.radius)
-                            );
+                            let newRadius = convert(Number(overlay.data.radius))
+                                .from(overlay.data.unit ?? "m")
+                                .to(this.type == "image" ? this.unit : "m");
+
+                            if (this.type == "image") {
+                                newRadius = newRadius / this.scale;
+                            }
+
+                            overlay.leafletInstance.setRadius(newRadius);
                             overlay.leafletInstance.setStyle({
                                 color: overlay.data.color
                             });

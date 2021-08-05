@@ -266,14 +266,7 @@ export class OverlayContextModal extends Modal {
                     }
                     removeValidationError(radiusInput);
 
-                    let newRadius = convert(Number(t.inputEl.value))
-                        .from(this.tempOverlay.unit ?? "m")
-                        .to(this.map.type == "image" ? this.map.unit : "m");
-                    if (this.map.type == "image") {
-                        newRadius = newRadius / this.map.scale;
-                    }
-
-                    this.tempOverlay.radius = Number(newRadius);
+                    this.tempOverlay.radius = Number(t.inputEl.value);
                 };
             });
 
