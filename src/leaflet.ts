@@ -1,4 +1,5 @@
 import convert from "convert";
+import type gpx from "leaflet-gpx";
 
 import {
     Events,
@@ -10,8 +11,7 @@ import {
     TFile,
     Scope,
     setIcon,
-    MarkdownPostProcessorContext,
-    MenuItem
+    MarkdownPostProcessorContext
 } from "obsidian";
 
 import type {
@@ -278,8 +278,9 @@ class LeafletMap extends Events {
     private _userBounds: [[number, number], [number, number]];
     private _layerControlAdded: boolean = false;
     private _start: number;
-    geoJSONLayer: any;
+    featureLayer: any;
     private _zoomDistance: number;
+    private _gpx: any[];
     constructor(
         public plugin: ObsidianLeaflet,
         public options: ILeafletMapOptions = {}
@@ -323,6 +324,8 @@ class LeafletMap extends Events {
         this._geojson = options.geojson;
 
         this._geojsonColor = getHex(options.geojsonColor);
+
+        this._gpx = options.gpx;
 
         log(this.verbose, this.id, "Building map instance.");
         this._start = Date.now();
@@ -601,6 +604,7 @@ class LeafletMap extends Events {
             this.sortOverlays();
         }
         /** Add GeoJSON to map */
+        this.featureLayer = L.featureGroup();
         if (this._geojson.length > 0) {
             log(
                 this.verbose,
@@ -610,7 +614,6 @@ class LeafletMap extends Events {
             this.map.createPane("geojson");
 
             added = 0;
-            this.geoJSONLayer = L.featureGroup();
             this._geojson.forEach((geoJSON) => {
                 try {
                     L.geoJSON(geoJSON, {
@@ -759,7 +762,7 @@ class LeafletMap extends Events {
                                 );
                             });
                         }
-                    }).addTo(this.geoJSONLayer);
+                    }).addTo(this.featureLayer);
                     added++;
                 } catch (e) {
                     new Notice(
@@ -768,23 +771,37 @@ class LeafletMap extends Events {
                     return;
                 }
             });
-            this.geoJSONLayer.addTo(this.group.group);
 
             log(
                 this.verbose,
                 this.id,
                 `${added} GeoJSON feature${added == 1 ? "" : "s"} added to map.`
             );
+        }
 
+        /** Add GPX to map */
+        if (this._gpx.length > 0) {
+            log(
+                this.verbose,
+                this.id,
+                `Adding ${this._gpx.length} GPX features to map.`
+            );
+            for (let gpx of this._gpx) {
+                new L.GPX(gpx).addTo(this.featureLayer);
+            }
+        }
+
+        if (this._geojson.length || this._gpx.length) {
+            this.featureLayer.addTo(this.group.group);
             if (this._zoomFeatures) {
                 log(this.verbose, this.id, `Zooming to features.`);
-                this.map.fitBounds(this.geoJSONLayer.getBounds());
-                const { lat, lng } = this.geoJSONLayer.getBounds().getCenter();
+                this.map.fitBounds(this.featureLayer.getBounds());
+                const { lat, lng } = this.featureLayer.getBounds().getCenter();
 
                 log(this.verbose, this.id, `Features center: [${lat}, ${lng}]`);
                 this.setInitialCoords([lat, lng]);
                 this.zoom.default = this.map.getBoundsZoom(
-                    this.geoJSONLayer.getBounds()
+                    this.featureLayer.getBounds()
                 );
             }
         }
@@ -931,13 +948,13 @@ class LeafletMap extends Events {
         }
         if (this._zoomFeatures) {
             log(this.verbose, this.id, `Zooming to features.`);
-            this.map.fitBounds(this.geoJSONLayer.getBounds());
-            const { lat, lng } = this.geoJSONLayer.getBounds().getCenter();
+            this.map.fitBounds(this.featureLayer.getBounds());
+            const { lat, lng } = this.featureLayer.getBounds().getCenter();
 
             log(this.verbose, this.id, `Features center: [${lat}, ${lng}]`);
             this.setInitialCoords([lat, lng]);
             this.zoom.default = this.map.getBoundsZoom(
-                this.geoJSONLayer.getBounds()
+                this.featureLayer.getBounds()
             );
         }
         log(

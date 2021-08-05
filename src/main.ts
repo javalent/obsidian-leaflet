@@ -184,7 +184,8 @@ export default class ObsidianLeaflet
                 geojson = [],
                 geojsonColor = "#3388ff",
                 zoomFeatures = false,
-                verbose = false
+                verbose = false,
+                gpx = []
             } = params;
             if (!id) {
                 new Notice(
@@ -253,6 +254,31 @@ export default class ObsidianLeaflet
                     }
                 }
             }
+            let gpxData: any[] = [];
+
+            if (gpx.length) {
+                log(verbose, id, "Loading GeoJSON files.");
+                for (let link of gpx.flat(Infinity)) {
+                    const file = this.app.metadataCache.getFirstLinkpathDest(
+                        parseLink(link),
+                        ""
+                    );
+                    if (file && file instanceof TFile) {
+                        let data = await this.app.vault.read(file);
+                        console.log(
+                            "🚀 ~ file: main.ts ~ line 268 ~ data",
+                            data
+                        );
+                        /* try {
+                            data = JSON.parse(data);
+                        } catch (e) {
+                            new Notice("Could not parse GeoJSON file " + link);
+                            continue;
+                        } */
+                        gpxData.push(data);
+                    }
+                }
+            }
 
             const renderer = new LeafletRenderer(this, ctx, el, {
                 height: getHeight(view, height) ?? "500px",
@@ -270,6 +296,7 @@ export default class ObsidianLeaflet
                 bounds: bounds,
                 geojson: geojsonData,
                 geojsonColor: geojsonColor,
+                gpx: gpxData,
                 zoomFeatures: zoomFeatures,
                 verbose: verbose
             });

@@ -44,6 +44,7 @@ export interface ILeafletMapOptions {
     bounds?: [[number, number], [number, number]];
     geojson?: any[];
     geojsonColor?: string;
+    gpx?: any[];
     zoomFeatures?: boolean;
     verbose?: boolean;
 }
@@ -79,6 +80,7 @@ export interface IBlockParameters {
     linksFrom?: string[];
     geojson?: string[];
     geojsonColor?: string;
+    gpx?: string[];
     zoomFeatures?: boolean;
     verbose?: boolean;
 }
