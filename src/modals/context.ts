@@ -1,6 +1,12 @@
 import { Modal, Notice, Setting, TextComponent } from "obsidian";
 
-import { ObsidianLeaflet, LeafletMap, SavedOverlayData, Marker } from "../@types";
+import {
+    ObsidianLeaflet,
+    LeafletMap,
+    SavedOverlayData,
+    Marker,
+    TooltipDisplay
+} from "src/@types";
 
 import { PathSuggestionModal } from "./path";
 import { CommandSuggestionModal } from "./command";
@@ -12,7 +18,6 @@ import {
 
 import { UNIT_NAME_ALIASES } from "src/utils";
 import convert from "convert";
-import { TooltipDisplay } from "src/@types/map";
 export class MarkerContextModal extends Modal {
     deleted: boolean = false;
     tempMarker: Marker;

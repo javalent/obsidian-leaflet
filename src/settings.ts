@@ -21,18 +21,18 @@ import {
 import { CreateMarkerModal, IconSuggestionModal } from "./modals";
 
 import {
-    IMapMarkerData,
-    IMarker,
-    IMarkerData,
+    MapMarkerData,
+    Icon,
+    SavedMarkerProperties,
     ObsidianLeaflet
 } from "./@types/";
 
 import { latLng } from "leaflet";
-import { TooltipDisplay } from "./@types/map";
+import { TooltipDisplay } from "./@types";
 
 export class ObsidianLeafletSettingTab extends PluginSettingTab {
     plugin: ObsidianLeaflet;
-    newMarker: IMarker;
+    newMarker: Icon;
 
     constructor(app: App, plugin: ObsidianLeaflet) {
         super(app, plugin);
@@ -518,7 +518,8 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             if (!files.length) return;
             try {
                 const csv = await files[0].text(),
-                    markersToAdd: Map<string, IMarkerData[]> = new Map(),
+                    markersToAdd: Map<string, SavedMarkerProperties[]> =
+                        new Map(),
                     parsed = parseCSV<string[]>(csv);
 
                 if (parsed.data && parsed.data.length) {
@@ -576,7 +577,11 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                             id: id,
                             command: false,
                             zoom: null,
-                            description: null
+                            description: null,
+                            mutable: true,
+                            minZoom: null,
+                            maxZoom: null,
+                            tooltip: "hover"
                         });
                         markersToAdd.set(data[0], mapMap);
                     }
@@ -585,7 +590,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                         if (
                             !this.data.mapMarkers.find(({ id: p }) => p == id)
                         ) {
-                            const map: IMapMarkerData = {
+                            const map: MapMarkerData = {
                                 id: id,
                                 files: [],
                                 lastAccessed: Date.now(),

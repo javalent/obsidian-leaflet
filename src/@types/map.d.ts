@@ -1,18 +1,67 @@
 import { Length } from "convert/dist/types/units";
+
 import L from "leaflet";
 import { DivIcon } from "leaflet";
 import { Events } from "obsidian";
 import {
-    DivIconMarkerOptions,
-    ILayerGroup,
-    ILeafletMapOptions,
-    IMarkerIcon,
-    ILeafletOverlay,
-    MarkerDivIconOptions,
-    IMarkerData
+    MarkerIcon,
+    LeafletOverlay,
+    SavedMarkerProperties,
+    SavedOverlayData
 } from ".";
 import { ObsidianLeaflet } from "./main";
+import { Marker } from ".";
 
+export interface LayerGroup {
+    /** Layer group containing the marker layer groups */
+    group: L.LayerGroup;
+
+    /** Marker type layer groups (used to filter out marker types) */
+    markers: { [type: string]: L.LayerGroup };
+
+    /** Actual rendered map layer */
+    layer: L.TileLayer | L.ImageOverlay;
+
+    /** Reference ID */
+    id: string;
+
+    /** Only used for image maps -> actual image map data as base64 */
+    data: string;
+
+    /** Only used for image maps -> dimensions of image */
+    dimensions?: [number, number];
+
+    /** Alias */
+    alias?: string;
+}
+
+export interface MarkerDivIconOptions extends L.DivIconOptions {
+    data?: { [key: string]: string };
+}
+
+export interface DivIconMarkerOptions extends L.MarkerOptions {
+    icon: MarkerDivIcon;
+}
+export interface LeafletMapOptions {
+    height?: string;
+    type?: "image" | "real";
+    id?: string;
+    minZoom?: number;
+    maxZoom?: number;
+    defaultZoom?: number;
+    zoomDelta?: number;
+    unit?: string;
+    scale?: number;
+    distanceMultiplier?: number;
+    darkMode?: boolean;
+    tileServer?: string;
+    overlayColor?: string;
+    bounds?: [[number, number], [number, number]];
+    geojson?: any[];
+    geojsonColor?: string;
+    zoomFeatures?: boolean;
+    verbose?: boolean;
+}
 declare class LeafletMap extends Events {
     id: string;
     /* containerEl: HTMLElement; */
@@ -21,22 +70,22 @@ declare class LeafletMap extends Events {
     markers: Marker[];
     zoom: { min: number; max: number; default: number; delta: number };
     popup: L.Popup;
-    mapLayers: ILayerGroup[];
+    mapLayers: LayerGroup[];
     layer: L.ImageOverlay | L.TileLayer;
     type: "image" | "real";
 
     plugin: ObsidianLeaflet;
-    options: ILeafletMapOptions;
+    options: LeafletMapOptions;
     initialCoords: [number, number];
     displaying: Map<string, boolean>;
 
     isDrawing: boolean;
 
-    overlays: ILeafletOverlay[];
+    overlays: LeafletOverlay[];
 
     verbose: boolean;
 
-    get markerIcons(): Map<string, IMarkerIcon>;
+    get markerIcons(): Map<string, MarkerIcon>;
 
     unit: Length;
 
@@ -48,10 +97,10 @@ declare class LeafletMap extends Events {
     constructor(
         plugin: ObsidianLeaflet,
         el: HTMLElement,
-        options: ILeafletMapOptions
+        options: LeafletMapOptions
     );
 
-    get group(): ILayerGroup;
+    get group(): LayerGroup;
     get bounds(): L.LatLngBounds;
 
     get rendered(): boolean;
@@ -65,7 +114,7 @@ declare class LeafletMap extends Events {
     get mutableMarkers(): Marker[];
     get isFullscreen(): boolean;
 
-    get defaultIcon(): IMarkerIcon;
+    get defaultIcon(): MarkerIcon;
 
     render(
         /* type: "real" | "image",
@@ -78,12 +127,19 @@ declare class LeafletMap extends Events {
 
     updateMarkerIcons(): void;
 
-    addMarker(markerToBeAdded: IMarkerData): void;
+    addOverlay(circle: SavedOverlayData, mutable: boolean): void;
 
-    addMarkers(markersToBeAdded: IMarkerData[]): void;
+    addOverlays(
+        overlayArray: SavedOverlayData[],
+        options: { mutable: boolean; sort: boolean }
+    ): void;
+
+    addMarker(markerToBeAdded: SavedMarkerProperties): void;
+
+    addMarkers(markersToBeAdded: SavedMarkerProperties[]): void;
 
     createMarker(
-        markerIcon: IMarkerIcon,
+        markerIcon: MarkerIcon,
         loc: L.LatLng,
         percent: [number, number],
         link?: string | undefined,
@@ -118,82 +174,6 @@ declare class LeafletMap extends Events {
     ): void;
 
     remove(): void;
-}
-
-export type TooltipDisplay = "always" | "hover" | "never";
-export interface MarkerProperties {
-    id: string;
-    icon: MarkerDivIcon;
-    type: string;
-    loc: L.LatLng;
-    link: string;
-    layer: string;
-    mutable: boolean;
-    command: boolean;
-    zoom: number;
-    percent: [number, number];
-    description: string;
-    minZoom?: number;
-    maxZoom?: number;
-    tooltip?: TooltipDisplay;
-}
-
-export interface SavedMarkerProperties extends Omit<MarkerProperties, "icon"> {
-    icon: string;
-}
-
-declare class Marker {
-    leafletInstance: DivIconMarker;
-    loc: L.LatLng;
-    percent: [number, number];
-    id: string;
-    layer: string;
-    command: boolean;
-    zoom: number;
-    maxZoom: number;
-    minZoom: number;
-    divIcon: MarkerDivIcon;
-    description: string;
-    tooltip?: TooltipDisplay;
-    constructor(
-        map: L.Map,
-        {
-            id,
-            icon,
-            type,
-            loc,
-            link,
-            layer,
-            mutable,
-            command,
-            zoom,
-            percent,
-            description,
-            maxZoom
-        }: MarkerProperties
-    );
-    get link(): string;
-    set link(x: string);
-
-    get display(): string;
-
-    get mutable(): boolean;
-    set mutable(x: boolean);
-
-    get type(): string;
-    set type(x: string);
-    set icon(x: IMarkerIcon);
-    /* get pixels(): [number, number]; */
-    setLatLng(latlng: L.LatLng): void;
-    remove(): void;
-    show(): void;
-    hide(): void;
-    shouldShow(zoom: number): boolean;
-    shouldHide(zoom: number): boolean;
-
-    toProperties(): SavedMarkerProperties;
-
-    static from(map: LeafletMap, properties: MarkerProperties): Marker;
 }
 
 declare class MarkerDivIcon extends DivIcon {

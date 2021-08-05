@@ -1,5 +1,5 @@
 import { App, ButtonComponent, Modal, Setting, TextComponent } from "obsidian";
-import { IMarker, ObsidianLeaflet } from "../@types";
+import { Icon, ObsidianLeaflet } from "../@types";
 import {
     findIconDefinition,
     getIcon,
@@ -13,11 +13,11 @@ import {
 import { IconSuggestionModal } from "./icon";
 
 export class CreateMarkerModal extends Modal {
-    marker: IMarker;
-    tempMarker: IMarker;
+    marker: Icon;
+    tempMarker: Icon;
     plugin: ObsidianLeaflet;
     canvas: HTMLCanvasElement;
-    constructor(app: App, plugin: ObsidianLeaflet, marker: IMarker) {
+    constructor(app: App, plugin: ObsidianLeaflet, marker: Icon) {
         super(app);
         this.marker = marker;
         this.plugin = plugin;

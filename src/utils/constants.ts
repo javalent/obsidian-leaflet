@@ -1,4 +1,4 @@
-import { ILeafletMapOptions, IObsidianAppData } from "src/@types";
+import { LeafletMapOptions, ObsidianAppData } from "src/@types";
 
 export const OVERLAY_TAG_REGEX = /^(\d+(?:\.\d+)?)\s?(\w*)/;
 
@@ -7,7 +7,7 @@ export const MAP_OVERLAY_STROKE_OPACITY = 0.6;
 
 export const LAT_LONG_DECIMALS = 4;
 export const DISTANCE_DECIMALS = 1;
-export const DEFAULT_MAP_OPTIONS: ILeafletMapOptions = {
+export const DEFAULT_MAP_OPTIONS: LeafletMapOptions = {
     type: "real",
     minZoom: 1,
     maxZoom: 10,
@@ -20,7 +20,7 @@ export const DEFAULT_MAP_OPTIONS: ILeafletMapOptions = {
     overlayColor: "blue",
     tileServer: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
 };
-export const DEFAULT_SETTINGS: IObsidianAppData = {
+export const DEFAULT_SETTINGS: ObsidianAppData = {
     mapMarkers: [],
     defaultMarker: {
         type: "default",

@@ -13,7 +13,7 @@ import Color from "color";
 import { getType as lookupMimeType } from "mime/lite";
 import { parse as parseCSV } from "papaparse";
 
-import { IBlockParameters } from "src/@types";
+import { BlockParameters } from "src/@types";
 import { OVERLAY_TAG_REGEX } from "./constants";
 
 export function renderError(el: HTMLElement, error: string): void {
@@ -696,8 +696,8 @@ type MarkerType =
  * so it detects that to return them all correctly.
  * 3. Next, it pulls out markers defined in the source block. This is clunky to support previous version's syntax, but works.
  */
-export function getParamsFromSource(source: string): IBlockParameters {
-    let params: IBlockParameters = {};
+export function getParamsFromSource(source: string): BlockParameters {
+    let params: BlockParameters = {};
 
     /** Pull out links */
 

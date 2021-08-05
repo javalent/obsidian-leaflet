@@ -1,12 +1,14 @@
-import { LeafletMap, IMarkerIcon } from "src/@types";
+import {} from "src/@types";
 import {
+    LeafletMap,
+    MarkerIcon,
     Marker as MarkerDefinition,
     DivIconMarker,
     MarkerDivIcon,
     TooltipDisplay,
     MarkerProperties,
     SavedMarkerProperties
-} from "src/@types/map";
+} from "src/@types";
 import { divIconMarker } from ".";
 
 export class Marker implements MarkerDefinition {
@@ -28,7 +30,7 @@ export class Marker implements MarkerDefinition {
     group: L.LayerGroup;
     tooltip?: TooltipDisplay;
     popup?: L.Popup;
-    private _icon: IMarkerIcon;
+    private _icon: MarkerIcon;
     constructor(
         private map: LeafletMap,
         {
@@ -113,7 +115,7 @@ export class Marker implements MarkerDefinition {
             });
         }
     }
-    set icon(x: IMarkerIcon) {
+    set icon(x: MarkerIcon) {
         this.type = x.type;
         this._icon = x;
         this.leafletInstance.setIcon(x.icon);
@@ -192,9 +194,8 @@ export class Marker implements MarkerDefinition {
     toProperties(): SavedMarkerProperties {
         return {
             id: this.id,
-            icon: this.icon.type,
             type: this.type,
-            loc: this.loc,
+            loc: [this.loc.lat, this.loc.lng],
             link: this.link,
             layer: this.layer,
             mutable: this.mutable,

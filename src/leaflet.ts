@@ -13,15 +13,17 @@ import {
     MarkdownPostProcessorContext
 } from "obsidian";
 
+import type { Length } from "convert/dist/types/units";
 import type {
-    ILayerGroup,
-    ILeafletMapOptions,
-    IMarkerData,
-    IMarkerIcon,
-    Length,
+    LayerGroup,
+    LeafletMapOptions,
+    SavedMarkerProperties,
+    MarkerIcon,
     ObsidianLeaflet,
     Marker as MarkerDefinition,
-    SavedOverlayData
+    SavedOverlayData,
+    LeafletOverlay,
+    TooltipDisplay
 } from "./@types";
 import {
     getId,
@@ -48,11 +50,10 @@ import {
     resetZoomControl,
     zoomControl
 } from "./map";
-import { ILeafletOverlay } from "./@types/";
-import { MarkerContextModal, OverlayContextModal } from "./modals/context";
 
+import { MarkerContextModal, OverlayContextModal } from "./modals/context";
 import { LeafletSymbol } from "./utils/leaflet-import";
-import { TooltipDisplay } from "./@types/map";
+
 let L = window[LeafletSymbol];
 
 declare module "leaflet" {
@@ -113,7 +114,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
         private plugin: ObsidianLeaflet,
         ctx: MarkdownPostProcessorContext,
         container: HTMLElement,
-        options: ILeafletMapOptions = {}
+        options: LeafletMapOptions = {}
     ) {
         super(container);
         this.map = new LeafletMap(plugin, options);
@@ -224,7 +225,7 @@ class LeafletMap extends Events {
         closeOnClick: false,
         autoPan: false
     });
-    mapLayers: ILayerGroup[] = [];
+    mapLayers: LayerGroup[] = [];
     layer: L.ImageOverlay | L.TileLayer;
     type: "image" | "real";
     initialCoords: [number, number];
@@ -232,7 +233,7 @@ class LeafletMap extends Events {
     displaying: Map<string, boolean> = new Map();
     isDrawing: boolean = false;
 
-    overlays: ILeafletOverlay[] = [];
+    overlays: LeafletOverlay[] = [];
 
     unit: Length = "m";
 
@@ -267,7 +268,7 @@ class LeafletMap extends Events {
         }
     );
     private _timeoutHandler: ReturnType<typeof setTimeout>;
-    private _popupTarget: MarkerDefinition | ILeafletOverlay | L.LatLng;
+    private _popupTarget: MarkerDefinition | LeafletOverlay | L.LatLng;
     private _scale: number;
     private _hoveringOnMarker: boolean = false;
     private _distanceDisplay: DistanceDisplay;
@@ -281,7 +282,7 @@ class LeafletMap extends Events {
     private _zoomDistance: number;
     constructor(
         public plugin: ObsidianLeaflet,
-        public options: ILeafletMapOptions = {}
+        public options: LeafletMapOptions = {}
     ) {
         super();
 
@@ -355,7 +356,7 @@ class LeafletMap extends Events {
         return this.plugin.markerIcons;
     } */
 
-    get markerIcons(): Map<string, IMarkerIcon> {
+    get markerIcons(): Map<string, MarkerIcon> {
         return new Map(
             this.plugin.markerIcons.map((markerIcon) => [
                 markerIcon.type,
@@ -993,7 +994,7 @@ class LeafletMap extends Events {
     }
 
     @catchError
-    addMarker(markerToBeAdded: IMarkerData) {
+    addMarker(markerToBeAdded: SavedMarkerProperties) {
         if (!this.markerTypes.includes(markerToBeAdded.type)) {
             new Notice(`Marker type "${markerToBeAdded.type}" does not exist.`);
             markerToBeAdded.type = "default";
@@ -1025,7 +1026,7 @@ class LeafletMap extends Events {
     }
 
     @catchError
-    addMarkers(markersToBeAdded: IMarkerData[]) {
+    addMarkers(markersToBeAdded: SavedMarkerProperties[]) {
         for (let markerToBeAdded of markersToBeAdded) {
             if (!this.markerTypes.includes(markerToBeAdded.type)) {
                 new Notice(
@@ -1064,7 +1065,7 @@ class LeafletMap extends Events {
 
     @catchError
     createMarker(
-        markerIcon: IMarkerIcon,
+        markerIcon: MarkerIcon,
         loc: L.LatLng,
         percent: [number, number],
         link: string = undefined,
@@ -1300,7 +1301,7 @@ class LeafletMap extends Events {
     }
 
     @catchError
-    private _pushOverlay(overlay: ILeafletOverlay) {
+    private _pushOverlay(overlay: LeafletOverlay) {
         this._bindOverlayEvents(overlay);
         this.overlays.push(overlay);
         if (this.rendered) {
@@ -1445,7 +1446,7 @@ class LeafletMap extends Events {
         contextMenu.setNoIcon();
 
         log(this.verbose, this.id, `Opening marker context menu.`);
-        this.markerIcons.forEach((marker: IMarkerIcon) => {
+        this.markerIcons.forEach((marker: MarkerIcon) => {
             if (!marker.type || !marker.html) return;
             contextMenu.addItem((item) => {
                 item.setTitle(
@@ -1668,7 +1669,7 @@ class LeafletMap extends Events {
         data: string;
         id: string;
         alias?: string;
-    }): Promise<ILayerGroup> {
+    }): Promise<LayerGroup> {
         const { h, w } = await getImageDimensions(layer.data);
 
         let bounds: L.LatLngBounds;
@@ -1767,7 +1768,7 @@ class LeafletMap extends Events {
     }
 
     @catchError
-    private _bindOverlayEvents(overlay: ILeafletOverlay) {
+    private _bindOverlayEvents(overlay: LeafletOverlay) {
         overlay.leafletInstance
             .on("contextmenu", (evt: L.LeafletMouseEvent) => {
                 const under = this._getOverlaysUnderClick(evt);
@@ -1776,7 +1777,7 @@ class LeafletMap extends Events {
                     return;
                 }
                 L.DomEvent.stopPropagation(evt);
-                const openOverlayContext = (overlay: ILeafletOverlay) => {
+                const openOverlayContext = (overlay: LeafletOverlay) => {
                     const modal = new OverlayContextModal(
                         this.plugin,
                         overlay.data,
@@ -2077,7 +2078,7 @@ class LeafletMap extends Events {
     }
 
     private canShowTooltip(
-        target: MarkerDefinition | ILeafletOverlay,
+        target: MarkerDefinition | LeafletOverlay,
         tooltip?: TooltipDisplay
     ) {
         const global =
@@ -2092,7 +2093,7 @@ class LeafletMap extends Events {
 
     @catchError
     openPopup(
-        target: MarkerDefinition | ILeafletOverlay | L.LatLng,
+        target: MarkerDefinition | LeafletOverlay | L.LatLng,
         content: ((source: L.Layer) => L.Content) | L.Content,
         handler?: L.Layer
     ) {
@@ -2211,7 +2212,7 @@ class LeafletMap extends Events {
 
     @catchError
     private _getPopup(
-        target: MarkerDefinition | ILeafletOverlay | L.LatLng
+        target: MarkerDefinition | LeafletOverlay | L.LatLng
     ): L.Popup {
         if (this.popup.isOpen() && this._popupTarget == target) {
             return this.popup;
@@ -2227,7 +2228,7 @@ class LeafletMap extends Events {
     }
     @catchError
     private _buildPopup(
-        target: MarkerDefinition | ILeafletOverlay | L.LatLng
+        target: MarkerDefinition | LeafletOverlay | L.LatLng
     ): L.Popup {
         if (target instanceof L.LatLng) {
             return L.popup({

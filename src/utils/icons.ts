@@ -9,7 +9,7 @@ import type {
     IconDefinition,
     IconName
 } from "@fortawesome/fontawesome-svg-core";
-import { IMarker } from "src/@types";
+import { Icon } from "src/@types";
 
 library.add(fas);
 
@@ -32,7 +32,7 @@ interface IInternalMarkerIcon {
 }
 
 export function getMarkerIcon(
-    marker: IMarker,
+    marker: Icon,
     params?: IconParams
 ): IInternalMarkerIcon {
     if (!marker) return null;

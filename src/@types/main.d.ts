@@ -1,11 +1,53 @@
 import { MarkdownPostProcessorContext, Platform, Plugin } from "obsidian";
-import { IMapInterface, IMarker, IMarkerIcon, IObsidianAppData } from ".";
+import { Icon, MarkerIcon, ObsidianAppData } from ".";
 import { LeafletMap } from "./map";
 
+export interface MapInterface {
+    map: LeafletMap;
+    source: string;
+    el: HTMLElement;
+    id: string;
+}
+
+export interface BlockParameters {
+    id?: string;
+    image?: string | string[];
+    layers?: string[];
+    marker?: string | string[];
+    commandMarker?: string | string[];
+    markerFolder?: string | string[];
+    markerFile?: string | string[];
+    markerTag?: string | string[][];
+    imageOverlay?: Array<[string, [number, number], [number, number]]>;
+    overlay?: Array<[string, [number, number], string, string]>;
+    overlayTag?: string;
+    overlayColor?: string;
+    height?: string;
+    minZoom?: number;
+    maxZoom?: number;
+    defaultZoom?: number;
+    zoomDelta?: number;
+    lat?: string;
+    long?: string;
+    scale?: number;
+    unit?: string;
+    distanceMultiplier?: number;
+    darkMode?: string;
+    bounds?: [[number, number], [number, number]];
+    coordinates?: [string, string] | string;
+    zoomTag?: string;
+    linksTo?: string[];
+    linksFrom?: string[];
+    geojson?: string[];
+    geojsonColor?: string;
+    zoomFeatures?: boolean;
+    verbose?: boolean;
+}
+
 declare class ObsidianLeaflet extends Plugin {
-    AppData: IObsidianAppData;
-    markerIcons: IMarkerIcon[];
-    maps: IMapInterface[];
+    AppData: ObsidianAppData;
+    markerIcons: MarkerIcon[];
+    maps: MapInterface[];
     mapFiles: { file: string; maps: string[] }[];
     modifierKey: "Meta" | "Control";
     Platform: typeof Platform;
@@ -24,7 +66,7 @@ declare class ObsidianLeaflet extends Plugin {
     loadSettings(): Promise<void>;
     saveSettings(): Promise<void>;
 
-    generateMarkerMarkup(markers: IMarker[]): IMarkerIcon[];
+    generateMarkerMarkup(markers: Icon[]): MarkerIcon[];
 
     registerMapEvents(map: LeafletMap): void;
 }
