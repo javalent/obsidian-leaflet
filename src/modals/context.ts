@@ -213,17 +213,16 @@ export class OverlayContextModal extends Modal {
     limit: number = 100;
     constructor(
         public plugin: ObsidianLeaflet,
-        public overlay: IOverlayData,
+        overlay: IOverlayData,
         public map: LeafletMap
     ) {
         super(plugin.app);
-        this.overlay = overlay;
         this.plugin = plugin;
         this.map = map;
 
         this.tempOverlay = Object.assign(
-            Object.create(Object.getPrototypeOf(this.overlay)),
-            this.overlay
+            Object.create(Object.getPrototypeOf(overlay)),
+            overlay
         );
         if (this.modal) this.modal.close();
     }
