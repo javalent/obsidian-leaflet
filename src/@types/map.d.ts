@@ -62,6 +62,12 @@ export interface LeafletMapOptions {
     geojsonColor?: string;
     zoomFeatures?: boolean;
     verbose?: boolean;
+    gpx?: string[];
+    gpxIcons?: {
+        start: string;
+        end: string;
+        waypoint: string;
+    }
 }
 declare class LeafletMap extends Events {
     data: ObsidianAppData;
@@ -177,6 +183,7 @@ declare class LeafletMap extends Events {
         target: Marker | L.LatLng,
         content: ((source: L.Layer) => L.Content) | L.Content
     ): void;
+    closePopup(popup: L.Popup): void;
 
     remove(): void;
 }
