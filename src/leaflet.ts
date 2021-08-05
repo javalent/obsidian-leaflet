@@ -1,9 +1,6 @@
-<<<<<<< HEAD
-=======
 import convert from "convert";
 import type gpx from "leaflet-gpx";
 
->>>>>>> origin/master
 import {
     Events,
     Notice,
@@ -17,7 +14,6 @@ import {
     MarkdownPostProcessorContext
 } from "obsidian";
 
-import convert from "convert";
 import type { Length } from "convert/dist/types/units";
 
 import type {
@@ -60,14 +56,10 @@ import {
     zoomControl
 } from "./map";
 
-import { MarkerContextModal, OverlayContextModal } from "./modals/context";
+import { OverlayContextModal } from "./modals/context";
 import { LeafletSymbol } from "./utils/leaflet-import";
-<<<<<<< HEAD
-
-=======
-import { MarkerDivIcon, TooltipDisplay } from "./@types/map";
+import { MarkerDivIcon } from "./@types/map";
 import { MarkerOptions } from "leaflet";
->>>>>>> origin/master
 let L = window[LeafletSymbol];
 
 declare module "leaflet" {
