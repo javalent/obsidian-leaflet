@@ -1,5 +1,3 @@
-import convert from "convert";
-
 import {
     Events,
     Notice,
@@ -13,7 +11,9 @@ import {
     MarkdownPostProcessorContext
 } from "obsidian";
 
+import convert from "convert";
 import type { Length } from "convert/dist/types/units";
+
 import type {
     LayerGroup,
     LeafletMapOptions,
@@ -26,20 +26,23 @@ import type {
     TooltipDisplay
 } from "./@types";
 import {
-    getId,
-    getImageDimensions,
-    icon,
     DISTANCE_DECIMALS,
     LAT_LONG_DECIMALS,
     DEFAULT_MAP_OPTIONS,
     BASE_POPUP_OPTIONS,
-    renderError,
     MAP_OVERLAY_STROKE_OPACITY,
-    MAP_OVERLAY_STROKE_WIDTH,
+    MAP_OVERLAY_STROKE_WIDTH
+} from "./utils/constants";
+
+import { icon, DESCRIPTION_ICON } from "./utils/icons";
+
+import {
+    getId,
+    getImageDimensions,
+    renderError,
     getHex,
-    log,
-    DESCRIPTION_ICON
-} from "./utils";
+    log
+} from "./utils/utils";
 
 import {
     DistanceDisplay,
@@ -122,7 +125,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         this.containerEl.style.height = options.height;
         this.containerEl.style.width = "100%";
-        this.containerEl.style.backgroundColor = "#ddd";
+        this.containerEl.style.backgroundColor = "var(--background-secondary)";
 
         this.register(async () => {
             try {
@@ -201,6 +204,16 @@ export class LeafletRenderer extends MarkdownRenderChild {
     }
 }
 
+class Popup extends L.Popup {
+    constructor(public options: L.PopupOptions, source?: L.Layer) {
+        super({ ...options, ...BASE_POPUP_OPTIONS }, source);
+    }
+}
+
+export function popup(options?: L.PopupOptions, source?: L.Layer): Popup {
+    return new Popup(options, source);
+}
+
 /**
  * LeafletMap Class
  *
@@ -270,7 +283,7 @@ class LeafletMap extends Events {
     private _timeoutHandler: ReturnType<typeof setTimeout>;
     private _popupTarget: MarkerDefinition | LeafletOverlay | L.LatLng;
     private _scale: number;
-    private _hoveringOnMarker: boolean = false;
+
     private _distanceDisplay: DistanceDisplay;
     private _layerControl: L.Control.Layers = L.control.layers({}, {});
     private _escapeScope: Scope;
@@ -1137,7 +1150,6 @@ class LeafletMap extends Events {
 
     @catchError
     private _pushMarker(marker: Marker) {
-        this._bindMarkerEvents(marker);
         if (this.rendered) {
             this.displaying.set(marker.type, true);
             /* this.group.markers[marker.type].addLayer(marker.leafletInstance); */
@@ -1260,7 +1272,7 @@ class LeafletMap extends Events {
 
     @catchErrorAsync
     private async _handleMapClick(evt: L.LeafletMouseEvent) {
-        this._onHandleDistance(evt);
+        this.onHandleDistance(evt);
         if (
             evt.originalEvent.getModifierState("Shift") ||
             evt.originalEvent.getModifierState("Alt")
@@ -1472,7 +1484,7 @@ class LeafletMap extends Events {
     }
 
     @catchError
-    private _onHandleDistance(evt: L.LeafletMouseEvent) {
+    onHandleDistance(evt: L.LeafletMouseEvent) {
         if (
             (!evt.originalEvent.getModifierState("Shift") &&
                 !evt.originalEvent.getModifierState("Alt")) ||
@@ -1508,7 +1520,7 @@ class LeafletMap extends Events {
             this._distanceLine.setLatLngs([this._distanceEvent, evt.latlng]);
             this._distanceLine.bindTooltip(distanceTooltip);
             this.map.on("mousemove", (mvEvt: L.LeafletMouseEvent) => {
-                if (!this._hoveringOnMarker) {
+                if (!this.markers.find((m) => m.isBeingHovered)) {
                     this._distanceLine.setLatLngs([
                         this._distanceEvent,
                         mvEvt.latlng
@@ -1604,7 +1616,7 @@ class LeafletMap extends Events {
 
             this.displayedMarkers.forEach(async (marker) => {
                 if (marker.tooltip === "always") {
-                    marker.popup = this._buildPopup(marker);
+                    marker.popup = this.buildPopup(marker);
                     const content = await this._buildMarkerPopupDisplay(marker);
                     marker.popup.setContent(content);
                     this.map.openPopup(marker.popup);
@@ -1928,154 +1940,6 @@ class LeafletMap extends Events {
             });
     }
 
-    @catchError
-    private _bindMarkerEvents(marker: Marker) {
-        marker.leafletInstance
-            .on("contextmenu", (evt: L.LeafletMouseEvent) => {
-                L.DomEvent.stopPropagation(evt);
-
-                if (marker.mutable) {
-                    let markerSettingsModal = new MarkerContextModal(
-                        this.plugin,
-                        marker,
-                        this
-                    );
-
-                    markerSettingsModal.onClose = async () => {
-                        if (markerSettingsModal.deleted) {
-                            this.removeMarker(marker);
-                            this.trigger("marker-deleted", marker);
-                        } else {
-                            this.displaying.delete(marker.type);
-                            this.displaying.set(
-                                markerSettingsModal.tempMarker.type,
-                                true
-                            );
-                            marker.link = markerSettingsModal.tempMarker.link;
-                            marker.icon = this.markerIcons.get(
-                                markerSettingsModal.tempMarker.type
-                            );
-                            marker.tooltip =
-                                markerSettingsModal.tempMarker.tooltip;
-                            marker.minZoom =
-                                markerSettingsModal.tempMarker.minZoom;
-                            marker.maxZoom =
-                                markerSettingsModal.tempMarker.maxZoom;
-                            marker.command =
-                                markerSettingsModal.tempMarker.command;
-
-                            if (marker.shouldShow(this.map.getZoom())) {
-                                marker.show();
-                            } else if (marker.shouldHide(this.map.getZoom())) {
-                                marker.hide();
-                            }
-
-                            if (marker.tooltip === "always" && !marker.popup) {
-                                marker.popup = this._buildPopup(marker);
-                                const content =
-                                    await this._buildMarkerPopupDisplay(marker);
-                                marker.popup.setContent(content);
-                                this.map.openPopup(marker.popup);
-                            } else if (
-                                marker.tooltip !== "always" &&
-                                marker.popup
-                            ) {
-                                this.map.closePopup(marker.popup);
-                                delete marker.popup;
-                            }
-
-                            this.trigger("marker-updated", marker);
-                            await this.plugin.saveSettings();
-                        }
-                    };
-                    markerSettingsModal.open();
-                } else {
-                    new Notice(
-                        "This marker cannot be edited because it was defined in the code block."
-                    );
-                }
-            })
-            .on("click", async (evt: L.LeafletMouseEvent) => {
-                L.DomEvent.stopPropagation(evt);
-
-                this._onHandleDistance(evt);
-                if (
-                    evt.originalEvent.getModifierState("Alt") ||
-                    evt.originalEvent.getModifierState("Shift")
-                ) {
-                    this.openPopup(
-                        marker,
-                        `[${this.latLngFormatter.format(
-                            marker.loc.lat
-                        )}, ${this.latLngFormatter.format(marker.loc.lng)}]`
-                    );
-
-                    if (
-                        this.data.copyOnClick &&
-                        evt.originalEvent.getModifierState(
-                            this.plugin.modifierKey
-                        )
-                    ) {
-                        await this.copyLatLngToClipboard(marker.loc);
-                    }
-
-                    return;
-                }
-                if (marker.link) {
-                    this.trigger(
-                        "marker-click",
-                        marker.link,
-                        evt.originalEvent.getModifierState(
-                            this.plugin.modifierKey
-                        ),
-                        marker.command
-                    );
-                } else {
-                    if (!marker.mutable) {
-                        new Notice(
-                            "This marker cannot be edited because it was defined in the code block."
-                        );
-                    }
-                }
-            })
-            .on("dragstart", (evt: L.LeafletMouseEvent) => {
-                L.DomEvent.stopPropagation(evt);
-            })
-            .on("drag", (evt: L.LeafletMouseEvent) => {
-                this.trigger("marker-dragging", marker);
-
-                if (marker.tooltip === "always" && marker.popup) {
-                    marker.popup.setLatLng(evt.latlng);
-                } else if (this.popup.isOpen()) {
-                    this.popup.setLatLng(evt.latlng);
-                }
-            })
-            .on("dragend", (evt: L.LeafletMouseEvent) => {
-                const old = marker.loc;
-                /* marker.loc = marker.leafletInstance.getLatLng(); */
-                marker.setLatLng(marker.leafletInstance.getLatLng());
-                this.trigger("marker-data-updated", marker, old);
-            })
-            .on("mouseover", (evt: L.LeafletMouseEvent) => {
-                L.DomEvent.stopPropagation(evt);
-                if (marker.link) {
-                    /* this.trigger("marker-mouseover", evt, marker); */
-                    this._onMarkerMouseover(marker);
-                }
-                this._hoveringOnMarker = true;
-                if (this._distanceLine) {
-                    this._distanceLine.setLatLngs([
-                        this._distanceLine.getLatLngs()[0] as L.LatLngExpression,
-                        marker.loc
-                    ]);
-                }
-            })
-            .on("mouseout", (evt: L.LeafletMouseEvent) => {
-                marker.leafletInstance.closeTooltip();
-                this._hoveringOnMarker = false;
-            });
-    }
-
     @catchErrorAsync
     async copyLatLngToClipboard(loc: L.LatLng): Promise<void> {
         await new Promise<void>((resolve, reject) => {
@@ -2194,6 +2058,7 @@ class LeafletMap extends Events {
                 _this._closePopup(_this.popup);
             }, 500);
         };
+
         const mouseOverHandler = function () {
             clearTimeout(_this._timeoutHandler);
         };
@@ -2245,12 +2110,10 @@ class LeafletMap extends Events {
             this._closePopup(this.popup);
         }
 
-        return this._buildPopup(target);
+        return this.buildPopup(target);
     }
     @catchError
-    private _buildPopup(
-        target: MarkerDefinition | LeafletOverlay | L.LatLng
-    ): L.Popup {
+    buildPopup(target: MarkerDefinition | LeafletOverlay | L.LatLng): L.Popup {
         if (target instanceof L.LatLng) {
             return L.popup({
                 ...BASE_POPUP_OPTIONS
@@ -2408,10 +2271,11 @@ class LeafletMap extends Events {
         return display;
     }
 
-    private async _onMarkerMouseover(
+    async onMarkerMouseover(
         /* evt: L.LeafletMouseEvent, */
         marker: MarkerDefinition
     ) {
+        if (!marker.link) return;
         if (marker.command) {
             const commands = this.plugin.app.commands.listCommands();
 
@@ -2507,6 +2371,44 @@ class LeafletMap extends Events {
                         .replace(/#/, " > ")
                         .split("|")
                         .pop()
+                );
+            }
+        }
+    }
+
+    async onMarkerClick(marker: Marker, evt: L.LeafletMouseEvent) {
+        this.onHandleDistance(evt);
+        if (
+            evt.originalEvent.getModifierState("Alt") ||
+            evt.originalEvent.getModifierState("Shift")
+        ) {
+            this.openPopup(
+                marker,
+                `[${this.latLngFormatter.format(
+                    marker.loc.lat
+                )}, ${this.latLngFormatter.format(marker.loc.lng)}]`
+            );
+
+            if (
+                this.data.copyOnClick &&
+                evt.originalEvent.getModifierState(this.plugin.modifierKey)
+            ) {
+                await this.copyLatLngToClipboard(marker.loc);
+            }
+
+            return;
+        }
+        if (marker.link) {
+            this.trigger(
+                "marker-click",
+                marker.link,
+                evt.originalEvent.getModifierState(this.plugin.modifierKey),
+                marker.command
+            );
+        } else {
+            if (!marker.mutable) {
+                new Notice(
+                    "This marker cannot be edited because it was defined in the code block."
                 );
             }
         }

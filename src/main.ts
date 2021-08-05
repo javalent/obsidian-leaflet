@@ -157,7 +157,7 @@ export default class ObsidianLeaflet
         el: HTMLElement,
         ctx: MarkdownPostProcessorContext
     ): Promise<void> {
-        try {
+        /* try { */
             /** Get Parameters from Source */
             let params = getParamsFromSource(source);
             let {
@@ -505,11 +505,11 @@ export default class ObsidianLeaflet
                     map.loadAdditionalMapLayers(layerData.slice(1));
                 await this.saveSettings();
             });
-        } catch (e) {
+        /* } catch (e) {
             console.error(e);
             new Notice("There was an error loading the map.");
             renderError(el, e.message);
-        }
+        } */
     }
     private async _getCoordinates(
         lat: string,

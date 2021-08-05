@@ -11,6 +11,7 @@ import {
 } from ".";
 import { ObsidianLeaflet } from "./main";
 import { Marker } from ".";
+import { ObsidianAppData } from "./saved";
 
 export interface LayerGroup {
     /** Layer group containing the marker layer groups */
@@ -63,6 +64,7 @@ export interface LeafletMapOptions {
     verbose?: boolean;
 }
 declare class LeafletMap extends Events {
+    data: ObsidianAppData;
     id: string;
     /* containerEl: HTMLElement; */
     contentEl: HTMLElement;
@@ -167,6 +169,9 @@ declare class LeafletMap extends Events {
 
     stopDrawing(): void;
     copyLatLngToClipboard(loc: L.LatLng): Promise<void>;
+
+    onMarkerMouseover(marker: Marker): void;
+    onMarkerClick(marker: Marker, evt: L.LeafletMouseEvent): void;
 
     openPopup(
         target: Marker | L.LatLng,
