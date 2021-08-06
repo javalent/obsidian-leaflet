@@ -31,7 +31,8 @@ import {
     DISTANCE_DECIMALS,
     LAT_LONG_DECIMALS,
     DEFAULT_MAP_OPTIONS,
-    BASE_POPUP_OPTIONS
+    BASE_POPUP_OPTIONS,
+    MODIFIER_KEY
 } from "./utils/constants";
 
 import { icon, DESCRIPTION_ICON } from "./utils/icons";
@@ -53,13 +54,15 @@ import {
     Marker,
     resetZoomControl,
     zoomControl,
-    GeoJSON
+    GeoJSON,
+    GPX,
+    Overlay
 } from "./map";
 
 import { OverlayContextModal } from "./modals/context";
 import { LeafletSymbol } from "./utils/leaflet-import";
 import { MarkerDivIcon } from "./@types/map";
-import { MarkerOptions } from "leaflet";
+import { layerGroup, MarkerOptions } from "leaflet";
 let L = window[LeafletSymbol];
 
 declare module "leaflet" {
@@ -216,7 +219,7 @@ class LeafletMap extends Events {
     displaying: Map<string, boolean> = new Map();
     isDrawing: boolean = false;
 
-    overlays: LeafletOverlay[] = [];
+    overlays: Overlay[] = [];
 
     unit: Length = "m";
 
@@ -251,7 +254,7 @@ class LeafletMap extends Events {
         }
     );
     private _timeoutHandler: ReturnType<typeof setTimeout>;
-    private _popupTarget: MarkerDefinition | LeafletOverlay | L.LatLng;
+    private _popupTarget: MarkerDefinition | L.Circle | L.LatLng;
     private _scale: number;
 
     private _distanceDisplay: DistanceDisplay;
@@ -261,7 +264,7 @@ class LeafletMap extends Events {
     private _userBounds: [[number, number], [number, number]];
     private _layerControlAdded: boolean = false;
     private _start: number;
-    featureLayer: any;
+    featureLayer: L.FeatureGroup;
     private _zoomDistance: number;
     private _gpx: any[];
     private _gpxIcons: {
@@ -441,6 +444,9 @@ class LeafletMap extends Events {
                 break;
             }
         }
+
+        this.trigger("ready-for-features", this.group);
+
         /** Move to supplied coordinates */
         log(
             this.verbose,
@@ -476,6 +482,7 @@ class LeafletMap extends Events {
                 });
         }
         let added = 0;
+
         /** Add markers to map */
         if (
             this.markers.filter(
@@ -551,7 +558,7 @@ class LeafletMap extends Events {
         }
 
         /** Add Overlays to map */
-        if (
+        /*         if (
             this.overlays.filter(
                 (overlay) =>
                     !overlay.layer || overlay.layer === this.mapLayers[0].id
@@ -591,7 +598,7 @@ class LeafletMap extends Events {
                 `${added} overlay${added == 1 ? "" : "s"} added to map.`
             );
             this.sortOverlays();
-        }
+        } */
         /** Add GeoJSON to map */
         this.featureLayer = L.featureGroup();
         if (this._geojson.length > 0) {
@@ -638,53 +645,10 @@ class LeafletMap extends Events {
                 this.id,
                 `Adding ${this._gpx.length} GPX features to map.`
             );
-            /** Build Icon Parameter
-             *  Module is annoying..........
-             */
-
-            const MarkerOptions: MarkerOptions = {
-                startIconUrl: null,
-                endIconUrl: null,
-                shadowUrl: null,
-                wptIconUrls: {
-                    "": null
-                },
-                startIcon: null,
-                endIcon: null,
-                wptIcons: {
-                    "": null
-                }
-            };
-            if (
-                this._gpxIcons.start &&
-                this.markerIcons.has(this._gpxIcons.start)
-            ) {
-                MarkerOptions.startIcon = this.markerIcons.get(
-                    this._gpxIcons.start
-                ).icon;
-            }
-            if (
-                this._gpxIcons.end &&
-                this.markerIcons.has(this._gpxIcons.end)
-            ) {
-                MarkerOptions.endIcon = this.markerIcons.get(
-                    this._gpxIcons.end
-                ).icon;
-            }
-            if (
-                this._gpxIcons.waypoint &&
-                this.markerIcons.has(this._gpxIcons.waypoint)
-            ) {
-                MarkerOptions.wptIcons = {
-                    "": this.markerIcons.get(this._gpxIcons.waypoint).icon
-                };
-            }
 
             for (let gpx of this._gpx) {
-                new L.GPX(gpx, {
-                    /* async: true, */
-                    marker_options: MarkerOptions
-                }).addTo(this.featureLayer);
+                const gpxInstance = new GPX(this, gpx, {}, this._gpxIcons);
+                gpxInstance.leafletInstance.addTo(this.featureLayer);
             }
         }
 
@@ -727,7 +691,7 @@ class LeafletMap extends Events {
         this._buildControls();
 
         /** Bind Internal Map Events */
-        this.map.on("contextmenu", this._handleMapContext.bind(this));
+        this.map.on("contextmenu", this.handleMapContext.bind(this));
         this.map.on("click", this._handleMapClick.bind(this));
 
         this.map.on("zoomanim", (evt: L.ZoomAnimEvent) => {
@@ -801,19 +765,12 @@ class LeafletMap extends Events {
     }
     sortOverlays() {
         log(this.verbose, this.id, `Sorting overlays.`);
-        let overlays = [...this.overlays];
 
-        overlays.sort((a, b) => {
-            const radiusA = convert(a.data.radius)
-                .from(a.data.unit as Length)
-                .to("m");
-            const radiusB = convert(b.data.radius)
-                .from(b.data.unit as Length)
-                .to("m");
-            return radiusB - radiusA;
+        this.overlays.sort((a, b) => {
+            return b.radiusInMeters - a.radiusInMeters;
         });
 
-        for (let overlay of overlays) {
+        for (let overlay of this.overlays) {
             overlay.leafletInstance.bringToFront();
         }
 
@@ -1200,7 +1157,7 @@ class LeafletMap extends Events {
             );
             if (
                 this.data.copyOnClick &&
-                evt.originalEvent.getModifierState(this.plugin.modifierKey)
+                evt.originalEvent.getModifierState(MODIFIER_KEY)
             ) {
                 log(
                     this.verbose,
@@ -1223,15 +1180,14 @@ class LeafletMap extends Events {
     }
 
     @catchError
-    private _pushOverlay(overlay: LeafletOverlay) {
-        this._bindOverlayEvents(overlay);
+    private _pushOverlay(overlay: Overlay) {
         this.overlays.push(overlay);
         if (this.rendered) {
-            if (overlay.id) {
+            /*             if (overlay.id) {
                 const marker = this.markers.find(({ id }) => id === overlay.id);
                 if (marker) overlay.marker = marker.type;
             }
-            overlay.leafletInstance.addTo(this.group.group);
+            overlay.leafletInstance.addTo(this.group.group); */
             this.sortOverlays();
 
             this.trigger("markers-updated");
@@ -1240,25 +1196,7 @@ class LeafletMap extends Events {
 
     @catchError
     addOverlay(circle: SavedOverlayData, mutable = true) {
-        let radius = convert(circle.radius)
-            .from(circle.unit ?? "m")
-            .to(this.type == "image" ? this.unit : "m");
-
-        if (this.type == "image" && !mutable) {
-            radius = radius / this.scale;
-        }
-        const leafletInstance = L.circle(L.latLng(circle.loc), {
-            radius: radius,
-            color: circle.color
-        });
-        this._pushOverlay({
-            leafletInstance: leafletInstance,
-            layer: circle.layer,
-            data: circle,
-            mutable: mutable,
-            id: circle.id,
-            tooltip: circle.tooltip
-        });
+        this._pushOverlay(new Overlay(this, circle));
     }
 
     @catchError
@@ -1266,32 +1204,128 @@ class LeafletMap extends Events {
         overlayArray: SavedOverlayData[],
         options: { mutable: boolean; sort: boolean }
     ) {
-        if (options.sort) {
-            const original = this.overlays.map(({ data }) => data);
-            this.overlays.forEach((overlay) => {
-                overlay.leafletInstance.remove();
-            });
-            this.overlays = [];
-
-            overlayArray = [...original, ...overlayArray];
-            overlayArray.sort((a, b) => {
-                const radiusA = convert(a.radius)
-                    .from(a.unit ?? "m")
-                    .to("m");
-                const radiusB = convert(b.radius)
-                    .from(b.unit ?? "m")
-                    .to("m");
-                return radiusB - radiusA;
-            });
-        }
-
         for (let overlay of overlayArray) {
             this.addOverlay(overlay, overlay.mutable ?? options.mutable);
+        }
+        if (options.sort) {
+            this.sortOverlays();
         }
     }
 
     @catchError
-    private _handleMapContext(evt: L.LeafletMouseEvent) {
+    handleMapContext(evt: L.LeafletMouseEvent, overlay?: Overlay) {
+        if (overlay) {
+            const under = this.getOverlaysUnderClick(evt);
+            console.log("🚀 ~ file: leaflet.ts ~ line 1219 ~ under", under);
+
+            if (!under.length) {
+                under.push(overlay);
+            }
+
+            const openOverlayContext = (overlay: Overlay) => {
+                const modal = new OverlayContextModal(
+                    this.plugin,
+                    overlay.data,
+                    this
+                );
+                modal.onClose = async () => {
+                    if (modal.deleted) {
+                        log(
+                            this.verbose,
+                            this.id,
+                            "Overlay deleted in context menu. Removing."
+                        );
+                        overlay.leafletInstance.remove();
+                        this.overlays = this.overlays.filter(
+                            (o) => o != overlay
+                        );
+                        this.trigger("markers-updated");
+
+                        return;
+                    }
+                    try {
+                        log(
+                            this.verbose,
+                            this.id,
+                            "Updating the overlay data."
+                        );
+                        overlay.data.color = modal.tempOverlay.color;
+                        log(
+                            this.verbose,
+                            this.id,
+                            `Overlay color set to: ${overlay.data.color}`
+                        );
+                        overlay.data.radius = modal.tempOverlay.radius;
+                        log(
+                            this.verbose,
+                            this.id,
+                            `Overlay radius set to: ${overlay.data.radius}`
+                        );
+                        overlay.data.desc = modal.tempOverlay.desc;
+                        log(
+                            this.verbose,
+                            this.id,
+                            `Overlay description set to: ${overlay.data.desc}`
+                        );
+                        overlay.data.tooltip = modal.tempOverlay.tooltip;
+
+                        log(
+                            this.verbose,
+                            this.id,
+                            `Overlay tooltip set to: ${overlay.data.tooltip}`
+                        );
+                        let newRadius = convert(Number(overlay.data.radius))
+                            .from(overlay.data.unit ?? "m")
+                            .to(this.type == "image" ? this.unit : "m");
+
+                        if (this.type == "image") {
+                            newRadius = newRadius / this.scale;
+                        }
+
+                        overlay.leafletInstance.setRadius(newRadius);
+                        overlay.leafletInstance.setStyle({
+                            color: overlay.data.color
+                        });
+
+                        await this.plugin.saveSettings();
+                    } catch (e) {
+                        console.error(
+                            "There was an error saving the overlay.\n\n" + e
+                        );
+                    }
+                };
+                modal.open();
+            };
+
+            let contextMenu = new Menu(this.plugin.app);
+
+            contextMenu.setNoIcon();
+            contextMenu.addItem((item) => {
+                item.setTitle("Create Marker");
+                item.onClick(() => {
+                    contextMenu.hide();
+                    this.handleMapContext(evt);
+                });
+            });
+            under.forEach((overlay, index) => {
+                contextMenu.addItem((item) => {
+                    item.setTitle("Overlay " + `${index + 1}`);
+                    item.onClick(() => {
+                        openOverlayContext(overlay);
+                    });
+                    item.dom.onmouseenter = () => {
+                        this.map.fitBounds(overlay.leafletInstance.getBounds());
+                    };
+                });
+            });
+
+            contextMenu.showAtPosition({
+                x: evt.originalEvent.clientX,
+                y: evt.originalEvent.clientY
+            });
+            return;
+        }
+
         if (evt.originalEvent.getModifierState("Shift")) {
             log(this.verbose, this.id, `Beginning overlay drawing context.`);
             //begin drawing context
@@ -1307,37 +1341,26 @@ class LeafletMap extends Events {
                 if (this._tempCircle) {
                     log(this.verbose, this.id, `Overlay drawing complete.`);
                     this._tempCircle.remove();
-                    const circle = L.circle(this._tempCircle.getLatLng(), {
-                        radius: this._tempCircle.getRadius(),
-                        color: this._tempCircle.options.color
-                    });
-                    circle.addTo(this.group.group);
-
-                    const radius =
-                        this.type === "image"
+                    /* this.type === "image"
                             ? circle.getRadius()
                             : convert(circle.getRadius())
                                   .from("m")
-                                  .to(this.unit);
+                                  .to(this.unit); */
 
-                    this._pushOverlay({
-                        leafletInstance: circle,
-                        layer: this.group.id,
-                        data: {
-                            radius: radius,
-                            color: circle.options.color,
+                    this._pushOverlay(
+                        new Overlay(this, {
+                            radius: this._tempCircle.getRadius(),
+                            color: this._tempCircle.options.color,
                             loc: [
-                                circle.getLatLng().lat,
-                                circle.getLatLng().lng
+                                this._tempCircle.getLatLng().lat,
+                                this._tempCircle.getLatLng().lng
                             ],
                             layer: this.group.id,
                             unit: this.unit,
                             desc: "",
                             mutable: true
-                        },
-                        mutable: true,
-                        id: null
-                    });
+                        })
+                    );
                     await this.plugin.saveSettings();
                 }
 
@@ -1477,18 +1500,28 @@ class LeafletMap extends Events {
             const markerGroups = Object.fromEntries(
                 this.markerTypes.map((type) => [type, L.layerGroup()])
             );
+            const overlayGroups = {
+                none: L.layerGroup(),
+                ...Object.fromEntries(
+                    this.markerTypes.map((type) => [type, L.layerGroup()])
+                )
+            };
             const group = L.layerGroup([
                 this.layer,
-                ...Object.values(markerGroups)
+                ...Object.values(markerGroups),
+                ...Object.values(overlayGroups)
             ]);
+
+            console.log("🚀 ~ file: leaflet.ts ~ line 1410 ~ group", group);
 
             this.mapLayers = [
                 {
                     group: group,
                     layer: this.layer,
                     id: "real",
-                    data: "real",
-                    markers: markerGroups
+                    /* data: "real", */
+                    markers: markerGroups,
+                    overlays: overlayGroups
                 }
             ];
         } else if (this.type === "image") {
@@ -1610,7 +1643,29 @@ class LeafletMap extends Events {
         const markerGroups = Object.fromEntries(
             this.markerTypes.map((type) => [type, L.layerGroup()])
         );
-        const group = L.layerGroup([mapLayer, ...Object.values(markerGroups)]);
+        const overlayGroups = {
+            none: L.layerGroup(),
+            ...Object.fromEntries(
+                this.markerTypes.map((type) => [type, L.layerGroup()])
+            )
+        };
+        const group = L.layerGroup([
+            mapLayer,
+            ...Object.values(markerGroups),
+            ...Object.values(overlayGroups)
+        ]);
+
+        const layerGroup: LayerGroup = {
+            group: group,
+            layer: mapLayer,
+            id: layer.id,
+            markers: markerGroups,
+            overlays: overlayGroups,
+            dimensions: [w, h],
+            alias: layer.alias
+        };
+
+        this.trigger("ready-for-features", layerGroup);
 
         //add any markers to new layer
         if (this.group && layer.id != this.group.id) {
@@ -1626,22 +1681,8 @@ class LeafletMap extends Events {
                         marker.hide();
                     }
                 });
-            //add any overlays to new layer
-            this.overlays
-                .filter((overlay) => overlay.layer && overlay.layer == layer.id)
-                .forEach((overlay) => {
-                    overlay.leafletInstance.addTo(group);
-                });
         }
-        return {
-            group: group,
-            layer: mapLayer,
-            id: layer.id,
-            data: layer.data,
-            markers: markerGroups,
-            dimensions: [w, h],
-            alias: layer.alias
-        };
+        return layerGroup;
     }
 
     @catchErrorAsync
@@ -1689,174 +1730,6 @@ class LeafletMap extends Events {
         this._resize.observe(this.contentEl);
     }
 
-    @catchError
-    private _bindOverlayEvents(overlay: LeafletOverlay) {
-        overlay.leafletInstance
-            .on("contextmenu", (evt: L.LeafletMouseEvent) => {
-                const under = this._getOverlaysUnderClick(evt);
-
-                if (!under.length) {
-                    under.push(overlay);
-                }
-
-                L.DomEvent.stopPropagation(evt);
-                const openOverlayContext = (overlay: LeafletOverlay) => {
-                    const modal = new OverlayContextModal(
-                        this.plugin,
-                        overlay.data,
-                        this
-                    );
-                    modal.onClose = async () => {
-                        if (modal.deleted) {
-                            log(
-                                this.verbose,
-                                this.id,
-                                "Overlay deleted in context menu. Removing."
-                            );
-                            overlay.leafletInstance.remove();
-                            this.overlays = this.overlays.filter(
-                                (o) => o != overlay
-                            );
-                            this.trigger("markers-updated");
-
-                            return;
-                        }
-                        try {
-                            log(
-                                this.verbose,
-                                this.id,
-                                "Updating the overlay data."
-                            );
-                            overlay.data.color = modal.tempOverlay.color;
-                            log(
-                                this.verbose,
-                                this.id,
-                                `Overlay color set to: ${overlay.data.color}`
-                            );
-                            overlay.data.radius = modal.tempOverlay.radius;
-                            log(
-                                this.verbose,
-                                this.id,
-                                `Overlay radius set to: ${overlay.data.radius}`
-                            );
-                            overlay.data.desc = modal.tempOverlay.desc;
-                            log(
-                                this.verbose,
-                                this.id,
-                                `Overlay description set to: ${overlay.data.desc}`
-                            );
-                            overlay.data.tooltip = modal.tempOverlay.tooltip;
-                            overlay.tooltip = modal.tempOverlay.tooltip;
-                            log(
-                                this.verbose,
-                                this.id,
-                                `Overlay tooltip set to: ${overlay.data.tooltip}`
-                            );
-                            let newRadius = convert(Number(overlay.data.radius))
-                                .from(overlay.data.unit ?? "m")
-                                .to(this.type == "image" ? this.unit : "m");
-
-                            if (this.type == "image") {
-                                newRadius = newRadius / this.scale;
-                            }
-
-                            overlay.leafletInstance.setRadius(newRadius);
-                            overlay.leafletInstance.setStyle({
-                                color: overlay.data.color
-                            });
-
-                            await this.plugin.saveSettings();
-                        } catch (e) {
-                            console.error(
-                                "There was an error saving the overlay.\n\n" + e
-                            );
-                        }
-                    };
-                    modal.open();
-                };
-
-                let contextMenu = new Menu(this.plugin.app);
-
-                contextMenu.setNoIcon();
-                contextMenu.addItem((item) => {
-                    item.setTitle("Create Marker");
-                    item.onClick(() => {
-                        contextMenu.hide();
-                        this._handleMapContext(evt);
-                    });
-                });
-                under.forEach((overlay, index) => {
-                    contextMenu.addItem((item) => {
-                        item.setTitle("Overlay " + `${index + 1}`);
-                        item.onClick(() => {
-                            openOverlayContext(overlay);
-                        });
-                        item.dom.onmouseenter = () => {
-                            this.map.fitBounds(
-                                overlay.leafletInstance.getBounds()
-                            );
-                        };
-                    });
-                });
-
-                contextMenu.showAtPosition({
-                    x: evt.originalEvent.clientX,
-                    y: evt.originalEvent.clientY
-                });
-            })
-            .on("mouseover", (evt: L.LeafletMouseEvent) => {
-                L.DomEvent.stopPropagation(evt);
-                let radius = convert(overlay.data.radius)
-                    .from(overlay.data.unit)
-                    .to(this.unit);
-                if (this.type == "image") {
-                    radius = radius * this.scale;
-                }
-                if (overlay.data.desc) {
-                    this.openPopup(
-                        overlay,
-                        overlay.data.desc +
-                            ` (${this.distanceFormatter.format(radius)} ${
-                                this.unit
-                            })`
-                    );
-                } else {
-                    this.openPopup(
-                        overlay,
-                        `${this.distanceFormatter.format(radius)} ${this.unit}`
-                    );
-                }
-            })
-            .on("click", (evt: L.LeafletMouseEvent) => {
-                if (
-                    evt.originalEvent.getModifierState(this.plugin.modifierKey)
-                ) {
-                    this._focusOnLayer(overlay.leafletInstance);
-                    return;
-                }
-                let radius = convert(overlay.data.radius)
-                    .from(overlay.data.unit)
-                    .to(this.unit);
-                if (this.type == "image") {
-                    radius = radius * this.scale;
-                }
-                if (overlay.data.desc) {
-                    this.openPopup(
-                        evt.latlng,
-                        overlay.data.desc +
-                            ` (${this.distanceFormatter.format(radius)} ${
-                                this.unit
-                            })`
-                    );
-                } else {
-                    this.openPopup(
-                        evt.latlng,
-                        `${this.distanceFormatter.format(radius)} ${this.unit}`
-                    );
-                }
-            });
-    }
-
     @catchErrorAsync
     async copyLatLngToClipboard(loc: L.LatLng): Promise<void> {
         await new Promise<void>((resolve, reject) => {
@@ -1895,7 +1768,7 @@ class LeafletMap extends Events {
 
     @catchError
     openPopup(
-        target: MarkerDefinition | LeafletOverlay | L.LatLng,
+        target: MarkerDefinition | L.Circle | L.LatLng,
         content: ((source: L.Layer) => L.Content) | L.Content,
         handler?: L.Layer
     ) {
@@ -1924,16 +1797,10 @@ class LeafletMap extends Events {
         let _this = this;
 
         const zoomAnimHandler = function () {
-            if (
-                !(target instanceof L.LatLng) &&
-                target.leafletInstance instanceof L.Circle
-            ) {
+            if (!(target instanceof L.LatLng) && target instanceof L.Circle) {
                 _this.popup.options.offset = new L.Point(
                     0,
-                    (-1 *
-                        target.leafletInstance
-                            .getElement()
-                            .getBoundingClientRect().height) /
+                    (-1 * target.getElement().getBoundingClientRect().height) /
                         2 +
                         10 // not sure why circles have this extra padding..........
                 );
@@ -2015,9 +1882,7 @@ class LeafletMap extends Events {
     }
 
     @catchError
-    private _getPopup(
-        target: MarkerDefinition | LeafletOverlay | L.LatLng
-    ): L.Popup {
+    private _getPopup(target: MarkerDefinition | L.Circle | L.LatLng): L.Popup {
         if (this.popup.isOpen() && this._popupTarget == target) {
             return this.popup;
         }
@@ -2031,24 +1896,21 @@ class LeafletMap extends Events {
         return this.buildPopup(target);
     }
     @catchError
-    buildPopup(target: MarkerDefinition | LeafletOverlay | L.LatLng): L.Popup {
+    buildPopup(target: MarkerDefinition | L.Circle | L.LatLng): L.Popup {
         if (target instanceof L.LatLng) {
             return L.popup({
                 ...BASE_POPUP_OPTIONS
             }).setLatLng(target);
-        } else if (target.leafletInstance instanceof L.Circle) {
+        } else if (target instanceof L.Circle) {
             return L.popup({
                 ...BASE_POPUP_OPTIONS,
                 offset: new L.Point(
                     0,
-                    (-1 *
-                        target.leafletInstance
-                            .getElement()
-                            .getBoundingClientRect().height) /
+                    (-1 * target.getElement().getBoundingClientRect().height) /
                         2 +
                         10 // not sure why circles have this extra padding..........
                 )
-            }).setLatLng(target.leafletInstance.getLatLng());
+            }).setLatLng(target.getLatLng());
         } else {
             return L.popup({
                 ...BASE_POPUP_OPTIONS,
@@ -2064,33 +1926,12 @@ class LeafletMap extends Events {
         }
     }
 
-    private _getOverlaysUnderClick(evt: L.LeafletMouseEvent) {
-        const { clientX, clientY } = evt.originalEvent;
-
-        const overlays = [...this.overlays]
-            .filter(({ layer }) => layer === this.group.id)
-            .filter(({ mutable, leafletInstance }) => {
-                const element = leafletInstance.getElement();
-                if (!element) return false;
-                const { x, y, width, height } = element.getBoundingClientRect();
-                const radius = width / 2;
-                const center = [x + width / 2, y + height / 2];
-
-                return (
-                    mutable &&
-                    Math.pow(clientX - center[0], 2) +
-                        Math.pow(clientY - center[1], 2) <
-                        Math.pow(radius, 2)
-                );
-            });
+    getOverlaysUnderClick(evt: L.LeafletMouseEvent) {
+        const overlays = [...this.overlays].filter(
+            (overlay) => overlay.isUnder(evt) && overlay.layer === this.group.id
+        );
         overlays.sort((a, b) => {
-            const radiusA = convert(a.data.radius)
-                .from(a.data.unit as Length)
-                .to("m");
-            const radiusB = convert(b.data.radius)
-                .from(b.data.unit as Length)
-                .to("m");
-            return radiusA - radiusB;
+            return a.radiusInMeters - b.radiusInMeters;
         });
 
         return overlays;
@@ -2310,7 +2151,7 @@ class LeafletMap extends Events {
 
             if (
                 this.data.copyOnClick &&
-                evt.originalEvent.getModifierState(this.plugin.modifierKey)
+                evt.originalEvent.getModifierState(MODIFIER_KEY)
             ) {
                 await this.copyLatLngToClipboard(marker.loc);
             }
@@ -2321,7 +2162,7 @@ class LeafletMap extends Events {
             this.trigger(
                 "marker-click",
                 marker.link,
-                evt.originalEvent.getModifierState(this.plugin.modifierKey),
+                evt.originalEvent.getModifierState(MODIFIER_KEY),
                 marker.command
             );
         } else {

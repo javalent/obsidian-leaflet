@@ -17,18 +17,18 @@ import {
     removeValidationError,
     setValidationError,
     getMarkerIcon
-} from "./utils";
-import { CreateMarkerModal, IconSuggestionModal } from "./modals";
+} from "../utils";
+import { CreateMarkerModal, IconSuggestionModal } from "../modals";
 
 import {
     MapMarkerData,
     Icon,
     SavedMarkerProperties,
     ObsidianLeaflet
-} from "./@types/";
+} from "../@types";
 
 import { latLng } from "leaflet";
-import { TooltipDisplay } from "./@types";
+import { TooltipDisplay } from "../@types";
 
 export class ObsidianLeafletSettingTab extends PluginSettingTab {
     plugin: ObsidianLeaflet;

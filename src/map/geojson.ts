@@ -1,17 +1,16 @@
-import type { LeafletMap } from "src/@types";
+import type { DivIconMarker, LeafletMap } from "src/@types";
 import type geojson from "geojson";
 
 import { Marker } from "./marker";
+
 import {
     buildTooltip,
-    DESCRIPTION_ICON,
     getId,
     MAP_OVERLAY_STROKE_OPACITY,
-    MAP_OVERLAY_STROKE_WIDTH
+    MAP_OVERLAY_STROKE_WIDTH,
+    MODIFIER_KEY
 } from "src/utils";
 import { LeafletSymbol } from "src/utils/leaflet-import";
-import { setIcon } from "obsidian";
-
 let L = window[LeafletSymbol];
 
 export class GeoJSON {
@@ -28,63 +27,8 @@ export class GeoJSON {
         this.leafletInstance = L.geoJSON(data, {
             pane: "geojson",
             pointToLayer: (geojsonPoint, latlng) => {
-                const type =
-                    geojsonPoint?.properties["marker-symbol"] ?? "default";
-                const icon =
-                    this.map.markerIcons.get(type) ??
-                    this.map.markerIcons.get("default");
-                const title =
-                    geojsonPoint.properties.title ??
-                    geojsonPoint.properties.name;
-                const description = geojsonPoint.properties.description;
-                let display;
-                /* if (title) */
-                /* display = this._buildDisplayForTooltip(title, {
-                        icon: description
-                    }); */
-
-                const marker = new Marker(this.map, {
-                    id: getId(),
-                    type: type,
-                    loc: latlng,
-                    link: "display.outerHTML",
-                    icon: icon.icon,
-                    layer: this.map.group?.id,
-                    mutable: false,
-                    command: false,
-                    zoom: this.map.zoom.max,
-                    percent: undefined,
-                    description: undefined
-                });
-
-                marker.leafletInstance.off("mouseover");
-                marker.leafletInstance.off("click");
-                marker.leafletInstance.on(
-                    "click",
-                    (evt: L.LeafletMouseEvent) => {
-                        /* if (
-                            (!evt.originalEvent.getModifierState("Shift") ||
-                                !evt.originalEvent.getModifierState("Alt")) &&
-                            title
-                        ) {
-                            let display = this._buildDisplayForTooltip(title, {
-                                description
-                            });
-
-                            this.openPopup(marker, display);
-                            return;
-                        } */
-                    }
-                );
-                marker.leafletInstance.on("mouseover", () => {
-                    if (this.map.isDrawing) return;
-                    /* let display = this._buildDisplayForTooltip(title, {
-                        icon: description
-                    }); */
-                    this.map.openPopup(marker, "display");
-                });
-
-                return marker.leafletInstance;
+                return new GeoJSONMarker(this.map, geojsonPoint, latlng)
+                    .leafletInstance;
             },
             style: (feature) => {
                 if (!feature || !feature.properties) return {};
@@ -120,7 +64,68 @@ export class GeoJSON {
     }
 }
 
-class GeoJSONMarker extends Marker {}
+class GeoJSONMarker {
+    marker: Marker;
+    leafletInstance: DivIconMarker;
+    title: string;
+    description: string;
+    iconDisplay: HTMLDivElement;
+    descriptionDisplay: HTMLDivElement;
+    constructor(
+        private map: LeafletMap,
+        private feature: geojson.Feature<geojson.Point, any>,
+        latlng: L.LatLng
+    ) {
+        const type = feature?.properties["marker-symbol"] ?? "default";
+        const icon =
+            this.map.markerIcons.get(type) ??
+            this.map.markerIcons.get("default");
+        this.title =
+            feature.properties.title ?? feature.properties.name ?? null;
+        this.description = feature.properties.description ?? null;
+        if (this.title) {
+            this.iconDisplay = buildTooltip(this.title, {
+                icon: this.description != null
+            });
+            this.descriptionDisplay = buildTooltip(this.title, {
+                description: this.description
+            });
+        }
+        this.marker = new Marker(this.map, {
+            id: getId(),
+            type: type,
+            loc: latlng,
+            link: "display.outerHTML",
+            icon: icon.icon,
+            layer: this.map.group?.id,
+            mutable: false,
+            command: false,
+            zoom: this.map.zoom.max,
+            percent: undefined,
+            description: undefined
+        });
+
+        this.leafletInstance = this.marker.leafletInstance;
+
+        this.leafletInstance.off("mouseover");
+        this.leafletInstance.off("click");
+        this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) => {
+            if (
+                (!evt.originalEvent.getModifierState("Shift") ||
+                    !evt.originalEvent.getModifierState("Alt")) &&
+                this.title
+            ) {
+                this.map.openPopup(this.marker, this.descriptionDisplay);
+                return;
+            }
+        });
+        this.leafletInstance.on("mouseover", () => {
+            if (this.map.isDrawing || !this.description) return;
+
+            this.map.openPopup(this.marker, this.iconDisplay);
+        });
+    }
+}
 
 class GeoJSONFeature {
     title: string;
@@ -129,22 +134,23 @@ class GeoJSONFeature {
     descriptionDisplay: HTMLDivElement;
     constructor(
         public feature: geojson.Feature<geojson.Geometry, any>,
-        public layer: L.GeoJSON,
+        public leafletInstance: L.GeoJSON,
         public map: LeafletMap
     ) {
         this.title =
             feature.properties.title ?? feature.properties.name ?? null;
         this.description = feature.properties.description ?? null;
+        if (this.title) {
+            this.iconDisplay = buildTooltip(this.title, {
+                icon: this.description != null
+            });
+            this.descriptionDisplay = buildTooltip(this.title, {
+                description: this.description
+            });
+        }
 
-        this.iconDisplay = buildTooltip(this.title, {
-            icon: this.description != null
-        });
-        this.descriptionDisplay = buildTooltip(this.title, {
-            description: this.description
-        });
-
-        this.layer.on("mouseover", () => this.onLayerMouseover());
-        this.layer.on("click", (evt: L.LeafletMouseEvent) =>
+        this.leafletInstance.on("mouseover", () => this.onLayerMouseover());
+        this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) =>
             this.onLayerClick(evt)
         );
     }
@@ -152,13 +158,13 @@ class GeoJSONFeature {
         if (!this.title && !this.description) return;
         if (this.map.isDrawing) return;
         this.map.openPopup(
-            this.layer.getBounds().getCenter(),
+            this.leafletInstance.getBounds().getCenter(),
             this.iconDisplay,
-            this.layer
+            this.leafletInstance
         );
     }
     onLayerClick(evt: L.LeafletMouseEvent) {
-        if (evt.originalEvent.getModifierState(this.map.plugin.modifierKey)) {
+        if (evt.originalEvent.getModifierState(MODIFIER_KEY)) {
             this._focus();
             return;
         }
@@ -167,7 +173,11 @@ class GeoJSONFeature {
                 !evt.originalEvent.getModifierState("Alt")) &&
             this.title
         ) {
-            this.map.openPopup(evt.latlng, this.descriptionDisplay, this.layer);
+            this.map.openPopup(
+                evt.latlng,
+                this.descriptionDisplay,
+                this.leafletInstance
+            );
             return;
         }
         this.map.map.fire("click", evt, true);
@@ -175,13 +185,13 @@ class GeoJSONFeature {
 
     private _focus() {
         const { lat, lng } = this.map.formatLatLng(
-            this.layer.getBounds().getCenter()
+            this.leafletInstance.getBounds().getCenter()
         );
 
         this.map.log(
             `Feature was Control clicked. Moving to bounds [${lat}, ${lng}]`
         );
 
-        this.map.map.fitBounds(this.layer.getBounds());
+        this.map.map.fitBounds(this.leafletInstance.getBounds());
     }
 }

@@ -32,7 +32,6 @@ export default class Watcher extends Events {
     }
 
     private _onChange(file: TFile) {
-        console.log("🚀 ~ file: watcher.ts ~ line 37 ~ file", file);
         if (file !== this.file) return;
         const cache = this.plugin.app.metadataCache.getFileCache(file);
         if (!("frontmatter" in cache)) return;
@@ -72,10 +71,6 @@ export default class Watcher extends Events {
         if (marker && marker.length && this.frontmatter.mapmarker) {
             try {
                 const { mapmarker } = this.frontmatter;
-                console.log(
-                    "🚀 ~ file: watcher.ts ~ line 76 ~ mapmarker",
-                    mapmarker
-                );
 
                 if (
                     this.plugin.markerIcons.find(
@@ -138,12 +133,14 @@ export default class Watcher extends Events {
         if (marker)
             try {
                 this.map.overlays
-                    .filter(({ id }) => id === this.fileIds.get("overlay"))
+                    .filter(
+                        ({ data }) => data.id === this.fileIds.get("overlay")
+                    )
                     ?.forEach((overlay) => {
                         overlay.leafletInstance.remove();
                     });
                 this.map.overlays = this.map.overlays.filter(
-                    ({ id }) => id != this.fileIds.get("overlay")
+                    ({ data }) => data.id != this.fileIds.get("overlay")
                 );
 
                 if (
@@ -209,12 +206,12 @@ export default class Watcher extends Events {
         markers.forEach((marker) => this.map.removeMarker(marker));
 
         this.map.overlays
-            .filter(({ id }) => id === this.fileIds.get("overlay"))
+            .filter(({ data }) => data.id === this.fileIds.get("overlay"))
             ?.forEach((overlay) => {
                 overlay.leafletInstance.remove();
             });
         this.map.overlays = this.map.overlays.filter(
-            ({ id }) => id != this.fileIds.get("overlay")
+            ({ data }) => data.id != this.fileIds.get("overlay")
         );
         this.trigger("remove");
     }

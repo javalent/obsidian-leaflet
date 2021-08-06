@@ -15,7 +15,7 @@ import {
 
 //Local Imports
 
-import { ObsidianLeafletSettingTab } from "./settings";
+import { ObsidianLeafletSettingTab } from "./settings/settings";
 
 import {
     getIcon,
@@ -158,68 +158,73 @@ export default class ObsidianLeaflet
         ctx: MarkdownPostProcessorContext
     ): Promise<void> {
         /* try { */
-        /** Get Parameters from Source */
-        let params = getParamsFromSource(source);
-        let {
-            height = "500px",
-            minZoom = 1,
-            maxZoom = 10,
-            defaultZoom = 5,
-            zoomDelta = 1,
-            lat = `${this.AppData.lat}`,
-            long = `${this.AppData.long}`,
-            coordinates = undefined,
-            id = undefined,
-            scale = 1,
-            unit = "m",
-            distanceMultiplier = 1,
-            darkMode = "false",
-            image = "real",
-            layers = [],
-            imageOverlay = [],
-            overlay = [],
-            overlayColor = "blue",
-            bounds = undefined,
-            linksFrom = [],
-            linksTo = [],
-            geojson = [],
-            geojsonColor = "#3388ff",
-            zoomFeatures = false,
-            verbose = false,
-            gpx = [],
-            gpxMarkers
-        } = params;
-        if (!id) {
-            new Notice(
-                "As of version 3.0.0, Obsidian Leaflet maps must have an ID."
-            );
-            new Notice(
-                "All marker data associated with this map will sync to the new ID."
-            );
-            throw new Error("ID required");
-        }
-        log(verbose, id, "Beginning Markdown Postprocessor.");
-        let view = this.app.workspace.getActiveViewOfType(MarkdownView);
+            /** Get Parameters from Source */
+            let params = getParamsFromSource(source);
+            let {
+                height = "500px",
+                minZoom = 1,
+                maxZoom = 10,
+                defaultZoom = 5,
+                zoomDelta = 1,
+                lat = `${this.AppData.lat}`,
+                long = `${this.AppData.long}`,
+                coordinates = undefined,
+                id = undefined,
+                scale = 1,
+                unit = "m",
+                distanceMultiplier = 1,
+                darkMode = "false",
+                image = "real",
+                layers = [],
+                imageOverlay = [],
+                overlay = [],
+                overlayColor = "blue",
+                bounds = undefined,
+                linksFrom = [],
+                linksTo = [],
+                geojson = [],
+                geojsonColor = "#3388ff",
+                zoomFeatures = false,
+                verbose = false,
+                gpx = [],
+                gpxMarkers
+            } = params;
+            if (!id) {
+                new Notice(
+                    "As of version 3.0.0, Obsidian Leaflet maps must have an ID."
+                );
+                new Notice(
+                    "All marker data associated with this map will sync to the new ID."
+                );
+                throw new Error("ID required");
+            }
+            log(verbose, id, "Beginning Markdown Postprocessor.");
+            let view = this.app.workspace.getActiveViewOfType(MarkdownView);
 
-        /** Get Markers from Parameters */
+            /** Get Markers from Parameters */
 
-        /** Update Old Map Data Format */
-        if (
-            this.AppData.mapMarkers.find(
-                ({ path, id: mapId }) =>
-                    (path == `${ctx.sourcePath}/${image}` && !mapId) ||
-                    path == `${ctx.sourcePath}/${id}`
-            )
-        ) {
-            log(verbose, id, "Map data found in an old format. Converting.");
-            let data = this.AppData.mapMarkers.find(
-                ({ path }) =>
-                    path == `${ctx.sourcePath}/${image}` ||
-                    path == `${ctx.sourcePath}/${id}`
-            );
-            this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
-                (d) => d != data
-            );
+            /** Update Old Map Data Format */
+            if (
+                this.AppData.mapMarkers.find(
+                    ({ path, id: mapId }) =>
+                        (path == `${ctx.sourcePath}/${image}` && !mapId) ||
+                        path == `${ctx.sourcePath}/${id}`
+                )
+            ) {
+                log(
+                    verbose,
+                    id,
+                    "Map data found in an old format. Converting."
+                );
+                let data = this.AppData.mapMarkers.find(
+                    ({ path }) =>
+                        path == `${ctx.sourcePath}/${image}` ||
+                        path == `${ctx.sourcePath}/${id}`
+                );
+                this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
+                    (d) => d != data
+                );
+            }
 
             let geojsonData: any[] = [];
             if (!(geojson instanceof Array)) {
@@ -242,7 +247,6 @@ export default class ObsidianLeaflet
                         }
                         geojsonData.push(data);
                     }
-                    geojsonData.push(data);
                 }
             }
             let gpxData: any[] = [];
@@ -449,8 +453,6 @@ export default class ObsidianLeaflet
                 }) ?? [])
             ]);
 
-            /* await map.loadData(mapData); */
-
             let layerData: {
                 data: string;
                 id: string;
@@ -529,12 +531,11 @@ export default class ObsidianLeaflet
                     map.loadAdditionalMapLayers(layerData.slice(1));
                 await this.saveSettings();
             });
-            /* } catch (e) {
+        /* } catch (e) {
             console.error(e);
             new Notice("There was an error loading the map.");
             renderError(el, e.message);
         } */
-        }
     }
     private async _getCoordinates(
         lat: string,
@@ -708,21 +709,8 @@ export default class ObsidianLeaflet
                 overlays: map.map.overlays
                     .filter(({ mutable }) => mutable)
                     .map((overlay) => {
-                        if (overlay.leafletInstance instanceof L.Circle) {
-                            return {
-                                radius: overlay.data.radius,
-                                loc: [
-                                    overlay.leafletInstance.getLatLng().lat,
-                                    overlay.leafletInstance.getLatLng().lng
-                                ],
-                                color: overlay.leafletInstance.options.color,
-                                layer: overlay.layer,
-                                unit: overlay.data.unit,
-                                desc: overlay.data.desc,
-                                mutable: overlay.mutable,
-                                tooltip: overlay.tooltip ?? null
-                            };
-                        }
+                        if (overlay.leafletInstance instanceof L.Circle)
+                            return overlay.toProperties();
                     })
             });
         });

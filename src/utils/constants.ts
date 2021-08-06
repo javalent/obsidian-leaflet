@@ -1,3 +1,4 @@
+import { Platform } from "obsidian";
 import { LeafletMapOptions, ObsidianAppData } from "src/@types";
 
 export const OVERLAY_TAG_REGEX = /^(\d+(?:\.\d+)?)\s?(\w*)/;
@@ -47,6 +48,8 @@ export const BASE_POPUP_OPTIONS = {
     closeOnClick: false,
     autoPan: false
 };
+
+export const MODIFIER_KEY = Platform.isMacOS ? "Meta" : "Control"; 
 
 /** From https://github.com/leaflet-extras/leaflet-providers/blob/master/leaflet-providers.js */
 /** CURRENTLY UNUSED */

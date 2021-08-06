@@ -3,15 +3,11 @@ import { Length } from "convert/dist/types/units";
 import L from "leaflet";
 import { DivIcon } from "leaflet";
 import { Events } from "obsidian";
-import {
-    MarkerIcon,
-    LeafletOverlay,
-    SavedMarkerProperties,
-    SavedOverlayData
-} from ".";
+import { MarkerIcon, SavedMarkerProperties, SavedOverlayData } from ".";
 import { ObsidianLeaflet } from "./main";
 import { Marker } from ".";
 import { ObsidianAppData } from "./saved";
+import type { Overlay } from "src/map";
 
 export interface LayerGroup {
     /** Layer group containing the marker layer groups */
@@ -19,6 +15,8 @@ export interface LayerGroup {
 
     /** Marker type layer groups (used to filter out marker types) */
     markers: { [type: string]: L.LayerGroup };
+    /** Marker type layer groups (used to filter out marker types) */
+    overlays: { [type: string]: L.LayerGroup };
 
     /** Actual rendered map layer */
     layer: L.TileLayer | L.ImageOverlay;
@@ -27,7 +25,7 @@ export interface LayerGroup {
     id: string;
 
     /** Only used for image maps -> actual image map data as base64 */
-    data: string;
+    /* data: string ;*/
 
     /** Only used for image maps -> dimensions of image */
     dimensions?: [number, number];
@@ -67,9 +65,11 @@ export interface LeafletMapOptions {
         start: string;
         end: string;
         waypoint: string;
-    }
+    };
 }
 declare class LeafletMap extends Events {
+    handleMapContext(evt: L.LeafletMouseEvent, overlay?: Overlay): void;
+    getOverlaysUnderClick(evt: L.LeafletMouseEvent): Overlay[];
     log(message: string): void;
     data: ObsidianAppData;
     id: string;
@@ -90,7 +90,7 @@ declare class LeafletMap extends Events {
 
     isDrawing: boolean;
 
-    overlays: LeafletOverlay[];
+    overlays: Overlay[];
 
     verbose: boolean;
 
@@ -101,8 +101,8 @@ declare class LeafletMap extends Events {
     locale: string;
 
     distanceFormatter: Intl.NumberFormat;
-    
-    formatLatLng(latlng: L.LatLng): { lat: number, lng: number}
+
+    formatLatLng(latlng: L.LatLng): { lat: number; lng: number };
 
     constructor(
         plugin: ObsidianLeaflet,
@@ -182,7 +182,7 @@ declare class LeafletMap extends Events {
     onMarkerClick(marker: Marker, evt: L.LeafletMouseEvent): void;
 
     openPopup(
-        target: Marker | L.LatLng,
+        target: Marker | L.Circle | L.LatLng,
         content: ((source: L.Layer) => L.Content) | L.Content,
         handler?: L.Layer
     ): void;

@@ -13,5 +13,5 @@
         "allowSyntheticDefaultImports": true,
         "lib": ["dom", "esnext", "scripthost", "es2019"]
     },
-    "include": ["**/src/*", "**/modals/*", "**/utils/*", "**/map/*"],
+    "include": ["**/src/*", "**/modals/*", "**/utils/*", "**/map/*", "**/settings/*"],
 }
