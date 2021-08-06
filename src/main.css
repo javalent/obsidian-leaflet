@@ -7,6 +7,16 @@
     text-align: center;
 }
 
+.obsidian-leaflet-settings .coffee {
+    width: 60%;
+    color: var(--text-faint);
+    margin: 1rem auto;
+    text-align: center;
+}
+.obsidian-leaflet-settings .coffee img {
+    height: 30px;
+}
+
 .additional-markers-container > .setting-item:not(.setting-item-heading) {
     border: 0px;
 }
