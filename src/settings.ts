@@ -58,6 +58,8 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 
         containerEl.empty();
 
+        containerEl.addClass("obsidian-leaflet-settings");
+
         containerEl.createEl("h2", { text: "Obsidian Leaflet Settings" });
 
         this.createCSVSetting(containerEl);
@@ -76,7 +78,14 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
         );
 
         this.createAdditionalMarkerSettings(additionalMarkers);
-
+        const div = containerEl.createDiv("coffee");
+        div.createEl("a", {
+            href: "https://www.buymeacoffee.com/valentine195"
+        }).createEl("img", {
+            attr: {
+                src: "https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=valentine195&button_colour=e3e7ef&font_colour=262626&font_family=Inter&outline_colour=262626&coffee_colour=ff0000"
+            }
+        });
         await this.plugin.saveSettings();
     }
     createDefaultMarkerSettings(defaultMarker: HTMLDivElement) {

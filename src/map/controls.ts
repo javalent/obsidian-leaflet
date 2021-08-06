@@ -785,18 +785,14 @@ class FilterMarkers extends FontAwesomeControl {
         buttons.createEl("button", { text: "All" }).onclick = (evt) => {
             evt.stopPropagation();
             this.map.markerIcons.forEach(({ type }) => {
-                if (!this.map.displaying.get(type))
-                    this.map.group.markers[type].addTo(this.leafletInstance);
-                this.map.displaying.set(type, true);
+                this.show(type);
             });
             this.update();
         };
         buttons.createEl("button", { text: "None" }).onclick = (evt) => {
             evt.stopPropagation();
             this.map.markerIcons.forEach(({ type }) => {
-                if (this.map.displaying.get(type))
-                    this.map.group.markers[type].remove();
-                this.map.displaying.set(type, false);
+                this.hide(type);
             });
             this.update();
         };
@@ -834,13 +830,11 @@ class FilterMarkers extends FontAwesomeControl {
 
                 input.addEventListener("click", (evt) => {
                     if (input.checked) {
-                        this.map.group.markers[type].addTo(
-                            this.leafletInstance
-                        );
-                    } else {
-                        if (this.map.displaying.get(type))
-                            this.map.group.markers[type].remove();
+                        this.show(type);
+                    } else if (this.map.displaying.get(type)) {
+                        this.hide(type);
                     }
+
                     this.map.displaying.set(type, input.checked);
                 });
 
@@ -852,6 +846,19 @@ class FilterMarkers extends FontAwesomeControl {
         for (let [type, input] of this.inputs) {
             input.checked = this.map.displaying.get(type);
         }
+    }
+
+    private show(type: string) {
+        this.map.group.markers[type].addTo(this.leafletInstance);
+        this.map.overlays
+            .filter((o) => o.marker === type)
+            .forEach((o) => o.leafletInstance.addTo(this.map.group.group));
+    }
+    private hide(type: string) {
+        this.map.group.markers[type].remove();
+        this.map.overlays
+            .filter((o) => o.marker === type)
+            .forEach((o) => o.leafletInstance.remove());
     }
 }
 

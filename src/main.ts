@@ -266,7 +266,6 @@ export default class ObsidianLeaflet
                 ...gpxMarkers
             };
 
-            console.log("🚀 ~ file: main.ts ~ line 803 ~ gpxIcons", gpxIcons);
             if (gpx.length) {
                 log(verbose, id, "Loading GeoJSON files.");
                 for (let link of gpx.flat(Infinity)) {
