@@ -221,324 +221,320 @@ export default class ObsidianLeaflet
                 (d) => d != data
             );
 
-            data.id = id;
-            this.AppData.mapMarkers.push({
-                id: data.id,
-                markers: data.markers,
-                files: [ctx.sourcePath],
-                lastAccessed: Date.now(),
-                overlays: data.overlays || []
-            });
-        }
-
-        let geojsonData: any[] = [];
-        console.log("🚀 ~ file: main.ts ~ line 237 ~ geojson", geojson);
-        if (!(geojson instanceof Array)) {
-            geojson = [geojson];
-        }
-        console.log("🚀 ~ file: main.ts ~ line 237 ~ geojson", geojson);
-        if (geojson.length) {
-            log(verbose, id, "Loading GeoJSON files.");
-            for (let link of geojson.flat(Infinity)) {
-                const file = this.app.metadataCache.getFirstLinkpathDest(
-                    parseLink(link),
-                    ""
-                );
-                if (file && file instanceof TFile) {
-                    let data = await this.app.vault.read(file);
-                    try {
-                        data = JSON.parse(data);
-                    } catch (e) {
-                        new Notice("Could not parse GeoJSON file " + link);
-                        continue;
+            let geojsonData: any[] = [];
+            if (!(geojson instanceof Array)) {
+                geojson = [geojson];
+            }
+            if (geojson.length) {
+                log(verbose, id, "Loading GeoJSON files.");
+                for (let link of geojson.flat(Infinity)) {
+                    const file = this.app.metadataCache.getFirstLinkpathDest(
+                        parseLink(link),
+                        ""
+                    );
+                    if (file && file instanceof TFile) {
+                        let data = await this.app.vault.read(file);
+                        try {
+                            data = JSON.parse(data);
+                        } catch (e) {
+                            new Notice("Could not parse GeoJSON file " + link);
+                            continue;
+                        }
+                        geojsonData.push(data);
                     }
                     geojsonData.push(data);
                 }
             }
-        }
-        let gpxData: any[] = [];
-        let gpxIcons: {
-            start: string;
-            end: string;
-            waypoint: string;
-        } = {
-            ...{ start: null, end: null, waypoint: null },
-            ...gpxMarkers
-        };
-        if (typeof gpx === "string") {
-            gpx = [gpx];
-        }
-        if (gpx.length) {
-            log(verbose, id, "Loading GeoJSON files.");
-            for (let link of gpx.flat(Infinity)) {
-                const file = this.app.metadataCache.getFirstLinkpathDest(
-                    parseLink(link),
-                    ""
-                );
-                if (file && file instanceof TFile) {
-                    let data = await this.app.vault.read(file);
-                    /* try {
+            let gpxData: any[] = [];
+            let gpxIcons: {
+                start: string;
+                end: string;
+                waypoint: string;
+            } = {
+                ...{ start: null, end: null, waypoint: null },
+                ...gpxMarkers
+            };
+            if (!(gpx instanceof Array)) {
+                gpx = [gpx];
+            }
+            if (gpx.length) {
+                log(verbose, id, "Loading GeoJSON files.");
+                for (let link of gpx.flat(Infinity)) {
+                    const file = this.app.metadataCache.getFirstLinkpathDest(
+                        parseLink(link),
+                        ""
+                    );
+                    if (file && file instanceof TFile) {
+                        let data = await this.app.vault.read(file);
+                        /* try {
                             data = JSON.parse(data);
                         } catch (e) {
                             new Notice("Could not parse GeoJSON file " + link);
                             continue;
                         } */
-                    gpxData.push(data);
+                        gpxData.push(data);
+                    }
                 }
             }
-        }
 
-        const renderer = new LeafletRenderer(this, ctx, el, {
-            height: getHeight(view, height) ?? "500px",
-            type: image != "real" ? "image" : "real",
-            minZoom: +minZoom,
-            maxZoom: +maxZoom,
-            defaultZoom: +defaultZoom,
-            zoomDelta: +zoomDelta,
-            unit: unit,
-            scale: scale,
-            distanceMultiplier: distanceMultiplier,
-            id: id,
-            darkMode: `${darkMode}` === "true",
-            overlayColor: overlayColor,
-            bounds: bounds,
-            geojson: geojsonData,
-            geojsonColor: geojsonColor,
-            gpx: gpxData,
-            gpxIcons: gpxIcons,
-            zoomFeatures: zoomFeatures,
-            verbose: verbose
-        });
-        const map = renderer.map;
+            const renderer = new LeafletRenderer(this, ctx, el, {
+                height: getHeight(view, height) ?? "500px",
+                type: image != "real" ? "image" : "real",
+                minZoom: +minZoom,
+                maxZoom: +maxZoom,
+                defaultZoom: +defaultZoom,
+                zoomDelta: +zoomDelta,
+                unit: unit,
+                scale: scale,
+                distanceMultiplier: distanceMultiplier,
+                id: id,
+                darkMode: `${darkMode}` === "true",
+                overlayColor: overlayColor,
+                bounds: bounds,
+                geojson: geojsonData,
+                geojsonColor: geojsonColor,
+                gpx: gpxData,
+                gpxIcons: gpxIcons,
+                zoomFeatures: zoomFeatures,
+                verbose: verbose
+            });
+            const map = renderer.map;
 
-        if (
-            (params.marker ?? []).length ||
-            (params.commandMarker ?? []).length ||
-            (params.markerTag ?? []).length ||
-            (params.markerFile ?? []).length ||
-            (params.markerFolder ?? []).length ||
-            (params.linksTo ?? []).length ||
-            (params.linksFrom ?? []).length ||
-            (params.overlayTag ?? []).length
-        ) {
-            log(verbose, id, "Loading immutable items.");
-        }
-        let {
-            markers: immutableMarkers,
-            overlays: immutableOverlays,
-            files: watchers
-        } = await getImmutableItems(
-            /* source */
-            this.app,
-            params.marker as string[],
-            params.commandMarker as string[],
-            params.markerTag as string[][],
-            params.markerFile as string[],
-            params.markerFolder as string[],
-            linksTo.flat(Infinity),
-            linksFrom.flat(Infinity),
-            params.overlayTag,
-            overlayColor
-        );
-
-        if (
-            (params.marker ?? []).length ||
-            (params.commandMarker ?? []).length ||
-            (params.markerTag ?? []).length ||
-            (params.markerFile ?? []).length ||
-            (params.markerFolder ?? []).length ||
-            (params.linksTo ?? []).length ||
-            (params.linksFrom ?? []).length ||
-            (params.overlayTag ?? []).length
-        ) {
-            log(
-                verbose,
-                id,
-                `Found ${immutableMarkers.length} markers and ${immutableOverlays.length} overlays from ${watchers.size} files.`
+            if (
+                (params.marker ?? []).length ||
+                (params.commandMarker ?? []).length ||
+                (params.markerTag ?? []).length ||
+                (params.markerFile ?? []).length ||
+                (params.markerFolder ?? []).length ||
+                (params.linksTo ?? []).length ||
+                (params.linksFrom ?? []).length ||
+                (params.overlayTag ?? []).length
+            ) {
+                log(verbose, id, "Loading immutable items.");
+            }
+            let {
+                markers: immutableMarkers,
+                overlays: immutableOverlays,
+                files: watchers
+            } = await getImmutableItems(
+                /* source */
+                this.app,
+                params.marker as string[],
+                params.commandMarker as string[],
+                params.markerTag as string[][],
+                params.markerFile as string[],
+                params.markerFolder as string[],
+                linksTo.flat(Infinity),
+                linksFrom.flat(Infinity),
+                params.overlayTag,
+                overlayColor
             );
-        }
-        /** Build arrays of markers and overlays to pass to map */
-        let markerArray: SavedMarkerProperties[] = immutableMarkers.map(
-            ([
-                type,
+
+            if (
+                (params.marker ?? []).length ||
+                (params.commandMarker ?? []).length ||
+                (params.markerTag ?? []).length ||
+                (params.markerFile ?? []).length ||
+                (params.markerFolder ?? []).length ||
+                (params.linksTo ?? []).length ||
+                (params.linksFrom ?? []).length ||
+                (params.overlayTag ?? []).length
+            ) {
+                log(
+                    verbose,
+                    id,
+                    `Found ${immutableMarkers.length} markers and ${immutableOverlays.length} overlays from ${watchers.size} files.`
+                );
+            }
+            /** Build arrays of markers and overlays to pass to map */
+            let markerArray: SavedMarkerProperties[] = immutableMarkers.map(
+                ([
+                    type,
+                    lat,
+                    long,
+                    link,
+                    layer,
+                    command,
+                    id,
+                    desc,
+                    minZoom,
+                    maxZoom
+                ]) => {
+                    return {
+                        type: type,
+                        loc: [Number(lat), Number(long)],
+                        percent: undefined,
+                        link: link?.trim(),
+                        id: id,
+                        layer: layer,
+                        mutable: false,
+                        command: command,
+                        description: desc,
+                        minZoom,
+                        maxZoom,
+                        tooltip: "hover",
+                        zoom: undefined
+                    };
+                }
+            );
+
+            let immutableOverlayArray: SavedOverlayData[] = [
+                ...immutableOverlays,
+                ...overlay
+            ].map(([color, loc, length, desc, id = getId()]) => {
+                const match = `${length}`.match(OVERLAY_TAG_REGEX) ?? [];
+
+                if (!match || isNaN(Number(match[1]))) {
+                    throw new Error(
+                        "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`."
+                    );
+                }
+                const [, radius, unit] = match ?? [];
+                return {
+                    radius: Number(radius),
+                    loc: loc,
+                    color: color,
+                    unit: unit && unit.length ? (unit as Length) : undefined,
+                    layer: layers[0],
+                    desc: desc,
+                    id: id,
+                    mutable: false
+                };
+            });
+
+            /** Get initial coordinates and zoom level */
+            log(verbose, id, "Getting initiatial coordinates.");
+            const { coords, distanceToZoom, file } = await this._getCoordinates(
                 lat,
                 long,
-                link,
-                layer,
-                command,
-                id,
-                desc,
-                minZoom,
-                maxZoom
-            ]) => {
-                return {
-                    type: type,
-                    loc: [Number(lat), Number(long)],
-                    percent: undefined,
-                    link: link?.trim(),
-                    id: id,
-                    layer: layer,
-                    mutable: false,
-                    command: command,
-                    description: desc,
-                    minZoom,
-                    maxZoom,
-                    tooltip: "hover",
-                    zoom: undefined
-                };
-            }
-        );
+                coordinates,
+                params.zoomTag,
+                map
+            );
 
-        let immutableOverlayArray: SavedOverlayData[] = [
-            ...immutableOverlays,
-            ...overlay
-        ].map(([color, loc, length, desc, id = getId()]) => {
-            const match = `${length}`.match(OVERLAY_TAG_REGEX) ?? [];
-
-            if (!match || isNaN(Number(match[1]))) {
-                throw new Error(
-                    "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`."
+            if (file) {
+                watchers.set(
+                    file,
+                    watchers.get(file)?.set("coordinates", "coordinates") ??
+                        new Map([["coordinates", "coordinates"]])
                 );
             }
-            const [, radius, unit] = match ?? [];
-            return {
-                radius: Number(radius),
-                loc: loc,
-                color: color,
-                unit: unit && unit.length ? (unit as Length) : undefined,
-                layer: layers[0],
-                desc: desc,
-                id: id,
-                mutable: false
-            };
-        });
 
-        /** Get initial coordinates and zoom level */
-        log(verbose, id, "Getting initiatial coordinates.");
-        const { coords, distanceToZoom, file } = await this._getCoordinates(
-            lat,
-            long,
-            coordinates,
-            params.zoomTag,
-            map
-        );
-
-        if (file) {
-            watchers.set(
-                file,
-                watchers.get(file)?.set("coordinates", "coordinates") ??
-                    new Map([["coordinates", "coordinates"]])
-            );
-        }
-
-        /** Register File Watcher to Update Markers/Overlays */
-        for (const [file, fileIds] of watchers) {
-            new Watcher(this, file, map, fileIds);
-        }
-
-        let mapData = this.AppData.mapMarkers.find(
-            ({ id: mapId }) => mapId == id
-        );
-
-        map.addOverlays(immutableOverlayArray, {
-            mutable: false,
-            sort: true
-        });
-        const mutableOverlays = new Set(mapData?.overlays ?? []);
-        map.addOverlays([...mutableOverlays], {
-            mutable: true,
-            sort: true
-        });
-        map.addMarkers([
-            ...markerArray,
-            ...(mapData?.markers.map((m) => {
-                const layer =
-                    decodeURIComponent(m.layer) === m.layer
-                        ? encodeURIComponent(m.layer)
-                        : m.layer;
-                return { ...m, mutable: true, layer };
-            }) ?? [])
-        ]);
-
-        /* await map.loadData(mapData); */
-
-        let layerData: {
-            data: string;
-            id: string;
-            alias: string;
-        }[] = [];
-
-        if (image != "real") {
-            layerData = await Promise.all(
-                layers.map(async (img) => {
-                    return await toDataURL(encodeURIComponent(img), this.app);
-                })
-            );
-            if (layerData.filter((d) => !d.data).length) {
-                throw new Error(
-                    "No valid layers were provided to the image map."
-                );
+            /** Register File Watcher to Update Markers/Overlays */
+            for (const [file, fileIds] of watchers) {
+                new Watcher(this, file, map, fileIds);
             }
-        }
-        let imageOverlayData: {
-            data: string;
-            id: string;
-            alias: string;
-            bounds: [[number, number], [number, number]];
-        }[] = [];
 
-        if (imageOverlay.length) {
-            imageOverlayData = await Promise.all(
-                imageOverlay.map(async ([img, ...bounds]) => {
-                    return {
-                        ...(await toDataURL(encodeURIComponent(img), this.app)),
-                        bounds
-                    };
-                })
+            let mapData = this.AppData.mapMarkers.find(
+                ({ id: mapId }) => mapId == id
             );
-        }
 
-        this.registerMapEvents(map);
-
-        map.render({
-            coords: coords,
-            zoomDistance: distanceToZoom,
-            layer: layerData[0],
-            hasAdditional: layerData.length > 1,
-            imageOverlays: imageOverlayData
-        });
-
-        ctx.addChild(renderer);
-
-        this.maps = this.maps.filter((m) => m.el != el);
-        this.maps.push({
-            map: map,
-            source: source,
-            el: el,
-            id: id
-        });
-
-        if (this.mapFiles.find(({ file }) => file == ctx.sourcePath)) {
-            this.mapFiles
-                .find(({ file }) => file == ctx.sourcePath)
-                .maps.push(id);
-        } else {
-            this.mapFiles.push({
-                file: ctx.sourcePath,
-                maps: [id]
+            map.addOverlays(immutableOverlayArray, {
+                mutable: false,
+                sort: true
             });
-        }
+            const mutableOverlays = new Set(mapData?.overlays ?? []);
+            map.addOverlays([...mutableOverlays], {
+                mutable: true,
+                sort: true
+            });
+            map.addMarkers([
+                ...markerArray,
+                ...(mapData?.markers.map((m) => {
+                    const layer =
+                        decodeURIComponent(m.layer) === m.layer
+                            ? encodeURIComponent(m.layer)
+                            : m.layer;
+                    return { ...m, mutable: true, layer };
+                }) ?? [])
+            ]);
 
-        map.on("rendered", async () => {
-            if (layerData.length > 1)
-                map.loadAdditionalMapLayers(layerData.slice(1));
-            await this.saveSettings();
-        });
-        /* } catch (e) {
+            /* await map.loadData(mapData); */
+
+            let layerData: {
+                data: string;
+                id: string;
+                alias: string;
+            }[] = [];
+
+            if (image != "real") {
+                layerData = await Promise.all(
+                    layers.map(async (img) => {
+                        return await toDataURL(
+                            encodeURIComponent(img),
+                            this.app
+                        );
+                    })
+                );
+                if (layerData.filter((d) => !d.data).length) {
+                    throw new Error(
+                        "No valid layers were provided to the image map."
+                    );
+                }
+            }
+            let imageOverlayData: {
+                data: string;
+                id: string;
+                alias: string;
+                bounds: [[number, number], [number, number]];
+            }[] = [];
+
+            if (imageOverlay.length) {
+                imageOverlayData = await Promise.all(
+                    imageOverlay.map(async ([img, ...bounds]) => {
+                        return {
+                            ...(await toDataURL(
+                                encodeURIComponent(img),
+                                this.app
+                            )),
+                            bounds
+                        };
+                    })
+                );
+            }
+
+            this.registerMapEvents(map);
+
+            map.render({
+                coords: coords,
+                zoomDistance: distanceToZoom,
+                layer: layerData[0],
+                hasAdditional: layerData.length > 1,
+                imageOverlays: imageOverlayData
+            });
+
+            ctx.addChild(renderer);
+
+            this.maps = this.maps.filter((m) => m.el != el);
+            this.maps.push({
+                map: map,
+                source: source,
+                el: el,
+                id: id
+            });
+
+            if (this.mapFiles.find(({ file }) => file == ctx.sourcePath)) {
+                this.mapFiles
+                    .find(({ file }) => file == ctx.sourcePath)
+                    .maps.push(id);
+            } else {
+                this.mapFiles.push({
+                    file: ctx.sourcePath,
+                    maps: [id]
+                });
+            }
+
+            map.on("rendered", async () => {
+                if (layerData.length > 1)
+                    map.loadAdditionalMapLayers(layerData.slice(1));
+                await this.saveSettings();
+            });
+            /* } catch (e) {
             console.error(e);
             new Notice("There was an error loading the map.");
             renderError(el, e.message);
         } */
+        }
     }
     private async _getCoordinates(
         lat: string,
