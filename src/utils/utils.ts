@@ -3,6 +3,7 @@ import {
     MarkdownView,
     Notice,
     parseYaml,
+    setIcon,
     TextComponent,
     TFile,
     TFolder,
@@ -13,8 +14,9 @@ import Color from "color";
 import { getType as lookupMimeType } from "mime/lite";
 import { parse as parseCSV } from "papaparse";
 
-import { BlockParameters } from "src/@types";
+import { BlockParameters, LeafletMap } from "src/@types";
 import { OVERLAY_TAG_REGEX } from "./constants";
+import { DESCRIPTION_ICON } from ".";
 
 export function renderError(el: HTMLElement, error: string): void {
     let pre = createEl("pre", { attr: { id: "leaflet-error" } });
@@ -855,4 +857,88 @@ export function getGroupSeparator(locale: string) {
     return Intl.NumberFormat(locale)
         .formatToParts(numberWithDecimalSeparator)
         .find((part) => part.type === "group").value;
+}
+
+export function catchError(
+    target: LeafletMap,
+    name: string,
+    descriptor: PropertyDescriptor
+) {
+    const original = descriptor.value;
+    if (typeof original === "function") {
+        descriptor.value = function (...args: any[]) {
+            try {
+                return original.apply(this, args);
+            } catch (e) {
+                //throw error here
+                console.error(e, original);
+                renderError(
+                    this.contentEl?.parentElement ?? this.contentEl,
+                    e.message
+                );
+            }
+        };
+    }
+}
+
+export function catchErrorAsync(
+    target: LeafletMap,
+    name: string,
+    descriptor: PropertyDescriptor
+) {
+    const original = descriptor.value;
+    if (typeof original === "function") {
+        descriptor.value = async function (...args: any[]) {
+            try {
+                return await original.apply(this, args);
+            } catch (e) {
+                //throw error here
+                console.error(e, original);
+                renderError(
+                    this.contentEl?.parentElement ?? this.contentEl,
+                    e.message
+                );
+            }
+        };
+    }
+}
+
+export function buildTooltip(
+    title: string,
+    { icon, description }: { icon?: boolean; description?: string }
+) {
+    let display: HTMLDivElement = createDiv({
+        attr: { style: "text-align: left;" }
+    });
+    const titleEl = display.createDiv({
+        attr: {
+            style: "display: flex; justify-content: space-between;"
+        }
+    });
+    const labelEl = titleEl.createEl("label", {
+        text: title,
+        attr: {
+            style: "text-align: left;"
+        }
+    });
+    if (icon) {
+        setIcon(
+            titleEl.createDiv({
+                attr: {
+                    style: "margin-left: 0.5rem;"
+                }
+            }),
+            DESCRIPTION_ICON
+        );
+    }
+    if (description) {
+        labelEl.setAttr("style", "font-weight: bolder; text-align: left;");
+        display.createEl("p", {
+            attr: {
+                style: "margin: 0.25rem 0; text-align: left;"
+            },
+            text: description
+        });
+    }
+    return display;
 }

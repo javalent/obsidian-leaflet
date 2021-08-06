@@ -70,6 +70,7 @@ export interface LeafletMapOptions {
     }
 }
 declare class LeafletMap extends Events {
+    log(message: string): void;
     data: ObsidianAppData;
     id: string;
     /* containerEl: HTMLElement; */
@@ -100,7 +101,8 @@ declare class LeafletMap extends Events {
     locale: string;
 
     distanceFormatter: Intl.NumberFormat;
-    latLngFormatter: Intl.NumberFormat;
+    
+    formatLatLng(latlng: L.LatLng): { lat: number, lng: number}
 
     constructor(
         plugin: ObsidianLeaflet,
@@ -181,7 +183,8 @@ declare class LeafletMap extends Events {
 
     openPopup(
         target: Marker | L.LatLng,
-        content: ((source: L.Layer) => L.Content) | L.Content
+        content: ((source: L.Layer) => L.Content) | L.Content,
+        handler?: L.Layer
     ): void;
     closePopup(popup: L.Popup): void;
 

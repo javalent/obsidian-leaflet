@@ -232,9 +232,11 @@ export default class ObsidianLeaflet
         }
 
         let geojsonData: any[] = [];
-        if (typeof geojson === "string") {
+        console.log("🚀 ~ file: main.ts ~ line 237 ~ geojson", geojson);
+        if (!(geojson instanceof Array)) {
             geojson = [geojson];
         }
+        console.log("🚀 ~ file: main.ts ~ line 237 ~ geojson", geojson);
         if (geojson.length) {
             log(verbose, id, "Loading GeoJSON files.");
             for (let link of geojson.flat(Infinity)) {

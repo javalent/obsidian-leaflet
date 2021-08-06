@@ -31,9 +31,7 @@ import {
     DISTANCE_DECIMALS,
     LAT_LONG_DECIMALS,
     DEFAULT_MAP_OPTIONS,
-    BASE_POPUP_OPTIONS,
-    MAP_OVERLAY_STROKE_OPACITY,
-    MAP_OVERLAY_STROKE_WIDTH
+    BASE_POPUP_OPTIONS
 } from "./utils/constants";
 
 import { icon, DESCRIPTION_ICON } from "./utils/icons";
@@ -41,9 +39,10 @@ import { icon, DESCRIPTION_ICON } from "./utils/icons";
 import {
     getId,
     getImageDimensions,
-    renderError,
     getHex,
-    log
+    log,
+    catchErrorAsync,
+    catchError
 } from "./utils/utils";
 
 import {
@@ -53,7 +52,8 @@ import {
     filterMarkerControl,
     Marker,
     resetZoomControl,
-    zoomControl
+    zoomControl,
+    GeoJSON
 } from "./map";
 
 import { OverlayContextModal } from "./modals/context";
@@ -75,50 +75,6 @@ declare module "leaflet" {
         shadowUrl?: null;
         wptIconUrls?: {
             "": null;
-        };
-    }
-}
-
-function catchError(
-    target: LeafletMap,
-    name: string,
-    descriptor: PropertyDescriptor
-) {
-    const original = descriptor.value;
-    if (typeof original === "function") {
-        descriptor.value = function (...args: any[]) {
-            try {
-                return original.apply(this, args);
-            } catch (e) {
-                //throw error here
-                console.error(e, original);
-                renderError(
-                    this.contentEl?.parentElement ?? this.contentEl,
-                    e.message
-                );
-            }
-        };
-    }
-}
-
-function catchErrorAsync(
-    target: LeafletMap,
-    name: string,
-    descriptor: PropertyDescriptor
-) {
-    const original = descriptor.value;
-    if (typeof original === "function") {
-        descriptor.value = async function (...args: any[]) {
-            try {
-                return await original.apply(this, args);
-            } catch (e) {
-                //throw error here
-                console.error(e, original);
-                renderError(
-                    this.contentEl?.parentElement ?? this.contentEl,
-                    e.message
-                );
-            }
         };
     }
 }
@@ -649,155 +605,18 @@ class LeafletMap extends Events {
             added = 0;
             this._geojson.forEach((geoJSON) => {
                 try {
-                    L.geoJSON(geoJSON, {
-                        pane: "geojson",
-                        pointToLayer: (geojsonPoint, latlng) => {
-                            const type =
-                                geojsonPoint?.properties["marker-symbol"] ??
-                                "default";
-                            const icon =
-                                this.markerIcons.get(type) ??
-                                this.markerIcons.get("default");
-                            const title =
-                                geojsonPoint.properties.title ??
-                                geojsonPoint.properties.name;
-                            const description =
-                                geojsonPoint.properties.description;
-                            let display;
-                            if (title)
-                                display = this._buildDisplayForTooltip(title, {
-                                    icon: description
-                                });
+                    const geo = new GeoJSON(
+                        this,
+                        this.featureLayer,
+                        { color: this._geojsonColor },
+                        geoJSON
+                    );
 
-                            const marker = new Marker(this, {
-                                id: getId(),
-                                type: type,
-                                loc: latlng,
-                                link: display.outerHTML,
-                                icon: icon.icon,
-                                layer: this.group?.id,
-                                mutable: false,
-                                command: false,
-                                zoom: this.zoom.max,
-                                percent: undefined,
-                                description: undefined
-                            });
+                    geo.leafletInstance.addTo(this.featureLayer);
 
-                            marker.leafletInstance.off("mouseover");
-                            marker.leafletInstance.off("click");
-                            marker.leafletInstance.on(
-                                "click",
-                                (evt: L.LeafletMouseEvent) => {
-                                    if (
-                                        (!evt.originalEvent.getModifierState(
-                                            "Shift"
-                                        ) ||
-                                            !evt.originalEvent.getModifierState(
-                                                "Alt"
-                                            )) &&
-                                        title
-                                    ) {
-                                        let display =
-                                            this._buildDisplayForTooltip(
-                                                title,
-                                                { description }
-                                            );
-
-                                        this.openPopup(marker, display);
-                                        return;
-                                    }
-                                }
-                            );
-                            marker.leafletInstance.on("mouseover", () => {
-                                if (this.isDrawing) return;
-                                let display = this._buildDisplayForTooltip(
-                                    title,
-                                    {
-                                        icon: description
-                                    }
-                                );
-                                this.openPopup(marker, display);
-                            });
-
-                            return marker.leafletInstance;
-                        },
-                        style: (feature) => {
-                            if (!feature || !feature.properties) return {};
-
-                            const {
-                                stroke: color = this._geojsonColor,
-                                "stroke-opacity":
-                                    opacity = MAP_OVERLAY_STROKE_OPACITY,
-                                "stroke-width":
-                                    weight = MAP_OVERLAY_STROKE_WIDTH,
-                                fill: fillColor = null,
-                                "fill-opacity": fillOpacity = 0.2
-                            } = feature.properties;
-                            return {
-                                color,
-                                opacity,
-                                weight,
-                                fillColor,
-                                fillOpacity
-                            };
-                        },
-                        onEachFeature: (feature, layer: L.GeoJSON) => {
-                            /** Propogate click */
-                            if (feature.geometry?.type == "Point") return;
-                            layer.on("click", (evt: L.LeafletMouseEvent) => {
-                                if (
-                                    evt.originalEvent.getModifierState(
-                                        this.plugin.modifierKey
-                                    )
-                                ) {
-                                    this._focusOnLayer(layer);
-                                    return;
-                                }
-                                if (
-                                    (!evt.originalEvent.getModifierState(
-                                        "Shift"
-                                    ) ||
-                                        !evt.originalEvent.getModifierState(
-                                            "Alt"
-                                        )) &&
-                                    title
-                                ) {
-                                    let display = this._buildDisplayForTooltip(
-                                        title,
-                                        { description }
-                                    );
-
-                                    this.openPopup(evt.latlng, display, layer);
-                                    return;
-                                }
-                                this.map.fire("click", evt, true);
-                            });
-                            if (!feature.properties) return;
-                            const title =
-                                feature.properties.title ??
-                                feature.properties.name;
-                            const description = feature.properties.description;
-
-                            if (!title && !description) return;
-
-                            layer.on("mouseover", () => {
-                                if (this.isDrawing) return;
-                                let display = this._buildDisplayForTooltip(
-                                    title,
-                                    {
-                                        icon: description
-                                    }
-                                );
-                                this.openPopup(
-                                    layer.getBounds().getCenter(),
-                                    display,
-                                    layer
-                                );
-                            });
-                        }
-                    }).addTo(this.featureLayer);
                     added++;
                 } catch (e) {
+                    console.error(e);
                     new Notice(
                         "There was an error adding GeoJSON to map " + this.id
                     );
@@ -976,6 +795,9 @@ class LeafletMap extends Events {
             `Feature was Control clicked. Moving to bounds [${lat}, ${lng}]`
         );
         this.map.fitBounds(layer.getBounds());
+    }
+    log(message: string) {
+        log(this.verbose, this.id, message);
     }
     sortOverlays() {
         log(this.verbose, this.id, `Sorting overlays.`);
@@ -1349,6 +1171,13 @@ class LeafletMap extends Events {
             this._previousDistanceLine,
             this
         ).addTo(this.map);
+    }
+
+    formatLatLng(latlng: L.LatLng) {
+        return {
+            lat: Number(this.latLngFormatter.format(latlng.lat)),
+            lng: Number(this.latLngFormatter.format(latlng.lng))
+        };
     }
 
     @catchErrorAsync
