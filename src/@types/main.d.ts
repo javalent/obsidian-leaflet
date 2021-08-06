@@ -39,6 +39,12 @@ export interface BlockParameters {
     linksTo?: string[];
     linksFrom?: string[];
     geojson?: string[];
+    gpx?: string[];
+    gpxMarkers?: {
+        start?: string;
+        end?: string;
+        waypoint?: string;
+    };
     geojsonColor?: string;
     zoomFeatures?: boolean;
     verbose?: boolean;
