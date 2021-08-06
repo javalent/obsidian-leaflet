@@ -235,7 +235,9 @@ export default class ObsidianLeaflet
             }
 
             let geojsonData: any[] = [];
-
+            if (!(geojson instanceof Array)) {
+                geojson = [geojson];
+            }
             if (geojson.length) {
                 log(verbose, id, "Loading GeoJSON files.");
                 for (let link of geojson.flat(Infinity)) {
@@ -261,10 +263,12 @@ export default class ObsidianLeaflet
                 end: string;
                 waypoint: string;
             } = {
-                ...{ start: "default", end: "default", waypoint: "default" },
+                ...{ start: null, end: null, waypoint: null },
                 ...gpxMarkers
             };
-
+            if (!(gpx instanceof Array)) {
+                gpx = [gpx];
+            }
             if (gpx.length) {
                 log(verbose, id, "Loading GeoJSON files.");
                 for (let link of gpx.flat(Infinity)) {

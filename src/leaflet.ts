@@ -1853,8 +1853,9 @@ class LeafletMap extends Events {
                 const under = this._getOverlaysUnderClick(evt);
 
                 if (!under.length) {
-                    return;
+                    under.push(overlay);
                 }
+
                 L.DomEvent.stopPropagation(evt);
                 const openOverlayContext = (overlay: ILeafletOverlay) => {
                     const modal = new OverlayContextModal(
@@ -2372,9 +2373,11 @@ class LeafletMap extends Events {
     private _getOverlaysUnderClick(evt: L.LeafletMouseEvent) {
         const { clientX, clientY } = evt.originalEvent;
 
-        const overlays = [...this.overlays].filter(
-            ({ mutable, leafletInstance }) => {
+        const overlays = [...this.overlays]
+            .filter(({ layer }) => layer === this.group.id)
+            .filter(({ mutable, leafletInstance }) => {
                 const element = leafletInstance.getElement();
+                if (!element) return false;
                 const { x, y, width, height } = element.getBoundingClientRect();
                 const radius = width / 2;
                 const center = [x + width / 2, y + height / 2];
@@ -2385,8 +2388,7 @@ class LeafletMap extends Events {
                         Math.pow(clientY - center[1], 2) <
                         Math.pow(radius, 2)
                 );
-            }
-        );
+            });
         overlays.sort((a, b) => {
             const radiusA = convert(a.data.radius)
                 .from(a.data.unit as Length)
