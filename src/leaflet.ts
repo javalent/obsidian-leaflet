@@ -1100,8 +1100,6 @@ class LeafletMap extends Events {
     handleMapContext(evt: L.LeafletMouseEvent, overlay?: Overlay) {
         if (overlay) {
             const under = this.getOverlaysUnderClick(evt);
-            console.log("🚀 ~ file: leaflet.ts ~ line 1219 ~ under", under);
-
             if (!under.length) {
                 under.push(overlay);
             }
@@ -1395,8 +1393,6 @@ class LeafletMap extends Events {
                 ...Object.values(markerGroups),
                 ...Object.values(overlayGroups)
             ]);
-
-            console.log("🚀 ~ file: leaflet.ts ~ line 1410 ~ group", group);
 
             this.mapLayers = [
                 {

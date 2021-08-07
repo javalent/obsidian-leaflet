@@ -14,7 +14,6 @@ export class Overlay {
             radius = convert(radius).from("m").to(this.map.unit);
             radius = radius / this.map.scale;
         }
-        console.log("🚀 ~ file: overlay.ts ~ line 16 ~ radius", radius);
         return radius;
     }
     setRadius(radius: number) {
