@@ -98,7 +98,7 @@ export async function toDataURL(
                 lookupMimeType(file.extension) || "application/octet-stream";
             let buffer = await app.vault.readBinary(file);
             blob = new Blob([new Uint8Array(buffer)]);
-            alias = url.includes("|") ? url.split("|").pop() : file.basename;
+            alias = (url.includes("|") ? url.split("|").pop() : file.basename).replace(/(\[|\])/g, "");
         }
 
         return new Promise((resolve, reject) => {
