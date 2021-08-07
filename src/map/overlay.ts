@@ -85,17 +85,12 @@ export class Overlay {
     }
 
     constructor(private map: LeafletMap, public data: SavedOverlayData) {
-        console.log("🚀 ~ file: overlay.ts ~ line 87 ~ data", data.radius);
         this.leafletInstance = L.circle(L.latLng(this.data.loc), {
             radius: this.radius,
             color: this.color
         });
 
         this.map.on("ready-for-features", (layer: LayerGroup) => {
-            console.log(
-                "🚀 ~ file: overlay.ts ~ line 91 ~ layer",
-                layer.id == this.layer
-            );
             if (layer.id === this.layer) {
                 layer.overlays[this.type].addLayer(this.leafletInstance);
             }
@@ -105,11 +100,6 @@ export class Overlay {
             let layer =
                 this.map.mapLayers.find(({ id }) => id === this.layer) ??
                 this.map.group;
-            console.log(
-                "🚀 ~ file: overlay.ts ~ line 100 ~ this.map.mapLayers",
-                layer,
-                this.type
-            );
 
             this.leafletInstance.addTo(layer.overlays[this.type]);
         }

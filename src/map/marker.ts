@@ -8,7 +8,8 @@ import {
     MarkerDivIcon,
     TooltipDisplay,
     MarkerProperties,
-    SavedMarkerProperties
+    SavedMarkerProperties,
+    LayerGroup
 } from "src/@types";
 import { MarkerContextModal } from "src/modals";
 import { divIconMarker } from ".";
@@ -88,10 +89,21 @@ export class Marker implements MarkerDefinition {
         this.minZoom = minZoom;
         this.maxZoom = maxZoom;
 
-        this.init();
-    }
-    async init() {
-        this.initEvents();
+        this.map.on("ready-for-features", (layer: LayerGroup) => {
+            if (layer.id === this.layer) {
+                this.leafletInstance.addTo(layer.markers[this.type]);
+            }
+        });
+
+        if (this.map.rendered) {
+            let layer =
+                this.map.mapLayers.find(({ id }) => id === this.layer) ??
+                this.map.group;
+
+            this.leafletInstance.addTo(layer.markers[this.type]);
+        }
+        
+        this.bindEvents();
         this.buildPopupDisplay();
     }
     async buildPopupDisplay() {
@@ -178,7 +190,7 @@ export class Marker implements MarkerDefinition {
         }
         this.popupDisplay = display;
     }
-    private initEvents() {
+    private bindEvents() {
         this.leafletInstance
             .on("contextmenu", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
