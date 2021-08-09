@@ -17,6 +17,12 @@ import { LeafletSymbol } from "../utils/leaflet-import";
 
 let L = window[LeafletSymbol];
 
+abstract class MarkerTarget {}
+
+class Link implements MarkerTarget {
+
+}
+
 export class Marker implements MarkerDefinition {
     private _link: string;
     private _mutable: boolean;
@@ -428,3 +434,4 @@ export class Marker implements MarkerDefinition {
         this.group && this.group.removeLayer(this.leafletInstance);
     }
 }
+
