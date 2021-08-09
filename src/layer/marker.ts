@@ -1,4 +1,3 @@
-import { Popup } from "leaflet";
 import { App, Notice, setIcon } from "obsidian";
 import {
     LeafletMap,
@@ -9,12 +8,13 @@ import {
     TooltipDisplay,
     MarkerProperties,
     SavedMarkerProperties,
-    LayerGroup
+    Popup
 } from "src/@types";
 import { MarkerContextModal } from "src/modals";
-import { divIconMarker } from ".";
+import { divIconMarker } from "src/map";
 import { LeafletSymbol } from "../utils/leaflet-import";
-import { Layer } from "./layer";
+import { Layer } from "../layer/layer";
+import { popup } from "src/map/popup";
 
 let L = window[LeafletSymbol];
 
@@ -115,7 +115,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
     divIcon: MarkerDivIcon;
     displayed: boolean;
     tooltip?: TooltipDisplay;
-    popup?: L.Popup;
+    popup: Popup;
     private _icon: MarkerIcon;
     isBeingHovered: boolean = false;
     constructor(
@@ -170,6 +170,12 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         this.percent = percent;
         this.description = description;
         this.tooltip = tooltip;
+
+        if (this.tooltip === "always") {
+            this.popup = popup(this.map);
+        } else {
+            this.popup = this.map.popup;
+        }
 
         this.zoom = zoom;
         this.minZoom = minZoom;
@@ -229,15 +235,13 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                             }
 
                             if (this.tooltip === "always" && !this.popup) {
-                                this.popup = new Popup();
-                                const content = this.target.display;
-                                this.popup.setContent(content);
-                                this.map.map.openPopup(this.popup);
+                                this.popup = popup(this.map);
+                                this.popup.open(this, this.target.display);
                             } else if (
                                 this.tooltip !== "always" &&
                                 this.popup
                             ) {
-                                this.map.map.closePopup(this.popup);
+                                this.popup.close();
                                 delete this.popup;
                             }
 

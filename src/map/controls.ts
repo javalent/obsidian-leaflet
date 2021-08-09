@@ -8,7 +8,7 @@ import { Events, Modal, Notice, Setting, TextComponent } from "obsidian";
 import { IconName } from "@fortawesome/free-solid-svg-icons";
 
 import { LeafletMap, ObsidianLeaflet } from "../@types";
-import { Marker } from ".";
+import { Marker } from "src/layer";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 
 const L = window[LeafletSymbol];
@@ -448,7 +448,8 @@ class SimpleLeafletMap extends Events {
 
     async render(): Promise<void> {
         return new Promise(async (resolve) => {
-            const layerData = this.original.mapLayers.map(
+            //TODO: REWRITE
+            /* const layerData = this.original.mapLayers.map(
                 ({ data, id, layer }) => {
                     const bounds =
                         layer instanceof L.ImageOverlay
@@ -488,7 +489,7 @@ class SimpleLeafletMap extends Events {
                 });
             }
 
-            this.addMarkers();
+            this.addMarkers(); */
 
             resolve();
         });
@@ -851,7 +852,7 @@ class FilterMarkers extends FontAwesomeControl {
     private show(type: string) {
         this.map.group.markers[type].addTo(this.leafletInstance);
         this.map.overlays
-            .filter((o) => o.marker === type)
+            .filter((o) => o.type === type)
             .forEach((o) => o.leafletInstance.addTo(this.map.group.group));
 
             this.map.sortOverlays();
@@ -860,7 +861,7 @@ class FilterMarkers extends FontAwesomeControl {
     private hide(type: string) {
         this.map.group.markers[type].remove();
         this.map.overlays
-            .filter((o) => o.marker === type)
+            .filter((o) => o.type === type)
             .forEach((o) => o.leafletInstance.remove());
         this.map.displaying.set(type, false);
     }

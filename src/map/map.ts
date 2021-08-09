@@ -1,54 +1,45 @@
-import { LeafletSymbol } from "src/utils/leaflet-import";
-import { DivIconMarkerOptions, MarkerDivIconOptions } from "../@types";
+import { Events } from "obsidian";
+import {
+    LayerGroup,
+    LeafletMapOptions,
+    ObsidianLeaflet,
+    Popup
+} from "src/@types";
+import { DEFAULT_MAP_OPTIONS, log } from "src/utils";
+import { LeafletSymbol } from "../utils/leaflet-import";
+let L = window[LeafletSymbol];
+export abstract class Map<T> extends Events {
+    /** Abstract */
+    abstract render(): Promise<void>;
+    abstract type: "image" | "real";
 
-const L = window[LeafletSymbol];
-class MarkerDivIcon extends L.DivIcon {
-    options: MarkerDivIconOptions;
-    div: HTMLElement;
-    constructor(options: MarkerDivIconOptions) {
-        super(options);
-    }
-    createIcon(oldIcon: HTMLElement) {
-        const div = super.createIcon(oldIcon);
-        for (let item in this.options.data) {
-            div.dataset[item] = this.options.data[item];
-        }
-        this.div = div;
-        return div;
-    }
-    setData(data: { [key: string]: string }) {
-        this.options.data = {
-            ...this.options.data,
-            ...data
-        };
-        if (this.div) {
-            for (let item in data) {
-                this.div.dataset[item] = this.options.data[item];
-            }
-        }
-    }
-}
-
-export const markerDivIcon = function (options: MarkerDivIconOptions) {
-    return new MarkerDivIcon(options);
-};
-
-class DivIconMarker extends L.Marker {
-    options: DivIconMarkerOptions;
     constructor(
-        latlng: L.LatLng,
-        options: L.MarkerOptions,
-        data: { [key: string]: string }
+        public plugin: ObsidianLeaflet,
+        public options: LeafletMapOptions = {}
     ) {
-        super(latlng, options);
-        this.options.icon.setData(data);
+        super();
+        this.contentEl.style.height = options.height;
+        this.contentEl.style.width = "100%";
+        this.options = Object.assign({}, DEFAULT_MAP_OPTIONS, options);
+    }
+
+    contentEl: HTMLElement = createDiv();
+    get id() {
+        return this.options.id;
+    }
+    leafletInstance: L.Map;
+    layer: T;
+    mapLayers: LayerGroup[] = [];
+    popup: Popup;
+    verbose: boolean;
+
+    log(text: string) {
+        log(this.verbose, this.id, text);
+    }
+
+    toProperties(): SavedMapData {
+        return {};
     }
 }
 
-export const divIconMarker = function (
-    latlng: L.LatLng,
-    options: DivIconMarkerOptions,
-    data: { [key: string]: string }
-) {
-    return new DivIconMarker(latlng, options, data);
-};
+interface SavedMapData {}

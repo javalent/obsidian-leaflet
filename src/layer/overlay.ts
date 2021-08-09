@@ -3,7 +3,7 @@ import convert from "convert";
 import { LeafletMap, SavedOverlayData, LayerGroup } from "src/@types";
 import { MODIFIER_KEY } from "src/utils";
 import { LeafletSymbol } from "src/utils/leaflet-import";
-import { Layer } from "./layer";
+import { Layer } from "../layer/layer";
 
 let L = window[LeafletSymbol];
 export class Overlay extends Layer<L.Circle> {
@@ -115,14 +115,14 @@ export class Overlay extends Layer<L.Circle> {
             })
             .on("mouseover", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
-                this.map.openPopup(this.leafletInstance, this.description);
+                this.map.popup.open(this.leafletInstance, this.description);
             })
             .on("click", (evt: L.LeafletMouseEvent) => {
                 if (evt.originalEvent.getModifierState(MODIFIER_KEY)) {
                     this.focus();
                     return;
                 }
-                this.map.openPopup(this.leafletInstance, this.description);
+                this.map.popup.open(this.leafletInstance, this.description);
             });
     }
     public isUnder(evt: L.LeafletMouseEvent) {

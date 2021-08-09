@@ -7,7 +7,7 @@ import { MarkerIcon, SavedMarkerProperties, SavedOverlayData } from ".";
 import { ObsidianLeaflet } from "./main";
 import { Marker } from ".";
 import { ObsidianAppData } from "./saved";
-import type { Overlay } from "src/map";
+import type { Overlay } from "src/layer";
 
 export interface LayerGroup {
     /** Layer group containing the marker layer groups */
@@ -67,6 +67,23 @@ export interface LeafletMapOptions {
         waypoint: string;
     };
 }
+
+declare class Popup {
+    leafletInstance: L.Popup;
+    target: Marker | L.Circle | L.LatLng;
+    handlerTarget: any;
+    constructor(map: LeafletMap, options: L.PopupOptions, source?: L.Layer);
+    open(
+        target: Marker | L.Circle | L.LatLng,
+        content: ((source: L.Layer) => L.Content) | L.Content,
+        handler?: L.Layer
+    ): void;
+    close(): void;
+    isOpen(): boolean;
+    setContent(content: ((source: L.Layer) => L.Content) | L.Content): void;
+    setLatLng(latlng: L.LatLng): void;
+}
+
 declare class LeafletMap extends Events {
     isLayerRendered(layer: string): boolean;
     getZoom(): number;
@@ -80,7 +97,7 @@ declare class LeafletMap extends Events {
     map: L.Map;
     markers: Marker[];
     zoom: { min: number; max: number; default: number; delta: number };
-    popup: L.Popup;
+    popup: Popup;
     mapLayers: LayerGroup[];
     featureLayer: L.FeatureGroup;
     layer: L.ImageOverlay | L.TileLayer;
@@ -183,12 +200,6 @@ declare class LeafletMap extends Events {
 
     onMarkerMouseover(marker: Marker): void;
     onMarkerClick(marker: Marker, evt: L.LeafletMouseEvent): void;
-
-    openPopup(
-        target: Marker | L.Circle | L.LatLng,
-        content: ((source: L.Layer) => L.Content) | L.Content,
-        handler?: L.Layer
-    ): void;
     closePopup(popup: L.Popup): void;
 
     remove(): void;

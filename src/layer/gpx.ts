@@ -2,7 +2,7 @@ import type { LeafletMap } from "src/@types";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 
 import type { GPX as LeafletGPX, GPXOptions } from "leaflet";
-import { Layer } from "./layer";
+import { Layer } from "../layer/layer";
 
 let L = window[LeafletSymbol];
 const MarkerOptions: L.MarkerOptions = {

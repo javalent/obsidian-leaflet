@@ -31,7 +31,6 @@ import {
     DISTANCE_DECIMALS,
     LAT_LONG_DECIMALS,
     DEFAULT_MAP_OPTIONS,
-    BASE_POPUP_OPTIONS,
     MODIFIER_KEY
 } from "./utils/constants";
 
@@ -51,18 +50,16 @@ import {
     distanceDisplay,
     editMarkers,
     filterMarkerControl,
-    Marker,
     resetZoomControl,
-    zoomControl,
-    GeoJSON,
-    GPX,
-    Overlay
+    zoomControl
 } from "./map";
 
 import { OverlayContextModal } from "./modals/context";
 import { LeafletSymbol } from "./utils/leaflet-import";
-import { MarkerDivIcon } from "./@types/map";
-import { layerGroup, MarkerOptions } from "leaflet";
+import { MarkerDivIcon, Popup } from "./@types/map";
+import { popup } from "./map/popup";
+import { Marker, GeoJSON, GPX, Overlay } from "./layer";
+
 let L = window[LeafletSymbol];
 
 declare module "leaflet" {
@@ -176,16 +173,6 @@ export class LeafletRenderer extends MarkdownRenderChild {
     }
 }
 
-class Popup extends L.Popup {
-    constructor(public options: L.PopupOptions, source?: L.Layer) {
-        super({ ...options, ...BASE_POPUP_OPTIONS }, source);
-    }
-}
-
-export function popup(options?: L.PopupOptions, source?: L.Layer): Popup {
-    return new Popup(options, source);
-}
-
 /**
  * LeafletMap Class
  *
@@ -203,13 +190,7 @@ class LeafletMap extends Events {
     map: L.Map;
     markers: Marker[] = [];
     zoom: { min: number; max: number; default: number; delta: number };
-    popup: L.Popup = L.popup({
-        className: "leaflet-marker-link-popup",
-        autoClose: false,
-        closeButton: false,
-        closeOnClick: false,
-        autoPan: false
-    });
+    popup: Popup = popup(this);
     mapLayers: LayerGroup[] = [];
     layer: L.ImageOverlay | L.TileLayer;
     type: "image" | "real";
@@ -252,10 +233,8 @@ class LeafletMap extends Events {
             color: "blue"
         }
     );
-    private _timeoutHandler: ReturnType<typeof setTimeout>;
-    private _popupTarget: MarkerDefinition | L.Circle | L.LatLng;
-    private _scale: number;
 
+    private _scale: number;
     private _distanceDisplay: DistanceDisplay;
     private _layerControl: L.Control.Layers = L.control.layers({}, {});
     private _escapeScope: Scope;
@@ -277,7 +256,6 @@ class LeafletMap extends Events {
     ) {
         super();
 
-        this.plugin = plugin;
         this.verbose = this.options.verbose;
 
         this.contentEl = createDiv();
@@ -300,8 +278,7 @@ class LeafletMap extends Events {
         this._distanceMultipler = this.options.distanceMultiplier;
 
         this._userBounds = this.options.bounds;
-
-        this.tileServer = this.options.tileServer;
+        
         this._escapeScope = new Scope();
         this._escapeScope.register(undefined, "Escape", () => {
             if (!this.isFullscreen) {
@@ -1030,7 +1007,7 @@ class LeafletMap extends Events {
                 this.id,
                 `Map popup context detected. Opening popup.`
             );
-            this.openPopup(
+            this.popup.open(
                 evt.latlng,
                 `[${this.latLngFormatter.format(
                     evt.latlng.lat
@@ -1401,7 +1378,6 @@ class LeafletMap extends Events {
                     overlays: overlayGroups
                 }
             ];
-
         } else if (this.type === "image") {
             this.map.on(
                 "baselayerchange",
@@ -1438,10 +1414,10 @@ class LeafletMap extends Events {
 
             this.displayedMarkers.forEach(async (marker) => {
                 if (marker.tooltip === "always") {
-                    marker.popup = this.buildPopup(marker);
+                    /* marker.popup = this.buildPopup(marker);
                     const content = await this._buildMarkerPopupDisplay(marker);
                     marker.popup.setContent(content);
-                    this.map.openPopup(marker.popup);
+                    this.map.openPopup(marker.popup); */
                 }
             });
         });
@@ -1550,7 +1526,6 @@ class LeafletMap extends Events {
             alias: layer.alias
         };
 
-
         return layerGroup;
     }
 
@@ -1636,163 +1611,9 @@ class LeafletMap extends Events {
     }
 
     @catchError
-    openPopup(
-        target: MarkerDefinition | L.Circle | L.LatLng,
-        content: ((source: L.Layer) => L.Content) | L.Content,
-        handler?: L.Layer
-    ) {
-        if ("tooltip" in target && !this.canShowTooltip(target, target.tooltip))
-            return;
-
-        if (this._timeoutHandler) {
-            clearTimeout(this._timeoutHandler);
-        }
-        if (this.popup.isOpen() && this._popupTarget == target) {
-            this.popup.setContent(content);
-            return;
-        }
-
-        this._popupTarget = target;
-
-        const handlerTarget = handler ?? target;
-
-        if (this.popup && this.popup.isOpen()) {
-            this.closePopup(this.popup);
-            if (target instanceof L.Layer) target.closePopup();
-        }
-
-        this.popup = this._getPopup(target).setContent(content);
-        let popupElement: HTMLElement;
-        let _this = this;
-
-        const zoomAnimHandler = function () {
-            if (!(target instanceof L.LatLng) && target instanceof L.Circle) {
-                _this.popup.options.offset = new L.Point(
-                    0,
-                    (-1 * target.getElement().getBoundingClientRect().height) /
-                        2 +
-                        10 // not sure why circles have this extra padding..........
-                );
-                _this.popup.update();
-            }
-        };
-
-        const mouseOutHandler = function () {
-            clearTimeout(_this._timeoutHandler);
-            _this._timeoutHandler = setTimeout(function () {
-                if (
-                    !(
-                        handlerTarget instanceof L.LatLng ||
-                        handlerTarget instanceof L.Layer
-                    )
-                ) {
-                    handlerTarget.leafletInstance.off(
-                        "mouseenter",
-                        mouseOverHandler
-                    );
-                    handlerTarget.leafletInstance.off(
-                        "mouseout",
-                        mouseOutHandler
-                    );
-                }
-                if (handlerTarget instanceof L.Layer) {
-                    handlerTarget
-                        .off("mouseout", mouseOutHandler)
-                        .off("mouseenter", mouseOverHandler);
-                }
-                popupElement = _this.popup.getElement();
-                popupElement.removeEventListener(
-                    "mouseenter",
-                    mouseOverHandler
-                );
-                popupElement.removeEventListener("mouseleave", mouseOutHandler);
-
-                _this.map.off("zoomend", zoomAnimHandler);
-                _this.closePopup(_this.popup);
-            }, 500);
-        };
-
-        const mouseOverHandler = function () {
-            clearTimeout(_this._timeoutHandler);
-        };
-
-        this.map.on("popupopen", () => {
-            popupElement = this.popup.getElement();
-            popupElement.addEventListener("mouseenter", mouseOverHandler);
-            popupElement.addEventListener("mouseleave", mouseOutHandler);
-        });
-        this.map.openPopup(this.popup);
-
-        if (handlerTarget instanceof L.LatLng) {
-            this._timeoutHandler = setTimeout(function () {
-                popupElement.removeEventListener(
-                    "mouseenter",
-                    mouseOverHandler
-                );
-                popupElement.removeEventListener("mouseleave", mouseOutHandler);
-
-                _this.closePopup(_this.popup);
-            }, 1000);
-        } else if (handlerTarget instanceof L.Layer) {
-            handlerTarget
-                .on("mouseout", mouseOutHandler)
-                .on("mouseenter", mouseOverHandler);
-        } else {
-            handlerTarget.leafletInstance
-                .on("mouseout", mouseOutHandler)
-                .on("mouseenter", mouseOverHandler);
-            this.map.on("zoomend", zoomAnimHandler);
-        }
-    }
-    @catchError
     closePopup(popup: L.Popup) {
         if (!popup) return;
         this.map.closePopup(popup);
-    }
-
-    @catchError
-    private _getPopup(target: MarkerDefinition | L.Circle | L.LatLng): L.Popup {
-        if (this.popup.isOpen() && this._popupTarget == target) {
-            return this.popup;
-        }
-
-        this._popupTarget = target;
-
-        if (this.popup && this.popup.isOpen()) {
-            this.closePopup(this.popup);
-        }
-
-        return this.buildPopup(target);
-    }
-    @catchError
-    buildPopup(target: MarkerDefinition | L.Circle | L.LatLng): L.Popup {
-        if (target instanceof L.LatLng) {
-            return L.popup({
-                ...BASE_POPUP_OPTIONS
-            }).setLatLng(target);
-        } else if (target instanceof L.Circle) {
-            return L.popup({
-                ...BASE_POPUP_OPTIONS,
-                offset: new L.Point(
-                    0,
-                    (-1 * target.getElement().getBoundingClientRect().height) /
-                        2 +
-                        10 // not sure why circles have this extra padding..........
-                )
-            }).setLatLng(target.getLatLng());
-        } else {
-            return L.popup({
-                ...BASE_POPUP_OPTIONS,
-                offset: new L.Point(
-                    0,
-                    (-1 *
-                        target.leafletInstance
-                            .getElement()
-                            .getBoundingClientRect().height) /
-                        2
-                )
-            }).setLatLng(target.leafletInstance.getLatLng());
-        }
     }
 
     getOverlaysUnderClick(evt: L.LeafletMouseEvent) {
@@ -1933,7 +1754,7 @@ class LeafletMap extends Events {
                 );
                 div.createSpan({ text: command.name });
 
-                this.openPopup(marker, div);
+                this.popup.open(marker, div);
             } else {
                 const div = createDiv({
                     attr: {
@@ -1950,7 +1771,7 @@ class LeafletMap extends Events {
                 );
                 div.createSpan({ text: "No command found!" });
 
-                this.openPopup(marker, div);
+                this.popup.open(marker, div);
             }
             return;
         }
@@ -1980,7 +1801,7 @@ class LeafletMap extends Events {
                 cls: "external-link"
             });
 
-            this.openPopup(marker, a);
+            this.popup.open(marker, a);
         } else {
             if (this.plugin.AppData.notePreview && !this.isFullscreen) {
                 marker.leafletInstance.unbindTooltip();
@@ -1993,7 +1814,7 @@ class LeafletMap extends Events {
                     this.plugin.app.workspace.getActiveFile()?.path //source
                 );
             } else {
-                this.openPopup(
+                this.popup.open(
                     marker,
                     marker.display
                         .replace(/(\^)/, " > ^")
@@ -2011,7 +1832,7 @@ class LeafletMap extends Events {
             evt.originalEvent.getModifierState("Alt") ||
             evt.originalEvent.getModifierState("Shift")
         ) {
-            this.openPopup(
+            this.popup.open(
                 marker,
                 `[${this.latLngFormatter.format(
                     marker.loc.lat

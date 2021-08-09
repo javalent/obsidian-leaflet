@@ -120,14 +120,14 @@ class GeoJSONMarker {
                     !evt.originalEvent.getModifierState("Alt")) &&
                 this.title
             ) {
-                this.map.openPopup(this.marker, this.descriptionDisplay);
+                this.map.popup.open(this.marker, this.descriptionDisplay);
                 return;
             }
         });
         this.leafletInstance.on("mouseover", () => {
             if (this.map.isDrawing || !this.description) return;
 
-            this.map.openPopup(this.marker, this.iconDisplay);
+            this.map.popup.open(this.marker, this.iconDisplay);
         });
     }
 }
@@ -162,7 +162,7 @@ class GeoJSONFeature {
     onLayerMouseover() {
         if (!this.title && !this.description) return;
         if (this.map.isDrawing) return;
-        this.map.openPopup(
+        this.map.popup.open(
             this.leafletInstance.getBounds().getCenter(),
             this.iconDisplay,
             this.leafletInstance
@@ -178,7 +178,7 @@ class GeoJSONFeature {
                 !evt.originalEvent.getModifierState("Alt")) &&
             this.title
         ) {
-            this.map.openPopup(
+            this.map.popup.open(
                 evt.latlng,
                 this.descriptionDisplay,
                 this.leafletInstance
