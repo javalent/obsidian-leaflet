@@ -124,6 +124,7 @@ export abstract class SuggestionModal<T> extends FuzzySuggestModal<T> {
     promptEl: HTMLDivElement;
     emptyStateText: string = "No match found";
     limit: number = 100;
+    shouldNotOpen: boolean;
     constructor(app: App, inputEl: HTMLInputElement, items: T[]) {
         super(app);
         this.inputEl = inputEl;
@@ -135,10 +136,10 @@ export abstract class SuggestionModal<T> extends FuzzySuggestModal<T> {
 
         this.suggester = new Suggester(this, this.contentEl, this.scope);
 
-        this.scope.register([], "Escape", this.close.bind(this));
+        this.scope.register([], "Escape", this.onEscape.bind(this));
 
         this.inputEl.addEventListener("input", this.onInputChanged.bind(this));
-        this.inputEl.addEventListener("focus", this.onInputChanged.bind(this));
+        this.inputEl.addEventListener("focus", this.onFocus.bind(this));
         this.inputEl.addEventListener("blur", this.close.bind(this));
         this.suggestEl.on(
             "mousedown",
@@ -152,6 +153,7 @@ export abstract class SuggestionModal<T> extends FuzzySuggestModal<T> {
         this.suggester.empty();
     }
     onInputChanged(): void {
+        if (this.shouldNotOpen) return;
         const inputStr = this.modifyInput(this.inputEl.value);
         const suggestions = this.getSuggestions(inputStr);
         if (suggestions.length > 0) {
@@ -161,7 +163,10 @@ export abstract class SuggestionModal<T> extends FuzzySuggestModal<T> {
         }
         this.open();
     }
-
+    onFocus(): void {
+        this.shouldNotOpen = false;
+        this.onInputChanged();
+    }
     modifyInput(input: string): string {
         return input;
     }
@@ -196,6 +201,10 @@ export abstract class SuggestionModal<T> extends FuzzySuggestModal<T> {
         });
     }
 
+    onEscape(): void {
+        this.close();
+        this.shouldNotOpen = true;
+    }
     close(): void {
         // TODO: Figure out a better way to do this. Idea from Periodic Notes plugin
         this.app.keymap.popScope(this.scope);
