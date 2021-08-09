@@ -3,9 +3,10 @@ import convert from "convert";
 import { LeafletMap, SavedOverlayData, LayerGroup } from "src/@types";
 import { MODIFIER_KEY } from "src/utils";
 import { LeafletSymbol } from "src/utils/leaflet-import";
+import { Layer } from "./layer";
 
 let L = window[LeafletSymbol];
-export class Overlay {
+export class Overlay extends Layer<L.Circle> {
     leafletInstance: L.Circle;
 
     get radius() {
@@ -38,10 +39,6 @@ export class Overlay {
     }
     setColor(color: string) {
         this.data.color = color;
-    }
-
-    get layer() {
-        return this.data.layer;
     }
 
     get latlng() {
@@ -83,28 +80,33 @@ export class Overlay {
         }
     }
 
-    constructor(private map: LeafletMap, public data: SavedOverlayData) {
+    get mapLayer() {
+        return this.map.mapLayers?.find(({ id }) => id === this.layer);
+    }
+    get group() {
+        return this.mapLayer?.overlays[this.type];
+    }
+
+    constructor(public map: LeafletMap, public data: SavedOverlayData) {
+        super();
         this.leafletInstance = L.circle(L.latLng(this.data.loc), {
             radius: this.radius,
             color: this.color
         });
 
-        this.map.on("ready-for-features", (layer: LayerGroup) => {
-            if (layer.id === this.layer) {
-                layer.overlays[this.type].addLayer(this.leafletInstance);
-            }
-        });
+        this.layer = data.layer;
 
-        if (this.map.rendered) {
-            let layer =
-                this.map.mapLayers.find(({ id }) => id === this.layer) ??
-                this.map.group;
-
-            this.leafletInstance.addTo(layer.overlays[this.type]);
-        }
+        this.checkAndAddToMap();
 
         this.bindEvents();
     }
+
+    show() {
+        if (this.group) {
+            this.group.addLayer(this.leafletInstance);
+        }
+    }
+
     private bindEvents() {
         this.leafletInstance
             .on("contextmenu", (evt: L.LeafletMouseEvent) => {

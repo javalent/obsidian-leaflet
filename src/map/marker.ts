@@ -14,6 +14,7 @@ import {
 import { MarkerContextModal } from "src/modals";
 import { divIconMarker } from ".";
 import { LeafletSymbol } from "../utils/leaflet-import";
+import { Layer } from "./layer";
 
 let L = window[LeafletSymbol];
 
@@ -35,6 +36,7 @@ class Link extends MarkerTarget {
         this.display = this._getDisplay();
     }
     private _getDisplay() {
+        if (!this.text) return;
         return createSpan({
             text: this.text
                 .replace(/(\^)/, " > ^")
@@ -96,30 +98,8 @@ class Command extends MarkerTarget {
     }
 }
 
-export class NewMarker {
-    private target: MarkerTarget;
-    public leafletInstance: DivIconMarker;
-    public icon: MarkerDivIcon;
-    loc: L.LatLng;
-    constructor(private map: LeafletMap) {
-        this.map.on("ready-for-features", (layer: LayerGroup) => {
-            if (layer.id === this.layer) {
-                this.leafletInstance.addTo(layer.markers[this.type]);
-            }
-        });
-
-        if (this.map.rendered) {
-            let layer =
-                this.map.mapLayers.find(({ id }) => id === this.layer) ??
-                this.map.group;
-
-            this.leafletInstance.addTo(layer.markers[this.type]);
-        }
-    }
-}
-
-export class Marker implements MarkerDefinition {
-    private _target: MarkerTarget = new Link("");
+export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
+    private target: MarkerTarget = new Link("");
     private _mutable: boolean;
     private _type: string;
     private _command: boolean;
@@ -134,13 +114,12 @@ export class Marker implements MarkerDefinition {
     description: string;
     divIcon: MarkerDivIcon;
     displayed: boolean;
-    group: L.LayerGroup;
     tooltip?: TooltipDisplay;
     popup?: L.Popup;
     private _icon: MarkerIcon;
     isBeingHovered: boolean = false;
     constructor(
-        private map: LeafletMap,
+        public map: LeafletMap,
         {
             id,
             icon,
@@ -158,6 +137,7 @@ export class Marker implements MarkerDefinition {
             tooltip
         }: MarkerProperties
     ) {
+        super();
         this.leafletInstance = divIconMarker(
             loc,
             {
@@ -172,6 +152,12 @@ export class Marker implements MarkerDefinition {
                 type: type
             }
         );
+
+        if (command) {
+            this.target = new Command(link, this.map.plugin.app);
+        } else if (link) {
+            this.target = new Link(link);
+        }
 
         this.id = id;
         this.type = type;
@@ -189,21 +175,15 @@ export class Marker implements MarkerDefinition {
         this.minZoom = minZoom;
         this.maxZoom = maxZoom;
 
-        this.map.on("ready-for-features", (layer: LayerGroup) => {
-            if (layer.id === this.layer) {
-                this.leafletInstance.addTo(layer.markers[this.type]);
-            }
-        });
-
-        if (this.map.rendered) {
-            let layer =
-                this.map.mapLayers.find(({ id }) => id === this.layer) ??
-                this.map.group;
-
-            this.leafletInstance.addTo(layer.markers[this.type]);
-        }
+        this.checkAndAddToMap();
 
         this.bindEvents();
+    }
+    get mapLayer() {
+        return this.map.mapLayers?.find(({ id }) => id === this.layer);
+    }
+    get group() {
+        return this.mapLayer?.markers[this.type];
     }
     private bindEvents() {
         this.leafletInstance
@@ -250,7 +230,7 @@ export class Marker implements MarkerDefinition {
 
                             if (this.tooltip === "always" && !this.popup) {
                                 this.popup = new Popup();
-                                const content = this._target.display;
+                                const content = this.target.display;
                                 this.popup.setContent(content);
                                 this.map.map.openPopup(this.popup);
                             } else if (
@@ -315,10 +295,10 @@ export class Marker implements MarkerDefinition {
             });
     }
     get link() {
-        return this._target.text;
+        return this.target.text;
     }
     set link(x: string) {
-        this._target.text = x;
+        this.target.text = x;
         if (this.leafletInstance.options?.icon) {
             this.leafletInstance.options.icon.setData({
                 link: `${x}`
@@ -331,9 +311,9 @@ export class Marker implements MarkerDefinition {
     set command(b: boolean) {
         this._command = b;
         if (b) {
-            this._target = new Command(this.link, this.map.plugin.app);
+            this.target = new Command(this.link, this.map.plugin.app);
         } else {
-            this._target = new Link(this.link);
+            this.target = new Link(this.link);
         }
     }
     get mutable() {
@@ -393,12 +373,17 @@ export class Marker implements MarkerDefinition {
     }
 
     show() {
-        if (this.group && !this.displayed) {
+        if (
+            this.shouldShow(this.map.getZoom()) &&
+            this.group &&
+            !this.displayed
+        ) {
             this.group.addLayer(this.leafletInstance);
             this.displayed = true;
         }
     }
     shouldShow(zoom: number) {
+        if (this.minZoom == this.maxZoom && this.minZoom == null) return true;
         if (!this.displayed) {
             if (
                 this.minZoom != null &&
@@ -409,6 +394,7 @@ export class Marker implements MarkerDefinition {
                 return true;
             }
         }
+        return false;
     }
 
     hide() {

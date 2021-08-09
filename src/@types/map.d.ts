@@ -68,6 +68,8 @@ export interface LeafletMapOptions {
     };
 }
 declare class LeafletMap extends Events {
+    isLayerRendered(layer: string): boolean;
+    getZoom(): number;
     handleMapContext(evt: L.LeafletMouseEvent, overlay?: Overlay): void;
     getOverlaysUnderClick(evt: L.LeafletMouseEvent): Overlay[];
     log(message: string): void;
@@ -80,6 +82,7 @@ declare class LeafletMap extends Events {
     zoom: { min: number; max: number; default: number; delta: number };
     popup: L.Popup;
     mapLayers: LayerGroup[];
+    featureLayer: L.FeatureGroup;
     layer: L.ImageOverlay | L.TileLayer;
     type: "image" | "real";
 

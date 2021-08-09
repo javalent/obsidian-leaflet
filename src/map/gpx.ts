@@ -2,6 +2,7 @@ import type { LeafletMap } from "src/@types";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 
 import type { GPX as LeafletGPX, GPXOptions } from "leaflet";
+import { Layer } from "./layer";
 
 let L = window[LeafletSymbol];
 const MarkerOptions: L.MarkerOptions = {
@@ -18,14 +19,18 @@ const MarkerOptions: L.MarkerOptions = {
     }
 };
 
-export class GPX {
+export class GPX extends Layer<LeafletGPX> {
     leafletInstance: LeafletGPX;
+    get group() {
+        return this.map.featureLayer;
+    }
     constructor(
-        private map: LeafletMap,
+        public map: LeafletMap,
         gpx: string,
         options: GPXOptions,
         private icons: any
     ) {
+        super();
         if (this.icons.start && this.map.markerIcons.has(this.icons.start)) {
             MarkerOptions.startIcon = this.map.markerIcons.get(
                 this.icons.start

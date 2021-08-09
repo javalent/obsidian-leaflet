@@ -11,19 +11,24 @@ import {
     MODIFIER_KEY
 } from "src/utils";
 import { LeafletSymbol } from "src/utils/leaflet-import";
+import { Layer } from "./layer";
 let L = window[LeafletSymbol];
 
-export class GeoJSON {
+export class GeoJSON extends Layer<L.GeoJSON> {
     leafletInstance: L.GeoJSON;
     private _display: HTMLDivElement;
+    get group() {
+        return this.map.featureLayer;
+    }
     constructor(
-        private map: LeafletMap,
+        public map: LeafletMap,
         public parent: L.LayerGroup,
         public options: {
             color: string;
         },
         data: geojson.GeoJsonObject
     ) {
+        super();
         this.leafletInstance = L.geoJSON(data, {
             pane: "geojson",
             pointToLayer: (geojsonPoint, latlng) => {

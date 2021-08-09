@@ -444,7 +444,7 @@ class LeafletMap extends Events {
             }
         }
 
-        this.trigger("ready-for-features", this.group);
+        this.trigger(`${this.group.id}-ready`, this.group);
 
         /** Move to supplied coordinates */
         log(
@@ -893,15 +893,13 @@ class LeafletMap extends Events {
 
     @catchError
     private _pushMarker(marker: Marker) {
-        if (this.rendered) {
-            this.displaying.set(marker.type, true);
-            /* this.group.markers[marker.type].addLayer(marker.leafletInstance); */
-            marker.group = this.group.markers[marker.type];
-            marker.show();
-            marker.leafletInstance.closeTooltip();
-        }
         this.markers.push(marker);
         this.trigger("markers-updated");
+    }
+
+    getZoom() {
+        if (!this.rendered) return this.zoom.default;
+        return this.map.getZoom();
     }
 
     @catchError
@@ -1403,6 +1401,7 @@ class LeafletMap extends Events {
                     overlays: overlayGroups
                 }
             ];
+
         } else if (this.type === "image") {
             this.map.on(
                 "baselayerchange",
@@ -1422,6 +1421,7 @@ class LeafletMap extends Events {
             const newLayer = await this._buildMapLayer(layer);
 
             this.mapLayers.push(newLayer);
+            this.trigger(`${newLayer.id}-ready`, newLayer);
         }
 
         this.mapLayers[0].layer.once("load", () => {
@@ -1448,6 +1448,10 @@ class LeafletMap extends Events {
         return this.mapLayers[0].layer;
     }
 
+    isLayerRendered(layer: string) {
+        return this.mapLayers.find(({ id }) => id === layer) ? true : false;
+    }
+
     @catchErrorAsync
     async loadAdditionalMapLayers(
         layers: { data: string; id: string; alias: string }[]
@@ -1462,6 +1466,8 @@ class LeafletMap extends Events {
             const newLayer = await this._buildMapLayer(layer);
 
             this.mapLayers.push(newLayer);
+
+            this.trigger(`${newLayer.id}-ready`, newLayer);
 
             this._layerControl.addBaseLayer(
                 newLayer.group,
@@ -1544,23 +1550,7 @@ class LeafletMap extends Events {
             alias: layer.alias
         };
 
-        this.trigger("ready-for-features", layerGroup);
 
-        //add any markers to new layer
-        if (this.group && layer.id != this.group.id) {
-            this.markers
-                .filter((marker) => marker.layer && marker.layer == layer.id)
-                .forEach((marker) => {
-                    const markerGroup =
-                        markerGroups[marker.type] || markerGroups["default"];
-
-                    marker.group = markerGroup;
-                    marker.show();
-                    if (marker.shouldHide(this.zoom.default)) {
-                        marker.hide();
-                    }
-                });
-        }
         return layerGroup;
     }
 
