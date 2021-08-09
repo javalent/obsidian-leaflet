@@ -1,5 +1,5 @@
 import { Popup } from "leaflet";
-import { Notice, setIcon } from "obsidian";
+import { App, Notice, setIcon } from "obsidian";
 import {
     LeafletMap,
     MarkerIcon,
@@ -17,22 +17,117 @@ import { LeafletSymbol } from "../utils/leaflet-import";
 
 let L = window[LeafletSymbol];
 
-abstract class MarkerTarget {}
+abstract class MarkerTarget {
+    abstract text: string;
+    abstract display: HTMLElement;
+}
 
-class Link implements MarkerTarget {
+class Link extends MarkerTarget {
+    display: HTMLElement;
+    constructor(private _text: string) {
+        super();
+    }
+    get text() {
+        return this._text;
+    }
+    set text(text: string) {
+        this._text = text;
+        this.display = this._getDisplay();
+    }
+    private _getDisplay() {
+        return createSpan({
+            text: this.text
+                .replace(/(\^)/, " > ^")
+                .replace(/#/, " > ")
+                .split("|")
+                .pop()
+        });
+    }
+}
+class Command extends MarkerTarget {
+    display: HTMLElement;
+    constructor(private _text: string, private app: App) {
+        super();
+    }
+    get text() {
+        return this._text;
+    }
+    set text(text: string) {
+        this._text = text;
+        this.display = this._getDisplay();
+    }
+    private _getDisplay() {
+        const commands = this.app.commands.listCommands();
+        const div = createDiv({
+            attr: {
+                style: "display: flex; align-items: center;"
+            }
+        });
+        if (
+            commands.find(
+                ({ id }) => id.toLowerCase() === this.text.toLowerCase().trim()
+            )
+        ) {
+            const command = commands.find(
+                ({ id }) => id.toLowerCase() === this.text.toLowerCase().trim()
+            );
 
+            setIcon(
+                div.createSpan({
+                    attr: {
+                        style: "margin-right: 0.5em; display: flex; align-items: center;"
+                    }
+                }),
+                "run-command"
+            );
+            div.createSpan({ text: command.name });
+        } else {
+            setIcon(
+                div.createSpan({
+                    attr: {
+                        style: "margin-right: 0.5em; display: flex; align-items: center;"
+                    }
+                }),
+                "cross"
+            );
+            div.createSpan({ text: "No command found!" });
+        }
+        return div;
+    }
+}
+
+export class NewMarker {
+    private target: MarkerTarget;
+    public leafletInstance: DivIconMarker;
+    public icon: MarkerDivIcon;
+    loc: L.LatLng;
+    constructor(private map: LeafletMap) {
+        this.map.on("ready-for-features", (layer: LayerGroup) => {
+            if (layer.id === this.layer) {
+                this.leafletInstance.addTo(layer.markers[this.type]);
+            }
+        });
+
+        if (this.map.rendered) {
+            let layer =
+                this.map.mapLayers.find(({ id }) => id === this.layer) ??
+                this.map.group;
+
+            this.leafletInstance.addTo(layer.markers[this.type]);
+        }
+    }
 }
 
 export class Marker implements MarkerDefinition {
-    private _link: string;
+    private _target: MarkerTarget = new Link("");
     private _mutable: boolean;
     private _type: string;
+    private _command: boolean;
     leafletInstance: DivIconMarker;
     loc: L.LatLng;
     percent: [number, number];
     id: string;
     layer: string;
-    command: boolean;
     zoom: number;
     minZoom: number;
     maxZoom: number;
@@ -43,7 +138,6 @@ export class Marker implements MarkerDefinition {
     tooltip?: TooltipDisplay;
     popup?: L.Popup;
     private _icon: MarkerIcon;
-    popupDisplay: HTMLElement;
     isBeingHovered: boolean = false;
     constructor(
         private map: LeafletMap,
@@ -108,93 +202,8 @@ export class Marker implements MarkerDefinition {
 
             this.leafletInstance.addTo(layer.markers[this.type]);
         }
-        
+
         this.bindEvents();
-        this.buildPopupDisplay();
-    }
-    async buildPopupDisplay() {
-        if (!this.link) return;
-        let display: HTMLElement;
-        if (this.command) {
-            const commands = this.map.plugin.app.commands.listCommands();
-
-            if (
-                commands.find(
-                    ({ id }) =>
-                        id.toLowerCase() === this.link.toLowerCase().trim()
-                )
-            ) {
-                const command = commands.find(
-                    ({ id }) =>
-                        id.toLowerCase() === this.link.toLowerCase().trim()
-                );
-                const div = createDiv({
-                    attr: {
-                        style: "display: flex; align-items: center;"
-                    }
-                });
-                setIcon(
-                    div.createSpan({
-                        attr: {
-                            style: "margin-right: 0.5em; display: flex; align-items: center;"
-                        }
-                    }),
-                    "run-command"
-                );
-                display = div.createSpan({ text: command.name });
-            } else {
-                const div = createDiv({
-                    attr: {
-                        style: "display: flex; align-items: center;"
-                    }
-                });
-                setIcon(
-                    div.createSpan({
-                        attr: {
-                            style: "margin-right: 0.5em; display: flex; align-items: center;"
-                        }
-                    }),
-                    "cross"
-                );
-                display = div.createSpan({ text: "No command found!" });
-            }
-            return;
-        }
-
-        let internal = this.map.plugin.app.metadataCache.getFirstLinkpathDest(
-            (this.link ?? "").split(/(\^|\||#)/).shift(),
-            ""
-        );
-
-        if (
-            /(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/.test(
-                this.link
-            ) &&
-            !internal
-        ) {
-            //external url
-            let [, link] = this.link.match(
-                /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))/
-            );
-
-            let [, text] = this.link.match(/\[([\s\S]+)\]/) || [, link];
-
-            let el = this.leafletInstance.getElement();
-            display = createEl("a", {
-                text: text,
-                href: link,
-                cls: "external-link"
-            });
-        } else {
-            display = createSpan({
-                text: this.display
-                    .replace(/(\^)/, " > ^")
-                    .replace(/#/, " > ")
-                    .split("|")
-                    .pop()
-            });
-        }
-        this.popupDisplay = display;
     }
     private bindEvents() {
         this.leafletInstance
@@ -241,7 +250,7 @@ export class Marker implements MarkerDefinition {
 
                             if (this.tooltip === "always" && !this.popup) {
                                 this.popup = new Popup();
-                                const content = this.popupDisplay;
+                                const content = this._target.display;
                                 this.popup.setContent(content);
                                 this.map.map.openPopup(this.popup);
                             } else if (
@@ -306,14 +315,25 @@ export class Marker implements MarkerDefinition {
             });
     }
     get link() {
-        return this._link;
+        return this._target.text;
     }
     set link(x: string) {
-        this._link = x;
+        this._target.text = x;
         if (this.leafletInstance.options?.icon) {
             this.leafletInstance.options.icon.setData({
                 link: `${x}`
             });
+        }
+    }
+    get command() {
+        return this._command;
+    }
+    set command(b: boolean) {
+        this._command = b;
+        if (b) {
+            this._target = new Command(this.link, this.map.plugin.app);
+        } else {
+            this._target = new Link(this.link);
         }
     }
     get mutable() {
@@ -434,4 +454,3 @@ export class Marker implements MarkerDefinition {
         this.group && this.group.removeLayer(this.leafletInstance);
     }
 }
-
