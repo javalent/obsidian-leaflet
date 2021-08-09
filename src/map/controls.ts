@@ -853,12 +853,16 @@ class FilterMarkers extends FontAwesomeControl {
         this.map.overlays
             .filter((o) => o.marker === type)
             .forEach((o) => o.leafletInstance.addTo(this.map.group.group));
+
+            this.map.sortOverlays();
+        this.map.displaying.set(type, true);
     }
     private hide(type: string) {
         this.map.group.markers[type].remove();
         this.map.overlays
             .filter((o) => o.marker === type)
             .forEach((o) => o.leafletInstance.remove());
+        this.map.displaying.set(type, false);
     }
 }
 
