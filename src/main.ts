@@ -855,56 +855,6 @@ export default class ObsidianLeaflet
                 });
         });
 
-        map.on(
-            "marker-click",
-            async (link: string, newWindow: boolean, command: boolean) => {
-                if (command) {
-                    const commands = this.app.commands.listCommands();
-
-                    if (
-                        commands.find(
-                            ({ id }) =>
-                                id.toLowerCase() === link.toLowerCase().trim()
-                        )
-                    ) {
-                        this.app.commands.executeCommandById(link);
-                    } else {
-                        new Notice(`Command ${link} could not be found.`);
-                    }
-                    return;
-                }
-                let internal = this.app.metadataCache.getFirstLinkpathDest(
-                    link.split(/(\^|\||#)/).shift(),
-                    ""
-                );
-
-                if (
-                    /(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/.test(
-                        link
-                    ) &&
-                    !internal
-                ) {
-                    //external url
-                    let [, l] = link.match(
-                        /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))/
-                    );
-
-                    let [, text = l] = link.match(/\[([\s\S]+)\]/) || [, l];
-
-                    const a = createEl("a", { href: l, text: text });
-
-                    a.click();
-                    a.detach();
-                } else {
-                    await this.app.workspace.openLinkText(
-                        link.replace("^", "#^").split(/\|/).shift(),
-                        this.app.workspace.getActiveFile()?.path,
-                        newWindow
-                    );
-                }
-            }
-        );
-
         map.on("marker-deleted", (marker) => {
             const otherMaps = this.maps.filter(
                 ({ id, map: m }) => id == map.id && m.contentEl != map.contentEl

@@ -1,4 +1,4 @@
-import { App, Notice, setIcon } from "obsidian";
+import { App, MetadataCache, Notice, setIcon } from "obsidian";
 import {
     LeafletMap,
     MarkerIcon,
@@ -15,18 +15,29 @@ import { divIconMarker } from "src/map";
 import { LeafletSymbol } from "../utils/leaflet-import";
 import { Layer } from "../layer/layer";
 import { popup } from "src/map/popup";
+import { MODIFIER_KEY } from "src/utils";
 
 let L = window[LeafletSymbol];
 
 abstract class MarkerTarget {
     abstract text: string;
     abstract display: HTMLElement;
+    abstract run(evt: L.LeafletMouseEvent): void;
 }
 
 class Link extends MarkerTarget {
     display: HTMLElement;
-    constructor(private _text: string) {
+    get isInternal() {
+        return (
+            this.app.metadataCache.getFirstLinkpathDest(
+                this.text.split(/(\^|\||#)/).shift(),
+                ""
+            ) != null
+        );
+    }
+    constructor(private _text: string, private app: App) {
         super();
+        this.display = this._getDisplay();
     }
     get text() {
         return this._text;
@@ -45,11 +56,32 @@ class Link extends MarkerTarget {
                 .pop()
         });
     }
+    async run(evt: L.LeafletMouseEvent) {
+        if (this.isInternal) {
+            await this.app.workspace.openLinkText(
+                this._text.replace("^", "#^").split(/\|/).shift(),
+                this.app.workspace.getActiveFile()?.path,
+                evt.originalEvent.getModifierState(MODIFIER_KEY)
+            );
+        } else {
+            let [, l] = this._text.match(
+                /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))/
+            );
+
+            const a = createEl("a", {
+                href: l
+            });
+
+            a.click();
+            a.detach();
+        }
+    }
 }
 class Command extends MarkerTarget {
     display: HTMLElement;
     constructor(private _text: string, private app: App) {
         super();
+        this.display = this._getDisplay();
     }
     get text() {
         return this._text;
@@ -58,22 +90,19 @@ class Command extends MarkerTarget {
         this._text = text;
         this.display = this._getDisplay();
     }
+    get exists() {
+        return this.app.commands.findCommand(this._text) != null;
+    }
+    get command() {
+        return this.app.commands.findCommand(this._text);
+    }
     private _getDisplay() {
-        const commands = this.app.commands.listCommands();
         const div = createDiv({
             attr: {
                 style: "display: flex; align-items: center;"
             }
         });
-        if (
-            commands.find(
-                ({ id }) => id.toLowerCase() === this.text.toLowerCase().trim()
-            )
-        ) {
-            const command = commands.find(
-                ({ id }) => id.toLowerCase() === this.text.toLowerCase().trim()
-            );
-
+        if (this.exists) {
             setIcon(
                 div.createSpan({
                     attr: {
@@ -82,7 +111,7 @@ class Command extends MarkerTarget {
                 }),
                 "run-command"
             );
-            div.createSpan({ text: command.name });
+            div.createSpan({ text: this.command.name });
         } else {
             setIcon(
                 div.createSpan({
@@ -96,10 +125,13 @@ class Command extends MarkerTarget {
         }
         return div;
     }
+    run(evt: L.LeafletMouseEvent) {
+        if (this.exists) this.app.commands.executeCommandById(this._text);
+    }
 }
 
 export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
-    private target: MarkerTarget = new Link("");
+    private target: MarkerTarget;
     private _mutable: boolean;
     private _type: string;
     private _command: boolean;
@@ -152,11 +184,12 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                 type: type
             }
         );
-
-        if (command) {
-            this.target = new Command(link, this.map.plugin.app);
-        } else if (link) {
-            this.target = new Link(link);
+        if (link) {
+            if (command) {
+                this.target = new Command(link, this.map.plugin.app);
+            } else {
+                this.target = new Link(link, this.map.plugin.app);
+            }
         }
 
         this.id = id;
@@ -235,12 +268,9 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                             if (this.tooltip === "always" && !this.popup) {
                                 this.popup = popup(this.map);
                                 this.popup.open(this, this.target.display);
-                            } else if (
-                                this.tooltip !== "always" &&
-                                this.popup
-                            ) {
+                            } else if (this.tooltip !== "always") {
                                 this.popup.close();
-                                delete this.popup;
+                                this.popup = this.map.popup;
                             }
 
                             this.map.trigger("marker-updated", this);
@@ -256,6 +286,10 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             })
             .on("click", async (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
+
+                if (this.target) {
+                    this.target.run(evt);
+                }
 
                 this.map.onMarkerClick(this, evt);
             })
@@ -279,17 +313,16 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             })
             .on("mouseover", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
-                /*                 if (this.link) { */
-                /* this.trigger("marker-mouseover", evt, marker); */
-                this.map.onMarkerMouseover(this);
-                /*                 } */
-                /*                 this.isBeingHovered = true;
-                if (this.map._distanceLine) {
-                    this.map._distanceLine.setLatLngs([
-                        this.map._distanceLine.getLatLngs()[0] as L.LatLngExpression,
-                        this.loc
-                    ]);
-                } */
+
+                if (this.target) {
+                    console.log(
+                        "🚀 ~ file: marker.ts ~ line 319 ~ this.target.display",
+                        this.target,
+                        this.target.text,
+                        this.popup
+                    );
+                    this.popup.open(this, this.target.display);
+                }
             })
             .on("mouseout", (evt: L.LeafletMouseEvent) => {
                 this.leafletInstance.closeTooltip();
@@ -297,9 +330,16 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             });
     }
     get link() {
-        return this.target.text;
+        return this.target && this.target.text;
     }
     set link(x: string) {
+        if (!this.target) {
+            if (this.command) {
+                this.target = new Command(x, this.map.plugin.app);
+            } else {
+                this.target = new Link(x, this.map.plugin.app);
+            }
+        }
         this.target.text = x;
         if (this.leafletInstance.options?.icon) {
             this.leafletInstance.options.icon.setData({
@@ -312,10 +352,11 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
     }
     set command(b: boolean) {
         this._command = b;
+        if (!this.link) return;
         if (b) {
             this.target = new Command(this.link, this.map.plugin.app);
         } else {
-            this.target = new Link(this.link);
+            this.target = new Link(this.link, this.map.plugin.app);
         }
     }
     get mutable() {

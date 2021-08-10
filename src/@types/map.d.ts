@@ -197,7 +197,6 @@ declare class LeafletMap extends Events {
     stopDrawing(): void;
     copyLatLngToClipboard(loc: L.LatLng): Promise<void>;
 
-    onMarkerMouseover(marker: Marker): void;
     onMarkerClick(marker: Marker, evt: L.LeafletMouseEvent): void;
     closePopup(popup: L.Popup): void;
 

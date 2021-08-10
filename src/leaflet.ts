@@ -1729,111 +1729,6 @@ class LeafletMap extends Events {
         return display;
     }
 
-    async onMarkerMouseover(
-        /* evt: L.LeafletMouseEvent, */
-        marker: MarkerDefinition
-    ) {
-        if (!marker.link) return;
-        if (marker.command) {
-            const commands = this.plugin.app.commands.listCommands();
-
-            if (
-                commands.find(
-                    ({ id }) =>
-                        id.toLowerCase() === marker.link.toLowerCase().trim()
-                )
-            ) {
-                const command = commands.find(
-                    ({ id }) =>
-                        id.toLowerCase() === marker.link.toLowerCase().trim()
-                );
-                const div = createDiv({
-                    attr: {
-                        style: "display: flex; align-items: center;"
-                    }
-                });
-                setIcon(
-                    div.createSpan({
-                        attr: {
-                            style: "margin-right: 0.5em; display: flex; align-items: center;"
-                        }
-                    }),
-                    "run-command"
-                );
-                div.createSpan({ text: command.name });
-
-                this.popup.open(marker, div);
-            } else {
-                const div = createDiv({
-                    attr: {
-                        style: "display: flex; align-items: center;"
-                    }
-                });
-                setIcon(
-                    div.createSpan({
-                        attr: {
-                            style: "margin-right: 0.5em; display: flex; align-items: center;"
-                        }
-                    }),
-                    "cross"
-                );
-                div.createSpan({ text: "No command found!" });
-
-                this.popup.open(marker, div);
-            }
-            return;
-        }
-
-        let internal = this.plugin.app.metadataCache.getFirstLinkpathDest(
-            marker.link.split(/(\^|\||#)/).shift(),
-            ""
-        );
-
-        if (
-            /(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/.test(
-                marker.link
-            ) &&
-            !internal
-        ) {
-            //external url
-            let [, link] = marker.link.match(
-                /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))/
-            );
-
-            let [, text] = marker.link.match(/\[([\s\S]+)\]/) || [, link];
-
-            let el = marker.leafletInstance.getElement();
-            const a = createEl("a", {
-                text: text,
-                href: link,
-                cls: "external-link"
-            });
-
-            this.popup.open(marker, a);
-        } else {
-            if (this.plugin.AppData.notePreview && !this.isFullscreen) {
-                marker.leafletInstance.unbindTooltip();
-
-                this.plugin.app.workspace.trigger(
-                    "link-hover",
-                    this, //not sure
-                    marker.leafletInstance.getElement(), //targetEl
-                    marker.link.replace("^", "#^").split("|").shift(), //linkText
-                    this.plugin.app.workspace.getActiveFile()?.path //source
-                );
-            } else {
-                this.popup.open(
-                    marker,
-                    marker.display
-                        .replace(/(\^)/, " > ^")
-                        .replace(/#/, " > ")
-                        .split("|")
-                        .pop()
-                );
-            }
-        }
-    }
-
     async onMarkerClick(marker: Marker, evt: L.LeafletMouseEvent) {
         this.onHandleDistance(evt);
         if (
@@ -1855,20 +1750,6 @@ class LeafletMap extends Events {
             }
 
             return;
-        }
-        if (marker.link) {
-            this.trigger(
-                "marker-click",
-                marker.link,
-                evt.originalEvent.getModifierState(MODIFIER_KEY),
-                marker.command
-            );
-        } else {
-            if (!marker.mutable) {
-                new Notice(
-                    "This marker cannot be edited because it was defined in the code block."
-                );
-            }
         }
     }
 }
