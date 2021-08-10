@@ -250,7 +250,7 @@ export default class ObsidianLeaflet
                         try {
                             data = JSON.parse(data);
                         } catch (e) {
-                            new Notice("Could not parse GeoJSON file " + link);
+                            new Notice("Could not parse GeoJSON file " + link + '\n\n' + e.message);
                             continue;
                         }
                         geojsonData.push(data);
