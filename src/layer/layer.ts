@@ -4,6 +4,16 @@ export abstract class Layer<T extends L.Layer> {
     map: LeafletMap;
     layer: string;
 
+    get mapLayer() {
+        if (!this.layer) {
+            return this.map.mapLayers[0];
+        }
+        return (
+            this.map.mapLayers?.find(({ id }) => id === this.layer) ??
+            this.map.mapLayers[0]
+        );
+    }
+
     abstract leafletInstance: T;
     abstract get group(): L.LayerGroup;
 
@@ -19,8 +29,13 @@ export abstract class Layer<T extends L.Layer> {
     checkAndAddToMap() {
         if (this.map.isLayerRendered(this.layer)) {
             this.show();
+        } else if (this.layer) {
+            this.map.on(`layer-ready-for-features`, (layer: LayerGroup) => {
+                if (layer.id === this.layer) this.show();
+            });
         } else {
-            this.map.on(`${this.layer}-ready`, (layer: LayerGroup) => {
+            this.map.on("first-layer-ready", (layer: LayerGroup) => {
+                this.layer = layer.id;
                 this.show();
             });
         }

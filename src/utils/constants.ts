@@ -18,8 +18,7 @@ export const DEFAULT_MAP_OPTIONS: LeafletMapOptions = {
     scale: 1,
     distanceMultiplier: 1,
     darkMode: false,
-    overlayColor: "blue",
-    tileServer: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+    overlayColor: "blue"
 };
 export const DEFAULT_SETTINGS: ObsidianAppData = {
     mapMarkers: [],

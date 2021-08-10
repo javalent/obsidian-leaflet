@@ -871,7 +871,7 @@ export function catchError(
                 return original.apply(this, args);
             } catch (e) {
                 //throw error here
-                console.error(e, original);
+                console.error(target, name, e, original);
                 renderError(
                     this.contentEl?.parentElement ?? this.contentEl,
                     e.message
@@ -893,7 +893,7 @@ export function catchErrorAsync(
                 return await original.apply(this, args);
             } catch (e) {
                 //throw error here
-                console.error(e, original);
+                console.error(target, name, e, original);
                 renderError(
                     this.contentEl?.parentElement ?? this.contentEl,
                     e.message

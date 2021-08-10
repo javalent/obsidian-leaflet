@@ -80,9 +80,7 @@ export class Overlay extends Layer<L.Circle> {
         }
     }
 
-    get mapLayer() {
-        return this.map.mapLayers?.find(({ id }) => id === this.layer);
-    }
+
     get group() {
         return this.mapLayer?.overlays[this.type];
     }

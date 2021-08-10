@@ -185,9 +185,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
 
         this.bindEvents();
     }
-    get mapLayer() {
-        return this.map.mapLayers?.find(({ id }) => id === this.layer);
-    }
+
     get group() {
         return this.mapLayer?.markers[this.type];
     }

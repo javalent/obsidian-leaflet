@@ -33,15 +33,16 @@ export default class Watcher extends Events {
 
     private _onChange(file: TFile) {
         if (file !== this.file) return;
+        
         const cache = this.plugin.app.metadataCache.getFileCache(file);
         if (!("frontmatter" in cache)) return;
         this.frontmatter = cache.frontmatter;
         let overlays = [];
         const marker = this.map.getMarkerById(this.fileIds.get("marker"));
+        console.log("🚀 ~ file: watcher.ts ~ line 42 ~ marker", marker);
 
         if (
             marker &&
-            marker.length &&
             this.frontmatter.location &&
             this.frontmatter.location instanceof Array
         ) {
@@ -52,11 +53,11 @@ export default class Watcher extends Events {
                     location.every((v) => typeof v == "number")
                 ) {
                     if (
-                        !marker[0].loc.equals(
+                        !marker.loc.equals(
                             L.latLng(<Leaflet.LatLngTuple>location)
                         )
                     ) {
-                        marker[0].setLatLng(
+                        marker.setLatLng(
                             L.latLng(<Leaflet.LatLngTuple>location)
                         );
                     }
@@ -68,7 +69,7 @@ export default class Watcher extends Events {
             }
         }
 
-        if (marker && marker.length && this.frontmatter.mapmarker) {
+        if (marker && this.frontmatter.mapmarker) {
             try {
                 const { mapmarker } = this.frontmatter;
 
@@ -77,7 +78,7 @@ export default class Watcher extends Events {
                         ({ type }) => type == mapmarker
                     )
                 ) {
-                    marker[0].icon = this.plugin.markerIcons.find(
+                    marker.icon = this.plugin.markerIcons.find(
                         ({ type }) => type == mapmarker
                     );
                 }
@@ -89,12 +90,12 @@ export default class Watcher extends Events {
         }
         if (this.frontmatter.mapmarkers) {
             try {
-                const markers = this.map.getMarkerById(
+                const marker = this.map.getMarkerById(
                     this.fileIds.get("mapmarkers")
                 );
                 const { mapmarkers } = this.frontmatter;
 
-                markers.forEach((marker) => this.map.removeMarker(marker));
+                this.map.removeMarker(marker);
 
                 mapmarkers.forEach(
                     ([type, location, description]: [
@@ -189,21 +190,20 @@ export default class Watcher extends Events {
     }
     private _onRename(file: TAbstractFile) {
         if (file !== this.file) return;
-        const markers = this.map.getMarkerById(this.fileIds.get("marker"));
-        markers.forEach((marker) => {
-            marker.link = this.plugin.app.metadataCache.fileToLinktext(
-                this.file,
-                "",
-                true
-            );
-        });
+        const marker = this.map.getMarkerById(this.fileIds.get("marker"));
+
+        marker.link = this.plugin.app.metadataCache.fileToLinktext(
+            this.file,
+            "",
+            true
+        );
     }
     private _onDelete(file: TAbstractFile) {
         if (file !== this.file) return;
         this.file = null;
-        const markers = this.map.getMarkerById(this.fileIds.get("marker"));
+        const marker = this.map.getMarkerById(this.fileIds.get("marker"));
 
-        markers.forEach((marker) => this.map.removeMarker(marker));
+        this.map.removeMarker(marker);
 
         this.map.overlays
             .filter(({ data }) => data.id === this.fileIds.get("overlay"))

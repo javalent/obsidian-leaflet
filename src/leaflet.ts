@@ -59,6 +59,7 @@ import { LeafletSymbol } from "./utils/leaflet-import";
 import { MarkerDivIcon, Popup } from "./@types/map";
 import { popup } from "./map/popup";
 import { Marker, GeoJSON, GPX, Overlay } from "./layer";
+import Watcher from "./utils/watcher";
 
 let L = window[LeafletSymbol];
 
@@ -80,6 +81,14 @@ declare module "leaflet" {
 }
 
 export class LeafletRenderer extends MarkdownRenderChild {
+    watchers: Set<Watcher> = new Set();
+    registerWatchers(watchers: Map<TFile, Map<string, string>>) {
+        for (const [file, fileIds] of watchers) {
+            const watcher = new Watcher(this.plugin, file, this.map, fileIds);
+            this.watchers.add(watcher);
+            watcher.on("remove", () => this.watchers.delete(watcher));
+        }
+    }
     map: LeafletMap;
     verbose: boolean;
     parentEl: HTMLElement;
@@ -195,7 +204,6 @@ class LeafletMap extends Events {
     layer: L.ImageOverlay | L.TileLayer;
     type: "image" | "real";
     initialCoords: [number, number];
-    tileServer: string;
     displaying: Map<string, boolean> = new Map();
     isDrawing: boolean = false;
 
@@ -278,7 +286,7 @@ class LeafletMap extends Events {
         this._distanceMultipler = this.options.distanceMultiplier;
 
         this._userBounds = this.options.bounds;
-        
+
         this._escapeScope = new Scope();
         this._escapeScope.register(undefined, "Escape", () => {
             if (!this.isFullscreen) {
@@ -383,8 +391,8 @@ class LeafletMap extends Events {
         }
         return mult;
     }
-    getMarkerById(id: string): Marker[] {
-        return this.markers.filter(({ id: marker }) => marker === id);
+    getMarkerById(id: string): Marker {
+        return this.markers.find(({ id: marker }) => marker === id);
     }
 
     @catchErrorAsync
@@ -421,7 +429,7 @@ class LeafletMap extends Events {
             }
         }
 
-        this.trigger(`${this.group.id}-ready`, this.group);
+        this.trigger("first-layer-ready", this.group);
 
         /** Move to supplied coordinates */
         log(
@@ -1040,12 +1048,8 @@ class LeafletMap extends Events {
     @catchError
     private _pushOverlay(overlay: Overlay) {
         this.overlays.push(overlay);
+
         if (this.rendered) {
-            /*             if (overlay.id) {
-                const marker = this.markers.find(({ id }) => id === overlay.id);
-                if (marker) overlay.marker = marker.type;
-            }
-            overlay.leafletInstance.addTo(this.group.group); */
             this.sortOverlays();
 
             this.trigger("markers-updated");
@@ -1347,11 +1351,14 @@ class LeafletMap extends Events {
     ): Promise<L.TileLayer | L.ImageOverlay> {
         log(this.verbose, this.id, "Building initial map layer.");
         if (this.type === "real") {
-            this.layer = L.tileLayer(this.tileServer, {
-                attribution:
-                    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                className: this.options.darkMode ? "dark-mode" : ""
-            });
+            this.layer = L.tileLayer(
+                "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+                    attribution:
+                        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                    className: this.options.darkMode ? "dark-mode" : ""
+                }
+            );
 
             const markerGroups = Object.fromEntries(
                 this.markerTypes.map((type) => [type, L.layerGroup()])
@@ -1378,6 +1385,7 @@ class LeafletMap extends Events {
                     overlays: overlayGroups
                 }
             ];
+            this.trigger(`layer-ready-for-features`, this.mapLayers[0]);
         } else if (this.type === "image") {
             this.map.on(
                 "baselayerchange",
@@ -1397,7 +1405,7 @@ class LeafletMap extends Events {
             const newLayer = await this._buildMapLayer(layer);
 
             this.mapLayers.push(newLayer);
-            this.trigger(`${newLayer.id}-ready`, newLayer);
+            this.trigger(`layer-ready-for-features`, newLayer);
         }
 
         this.mapLayers[0].layer.once("load", () => {
@@ -1443,7 +1451,7 @@ class LeafletMap extends Events {
 
             this.mapLayers.push(newLayer);
 
-            this.trigger(`${newLayer.id}-ready`, newLayer);
+            this.trigger(`layer-ready-for-features`, newLayer);
 
             this._layerControl.addBaseLayer(
                 newLayer.group,

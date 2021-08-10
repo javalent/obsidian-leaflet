@@ -53,7 +53,6 @@ export interface LeafletMapOptions {
     scale?: number;
     distanceMultiplier?: number;
     darkMode?: boolean;
-    tileServer?: string;
     overlayColor?: string;
     bounds?: [[number, number], [number, number]];
     geojson?: any[];
@@ -189,7 +188,7 @@ declare class LeafletMap extends Events {
 
     resetZoom(): void;
 
-    getMarkerById(id: string): Marker[];
+    getMarkerById(id: string): Marker;
 
     distance(latlng1: L.LatLng, latlng2: L.LatLng): string;
 
