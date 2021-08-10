@@ -20,4 +20,5 @@ export interface SavedOverlayData {
     id?: string;
     mutable: boolean;
     tooltip?: TooltipDisplay;
+    marker?: string;
 }

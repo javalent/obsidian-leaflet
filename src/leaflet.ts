@@ -99,7 +99,10 @@ export class LeafletRenderer extends MarkdownRenderChild {
         options: LeafletMapOptions = {}
     ) {
         super(container);
-        this.map = new LeafletMap(plugin, options);
+        this.map = new LeafletMap(plugin, {
+            ...options,
+            context: ctx.sourcePath
+        });
         this.verbose = options.verbose;
 
         this.containerEl.style.height = options.height;
@@ -1055,9 +1058,55 @@ class LeafletMap extends Events {
             this.trigger("markers-updated");
         }
     }
+    beginOverlayDrawingContext(evt: L.LeafletMouseEvent, marker?: Marker) {
+        this.plugin.app.keymap.pushScope(this._escapeScope);
+
+        this.isDrawing = true;
+
+        this._tempCircle = L.circle(evt.latlng, {
+            radius: 1,
+            color: this.options.overlayColor
+        });
+        this.map.once("click", async () => {
+            if (this._tempCircle) {
+                log(this.verbose, this.id, `Overlay drawing complete.`);
+                this._tempCircle.remove();
+                /* this.type === "image"
+                            ? circle.getRadius()
+                            : convert(circle.getRadius())
+                                  .from("m")
+                                  .to(this.unit); */
+
+                this._pushOverlay(
+                    new Overlay(this, {
+                        radius: this._tempCircle.getRadius(),
+                        color: this._tempCircle.options.color,
+                        loc: [
+                            this._tempCircle.getLatLng().lat,
+                            this._tempCircle.getLatLng().lng
+                        ],
+                        layer: this.group.id,
+                        unit: this.unit,
+                        desc: "",
+                        mutable: true,
+                        marker: marker.id
+                    })
+                );
+                await this.plugin.saveSettings();
+            }
+
+            this.stopDrawing();
+        });
+        this.map.on(
+            "mousemove",
+            this.drawCircle.bind(this, this._tempCircle, evt)
+        );
+
+        this._tempCircle.addTo(this.group.group);
+    }
 
     @catchError
-    addOverlay(circle: SavedOverlayData, mutable = true) {
+    addOverlay(circle: SavedOverlayData) {
         this._pushOverlay(new Overlay(this, circle));
     }
 
@@ -1067,7 +1116,7 @@ class LeafletMap extends Events {
         options: { mutable: boolean; sort: boolean }
     ) {
         for (let overlay of overlayArray) {
-            this.addOverlay(overlay, overlay.mutable ?? options.mutable);
+            this.addOverlay(overlay);
         }
         if (options.sort) {
             this.sortOverlays();
@@ -1083,19 +1132,11 @@ class LeafletMap extends Events {
             }
 
             const openOverlayContext = (overlay: Overlay) => {
-                const modal = new OverlayContextModal(
-                    this.plugin,
-                    overlay.data,
-                    this
-                );
+                const modal = new OverlayContextModal(overlay, this);
                 modal.onClose = async () => {
                     if (modal.deleted) {
-                        log(
-                            this.verbose,
-                            this.id,
-                            "Overlay deleted in context menu. Removing."
-                        );
-                        overlay.leafletInstance.remove();
+                        this.log("Overlay deleted in context menu. Removing.");
+                        overlay.remove();
                         this.overlays = this.overlays.filter(
                             (o) => o != overlay
                         );
@@ -1104,36 +1145,10 @@ class LeafletMap extends Events {
                         return;
                     }
                     try {
-                        log(
-                            this.verbose,
-                            this.id,
-                            "Updating the overlay data."
-                        );
                         overlay.data.color = modal.tempOverlay.color;
-                        log(
-                            this.verbose,
-                            this.id,
-                            `Overlay color set to: ${overlay.data.color}`
-                        );
                         overlay.data.radius = modal.tempOverlay.radius;
-                        log(
-                            this.verbose,
-                            this.id,
-                            `Overlay radius set to: ${overlay.data.radius}`
-                        );
                         overlay.data.desc = modal.tempOverlay.desc;
-                        log(
-                            this.verbose,
-                            this.id,
-                            `Overlay description set to: ${overlay.data.desc}`
-                        );
                         overlay.data.tooltip = modal.tempOverlay.tooltip;
-
-                        log(
-                            this.verbose,
-                            this.id,
-                            `Overlay tooltip set to: ${overlay.data.tooltip}`
-                        );
                         let newRadius = convert(Number(overlay.data.radius))
                             .from(overlay.data.unit ?? "m")
                             .to(this.type == "image" ? this.unit : "m");
@@ -1189,49 +1204,8 @@ class LeafletMap extends Events {
         if (evt.originalEvent.getModifierState("Shift")) {
             log(this.verbose, this.id, `Beginning overlay drawing context.`);
             //begin drawing context
-            this.plugin.app.keymap.pushScope(this._escapeScope);
 
-            this.isDrawing = true;
-
-            this._tempCircle = L.circle(evt.latlng, {
-                radius: 1,
-                color: this.options.overlayColor
-            });
-            this.map.once("click", async () => {
-                if (this._tempCircle) {
-                    log(this.verbose, this.id, `Overlay drawing complete.`);
-                    this._tempCircle.remove();
-                    /* this.type === "image"
-                            ? circle.getRadius()
-                            : convert(circle.getRadius())
-                                  .from("m")
-                                  .to(this.unit); */
-
-                    this._pushOverlay(
-                        new Overlay(this, {
-                            radius: this._tempCircle.getRadius(),
-                            color: this._tempCircle.options.color,
-                            loc: [
-                                this._tempCircle.getLatLng().lat,
-                                this._tempCircle.getLatLng().lng
-                            ],
-                            layer: this.group.id,
-                            unit: this.unit,
-                            desc: "",
-                            mutable: true
-                        })
-                    );
-                    await this.plugin.saveSettings();
-                }
-
-                this.stopDrawing();
-            });
-            this.map.on(
-                "mousemove",
-                this.drawCircle.bind(this, this._tempCircle, evt)
-            );
-
-            this._tempCircle.addTo(this.group.group);
+            this.beginOverlayDrawingContext(evt);
 
             return;
         }
@@ -1731,25 +1705,5 @@ class LeafletMap extends Events {
 
     async onMarkerClick(marker: Marker, evt: L.LeafletMouseEvent) {
         this.onHandleDistance(evt);
-        if (
-            evt.originalEvent.getModifierState("Alt") ||
-            evt.originalEvent.getModifierState("Shift")
-        ) {
-            this.popup.open(
-                marker,
-                `[${this.latLngFormatter.format(
-                    marker.loc.lat
-                )}, ${this.latLngFormatter.format(marker.loc.lng)}]`
-            );
-
-            if (
-                this.data.copyOnClick &&
-                evt.originalEvent.getModifierState(MODIFIER_KEY)
-            ) {
-                await this.copyLatLngToClipboard(marker.loc);
-            }
-
-            return;
-        }
     }
 }

@@ -42,6 +42,7 @@ export interface DivIconMarkerOptions extends L.MarkerOptions {
     icon: MarkerDivIcon;
 }
 export interface LeafletMapOptions {
+    context?: string;
     height?: string;
     type?: "image" | "real";
     id?: string;
@@ -87,6 +88,7 @@ declare class LeafletMap extends Events {
     isLayerRendered(layer: string): boolean;
     getZoom(): number;
     handleMapContext(evt: L.LeafletMouseEvent, overlay?: Overlay): void;
+    beginOverlayDrawingContext(evt: L.LeafletMouseEvent, marker?: Marker): void;
     getOverlaysUnderClick(evt: L.LeafletMouseEvent): Overlay[];
     log(message: string): void;
     data: ObsidianAppData;

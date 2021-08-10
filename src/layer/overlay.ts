@@ -1,6 +1,6 @@
 import convert from "convert";
 
-import { LeafletMap, SavedOverlayData, LayerGroup } from "src/@types";
+import { LeafletMap, SavedOverlayData } from "src/@types";
 import { MODIFIER_KEY } from "src/utils";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { Layer } from "../layer/layer";
@@ -80,9 +80,12 @@ export class Overlay extends Layer<L.Circle> {
         }
     }
 
-
     get group() {
         return this.mapLayer?.overlays[this.type];
+    }
+
+    get marker() {
+        return this.data.marker;
     }
 
     constructor(public map: LeafletMap, public data: SavedOverlayData) {
@@ -122,6 +125,17 @@ export class Overlay extends Layer<L.Circle> {
                 }
                 this.map.popup.open(this.leafletInstance, this.description);
             });
+
+        if (this.marker) {
+            const marker = this.map.getMarkerById(this.marker);
+            
+            if (!marker) return;
+            marker.leafletInstance.on("drag", (evt: L.LeafletMouseEvent) => {
+                this.leafletInstance.setLatLng(
+                    marker.leafletInstance.getLatLng()
+                );
+            });
+        }
     }
     public isUnder(evt: L.LeafletMouseEvent) {
         const element = this.leafletInstance.getElement();
@@ -164,7 +178,8 @@ export class Overlay extends Layer<L.Circle> {
             unit: this.data.unit,
             desc: this.data.desc,
             mutable: this.mutable,
-            tooltip: this.data.tooltip
+            tooltip: this.data.tooltip,
+            marker: this.marker
         };
     }
 }

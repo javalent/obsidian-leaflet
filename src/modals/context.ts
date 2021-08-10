@@ -17,20 +17,17 @@ import {
 } from "src/utils";
 
 import { UNIT_NAME_ALIASES } from "src/utils";
-import convert from "convert";
+
+import { Overlay } from "src/layer";
+
 export class MarkerContextModal extends Modal {
     deleted: boolean = false;
     tempMarker: Marker;
     modal: CommandSuggestionModal | PathSuggestionModal;
     limit: number = 100;
-    constructor(
-        public plugin: ObsidianLeaflet,
-        public marker: Marker,
-        public map: LeafletMap
-    ) {
-        super(plugin.app);
+    constructor(public marker: Marker, public map: LeafletMap) {
+        super(map.plugin.app);
         this.marker = marker;
-        this.plugin = plugin;
         this.map = map;
 
         this.tempMarker = Object.assign(
@@ -106,7 +103,7 @@ export class MarkerContextModal extends Modal {
             .setName("Marker Type")
             .addDropdown((drop) => {
                 drop.addOption("default", "Default");
-                this.plugin.AppData.markerIcons.forEach((marker) => {
+                this.map.markerIcons.forEach((marker) => {
                     drop.addOption(
                         marker.type,
                         marker.type[0].toUpperCase() +
@@ -116,8 +113,8 @@ export class MarkerContextModal extends Modal {
                 drop.setValue(this.marker.type).onChange(async (value) => {
                     let newMarker =
                         value == "default"
-                            ? this.plugin.AppData.defaultMarker
-                            : this.plugin.AppData.markerIcons.find(
+                            ? this.map.data.defaultMarker
+                            : this.map.data.markerIcons.find(
                                   (m) => m.type == value
                               );
                     this.tempMarker.type = newMarker.type;
@@ -197,11 +194,9 @@ export class MarkerContextModal extends Modal {
             b.setIcon("trash")
                 .setWarning()
                 .setTooltip("Delete Marker")
-                .onClick(async () => {
+                .onClick(() => {
                     this.deleted = true;
-
                     this.close();
-                    await this.plugin.saveSettings();
                 });
             return b;
         });
@@ -216,19 +211,11 @@ export class OverlayContextModal extends Modal {
     tempOverlay: SavedOverlayData;
     modal: CommandSuggestionModal | PathSuggestionModal;
     limit: number = 100;
-    constructor(
-        public plugin: ObsidianLeaflet,
-        overlay: SavedOverlayData,
-        public map: LeafletMap
-    ) {
-        super(plugin.app);
-        this.plugin = plugin;
+    constructor(overlay: Overlay, public map: LeafletMap) {
+        super(map.plugin.app);
         this.map = map;
 
-        this.tempOverlay = Object.assign(
-            Object.create(Object.getPrototypeOf(overlay)),
-            overlay
-        );
+        this.tempOverlay = Object.assign({}, overlay.data);
         if (this.modal) this.modal.close();
     }
     async display() {
@@ -323,11 +310,10 @@ export class OverlayContextModal extends Modal {
             b.setIcon("trash")
                 .setWarning()
                 .setTooltip("Remove Overlay")
-                .onClick(async () => {
+                .onClick(() => {
                     this.deleted = true;
 
                     this.close();
-                    await this.plugin.saveSettings();
                 });
             return b;
         });

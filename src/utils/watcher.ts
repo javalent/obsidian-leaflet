@@ -39,7 +39,6 @@ export default class Watcher extends Events {
         this.frontmatter = cache.frontmatter;
         let overlays = [];
         const marker = this.map.getMarkerById(this.fileIds.get("marker"));
-        console.log("🚀 ~ file: watcher.ts ~ line 42 ~ marker", marker);
 
         if (
             marker &&

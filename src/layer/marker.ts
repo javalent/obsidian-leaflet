@@ -1,4 +1,4 @@
-import { App, MetadataCache, Notice, setIcon } from "obsidian";
+import { App, Notice, setIcon } from "obsidian";
 import {
     LeafletMap,
     MarkerIcon,
@@ -48,6 +48,12 @@ class Link extends MarkerTarget {
     }
     private _getDisplay() {
         if (!this.text) return;
+        if (this.external)
+            return createEl("a", {
+                text: this.text,
+                href: this.text,
+                cls: "external-link"
+            });
         return createSpan({
             text: this.text
                 .replace(/(\^)/, " > ^")
@@ -65,30 +71,13 @@ class Link extends MarkerTarget {
         );
     }
     async run(evt: L.LeafletMouseEvent) {
-        console.log(
-            "🚀 ~ file: marker.ts ~ line 61 ~ this.isInternal",
-            this.external
+        /* if (!this.external) { */
+        await this.app.workspace.openLinkText(
+            this._text.replace("^", "#^").split(/\|/).shift(),
+            this.app.workspace.getActiveFile()?.path,
+            evt.originalEvent.getModifierState(MODIFIER_KEY)
         );
-        if (!this.external) {
-            await this.app.workspace.openLinkText(
-                this._text.replace("^", "#^").split(/\|/).shift(),
-                this.app.workspace.getActiveFile()?.path,
-                evt.originalEvent.getModifierState(MODIFIER_KEY)
-            );
-        } else {
-            let [, l] = this._text.match(
-                /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))/
-            );
-
-            const a = createEl("a", {
-                href: l,
-                text: l
-            });
-            console.log("🚀 ~ file: marker.ts ~ line 115 ~ a", a);
-
-            a.click();
-            a.detach();
-        }
+        /* } */
     }
 }
 class Command extends MarkerTarget {
@@ -240,72 +229,83 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         this.leafletInstance
             .on("contextmenu", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
-
-                if (this.mutable) {
-                    let markerSettingsModal = new MarkerContextModal(
-                        this.map.plugin,
-                        this,
-                        this.map
-                    );
-
-                    markerSettingsModal.onClose = async () => {
-                        if (markerSettingsModal.deleted) {
-                            this.map.removeMarker(this);
-                            this.map.trigger("marker-deleted", this);
-                        } else {
-                            this.map.displaying.delete(this.type);
-                            this.map.displaying.set(
-                                markerSettingsModal.tempMarker.type,
-                                true
-                            );
-                            this.link = markerSettingsModal.tempMarker.link;
-                            this.icon = this.map.markerIcons.get(
-                                markerSettingsModal.tempMarker.type
-                            );
-                            this.tooltip =
-                                markerSettingsModal.tempMarker.tooltip;
-                            this.minZoom =
-                                markerSettingsModal.tempMarker.minZoom;
-                            this.maxZoom =
-                                markerSettingsModal.tempMarker.maxZoom;
-                            this.command =
-                                markerSettingsModal.tempMarker.command;
-
-                            if (this.shouldShow(this.map.map.getZoom())) {
-                                this.show();
-                            } else if (
-                                this.shouldHide(this.map.map.getZoom())
-                            ) {
-                                this.hide();
-                            }
-
-                            if (this.tooltip === "always" && !this.popup) {
-                                this.popup = popup(this.map);
-                                this.popup.open(this, this.target.display);
-                            } else if (this.tooltip !== "always") {
-                                this.popup.close();
-                                this.popup = this.map.popup;
-                            }
-
-                            this.map.trigger("marker-updated", this);
-                            await this.map.plugin.saveSettings();
-                        }
-                    };
-                    markerSettingsModal.open();
-                } else {
+                if (evt.originalEvent.getModifierState("Shift")) {
+                    this.map.beginOverlayDrawingContext(evt, this);
+                    return;
+                }
+                if (!this.mutable) {
                     new Notice(
                         "This marker cannot be edited because it was defined in the code block."
                     );
+                    return;
                 }
+
+                let markerSettingsModal = new MarkerContextModal(
+                    this,
+                    this.map
+                );
+
+                markerSettingsModal.onClose = async () => {
+                    if (markerSettingsModal.deleted) {
+                        this.map.removeMarker(this);
+                        this.map.trigger("marker-deleted", this);
+                    } else {
+                        this.map.displaying.delete(this.type);
+                        this.map.displaying.set(
+                            markerSettingsModal.tempMarker.type,
+                            true
+                        );
+                        this.link = markerSettingsModal.tempMarker.link;
+                        this.icon = this.map.markerIcons.get(
+                            markerSettingsModal.tempMarker.type
+                        );
+                        this.tooltip = markerSettingsModal.tempMarker.tooltip;
+                        this.minZoom = markerSettingsModal.tempMarker.minZoom;
+                        this.maxZoom = markerSettingsModal.tempMarker.maxZoom;
+                        this.command = markerSettingsModal.tempMarker.command;
+
+                        if (this.shouldShow(this.map.map.getZoom())) {
+                            this.show();
+                        } else if (this.shouldHide(this.map.map.getZoom())) {
+                            this.hide();
+                        }
+
+                        if (this.tooltip === "always" && !this.popup) {
+                            this.popup = popup(this.map);
+                            this.popup.open(this, this.target.display);
+                        } else if (this.tooltip !== "always") {
+                            this.popup.close();
+                            this.popup = this.map.popup;
+                        }
+
+                        this.map.trigger("marker-updated", this);
+                        await this.map.plugin.saveSettings();
+                    }
+                };
+                markerSettingsModal.open();
             })
             .on("click", async (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
 
+                if (
+                    evt.originalEvent.getModifierState("Alt") ||
+                    evt.originalEvent.getModifierState("Shift")
+                ) {
+                    const latlng = this.map.formatLatLng(this.latLng);
+                    this.popup.open(this, `[${latlng.lat}, ${latlng.lng}]`);
+
+                    if (
+                        this.map.data.copyOnClick &&
+                        evt.originalEvent.getModifierState(MODIFIER_KEY)
+                    ) {
+                        await this.map.copyLatLngToClipboard(this.loc);
+                    }
+
+                    return;
+                }
                 if (this.target) {
                     this.target.run(evt);
                 }
-
-                this.map.onMarkerClick(this, evt);
             })
             .on("dragstart", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
@@ -328,13 +328,18 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             .on("mouseover", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
 
-                if (this.target) {
-                    console.log(
-                        "🚀 ~ file: marker.ts ~ line 319 ~ this.target.display",
-                        this.target,
-                        this.target.text,
-                        this.popup
+                if (this.map.data.notePreview && this.link) {
+                    this.map.plugin.app.workspace.trigger(
+                        "link-hover",
+                        this, //hover popover
+                        this.leafletInstance.getElement(), //targetEl
+                        this.link.replace("^", "#^").split("|").shift(), //linkText
+                        this.map.options.context //source
                     );
+                    return;
+                }
+
+                if (this.target) {
                     this.popup.open(this, this.target.display);
                 }
             })
@@ -347,6 +352,15 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         return this.target && this.target.text;
     }
     set link(x: string) {
+        if (this.leafletInstance.options?.icon) {
+            this.leafletInstance.options.icon.setData({
+                link: `${x}`
+            });
+        }
+        if (!x || !x.length) {
+            this.target = null;
+            return;
+        }
         if (!this.target) {
             if (this.command) {
                 this.target = new Command(x, this.map.plugin.app);
@@ -355,11 +369,6 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             }
         }
         this.target.text = x;
-        if (this.leafletInstance.options?.icon) {
-            this.leafletInstance.options.icon.setData({
-                link: `${x}`
-            });
-        }
     }
     get command() {
         return this._command;

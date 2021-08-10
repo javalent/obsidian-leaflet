@@ -69,7 +69,7 @@ class Popup {
             .getElement()
             .removeEventListener("mouseleave", this.onMouseOut);
 
-        this.map.off("zoomend", this.onZoomAnim);
+        this.map.map.off("zoom", this.onZoomAnim);
         this.close();
     }
     private onMouseOut() {
@@ -108,7 +108,7 @@ class Popup {
         let popupElement: HTMLElement;
         let _this = this;
 
-        this.map.on("popupopen", () => {
+        this.map.map.on("popupopen", () => {
             popupElement = this.leafletInstance.getElement();
             popupElement.addEventListener(
                 "mouseenter",
@@ -120,6 +120,10 @@ class Popup {
             );
         });
         this.map.map.openPopup(this.leafletInstance);
+
+        if (this.handlerTarget instanceof L.Circle) {
+            this.map.map.on("zoom", this.onZoomAnim.bind(this));
+        }
 
         if (this.handlerTarget instanceof L.LatLng) {
             this._timeoutHandler = setTimeout(function () {
@@ -139,7 +143,6 @@ class Popup {
             this.handlerTarget.leafletInstance
                 .on("mouseout", this.onMouseOut.bind(this))
                 .on("mouseenter", this.onMouseOver.bind(this));
-            this.map.on("zoomend", this.onZoomAnim.bind(this));
         }
     }
 

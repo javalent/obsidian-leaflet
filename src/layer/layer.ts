@@ -40,4 +40,7 @@ export abstract class Layer<T extends L.Layer> {
             });
         }
     }
+    remove() {
+        this.group && this.group.removeLayer(this.leafletInstance);
+    }
 }

@@ -431,16 +431,6 @@ export default class ObsidianLeaflet
         let mapData = this.AppData.mapMarkers.find(
             ({ id: mapId }) => mapId == id
         );
-
-        map.addOverlays(immutableOverlayArray, {
-            mutable: false,
-            sort: true
-        });
-        const mutableOverlays = new Set(mapData?.overlays ?? []);
-        map.addOverlays([...mutableOverlays], {
-            mutable: true,
-            sort: true
-        });
         map.addMarkers([
             ...markerArray,
             ...(mapData?.markers.map((m) => {
@@ -451,6 +441,16 @@ export default class ObsidianLeaflet
                 return { ...m, mutable: true, layer };
             }) ?? [])
         ]);
+
+        map.addOverlays(immutableOverlayArray, {
+            mutable: false,
+            sort: true
+        });
+        const mutableOverlays = new Set(mapData?.overlays ?? []);
+        map.addOverlays([...mutableOverlays], {
+            mutable: true,
+            sort: true
+        });
 
         let layerData: {
             data: string;
