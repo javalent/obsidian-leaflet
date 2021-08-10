@@ -56,8 +56,20 @@ class Link extends MarkerTarget {
                 .pop()
         });
     }
+    get external() {
+        return (
+            !this.isInternal &&
+            /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))/.test(
+                this.text
+            )
+        );
+    }
     async run(evt: L.LeafletMouseEvent) {
-        if (this.isInternal) {
+        console.log(
+            "🚀 ~ file: marker.ts ~ line 61 ~ this.isInternal",
+            this.external
+        );
+        if (!this.external) {
             await this.app.workspace.openLinkText(
                 this._text.replace("^", "#^").split(/\|/).shift(),
                 this.app.workspace.getActiveFile()?.path,
@@ -69,8 +81,10 @@ class Link extends MarkerTarget {
             );
 
             const a = createEl("a", {
-                href: l
+                href: l,
+                text: l
             });
+            console.log("🚀 ~ file: marker.ts ~ line 115 ~ a", a);
 
             a.click();
             a.detach();
