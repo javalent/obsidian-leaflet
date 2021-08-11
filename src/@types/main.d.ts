@@ -51,7 +51,7 @@ export interface BlockParameters {
 }
 
 declare class ObsidianLeaflet extends Plugin {
-    AppData: ObsidianAppData;
+    data: ObsidianAppData;
     markerIcons: MarkerIcon[];
     maps: MapInterface[];
     mapFiles: { file: string; maps: string[] }[];

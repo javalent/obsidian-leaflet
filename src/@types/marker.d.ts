@@ -33,7 +33,6 @@ export interface SavedMarkerProperties {
     layer: string;
     command: boolean;
     mutable: boolean;
-    zoom: number;
     description: string;
     minZoom: number;
     maxZoom: number;
@@ -47,7 +46,6 @@ declare class Marker {
     id: string;
     layer: string;
     command: boolean;
-    zoom: number;
     maxZoom: number;
     minZoom: number;
     divIcon: MarkerDivIcon;

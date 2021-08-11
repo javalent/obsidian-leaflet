@@ -10,10 +10,10 @@ class Popup {
     target: Marker | L.Circle | L.LatLng;
     handlerTarget: any;
     get displayMarkerTooltips() {
-        return this.map.plugin.AppData.displayMarkerTooltips;
+        return this.map.plugin.data.displayMarkerTooltips;
     }
     get displayOverlayTooltips() {
-        return this.map.plugin.AppData.displayOverlayTooltips;
+        return this.map.plugin.data.displayOverlayTooltips;
     }
     constructor(private map: LeafletMap, private source?: L.Layer) {
         this.leafletInstance = L.popup({ ...BASE_POPUP_OPTIONS });

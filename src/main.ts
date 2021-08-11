@@ -83,7 +83,7 @@ export default class ObsidianLeaflet
     extends Plugin
     implements ObsidianLeafletImplementation
 {
-    AppData: ObsidianAppData;
+    data: ObsidianAppData;
     markerIcons: MarkerIcon[];
     maps: MapInterface[] = [];
     mapFiles: { file: string; maps: string[] }[] = [];
@@ -104,7 +104,7 @@ export default class ObsidianLeaflet
 
         addIcon(DESCRIPTION_ICON, DESCRIPTION_ICON_SVG);
 
-        this.markerIcons = this.generateMarkerMarkup(this.AppData.markerIcons);
+        this.markerIcons = this.generateMarkerMarkup(this.data.markerIcons);
 
         this.registerMarkdownCodeBlockProcessor(
             "leaflet",
@@ -166,8 +166,8 @@ export default class ObsidianLeaflet
             maxZoom = 10,
             defaultZoom = 5,
             zoomDelta = 1,
-            lat = `${this.AppData.lat}`,
-            long = `${this.AppData.long}`,
+            lat = `${this.data.lat}`,
+            long = `${this.data.long}`,
             coordinates = undefined,
             id = undefined,
             scale = 1,
@@ -205,19 +205,19 @@ export default class ObsidianLeaflet
 
         /** Update Old Map Data Format */
         if (
-            this.AppData.mapMarkers.find(
+            this.data.mapMarkers.find(
                 ({ path, id: mapId }) =>
                     (path == `${ctx.sourcePath}/${image}` && !mapId) ||
                     path == `${ctx.sourcePath}/${id}`
             )
         ) {
             log(verbose, id, "Map data found in an old format. Converting.");
-            let data = this.AppData.mapMarkers.find(
+            let data = this.data.mapMarkers.find(
                 ({ path }) =>
                     path == `${ctx.sourcePath}/${image}` ||
                     path == `${ctx.sourcePath}/${id}`
             );
-            this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
+            this.data.mapMarkers = this.data.mapMarkers.filter(
                 (d) => d != data
             );
         }
@@ -428,7 +428,7 @@ export default class ObsidianLeaflet
         /** Register File Watcher to Update Markers/Overlays */
         renderer.registerWatchers(watchers);
 
-        let mapData = this.AppData.mapMarkers.find(
+        let mapData = this.data.mapMarkers.find(
             ({ id: mapId }) => mapId == id
         );
         map.addMarkers([
@@ -597,10 +597,10 @@ export default class ObsidianLeaflet
             }
         } else {
             if (!latitude || isNaN(coords[0])) {
-                coords[0] = this.AppData.lat;
+                coords[0] = this.data.lat;
             }
             if (!longitude || isNaN(coords[1])) {
-                coords[1] = this.AppData.long;
+                coords[1] = this.data.long;
             }
         }
         return { coords, distanceToZoom, file };
@@ -647,34 +647,34 @@ export default class ObsidianLeaflet
     }
 
     async loadSettings() {
-        this.AppData = Object.assign(
+        this.data = Object.assign(
             {},
             DEFAULT_SETTINGS,
             await this.loadData()
         );
-        this.AppData.previousVersion = this.manifest.version;
-        if (typeof this.AppData.displayMarkerTooltips === "boolean") {
-            this.AppData.displayMarkerTooltips = this.AppData
+        this.data.previousVersion = this.manifest.version;
+        if (typeof this.data.displayMarkerTooltips === "boolean") {
+            this.data.displayMarkerTooltips = this.data
                 .displayMarkerTooltips
                 ? "hover"
                 : "never";
         }
         if (
-            !this.AppData.defaultMarker ||
-            !this.AppData.defaultMarker.iconName
+            !this.data.defaultMarker ||
+            !this.data.defaultMarker.iconName
         ) {
-            this.AppData.defaultMarker = DEFAULT_SETTINGS.defaultMarker;
-            this.AppData.layerMarkers = false;
+            this.data.defaultMarker = DEFAULT_SETTINGS.defaultMarker;
+            this.data.layerMarkers = false;
         }
         await this.saveSettings();
     }
     async saveSettings() {
         this.maps.forEach((map) => {
-            this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
+            this.data.mapMarkers = this.data.mapMarkers.filter(
                 ({ id }) => id != map.id
             );
 
-            this.AppData.mapMarkers.push({
+            this.data.mapMarkers.push({
                 id: map.id,
                 files: this.mapFiles
                     .filter(({ maps }) => maps.indexOf(map.id) > -1)
@@ -692,7 +692,6 @@ export default class ObsidianLeaflet
                             layer: marker.layer,
                             mutable: true,
                             command: marker.command || false,
-                            zoom: marker.zoom ?? 0,
                             description: marker.description ?? null,
                             minZoom: marker.minZoom ?? null,
                             maxZoom: marker.maxZoom ?? null,
@@ -709,19 +708,19 @@ export default class ObsidianLeaflet
         });
 
         /** Only need to save maps with defined marker data */
-        this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
+        this.data.mapMarkers = this.data.mapMarkers.filter(
             ({ markers, overlays }) => markers.length > 0 || overlays.length > 0
         );
 
         /** Remove maps that haven't been accessed in more than 1 week that are not associated with a file */
-        this.AppData.mapMarkers = this.AppData.mapMarkers.filter(
+        this.data.mapMarkers = this.data.mapMarkers.filter(
             ({ id, files, lastAccessed = Date.now() }) =>
                 !id || files.length || Date.now() - lastAccessed <= 6.048e8
         );
 
-        await this.saveData(this.AppData);
+        await this.saveData(this.data);
 
-        this.markerIcons = this.generateMarkerMarkup(this.AppData.markerIcons);
+        this.markerIcons = this.generateMarkerMarkup(this.data.markerIcons);
 
         this.maps.forEach((map) => {
             map.map.updateMarkerIcons();
@@ -729,20 +728,20 @@ export default class ObsidianLeaflet
     }
 
     generateMarkerMarkup(
-        markers: Icon[] = this.AppData.markerIcons
+        markers: Icon[] = this.data.markerIcons
     ): MarkerIcon[] {
         let ret: MarkerIcon[] = markers.map((marker): MarkerIcon => {
             if (!marker.transform) {
-                marker.transform = this.AppData.defaultMarker.transform;
+                marker.transform = this.data.defaultMarker.transform;
             }
             if (!marker.iconName) {
-                marker.iconName = this.AppData.defaultMarker.iconName;
+                marker.iconName = this.data.defaultMarker.iconName;
             }
             const params =
-                marker.layer && !this.AppData.defaultMarker.isImage
+                marker.layer && !this.data.defaultMarker.isImage
                     ? {
                           transform: marker.transform,
-                          mask: getIcon(this.AppData.defaultMarker.iconName)
+                          mask: getIcon(this.data.defaultMarker.iconName)
                       }
                     : {};
             let node = getMarkerIcon(marker, {
@@ -751,7 +750,7 @@ export default class ObsidianLeaflet
             }).node as HTMLElement;
             node.style.color = marker.color
                 ? marker.color
-                : this.AppData.defaultMarker.color;
+                : this.data.defaultMarker.color;
 
             return {
                 type: marker.type,
@@ -762,10 +761,10 @@ export default class ObsidianLeaflet
                 })
             };
         });
-        const defaultHtml = getMarkerIcon(this.AppData.defaultMarker, {
+        const defaultHtml = getMarkerIcon(this.data.defaultMarker, {
             classes: ["full-width-height"],
             styles: {
-                color: this.AppData.defaultMarker.color
+                color: this.data.defaultMarker.color
             }
         }).html;
         ret.unshift({

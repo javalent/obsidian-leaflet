@@ -25,7 +25,7 @@ export class CreateMarkerModal extends Modal {
         this.tempMarker = { ...this.marker };
     }
     get data() {
-        return this.plugin.AppData;
+        return this.plugin.data;
     }
 
     async display(focusEl?: string): Promise<void> {

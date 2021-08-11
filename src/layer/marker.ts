@@ -143,7 +143,6 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
     percent: [number, number];
     id: string;
     layer: string;
-    zoom: number;
     minZoom: number;
     maxZoom: number;
     description: string;
@@ -164,7 +163,6 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             layer,
             mutable,
             command,
-            zoom,
             percent,
             description,
             minZoom,
@@ -213,7 +211,6 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             this.popup = this.map.popup;
         }
 
-        this.zoom = zoom;
         this.minZoom = minZoom;
         this.maxZoom = maxZoom;
 
@@ -287,10 +284,16 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             .on("click", async (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
 
+                if (this.map.isDrawing) {
+                    this.map.onMarkerClick(this, evt);
+                    return;
+                }
+
                 if (
                     evt.originalEvent.getModifierState("Alt") ||
                     evt.originalEvent.getModifierState("Shift")
                 ) {
+                    this.map.onMarkerClick(this, evt);
                     const latlng = this.map.formatLatLng(this.latLng);
                     this.popup.open(this, `[${latlng.lat}, ${latlng.lng}]`);
 
@@ -327,7 +330,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             })
             .on("mouseover", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
-
+                this.isBeingHovered = true;
                 if (this.map.data.notePreview && this.link) {
                     this.map.plugin.app.workspace.trigger(
                         "link-hover",
@@ -493,7 +496,6 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             layer: this.layer,
             mutable: this.mutable,
             command: this.command,
-            zoom: this.zoom,
             percent: this.percent,
             description: this.description,
             minZoom: this.minZoom,

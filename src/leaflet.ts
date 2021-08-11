@@ -10,7 +10,6 @@ import {
     MarkdownRenderChild,
     TFile,
     Scope,
-    setIcon,
     MarkdownPostProcessorContext
 } from "obsidian";
 
@@ -24,8 +23,6 @@ import type {
     ObsidianLeaflet,
     Marker as MarkerDefinition,
     SavedOverlayData,
-    LeafletOverlay,
-    TooltipDisplay
 } from "./@types";
 import {
     DISTANCE_DECIMALS,
@@ -34,7 +31,7 @@ import {
     MODIFIER_KEY
 } from "./utils/constants";
 
-import { icon, DESCRIPTION_ICON } from "./utils/icons";
+import { icon } from "./utils/icons";
 
 import {
     getId,
@@ -80,9 +77,9 @@ declare module "leaflet" {
     }
 }
 
-
 export class LeafletRenderer extends MarkdownRenderChild {
     watchers: Set<Watcher> = new Set();
+    _resize: ResizeObserver;
     registerWatchers(watchers: Map<TFile, Map<string, string>>) {
         for (const [file, fileIds] of watchers) {
             const watcher = new Watcher(this.plugin, file, this.map, fileIds);
@@ -111,7 +108,14 @@ export class LeafletRenderer extends MarkdownRenderChild {
         this.containerEl.style.backgroundColor = "var(--background-secondary)";
 
         this.parentEl = ctx.containerEl;
+        this._resize = new ResizeObserver(() => {
+            if (this.map.rendered) {
+                this.map.map.invalidateSize();
+            }
+        });
+        this._resize.observe(this.containerEl);
     }
+
     async onload() {
         log(
             this.verbose,
@@ -322,7 +326,7 @@ class LeafletMap extends Events {
     }
 
     get data() {
-        return this.plugin.AppData;
+        return this.plugin.data;
     }
 
     get group() {
@@ -556,9 +560,6 @@ class LeafletMap extends Events {
             }
         }
 
-        /** Register Resize Handler */
-        this._handleResize();
-
         /** Build control icons */
         this._buildControls();
 
@@ -584,54 +585,7 @@ class LeafletMap extends Events {
 
         this.group.group.addTo(this.map);
     }
-    private _buildDisplayForTooltip(
-        title: string,
-        { icon, description }: { icon?: boolean; description?: string }
-    ): HTMLDivElement {
-        let display: HTMLDivElement = createDiv({
-            attr: { style: "text-align: left;" }
-        });
-        const titleEl = display.createDiv({
-            attr: {
-                style: "display: flex; justify-content: space-between;"
-            }
-        });
-        const labelEl = titleEl.createEl("label", {
-            text: title,
-            attr: {
-                style: "text-align: left;"
-            }
-        });
-        if (icon) {
-            setIcon(
-                titleEl.createDiv({
-                    attr: {
-                        style: "margin-left: 0.5rem;"
-                    }
-                }),
-                DESCRIPTION_ICON
-            );
-        }
-        if (description) {
-            labelEl.setAttr("style", "font-weight: bolder; text-align: left;");
-            display.createEl("p", {
-                attr: {
-                    style: "margin: 0.25rem 0; text-align: left;"
-                },
-                text: description
-            });
-        }
-        return display;
-    }
-    private _focusOnLayer(layer: L.GeoJSON<any> | L.Circle<any>) {
-        const { lat, lng } = layer.getBounds().getCenter();
-        log(
-            this.verbose,
-            this.id,
-            `Feature was Control clicked. Moving to bounds [${lat}, ${lng}]`
-        );
-        this.map.fitBounds(layer.getBounds());
-    }
+
     log(message: string) {
         log(this.verbose, this.id, message);
     }
@@ -764,7 +718,7 @@ class LeafletMap extends Events {
             description: markerToBeAdded.description,
             tooltip:
                 markerToBeAdded.tooltip ??
-                this.plugin.AppData.displayMarkerTooltips
+                this.plugin.data.displayMarkerTooltips
         });
 
         this._pushMarker(marker);
@@ -801,7 +755,7 @@ class LeafletMap extends Events {
                 maxZoom: markerToBeAdded.maxZoom,
                 tooltip:
                     markerToBeAdded.tooltip ??
-                    this.plugin.AppData.displayMarkerTooltips
+                    this.plugin.data.displayMarkerTooltips
             });
 
             this._pushMarker(marker);
@@ -850,7 +804,7 @@ class LeafletMap extends Events {
             minZoom,
             maxZoom,
 
-            tooltip: this.plugin.AppData.displayMarkerTooltips
+            tooltip: this.plugin.data.displayMarkerTooltips
         });
 
         this._pushMarker(marker);
@@ -976,8 +930,7 @@ class LeafletMap extends Events {
                     marker.id,
                     marker.layer,
                     marker.mutable,
-                    marker.command,
-                    marker.zoom
+                    marker.command
                 );
             });
             await this.plugin.saveSettings();
@@ -1293,6 +1246,11 @@ class LeafletMap extends Events {
                         this._distanceEvent,
                         mvEvt.latlng
                     ]);
+                } else {
+                    this._distanceLine.setLatLngs([
+                        this._distanceEvent,
+                        this.markers.find((m) => m.isBeingHovered).loc
+                    ]);
                 }
                 this._distanceLine.addTo(this.map);
 
@@ -1543,20 +1501,9 @@ class LeafletMap extends Events {
     @catchErrorAsync
     private async _renderReal() {
         this.map.setZoom(this.zoom.default, { animate: false });
-
-        this._handleResize();
     }
 
     @catchError
-    private _handleResize() {
-        this._resize = new ResizeObserver(() => {
-            if (this.rendered) {
-                this.map.invalidateSize();
-            }
-        });
-        this._resize.observe(this.contentEl);
-    }
-
     @catchErrorAsync
     async copyLatLngToClipboard(loc: L.LatLng): Promise<void> {
         await new Promise<void>((resolve, reject) => {
@@ -1577,20 +1524,6 @@ class LeafletMap extends Events {
                     reject();
                 });
         });
-    }
-
-    private canShowTooltip(
-        target: MarkerDefinition | LeafletOverlay,
-        tooltip?: TooltipDisplay
-    ) {
-        const global =
-            target instanceof Marker
-                ? this.plugin.AppData.displayMarkerTooltips
-                : this.plugin.AppData.displayOverlayTooltips;
-        if (tooltip === "always") return false;
-        if (tooltip === "hover" && global) return true;
-        if (tooltip === "never") return false;
-        return global;
     }
 
     @catchError
@@ -1618,90 +1551,6 @@ class LeafletMap extends Events {
         this.rendered = false;
 
         this.plugin.app.keymap.popScope(this._escapeScope);
-    }
-
-    private async _buildMarkerPopupDisplay(marker: MarkerDefinition) {
-        let display: HTMLElement;
-        if (marker.command) {
-            const commands = this.plugin.app.commands.listCommands();
-
-            if (
-                commands.find(
-                    ({ id }) =>
-                        id.toLowerCase() === marker.link.toLowerCase().trim()
-                )
-            ) {
-                const command = commands.find(
-                    ({ id }) =>
-                        id.toLowerCase() === marker.link.toLowerCase().trim()
-                );
-                const div = createDiv({
-                    attr: {
-                        style: "display: flex; align-items: center;"
-                    }
-                });
-                setIcon(
-                    div.createSpan({
-                        attr: {
-                            style: "margin-right: 0.5em; display: flex; align-items: center;"
-                        }
-                    }),
-                    "run-command"
-                );
-                display = div.createSpan({ text: command.name });
-            } else {
-                const div = createDiv({
-                    attr: {
-                        style: "display: flex; align-items: center;"
-                    }
-                });
-                setIcon(
-                    div.createSpan({
-                        attr: {
-                            style: "margin-right: 0.5em; display: flex; align-items: center;"
-                        }
-                    }),
-                    "cross"
-                );
-                display = div.createSpan({ text: "No command found!" });
-            }
-            return;
-        }
-
-        let internal = this.plugin.app.metadataCache.getFirstLinkpathDest(
-            marker.link.split(/(\^|\||#)/).shift(),
-            ""
-        );
-
-        if (
-            /(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/.test(
-                marker.link
-            ) &&
-            !internal
-        ) {
-            //external url
-            let [, link] = marker.link.match(
-                /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))/
-            );
-
-            let [, text] = marker.link.match(/\[([\s\S]+)\]/) || [, link];
-
-            let el = marker.leafletInstance.getElement();
-            display = createEl("a", {
-                text: text,
-                href: link,
-                cls: "external-link"
-            });
-        } else {
-            display = createSpan({
-                text: marker.display
-                    .replace(/(\^)/, " > ^")
-                    .replace(/#/, " > ")
-                    .split("|")
-                    .pop()
-            });
-        }
-        return display;
     }
 
     async onMarkerClick(marker: Marker, evt: L.LeafletMouseEvent) {

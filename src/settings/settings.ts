@@ -51,7 +51,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
         };
     }
     get data() {
-        return this.plugin.AppData;
+        return this.plugin.data;
     }
     async display(): Promise<void> {
         let { containerEl } = this;
@@ -431,9 +431,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                 drop.addOption("hover", "Hover");
                 drop.addOption("never", "Never");
                 drop.setValue(
-                    this.plugin.AppData.displayMarkerTooltips ?? "hover"
+                    this.plugin.data.displayMarkerTooltips ?? "hover"
                 ).onChange((value: TooltipDisplay) => {
-                    this.plugin.AppData.displayMarkerTooltips = value;
+                    this.plugin.data.displayMarkerTooltips = value;
                 });
             });
         /* new Setting(containerEl)
@@ -585,7 +585,6 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                             layer: layer,
                             id: id,
                             command: false,
-                            zoom: null,
                             description: null,
                             mutable: true,
                             minZoom: null,

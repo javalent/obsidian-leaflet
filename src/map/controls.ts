@@ -310,7 +310,7 @@ class EditMarkerControl extends FontAwesomeControl {
             markerSetting
                 .addDropdown((d) => {
                     d.addOption("default", "Default");
-                    this.plugin.AppData.markerIcons.forEach((marker) => {
+                    this.plugin.data.markerIcons.forEach((marker) => {
                         d.addOption(
                             marker.type,
                             marker.type[0].toUpperCase() +
