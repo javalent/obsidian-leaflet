@@ -1,3 +1,4 @@
+import { locale } from "moment";
 import { Events } from "obsidian";
 import {
     LayerGroup,
@@ -32,6 +33,15 @@ export abstract class Map<T> extends Events {
     mapLayers: LayerGroup[] = [];
     popup: Popup;
     verbose: boolean;
+
+    formatNumber(number: number, digits: number) {
+        return Number(
+            new Intl.NumberFormat(locale(), {
+                style: "decimal",
+                maximumFractionDigits: digits
+            }).format(number)
+        );
+    }
 
     log(text: string) {
         log(this.verbose, this.id, text);

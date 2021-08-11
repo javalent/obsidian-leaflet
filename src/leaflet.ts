@@ -80,6 +80,7 @@ declare module "leaflet" {
     }
 }
 
+
 export class LeafletRenderer extends MarkdownRenderChild {
     watchers: Set<Watcher> = new Set();
     registerWatchers(watchers: Map<TFile, Map<string, string>>) {
