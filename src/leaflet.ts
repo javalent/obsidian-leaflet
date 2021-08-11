@@ -658,7 +658,7 @@ class LeafletMap extends Events {
                                 id: getId(),
                                 type: type,
                                 loc: latlng,
-                                link: display.outerHTML,
+                                link: display?.outerHTML ?? undefined,
                                 icon: icon.icon,
                                 layer: this.group?.id,
                                 mutable: false,
@@ -694,7 +694,7 @@ class LeafletMap extends Events {
                                 }
                             );
                             marker.leafletInstance.on("mouseover", () => {
-                                if (this.isDrawing) return;
+                                if (this.isDrawing || !marker.link) return;
                                 let display = this._buildDisplayForTooltip(
                                     title,
                                     {
@@ -784,7 +784,9 @@ class LeafletMap extends Events {
                     added++;
                 } catch (e) {
                     new Notice(
-                        "There was an error adding GeoJSON to map " + this.id + `\n\n${e.message}`
+                        "There was an error adding GeoJSON to map " +
+                            this.id +
+                            `\n\n${e.message}`
                     );
                     return;
                 }
