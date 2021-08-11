@@ -784,7 +784,7 @@ class LeafletMap extends Events {
                     added++;
                 } catch (e) {
                     new Notice(
-                        "There was an error adding GeoJSON to map " + this.id
+                        "There was an error adding GeoJSON to map " + this.id + `\n\n${e.message}`
                     );
                     return;
                 }
