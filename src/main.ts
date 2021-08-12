@@ -30,7 +30,6 @@ import {
     DESCRIPTION_ICON_SVG,
     parseLink,
     log,
-    renderError
 } from "./utils";
 import {
     MapInterface,
@@ -48,12 +47,7 @@ import { LeafletRenderer } from "./leaflet";
 import { markerDivIcon } from "./map";
 import convert from "convert";
 
-import { LeafletSymbol } from "./utils/leaflet-import";
-import type * as Leaflet from "leaflet";
 import { Length } from "convert/dist/types/units";
-import Watcher from "./utils/watcher";
-
-const L = window[LeafletSymbol];
 
 //add commands to app interface
 declare module "obsidian" {
@@ -166,8 +160,8 @@ export default class ObsidianLeaflet
             maxZoom = 10,
             defaultZoom = 5,
             zoomDelta = 1,
-            lat = `${this.data.lat}`,
-            long = `${this.data.long}`,
+            lat,
+            long,
             coordinates = undefined,
             id = undefined,
             scale = 1,
@@ -429,7 +423,6 @@ export default class ObsidianLeaflet
         renderer.registerWatchers(watchers);
 
         let mapData = this.data.mapMarkers.find(({ id: mapId }) => mapId == id);
-        console.log("🚀 ~ file: main.ts ~ line 432 ~ mapData", mapData);
 
         map.addMarker(
             ...markerArray,
@@ -536,6 +529,7 @@ export default class ObsidianLeaflet
         file: TFile;
     }> {
         let latitude = lat;
+        console.log("🚀 ~ file: main.ts ~ line 538 ~ latitude", latitude);
         let longitude = long;
         let coords: [number, number] = [undefined, undefined];
         let distanceToZoom, file;
@@ -576,12 +570,20 @@ export default class ObsidianLeaflet
             err = true;
         }
 
-        if (err || isNaN(coords[0]) || isNaN(coords[1])) {
+        if (
+            (latitude || longitude) &&
+            (err || isNaN(coords[0]) || isNaN(coords[1]))
+        ) {
             new Notice(
                 "There was an error with the provided latitude and longitude. Using defaults."
             );
         }
 
+        console.log(
+            "🚀 ~ file: main.ts ~ line 585 ~ map.type",
+            map.type,
+            coords
+        );
         if (map.type != "real") {
             if (!latitude || isNaN(coords[0])) {
                 coords[0] = 50;
@@ -597,6 +599,7 @@ export default class ObsidianLeaflet
                 coords[1] = this.data.long;
             }
         }
+        console.log("🚀 ~ file: main.ts ~ line 602 ~ coords", coords);
         return { coords, distanceToZoom, file };
     }
     private _getCoordsFromCache(
@@ -686,10 +689,7 @@ export default class ObsidianLeaflet
                     }),
                 overlays: map.map.overlays
                     .filter(({ mutable }) => mutable)
-                    .map((overlay) => {
-                        if (overlay.leafletInstance instanceof L.Circle)
-                            return overlay.toProperties();
-                    })
+                    .map((overlay) => overlay.toProperties())
             });
         });
 

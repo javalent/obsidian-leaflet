@@ -1,10 +1,10 @@
 import type { BaseMapType } from "src/@types";
-import { LeafletSymbol } from "src/utils/leaflet-import";
-
 import type { GPX as LeafletGPX, GPXOptions } from "leaflet";
 import { Layer } from "../layer/layer";
 
+import { LeafletSymbol } from "src/utils/leaflet-import";
 let L = window[LeafletSymbol];
+
 const MarkerOptions: L.MarkerOptions = {
     startIconUrl: null,
     endIconUrl: null,

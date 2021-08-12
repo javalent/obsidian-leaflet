@@ -20,7 +20,7 @@ import {
 } from "src/utils";
 import { CreateMarkerModal, IconSuggestionModal } from "src/modals";
 
-import {
+import type {
     MapMarkerData,
     Icon,
     SavedMarkerProperties,

@@ -1,12 +1,12 @@
-import { Length } from "convert/dist/types/units";
+import type { Length } from "convert/dist/types/units";
 
-import L from "leaflet";
-import { DivIcon } from "leaflet";
-import { Events, Scope } from "obsidian";
-import { MarkerIcon, SavedMarkerProperties, SavedOverlayData } from ".";
-import { ObsidianLeaflet } from "./main";
-import { Marker } from ".";
-import { ObsidianAppData, TooltipDisplay } from "./saved";
+import type L from "leaflet";
+import type { DivIcon } from "leaflet";
+import type { Events } from "obsidian";
+import type { MarkerIcon, SavedMarkerProperties, SavedOverlayData } from ".";
+import type { ObsidianLeaflet } from "./main";
+import type { Marker } from ".";
+import type { ObsidianAppData, TooltipDisplay } from "./saved";
 import type { Overlay } from "src/layer";
 
 export interface LayerGroup {
@@ -205,9 +205,9 @@ declare class LeafletMap extends Events {
     remove(): void;
 }
 
-declare abstract class BaseMap<
+declare abstract class BaseMap/* <
     T extends L.ImageOverlay | L.TileLayer
-> extends Events {
+> */ extends Events {
     isDrawing: boolean;
     plugin: ObsidianLeaflet;
     options: LeafletMapOptions;
@@ -233,7 +233,7 @@ declare abstract class BaseMap<
     constructor(plugin: ObsidianLeaflet, options: LeafletMapOptions);
 
     contentEl: HTMLElement;
-    currentLayer: T;
+    currentLayer: L.ImageOverlay | L.TileLayer;
     get currentGroup(): LayerGroup;
     get data(): ObsidianAppData;
     get defaultIcon(): MarkerIcon;
@@ -326,7 +326,7 @@ declare abstract class BaseMap<
     updateMarkerIcons(): void;
 }
 
-declare class RealMap extends BaseMap<L.TileLayer> {
+declare class RealMap extends BaseMap/* <L.TileLayer> */ {
     CRS: L.CRS;
     type: string;
     constructor(plugin: ObsidianLeaflet, options: LeafletMapOptions);
@@ -350,7 +350,7 @@ declare class RealMap extends BaseMap<L.TileLayer> {
         }[];
     }): Promise<void>;
 }
-declare class ImageMap extends BaseMap<L.ImageOverlay> {
+declare class ImageMap extends BaseMap/* <L.ImageOverlay> */ {
     CRS: L.CRS;
     type: string;
     constructor(plugin: ObsidianLeaflet, options: LeafletMapOptions);

@@ -1,18 +1,20 @@
-import { BaseMapType, ObsidianLeaflet, SavedOverlayData } from "src/@types";
+import type {
+    BaseMapType,
+    ObsidianLeaflet,
+    SavedOverlayData
+} from "src/@types";
 import {
-    App,
-    CachedMetadata,
     Events,
     FrontMatterCache,
     Notice,
     TAbstractFile,
     TFile
 } from "obsidian";
-import { LeafletSymbol } from "src/utils/leaflet-import";
-import type * as Leaflet from "leaflet";
+
 import { Length } from "convert/dist/types/units";
 import { OVERLAY_TAG_REGEX } from ".";
 
+import { LeafletSymbol } from "src/utils/leaflet-import";
 const L = window[LeafletSymbol];
 export default class Watcher extends Events {
     frontmatter: FrontMatterCache;
@@ -51,14 +53,8 @@ export default class Watcher extends Events {
                     location.length == 2 &&
                     location.every((v) => typeof v == "number")
                 ) {
-                    if (
-                        !marker.loc.equals(
-                            L.latLng(<Leaflet.LatLngTuple>location)
-                        )
-                    ) {
-                        marker.setLatLng(
-                            L.latLng(<Leaflet.LatLngTuple>location)
-                        );
+                    if (!marker.loc.equals(L.latLng(<L.LatLngTuple>location))) {
+                        marker.setLatLng(L.latLng(<L.LatLngTuple>location));
                     }
                 }
             } catch (e) {

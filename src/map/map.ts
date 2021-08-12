@@ -11,11 +11,11 @@ import {
     SavedMarkerProperties,
     SavedOverlayData,
     TooltipDisplay,
-    BaseMap as BaseMapDefinition
+    BaseMap as BaseMapDefinition,
+    BaseMapType
 } from "src/@types";
 
-import { Marker } from "src/layer";
-import { Overlay } from "src/layer";
+import { GPX, Marker, GeoJSON, Overlay } from "src/layer";
 
 import { OverlayContextModal } from "src/modals/context";
 
@@ -24,21 +24,32 @@ import {
     DISTANCE_DECIMALS,
     getId,
     getImageDimensions,
+    icon,
     LAT_LONG_DECIMALS,
-    log
+    log,
+    MODIFIER_KEY
 } from "src/utils";
 
 import { popup } from "./popup";
 
+import {
+    distanceDisplay,
+    filterMarkerControl,
+    resetZoomControl,
+    zoomControl
+} from "./controls";
+
 import { LeafletSymbol } from "../utils/leaflet-import";
-import { TileLayer } from "leaflet";
 let L = window[LeafletSymbol];
-export abstract class BaseMap<T extends L.ImageOverlay | L.TileLayer>
+
+export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
     extends Events
-    implements BaseMapDefinition<T>
+    implements BaseMapDefinition
 {
+    /* <T> */
     isDrawing: boolean = false;
     private escapeScope: Scope;
+    distanceDisplay: any;
     /** Abstract */
     /* abstract initialize(): void; */
     abstract render(options: {
@@ -73,18 +84,6 @@ export abstract class BaseMap<T extends L.ImageOverlay | L.TileLayer>
             evt.stopPropagation();
         });
 
-        this.leafletInstance = L.map(this.contentEl, {
-            crs: this.CRS,
-            maxZoom: this.zoom.max,
-            minZoom: this.zoom.min,
-            zoomDelta: this.zoom.delta,
-            zoomSnap: this.zoom.delta,
-            wheelPxPerZoomLevel: 60 * (1 / this.zoom.delta),
-            worldCopyJump: true,
-            ...(this.plugin.isDesktop ? { fullscreenControl: true } : {})
-        });
-        this.leafletInstance.createPane("base-layer");
-
         this.escapeScope = new Scope();
         this.escapeScope.register(undefined, "Escape", () => {
             if (!this.isFullscreen) {
@@ -94,8 +93,24 @@ export abstract class BaseMap<T extends L.ImageOverlay | L.TileLayer>
         });
     }
 
+    createMap() {
+        this.leafletInstance = L.map(this.contentEl, {
+            crs: this.CRS,
+            maxZoom: this.zoom.max,
+            minZoom: this.zoom.min,
+            zoomDelta: this.zoom.delta,
+            zoomSnap: this.zoom.delta,
+            wheelPxPerZoomLevel: 60 * (1 / this.zoom.delta),
+            worldCopyJump: this.type === "real",
+            ...(this.plugin.isDesktop ? { fullscreenControl: true } : {})
+        });
+        this.leafletInstance.createPane("base-layer");
+
+        this.buildControls();
+    }
+
     contentEl: HTMLElement = createDiv();
-    currentLayer: T;
+    currentLayer: L.TileLayer | L.ImageOverlay;
     get currentGroup() {
         return this.mapLayers?.find(
             (group) => group.layer == this.currentLayer
@@ -167,10 +182,8 @@ export abstract class BaseMap<T extends L.ImageOverlay | L.TileLayer>
 
     /** Marker Methods */
     addMarker(...markers: SavedMarkerProperties[]) {
-        console.log("🚀 ~ file: map.ts ~ line 123 ~ markers", markers);
         let toReturn: Marker[] = [];
         for (const marker of markers) {
-            console.log("🚀 ~ file: map.ts ~ line 137 ~ marker", marker);
             if (!this.markerTypes.includes(marker.type)) {
                 new Notice(
                     `Marker type "${marker.type}" does not exist, using default.`
@@ -181,7 +194,9 @@ export abstract class BaseMap<T extends L.ImageOverlay | L.TileLayer>
 
             const mapIcon = markerIcon?.icon ?? this.defaultIcon.icon;
 
-            //@ts-expect-error
+            if (!this.displaying.has(marker.type)) {
+                this.displaying.set(marker.type, true);
+            }
             const newMarker = new Marker(this, {
                 id: marker.id,
                 type: marker.type,
@@ -264,7 +279,6 @@ export abstract class BaseMap<T extends L.ImageOverlay | L.TileLayer>
     /** Overlay Methods */
     addOverlay(...overlays: SavedOverlayData[]) {
         for (let overlay of overlays) {
-            //@ts-expect-error
             this.overlays.push(new Overlay(this, overlay));
         }
         this.sortOverlays();
@@ -315,11 +329,145 @@ export abstract class BaseMap<T extends L.ImageOverlay | L.TileLayer>
     }
 
     /** Other Methods */
+
+    addFeatures() {
+        /** Add GeoJSON to map */
+        this.featureLayer = L.featureGroup();
+        let added: number;
+        if (this.options.geojson.length > 0) {
+            log(
+                this.verbose,
+                this.id,
+                `Adding ${this.options.geojson.length} GeoJSON features to map.`
+            );
+            this.leafletInstance.createPane("geojson");
+
+            added = 0;
+            this.options.geojson.forEach((geoJSON) => {
+                try {
+                    const geo = new GeoJSON(
+                        this as BaseMapType,
+                        this.featureLayer,
+                        { color: this.options.geojsonColor },
+                        geoJSON
+                    );
+
+                    geo.leafletInstance.addTo(this.featureLayer);
+
+                    added++;
+                } catch (e) {
+                    console.error(e);
+                    new Notice(
+                        "There was an error adding GeoJSON to map " + this.id
+                    );
+                    return;
+                }
+            });
+
+            log(
+                this.verbose,
+                this.id,
+                `${added} GeoJSON feature${added == 1 ? "" : "s"} added to map.`
+            );
+        }
+
+        /** Add GPX to map */
+        if (this.options.gpx.length > 0) {
+            log(
+                this.verbose,
+                this.id,
+                `Adding ${this.options.gpx.length} GPX features to map.`
+            );
+
+            for (let gpx of this.options.gpx) {
+                const gpxInstance = new GPX(
+                    this as BaseMapType,
+                    gpx,
+                    {},
+                    this.options.gpxIcons
+                );
+                gpxInstance.leafletInstance.addTo(this.featureLayer);
+            }
+        }
+
+        if (this.options.geojson.length || this.options.gpx.length) {
+            this.featureLayer.addTo(this.currentGroup.group);
+            if (this.options.zoomFeatures) {
+                log(this.verbose, this.id, `Zooming to features.`);
+                this.leafletInstance.fitBounds(this.featureLayer.getBounds());
+                const { lat, lng } = this.featureLayer.getBounds().getCenter();
+
+                log(this.verbose, this.id, `Features center: [${lat}, ${lng}]`);
+                this.setInitialCoords([lat, lng]);
+                this.zoom.default = this.leafletInstance.getBoundsZoom(
+                    this.featureLayer.getBounds()
+                );
+            }
+        }
+
+        /** Add Image Overlays to Map */
+        /* if (options.imageOverlays.length) {
+            this._addLayerControl();
+            this.map.createPane("image-overlay");
+            for (let overlay of options.imageOverlays) {
+                let bounds = overlay.bounds.length
+                    ? overlay.bounds
+                    : this.bounds;
+
+                const image = L.imageOverlay(overlay.data, bounds, {
+                    pane: "image-overlay"
+                });
+
+                this._layerControl.addOverlay(image, overlay.alias);
+            }
+        } */
+    }
+    buildControls() {
+        //Full screen
+        if (this.plugin.isDesktop) {
+            const fsButton = this.contentEl.querySelector(
+                ".leaflet-control-fullscreen-button"
+            );
+            if (fsButton) {
+                fsButton.setAttr("aria-label", "Toggle Full Screen");
+                const expand = icon({ iconName: "expand", prefix: "fas" })
+                    .node[0];
+                const compress = icon({ iconName: "compress", prefix: "fas" })
+                    .node[0];
+                fsButton.appendChild(expand);
+                this.leafletInstance.on("fullscreenchange", () => {
+                    if (this.isFullscreen) {
+                        fsButton.replaceChild(compress, fsButton.children[0]);
+                        //editMarkerControl.disable();
+                    } else {
+                        fsButton.replaceChild(expand, fsButton.children[0]);
+                        //editMarkerControl.enable();
+                    }
+                });
+            }
+        }
+        filterMarkerControl({ position: "topright" }, this).addTo(
+            this.leafletInstance
+        );
+        zoomControl({ position: "topleft" }, this).addTo(this.leafletInstance);
+        resetZoomControl({ position: "topleft" }, this).addTo(
+            this.leafletInstance
+        );
+        this.distanceDisplay = distanceDisplay(
+            {
+                position: "bottomleft"
+            },
+            this.previousDistanceLine,
+            this
+        ).addTo(this.leafletInstance);
+    }
+
     abstract buildLayer(layer?: {
         data: string;
         id: string;
         alias?: string;
-    }): Promise<T>;
+    }): Promise<L.TileLayer | L.ImageOverlay>;
+
     closePopup(popup: L.Popup) {
         if (!popup) return;
         this.leafletInstance.closePopup(popup);
@@ -353,6 +501,100 @@ export abstract class BaseMap<T extends L.ImageOverlay | L.TileLayer>
         if (!this.rendered) return this.zoom.default;
         return this.leafletInstance.getZoom();
     }
+    async handleMapClick(evt: L.LeafletMouseEvent) {
+        this.handleMapDistance(evt);
+        if (
+            evt.originalEvent.getModifierState("Shift") ||
+            evt.originalEvent.getModifierState("Alt")
+        ) {
+            this.log(`Map popup context detected. Opening popup.`);
+            const latlng = formatLatLng(evt.latlng);
+            this.popup.open(evt.latlng, `[${latlng.lat}, ${latlng.lng}]`);
+            if (
+                this.data.copyOnClick &&
+                evt.originalEvent.getModifierState(MODIFIER_KEY)
+            ) {
+                log(
+                    this.verbose,
+                    this.id,
+                    `Copying coordinates of click to clipboard.`
+                );
+                await copyToClipboard(evt.latlng);
+            }
+        }
+    }
+    handleMapDistance(evt: L.LeafletMouseEvent) {
+        if (
+            (!evt.originalEvent.getModifierState("Shift") &&
+                !evt.originalEvent.getModifierState("Alt")) ||
+            evt.originalEvent.getModifierState("Control")
+        ) {
+            if (this.distanceEvent != undefined) {
+                this.stopDrawingContext();
+            }
+            return;
+        }
+        if (this.distanceEvent != undefined) {
+            this.log(`Distance measurement context ending.`);
+            this.previousDistanceLine = this.distanceLine;
+            this.distanceLine = null;
+            this.stopDrawingContext();
+        } else {
+            this.log(`Distance measurement context starting.`);
+            this.distanceEvent = evt.latlng;
+
+            this.isDrawing = true;
+            this.plugin.app.keymap.pushScope(this.escapeScope);
+
+            const distanceTooltip = L.tooltip({
+                permanent: true,
+                direction: "top",
+                sticky: true
+            });
+
+            this.distanceLine = L.polyline([this.distanceEvent, evt.latlng]);
+
+            this.distanceLine.bindTooltip(distanceTooltip);
+            this.leafletInstance.on(
+                "mousemove",
+                (mvEvt: L.LeafletMouseEvent) => {
+                    if (!this.markers.find((m) => m.isBeingHovered)) {
+                        this.distanceLine.setLatLngs([
+                            this.distanceEvent,
+                            mvEvt.latlng
+                        ]);
+                    } else {
+                        this.distanceLine.setLatLngs([
+                            this.distanceEvent,
+                            this.markers.find((m) => m.isBeingHovered).loc
+                        ]);
+                    }
+                    this.distanceLine.addTo(this.leafletInstance);
+
+                    /** Get New Distance */
+                    const latlngs =
+                        this.distanceLine.getLatLngs() as L.LatLng[];
+                    const display = this.distance(latlngs[0], latlngs[1]);
+
+                    /** Update Distance Line Tooltip */
+                    distanceTooltip.setContent(display);
+                    distanceTooltip.setLatLng(mvEvt.latlng);
+
+                    if (!this.distanceLine.isTooltipOpen()) {
+                        distanceTooltip.openTooltip();
+                    }
+
+                    this.distanceDisplay.setText(display);
+                    this.distanceLine.redraw();
+                }
+            );
+
+            this.leafletInstance.on("mouseout", () => {
+                this.stopDrawingContext();
+                this.distanceEvent = undefined;
+            });
+        }
+    }
     handleMapContext(evt: L.LeafletMouseEvent, overlay?: Overlay) {
         if (overlay) {
             const under = this.getOverlaysUnderClick(evt);
@@ -361,7 +603,6 @@ export abstract class BaseMap<T extends L.ImageOverlay | L.TileLayer>
             }
 
             const openOverlayContext = (overlay: Overlay) => {
-                //@ts-expect-error
                 const modal = new OverlayContextModal(overlay, this);
                 modal.onClose = async () => {
                     if (modal.deleted) {
@@ -566,10 +807,12 @@ export abstract class BaseMap<T extends L.ImageOverlay | L.TileLayer>
             this.distanceLine.remove();
 
             /** Get Last Distance */
-            const latlngs =
-                this.previousDistanceLine.getLatLngs() as L.LatLng[];
-            const display = this.distance(latlngs[0], latlngs[1]);
-            //this.distanceDisplay.setText(display);
+            if (this.previousDistanceLine) {
+                const latlngs =
+                    this.previousDistanceLine.getLatLngs() as L.LatLng[];
+                const display = this.distance(latlngs[0], latlngs[1]);
+                this.distanceDisplay.setText(display);
+            }
         }
         if (this.tempCircle) {
             this.tempCircle.remove();
@@ -619,7 +862,7 @@ export abstract class BaseMap<T extends L.ImageOverlay | L.TileLayer>
     }
 }
 
-export class RealMap extends BaseMap<L.TileLayer> {
+export class RealMap extends BaseMap {
     CRS = L.CRS.EPSG3857;
     popup: Popup = popup(this);
     type: "real" = "real";
@@ -629,6 +872,7 @@ export class RealMap extends BaseMap<L.TileLayer> {
         public options: LeafletMapOptions
     ) {
         super(plugin, options);
+        this.createMap();
     }
 
     get bounds() {
@@ -673,7 +917,6 @@ export class RealMap extends BaseMap<L.TileLayer> {
                 group: group,
                 layer: layer,
                 id: "real",
-                /* data: "real", */
                 markers: markerGroups,
                 overlays: overlayGroups
             }
@@ -745,22 +988,27 @@ export class RealMap extends BaseMap<L.TileLayer> {
             });
         });
 
+        this.addFeatures();
+
         this.currentGroup.group.addTo(this.leafletInstance);
     }
 }
-export class ImageMap extends BaseMap<L.ImageOverlay> {
+export class ImageMap extends BaseMap {
     CRS = L.CRS.Simple;
     popup: Popup = popup(this);
     type: "image" = "image";
+    currentLayer: L.ImageOverlay;
+    dimensions: { h: number; w: number };
     constructor(
         public plugin: ObsidianLeaflet,
         public options: LeafletMapOptions
     ) {
         super(plugin, options);
+        this.createMap();
     }
 
     get bounds() {
-        return this.leafletInstance.getBounds();
+        return this.currentLayer.getBounds();
     }
 
     get scale() {
@@ -768,7 +1016,14 @@ export class ImageMap extends BaseMap<L.ImageOverlay> {
     }
 
     setInitialCoords(coords: [number, number]) {
-        this.initialCoords = coords;
+        let mult: [number, number] = [1, 1];
+        if (!this.options.bounds) {
+            mult = [
+                this.bounds.getCenter().lat / 50,
+                this.bounds.getCenter().lng / 50
+            ];
+        }
+        this.initialCoords = [coords[0] * mult[0], coords[1] * mult[1]];
     }
     private async _buildMapLayer(layer: {
         data: string;
@@ -776,6 +1031,8 @@ export class ImageMap extends BaseMap<L.ImageOverlay> {
         alias?: string;
     }): Promise<LayerGroup> {
         const { h, w } = await getImageDimensions(layer.data);
+
+        this.dimensions = { h, w };
 
         let bounds: L.LatLngBounds;
         if (this.options.bounds?.length) {
@@ -796,6 +1053,7 @@ export class ImageMap extends BaseMap<L.ImageOverlay> {
             className: this.options.darkMode ? "dark-mode" : "",
             pane: "base-layer"
         });
+
         const markerGroups = Object.fromEntries(
             this.markerTypes.map((type) => [type, L.layerGroup()])
         );
@@ -824,21 +1082,6 @@ export class ImageMap extends BaseMap<L.ImageOverlay> {
         return layerGroup;
     }
     async buildLayer(layer: { data: string; id: string; alias?: string }) {
-        this.leafletInstance.on(
-            "baselayerchange",
-            ({ layer }: L.LayersControlEvent) => {
-                // need to do this to prevent panning animation for some reason
-                this.leafletInstance.setMaxBounds([undefined, undefined]);
-                this.currentLayer = (
-                    layer as L.LayerGroup
-                ).getLayers()[0] as L.ImageOverlay;
-                this.leafletInstance.panTo(this.bounds.getCenter(), {
-                    animate: false
-                });
-                this.leafletInstance.setMaxBounds(this.bounds);
-            }
-        );
-
         const newLayer = await this._buildMapLayer(layer);
 
         this.mapLayers.push(newLayer);
@@ -846,7 +1089,6 @@ export class ImageMap extends BaseMap<L.ImageOverlay> {
 
         this.mapLayers[0].layer.once("load", () => {
             this.rendered = true;
-
             log(
                 this.verbose,
                 this.id,
@@ -878,6 +1120,7 @@ export class ImageMap extends BaseMap<L.ImageOverlay> {
         /** Move to supplied coordinates */
         this.log(`Moving to supplied coordinates: ${options.coords}`);
         this.setInitialCoords(options.coords);
+
         this.leafletInstance.panTo(this.initialCoords);
 
         if (options.zoomDistance) {
@@ -892,7 +1135,7 @@ export class ImageMap extends BaseMap<L.ImageOverlay> {
             "contextmenu",
             this.handleMapContext.bind(this)
         );
-        //this.leafletInstance.on("click", this._handleMapClick.bind(this));
+        this.leafletInstance.on("click", this.handleMapClick.bind(this));
 
         this.leafletInstance.on("zoomanim", (evt: L.ZoomAnimEvent) => {
             //check markers
@@ -904,6 +1147,8 @@ export class ImageMap extends BaseMap<L.ImageOverlay> {
                 }
             });
         });
+
+        this.addFeatures();
 
         this.currentGroup.group.addTo(this.leafletInstance);
     }

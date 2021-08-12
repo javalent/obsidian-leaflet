@@ -1,10 +1,9 @@
 import { MarkdownPostProcessorContext, Platform, Plugin } from "obsidian";
-import { RealMap } from "src/map/map";
 import { BaseMapType, Icon, MarkerIcon, ObsidianAppData } from ".";
 
 
 export interface MapInterface {
-    map: RealMap;
+    map: BaseMapType;
     source: string;
     el: HTMLElement;
     id: string;

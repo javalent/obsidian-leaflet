@@ -539,6 +539,7 @@ class LeafletMap extends Events {
             );
 
             for (let gpx of this._gpx) {
+                //@ts-expect-error
                 const gpxInstance = new GPX(this, gpx, {}, this._gpxIcons);
                 gpxInstance.leafletInstance.addTo(this.featureLayer);
             }

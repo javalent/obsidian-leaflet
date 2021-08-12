@@ -1,6 +1,6 @@
 import { Modal, Notice, Setting, TextComponent } from "obsidian";
 
-import {
+import type {
     SavedOverlayData,
     Marker,
     TooltipDisplay,

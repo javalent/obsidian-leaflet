@@ -1,5 +1,5 @@
 import { App, Notice, setIcon } from "obsidian";
-import {
+import type {
     MarkerIcon,
     Marker as MarkerDefinition,
     DivIconMarker,
@@ -12,12 +12,12 @@ import {
 } from "src/@types";
 import { MarkerContextModal } from "src/modals";
 import { divIconMarker } from "src/map";
-import { LeafletSymbol } from "../utils/leaflet-import";
 import { Layer } from "../layer/layer";
 import { popup } from "src/map/popup";
 import { MODIFIER_KEY } from "src/utils";
-import { copyToClipboard, formatLatLng, formatNumber } from "src/map/map";
+import { copyToClipboard, formatLatLng } from "src/map/map";
 
+import { LeafletSymbol } from "../utils/leaflet-import";
 let L = window[LeafletSymbol];
 
 abstract class MarkerTarget {
@@ -433,7 +433,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
 
     setLatLng(latlng: L.LatLng) {
         this.loc = latlng;
-        
+
         if (this.map.rendered && this.map.type === "image") {
             let { x, y } = this.map.leafletInstance.project(
                 this.loc,
@@ -466,7 +466,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                 this.maxZoom != null &&
                 zoom <= this.maxZoom
             ) {
-                return true;
+                return this.map.displaying.get(this.type);
             }
         }
         return false;
