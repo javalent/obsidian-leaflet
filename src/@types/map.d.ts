@@ -155,7 +155,7 @@ declare class LeafletMap extends Events {
             layers?: { data: string; id: string }[];
         }
     ): Promise<void>;
-
+        
     updateMarkerIcons(): void;
 
     addOverlay(circle: SavedOverlayData, mutable: boolean): void;
@@ -364,7 +364,7 @@ declare class ImageMap extends BaseMap/* <L.ImageOverlay> */ {
     render(options: {
         coords: [number, number];
         zoomDistance: number;
-        layer: { data: string; id: string };
+        layer: { data: string; id: string, alias?: string };
         hasAdditional?: boolean;
         imageOverlays?: {
             id: string;
@@ -373,6 +373,8 @@ declare class ImageMap extends BaseMap/* <L.ImageOverlay> */ {
             bounds: [[number, number], [number, number]];
         }[];
     }): Promise<void>;
+
+    loadAdditionalLayers(layers: { data: string; id: string, alias?: string }[]): void;
 }
 
 export type BaseMapType = RealMap | ImageMap;

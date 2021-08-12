@@ -802,6 +802,8 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
     stopDrawingContext() {
         this.isDrawing = false;
         this.plugin.app.keymap.popScope(this.escapeScope);
+        this.leafletInstance.off("mousemove");
+        this.leafletInstance.off("mouseout");
         if (this.distanceEvent) {
             this.distanceEvent = undefined;
 
@@ -820,8 +822,6 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
             this.tempCircle.remove();
             this.tempCircle = undefined;
         }
-        this.leafletInstance.off("mousemove");
-        this.leafletInstance.off("mouseout");
     }
     toProperties(): SavedMapData {
         return {};
@@ -1082,6 +1082,9 @@ export class ImageMap extends BaseMap {
         };
 
         return layerGroup;
+    }
+    loadAdditionalLayers(layers: { data: string; id: string; alias?: string }) {
+        
     }
     async buildLayer(layer: { data: string; id: string; alias?: string }) {
         const newLayer = await this._buildMapLayer(layer);

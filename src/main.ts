@@ -41,7 +41,8 @@ import {
     Marker,
     SavedOverlayData,
     ObsidianLeaflet as ObsidianLeafletImplementation,
-    BaseMapType
+    BaseMapType,
+    ImageMap
 } from "./@types";
 
 import { LeafletRenderer } from "./leaflet";
@@ -507,11 +508,11 @@ export default class ObsidianLeaflet
             });
         }
 
-        /* map.on("rendered", async () => {
-            if (layerData.length > 1)
-                map.loadAdditionalMapLayers(layerData.slice(1));
+        map.on("rendered", async () => {
+            if (layerData.length > 1 && map instanceof ImageMap)
+                map.loadAdditionalLayers(layerData.slice(1));
             await this.saveSettings();
-        }); */
+        });
         /* } catch (e) {
             console.error(e);
             new Notice("There was an error loading the map.");
