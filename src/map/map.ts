@@ -23,6 +23,7 @@ import {
     DEFAULT_MAP_OPTIONS,
     DISTANCE_DECIMALS,
     getId,
+    getImageDimensions,
     LAT_LONG_DECIMALS,
     log
 } from "src/utils";
@@ -30,6 +31,7 @@ import {
 import { popup } from "./popup";
 
 import { LeafletSymbol } from "../utils/leaflet-import";
+import { TileLayer } from "leaflet";
 let L = window[LeafletSymbol];
 export abstract class BaseMap<T extends L.ImageOverlay | L.TileLayer>
     extends Events
@@ -56,7 +58,7 @@ export abstract class BaseMap<T extends L.ImageOverlay | L.TileLayer>
     abstract get bounds(): L.LatLngBounds;
 
     abstract get scale(): number;
-    abstract get CRS(): L.CRS;
+    CRS: L.CRS;
 
     constructor(
         public plugin: ObsidianLeaflet,
@@ -66,6 +68,22 @@ export abstract class BaseMap<T extends L.ImageOverlay | L.TileLayer>
         this.contentEl.style.height = options.height;
         this.contentEl.style.width = "100%";
         this.options = Object.assign({}, DEFAULT_MAP_OPTIONS, options);
+        /** Stop Touchmove Propagation for Mobile */
+        this.contentEl.addEventListener("touchmove", (evt) => {
+            evt.stopPropagation();
+        });
+
+        this.leafletInstance = L.map(this.contentEl, {
+            crs: this.CRS,
+            maxZoom: this.zoom.max,
+            minZoom: this.zoom.min,
+            zoomDelta: this.zoom.delta,
+            zoomSnap: this.zoom.delta,
+            wheelPxPerZoomLevel: 60 * (1 / this.zoom.delta),
+            worldCopyJump: true,
+            ...(this.plugin.isDesktop ? { fullscreenControl: true } : {})
+        });
+        this.leafletInstance.createPane("base-layer");
 
         this.escapeScope = new Scope();
         this.escapeScope.register(undefined, "Escape", () => {
@@ -222,9 +240,7 @@ export abstract class BaseMap<T extends L.ImageOverlay | L.TileLayer>
         return markers[0];
     }
 
-    onMarkerClick(marker: Marker, evt: L.LeafletMouseEvent) {
-        
-    }
+    onMarkerClick(marker: Marker, evt: L.LeafletMouseEvent) {}
 
     updateMarker(marker: Marker) {
         const existing = this.markers.find((m) => m.id == marker.id);
@@ -299,6 +315,11 @@ export abstract class BaseMap<T extends L.ImageOverlay | L.TileLayer>
     }
 
     /** Other Methods */
+    abstract buildLayer(layer?: {
+        data: string;
+        id: string;
+        alias?: string;
+    }): Promise<T>;
     closePopup(popup: L.Popup) {
         if (!popup) return;
         this.leafletInstance.closePopup(popup);
@@ -608,17 +629,6 @@ export class RealMap extends BaseMap<L.TileLayer> {
         public options: LeafletMapOptions
     ) {
         super(plugin, options);
-        this.leafletInstance = L.map(this.contentEl, {
-            crs: this.CRS,
-            maxZoom: this.zoom.max,
-            minZoom: this.zoom.min,
-            zoomDelta: this.zoom.delta,
-            zoomSnap: this.zoom.delta,
-            wheelPxPerZoomLevel: 60 * (1 / this.zoom.delta),
-            worldCopyJump: true,
-            ...(this.plugin.isDesktop ? { fullscreenControl: true } : {})
-        });
-        this.leafletInstance.createPane("base-layer");
     }
 
     get bounds() {
@@ -631,6 +641,58 @@ export class RealMap extends BaseMap<L.TileLayer> {
 
     setInitialCoords(coords: [number, number]) {
         this.initialCoords = coords;
+    }
+
+    async buildLayer() {
+        const layer = L.tileLayer(
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                attribution:
+                    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                className: this.options.darkMode ? "dark-mode" : ""
+            }
+        );
+
+        const markerGroups = Object.fromEntries(
+            this.markerTypes.map((type) => [type, L.layerGroup()])
+        );
+        const overlayGroups = {
+            none: L.layerGroup(),
+            ...Object.fromEntries(
+                this.markerTypes.map((type) => [type, L.layerGroup()])
+            )
+        };
+        const group = L.layerGroup([
+            layer,
+            ...Object.values(markerGroups),
+            ...Object.values(overlayGroups)
+        ]);
+
+        this.mapLayers = [
+            {
+                group: group,
+                layer: layer,
+                id: "real",
+                /* data: "real", */
+                markers: markerGroups,
+                overlays: overlayGroups
+            }
+        ];
+        this.trigger(`layer-ready-for-features`, this.mapLayers[0]);
+
+        this.mapLayers[0].layer.once("load", () => {
+            this.rendered = true;
+
+            log(
+                this.verbose,
+                this.id,
+                `Initial map layer rendered in ${
+                    /* (Date.now() - this._start) /  */ 1000
+                } seconds.`
+            );
+            this.trigger("rendered");
+        });
+        return layer;
     }
 
     async render(options: {
@@ -646,49 +708,11 @@ export class RealMap extends BaseMap<L.TileLayer> {
         }[];
     }) {
         this.log("Building initial map layer.");
-        this.currentLayer = L.tileLayer(
-            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            {
-                attribution:
-                    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                className: this.options.darkMode ? "dark-mode" : ""
-            }
-        );
-        const markerGroups = Object.fromEntries(
-            this.markerTypes.map((type) => [type, L.layerGroup()])
-        );
-        const overlayGroups = {
-            none: L.layerGroup(),
-            ...Object.fromEntries(
-                this.markerTypes.map((type) => [type, L.layerGroup()])
-            )
-        };
-        const group = L.layerGroup([
-            this.currentLayer,
-            ...Object.values(markerGroups),
-            ...Object.values(overlayGroups)
-        ]);
 
-        this.mapLayers = [
-            {
-                group: group,
-                layer: this.currentLayer,
-                id: "real",
-                markers: markerGroups,
-                overlays: overlayGroups
-            }
-        ];
-        this.mapLayers[0].layer.once("load", () => {
-            this.rendered = true;
+        this.currentLayer = await this.buildLayer();
 
-            this.log(
-                `Initial map layer rendered in ${
-                    /* (Date.now() - this._start) / */ 1000
-                } seconds.`
-            );
-            this.trigger("rendered");
-        });
-        this.trigger(`layer-ready-for-features`, this.mapLayers[0]);
+        this.leafletInstance.setZoom(this.zoom.default, { animate: false });
+
         this.trigger("first-layer-ready", this.mapLayers[0]);
 
         /** Move to supplied coordinates */
@@ -710,7 +734,7 @@ export class RealMap extends BaseMap<L.TileLayer> {
         });
         this.leafletInstance.on("click", () => {});
 
-        /* this.leafletInstance.on("zoomanim", (evt: L.ZoomAnimEvent) => {
+        this.leafletInstance.on("zoomanim", (evt: L.ZoomAnimEvent) => {
             //check markers
             this.markers.forEach((marker) => {
                 if (marker.shouldShow(evt.zoom)) {
@@ -719,19 +743,13 @@ export class RealMap extends BaseMap<L.TileLayer> {
                     marker.hide();
                 }
             });
-        }); */
-
-        /** Stop Touchmove Propagation for Mobile */
-        this.contentEl.addEventListener("touchmove", (evt) => {
-            evt.stopPropagation();
         });
 
         this.currentGroup.group.addTo(this.leafletInstance);
-        this.resetZoom();
     }
 }
 export class ImageMap extends BaseMap<L.ImageOverlay> {
-    CRS = L.CRS.EPSG3857;
+    CRS = L.CRS.Simple;
     popup: Popup = popup(this);
     type: "image" = "image";
     constructor(
@@ -739,17 +757,6 @@ export class ImageMap extends BaseMap<L.ImageOverlay> {
         public options: LeafletMapOptions
     ) {
         super(plugin, options);
-        this.leafletInstance = L.map(this.contentEl, {
-            crs: this.CRS,
-            maxZoom: this.zoom.max,
-            minZoom: this.zoom.min,
-            zoomDelta: this.zoom.delta,
-            zoomSnap: this.zoom.delta,
-            wheelPxPerZoomLevel: 60 * (1 / this.zoom.delta),
-            worldCopyJump: true,
-            ...(this.plugin.isDesktop ? { fullscreenControl: true } : {})
-        });
-        this.leafletInstance.createPane("base-layer");
     }
 
     get bounds() {
@@ -763,7 +770,94 @@ export class ImageMap extends BaseMap<L.ImageOverlay> {
     setInitialCoords(coords: [number, number]) {
         this.initialCoords = coords;
     }
+    private async _buildMapLayer(layer: {
+        data: string;
+        id: string;
+        alias?: string;
+    }): Promise<LayerGroup> {
+        const { h, w } = await getImageDimensions(layer.data);
 
+        let bounds: L.LatLngBounds;
+        if (this.options.bounds?.length) {
+            bounds = new L.LatLngBounds(...this.options.bounds);
+        } else {
+            const southWest = this.leafletInstance.unproject(
+                [0, h],
+                this.zoom.max - 1
+            );
+            const northEast = this.leafletInstance.unproject(
+                [w, 0],
+                this.zoom.max - 1
+            );
+            bounds = new L.LatLngBounds(southWest, northEast);
+        }
+
+        const mapLayer = L.imageOverlay(layer.data, bounds, {
+            className: this.options.darkMode ? "dark-mode" : "",
+            pane: "base-layer"
+        });
+        const markerGroups = Object.fromEntries(
+            this.markerTypes.map((type) => [type, L.layerGroup()])
+        );
+        const overlayGroups = {
+            none: L.layerGroup(),
+            ...Object.fromEntries(
+                this.markerTypes.map((type) => [type, L.layerGroup()])
+            )
+        };
+        const group = L.layerGroup([
+            mapLayer,
+            ...Object.values(markerGroups),
+            ...Object.values(overlayGroups)
+        ]);
+
+        const layerGroup: LayerGroup = {
+            group: group,
+            layer: mapLayer,
+            id: layer.id,
+            markers: markerGroups,
+            overlays: overlayGroups,
+            dimensions: [w, h],
+            alias: layer.alias
+        };
+
+        return layerGroup;
+    }
+    async buildLayer(layer: { data: string; id: string; alias?: string }) {
+        this.leafletInstance.on(
+            "baselayerchange",
+            ({ layer }: L.LayersControlEvent) => {
+                // need to do this to prevent panning animation for some reason
+                this.leafletInstance.setMaxBounds([undefined, undefined]);
+                this.currentLayer = (
+                    layer as L.LayerGroup
+                ).getLayers()[0] as L.ImageOverlay;
+                this.leafletInstance.panTo(this.bounds.getCenter(), {
+                    animate: false
+                });
+                this.leafletInstance.setMaxBounds(this.bounds);
+            }
+        );
+
+        const newLayer = await this._buildMapLayer(layer);
+
+        this.mapLayers.push(newLayer);
+        this.trigger(`layer-ready-for-features`, newLayer);
+
+        this.mapLayers[0].layer.once("load", () => {
+            this.rendered = true;
+
+            log(
+                this.verbose,
+                this.id,
+                `Initial map layer rendered in ${
+                    Date.now() /*  - this._start */ / 1000
+                } seconds.`
+            );
+            this.trigger("rendered");
+        });
+        return newLayer.layer as L.ImageOverlay;
+    }
     async render(options: {
         coords: [number, number];
         zoomDistance: number;
@@ -776,51 +870,10 @@ export class ImageMap extends BaseMap<L.ImageOverlay> {
             bounds: [[number, number], [number, number]];
         }[];
     }) {
-        this.log("Building initial map layer.");
-        /* this.currentLayer = L.tileLayer(
-            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            {
-                attribution:
-                    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                className: this.options.darkMode ? "dark-mode" : ""
-            }
-        ); */
-        const markerGroups = Object.fromEntries(
-            this.markerTypes.map((type) => [type, L.layerGroup()])
-        );
-        const overlayGroups = {
-            none: L.layerGroup(),
-            ...Object.fromEntries(
-                this.markerTypes.map((type) => [type, L.layerGroup()])
-            )
-        };
-        const group = L.layerGroup([
-            this.currentLayer,
-            ...Object.values(markerGroups),
-            ...Object.values(overlayGroups)
-        ]);
+        log(this.verbose, this.id, "Beginning render process.");
+        this.currentLayer = await this.buildLayer(options.layer);
 
-        this.mapLayers = [
-            {
-                group: group,
-                layer: this.currentLayer,
-                id: "real",
-                markers: markerGroups,
-                overlays: overlayGroups
-            }
-        ];
-        this.mapLayers[0].layer.once("load", () => {
-            this.rendered = true;
-
-            this.log(
-                `Initial map layer rendered in ${
-                    /* (Date.now() - this._start) / */ 1000
-                } seconds.`
-            );
-            this.trigger("rendered");
-        });
-        this.trigger(`layer-ready-for-features`, this.mapLayers[0]);
-        this.trigger("first-layer-ready", this.mapLayers[0]);
+        this.trigger("first-layer-ready", this.currentGroup);
 
         /** Move to supplied coordinates */
         this.log(`Moving to supplied coordinates: ${options.coords}`);
@@ -835,11 +888,13 @@ export class ImageMap extends BaseMap<L.ImageOverlay> {
             animate: false
         });
 
-        /** Bind Internal Map Events */
-        this.leafletInstance.on("contextmenu", () => {});
-        this.leafletInstance.on("click", () => {});
+        this.leafletInstance.on(
+            "contextmenu",
+            this.handleMapContext.bind(this)
+        );
+        //this.leafletInstance.on("click", this._handleMapClick.bind(this));
 
-        /* this.leafletInstance.on("zoomanim", (evt: L.ZoomAnimEvent) => {
+        this.leafletInstance.on("zoomanim", (evt: L.ZoomAnimEvent) => {
             //check markers
             this.markers.forEach((marker) => {
                 if (marker.shouldShow(evt.zoom)) {
@@ -848,15 +903,9 @@ export class ImageMap extends BaseMap<L.ImageOverlay> {
                     marker.hide();
                 }
             });
-        }); */
-
-        /** Stop Touchmove Propagation for Mobile */
-        this.contentEl.addEventListener("touchmove", (evt) => {
-            evt.stopPropagation();
         });
 
         this.currentGroup.group.addTo(this.leafletInstance);
-        this.resetZoom();
     }
 }
 

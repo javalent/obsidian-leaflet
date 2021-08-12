@@ -53,11 +53,11 @@ import {
 
 import { OverlayContextModal } from "./modals/context";
 import { LeafletSymbol } from "./utils/leaflet-import";
-import { MarkerDivIcon, Popup } from "./@types/map";
+import { BaseMapType, MarkerDivIcon, Popup } from "./@types/map";
 import { popup } from "./map/popup";
 import { Marker, GeoJSON, GPX, Overlay } from "./layer";
 import Watcher from "./utils/watcher";
-import { BaseMap, RealMap } from "./map/map";
+import { RealMap, ImageMap } from "./map/map";
 
 let L = window[LeafletSymbol];
 
@@ -88,7 +88,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             watcher.on("remove", () => this.watchers.delete(watcher));
         }
     }
-    map: RealMap;
+    map: BaseMapType;
     verbose: boolean;
     parentEl: HTMLElement;
     constructor(
@@ -112,6 +112,11 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 ...options,
                 context: ctx.sourcePath
             });
+        } else {
+            this.map = new ImageMap(this.plugin, {
+                ...options,
+                context: ctx.sourcePath
+            });
         }
 
         this.verbose = options.verbose;
@@ -132,9 +137,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
             "MarkdownRenderChild loaded. Appending map."
         );
         this.containerEl.appendChild(this.map.contentEl);
-        this.map.resetZoom();
 
-        if (!Array.from(this.parentEl.children).includes(this.containerEl)) {
+        if (!this.parentEl.contains(this.containerEl)) {
             log(
                 this.verbose,
                 this.map.id,
@@ -535,7 +539,6 @@ class LeafletMap extends Events {
             );
 
             for (let gpx of this._gpx) {
-                //@ts-expect-error
                 const gpxInstance = new GPX(this, gpx, {}, this._gpxIcons);
                 gpxInstance.leafletInstance.addTo(this.featureLayer);
             }
