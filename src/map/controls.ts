@@ -7,7 +7,7 @@ import { CommandSuggestionModal, PathSuggestionModal } from "../modals";
 import { Events, Modal, Notice, Setting, TextComponent } from "obsidian";
 import { IconName } from "@fortawesome/free-solid-svg-icons";
 
-import { LeafletMap, ObsidianLeaflet } from "../@types";
+import { BaseMapType, ObsidianLeaflet } from "src/@types";
 import { Marker } from "src/layer";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 
@@ -21,7 +21,7 @@ export class DistanceDisplay extends L.Control {
     constructor(
         opts: L.ControlOptions,
         line: L.Polyline,
-        public map: LeafletMap
+        public map: BaseMapType
     ) {
         super(opts);
         this.line = line;
@@ -59,7 +59,7 @@ export class DistanceDisplay extends L.Control {
                     maximumFractionDigits: LAT_LONG_DECIMALS
                 })}]`
             );
-            this.map.map.openPopup(this.popups[0]);
+            this.map.leafletInstance.openPopup(this.popups[0]);
 
             this.popups[1].setLatLng(latlngs[1]);
             this.popups[1].setContent(
@@ -69,10 +69,10 @@ export class DistanceDisplay extends L.Control {
                     maximumFractionDigits: LAT_LONG_DECIMALS
                 })}]`
             );
-            this.map.map.openPopup(this.popups[1]);
+            this.map.leafletInstance.openPopup(this.popups[1]);
 
             this.line.setStyle({ color: "blue", dashArray: "4 1" });
-            this.line.addTo(this.map.map);
+            this.line.addTo(this.map.leafletInstance);
         }
     }
     onClick(evt: MouseEvent) {
@@ -80,7 +80,7 @@ export class DistanceDisplay extends L.Control {
         evt.preventDefault();
 
         if (this.line) {
-            this.map.map.fitBounds(
+            this.map.leafletInstance.fitBounds(
                 L.latLngBounds(
                     this.line.getLatLngs()[0] as L.LatLng,
                     this.line.getLatLngs()[1] as L.LatLng
@@ -98,8 +98,8 @@ export class DistanceDisplay extends L.Control {
         if (this.line) {
             this.line.remove();
         }
-        this.map.map.closePopup(this.popups[0]);
-        this.map.map.closePopup(this.popups[1]);
+        this.map.leafletInstance.closePopup(this.popups[0]);
+        this.map.leafletInstance.closePopup(this.popups[1]);
     }
     onAdd() {
         /* this.map = map; */
@@ -122,7 +122,7 @@ export class DistanceDisplay extends L.Control {
 export const distanceDisplay = function (
     opts: L.ControlOptions,
     line: L.Polyline,
-    map: LeafletMap
+    map: BaseMapType
 ) {
     return new DistanceDisplay(opts, line, map);
 };
@@ -188,17 +188,17 @@ abstract class FontAwesomeControl extends L.Control {
 }
 
 class EditMarkerControl extends FontAwesomeControl {
-    map: LeafletMap;
+    map: BaseMapType;
     controlEl: HTMLElement;
     plugin: ObsidianLeaflet;
     simple: SimpleLeafletMap;
     isOpen: boolean = false;
     constructor(
         opts: FontAwesomeControlOptions,
-        map: LeafletMap,
+        map: BaseMapType,
         plugin: ObsidianLeaflet
     ) {
-        super(opts, map.map);
+        super(opts, map.leafletInstance);
         this.map = map;
         this.plugin = plugin;
     }
@@ -422,7 +422,7 @@ class EditMarkerControl extends FontAwesomeControl {
 
 export function editMarkers(
     opts: L.ControlOptions,
-    map: LeafletMap,
+    map: BaseMapType,
     plugin: ObsidianLeaflet
 ) {
     const options: FontAwesomeControlOptions = {
@@ -437,10 +437,10 @@ export function editMarkers(
 class SimpleLeafletMap extends Events {
     markers: Marker[] = [];
     layer: L.TileLayer | L.ImageOverlay;
-    original: LeafletMap;
+    original: BaseMapType;
     containerEl: HTMLElement;
     map: L.Map;
-    constructor(map: LeafletMap, el: HTMLElement) {
+    constructor(map: BaseMapType, el: HTMLElement) {
         super();
         this.original = map;
         this.containerEl = el;
@@ -614,9 +614,9 @@ class SimpleLeafletMap extends Events {
 
 class ZoomControl extends FontAwesomeControl {
     controlEl: any;
-    map: LeafletMap;
-    constructor(opts: FontAwesomeControlOptions, map: LeafletMap) {
-        super(opts, map.map);
+    map: BaseMapType;
+    constructor(opts: FontAwesomeControlOptions, map: BaseMapType) {
+        super(opts, map.leafletInstance);
         this.map = map;
 
         this.map.on("markers-updated", () => {
@@ -632,9 +632,7 @@ class ZoomControl extends FontAwesomeControl {
             return;
         }
         const group = L.featureGroup(
-            this.map.displayedMarkers.map(
-                ({ leafletInstance }) => leafletInstance
-            )
+            this.map.displayed.map(({ leafletInstance }) => leafletInstance)
         );
         if (!group || !group.getLayers().length) {
             this.leafletInstance.fitWorld();
@@ -659,7 +657,7 @@ class ZoomControl extends FontAwesomeControl {
     }
 }
 
-export function zoomControl(opts: L.ControlOptions, map: LeafletMap) {
+export function zoomControl(opts: L.ControlOptions, map: BaseMapType) {
     const options: FontAwesomeControlOptions = {
         ...opts,
         icon: "map-marked-alt",
@@ -670,9 +668,9 @@ export function zoomControl(opts: L.ControlOptions, map: LeafletMap) {
 }
 
 class ResetZoomControl extends FontAwesomeControl {
-    map: LeafletMap;
-    constructor(opts: FontAwesomeControlOptions, map: LeafletMap) {
-        super(opts, map.map);
+    map: BaseMapType;
+    constructor(opts: FontAwesomeControlOptions, map: BaseMapType) {
+        super(opts, map.leafletInstance);
         this.map = map;
     }
     onClick(evt: MouseEvent) {
@@ -680,7 +678,7 @@ class ResetZoomControl extends FontAwesomeControl {
     }
 }
 
-export function resetZoomControl(opts: L.ControlOptions, map: LeafletMap) {
+export function resetZoomControl(opts: L.ControlOptions, map: BaseMapType) {
     const options: FontAwesomeControlOptions = {
         ...opts,
         icon: "bullseye",
@@ -691,13 +689,13 @@ export function resetZoomControl(opts: L.ControlOptions, map: LeafletMap) {
 }
 
 class FilterMarkers extends FontAwesomeControl {
-    map: LeafletMap;
+    map: BaseMapType;
     section: HTMLElement;
     inputs: Map<string, HTMLInputElement>;
     expanded: boolean;
     drawn: boolean;
-    constructor(opts: FontAwesomeControlOptions, map: LeafletMap) {
-        super(opts, map.map);
+    constructor(opts: FontAwesomeControlOptions, map: BaseMapType) {
+        super(opts, map.leafletInstance);
         this.map = map;
         this.map.on("markers-updated", () => {
             if (this.map.markers.length || this.map.overlays.length) {
@@ -802,8 +800,8 @@ class FilterMarkers extends FontAwesomeControl {
 
         for (let [type, markerIcon] of this.map.markerIcons.entries()) {
             if (
-                this.map.group.markers[type] &&
-                this.map.group.markers[type].getLayers().length
+                this.map.currentGroup.markers[type] &&
+                this.map.currentGroup.markers[type].getLayers().length
             ) {
                 const li = ul.createEl("div", "input-item");
 
@@ -850,16 +848,18 @@ class FilterMarkers extends FontAwesomeControl {
     }
 
     private show(type: string) {
-        this.map.group.markers[type].addTo(this.leafletInstance);
+        this.map.currentGroup.markers[type].addTo(this.leafletInstance);
         this.map.overlays
             .filter((o) => o.type === type)
-            .forEach((o) => o.leafletInstance.addTo(this.map.group.group));
+            .forEach((o) =>
+                o.leafletInstance.addTo(this.map.currentGroup.group)
+            );
 
-            this.map.sortOverlays();
+        this.map.sortOverlays();
         this.map.displaying.set(type, true);
     }
     private hide(type: string) {
-        this.map.group.markers[type].remove();
+        this.map.currentGroup.markers[type].remove();
         this.map.overlays
             .filter((o) => o.type === type)
             .forEach((o) => o.leafletInstance.remove());
@@ -867,7 +867,7 @@ class FilterMarkers extends FontAwesomeControl {
     }
 }
 
-export function filterMarkerControl(opts: L.ControlOptions, map: LeafletMap) {
+export function filterMarkerControl(opts: L.ControlOptions, map: BaseMapType) {
     const options: FontAwesomeControlOptions = {
         ...opts,
         icon: "filter",

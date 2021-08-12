@@ -1,6 +1,5 @@
 import { App, Notice, setIcon } from "obsidian";
 import {
-    LeafletMap,
     MarkerIcon,
     Marker as MarkerDefinition,
     DivIconMarker,
@@ -8,7 +7,8 @@ import {
     TooltipDisplay,
     MarkerProperties,
     SavedMarkerProperties,
-    Popup
+    Popup,
+    BaseMapType
 } from "src/@types";
 import { MarkerContextModal } from "src/modals";
 import { divIconMarker } from "src/map";
@@ -16,6 +16,7 @@ import { LeafletSymbol } from "../utils/leaflet-import";
 import { Layer } from "../layer/layer";
 import { popup } from "src/map/popup";
 import { MODIFIER_KEY } from "src/utils";
+import { copyToClipboard, formatLatLng, formatNumber } from "src/map/map";
 
 let L = window[LeafletSymbol];
 
@@ -153,7 +154,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
     private _icon: MarkerIcon;
     isBeingHovered: boolean = false;
     constructor(
-        public map: LeafletMap,
+        public map: BaseMapType,
         {
             id,
             icon,
@@ -261,9 +262,13 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                         this.maxZoom = markerSettingsModal.tempMarker.maxZoom;
                         this.command = markerSettingsModal.tempMarker.command;
 
-                        if (this.shouldShow(this.map.map.getZoom())) {
+                        if (
+                            this.shouldShow(this.map.leafletInstance.getZoom())
+                        ) {
                             this.show();
-                        } else if (this.shouldHide(this.map.map.getZoom())) {
+                        } else if (
+                            this.shouldHide(this.map.leafletInstance.getZoom())
+                        ) {
                             this.hide();
                         }
 
@@ -294,14 +299,14 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                     evt.originalEvent.getModifierState("Shift")
                 ) {
                     this.map.onMarkerClick(this, evt);
-                    const latlng = this.map.formatLatLng(this.latLng);
+                    const latlng = formatLatLng(this.latLng);
                     this.popup.open(this, `[${latlng.lat}, ${latlng.lng}]`);
 
                     if (
                         this.map.data.copyOnClick &&
                         evt.originalEvent.getModifierState(MODIFIER_KEY)
                     ) {
-                        await this.map.copyLatLngToClipboard(this.loc);
+                        await copyToClipboard(this.loc);
                     }
 
                     return;
@@ -428,14 +433,15 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
 
     setLatLng(latlng: L.LatLng) {
         this.loc = latlng;
+        
         if (this.map.rendered && this.map.type === "image") {
-            let { x, y } = this.map.map.project(
+            let { x, y } = this.map.leafletInstance.project(
                 this.loc,
                 this.map.zoom.max - 1
             );
             this.percent = [
-                x / this.map.group.dimensions[0],
-                y / this.map.group.dimensions[1]
+                x / this.map.currentGroup.dimensions[0],
+                y / this.map.currentGroup.dimensions[1]
             ];
         }
         this.leafletInstance.setLatLng(latlng);
@@ -483,7 +489,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         }
     }
 
-    static from(map: LeafletMap, properties: MarkerProperties) {
+    static from(map: BaseMapType, properties: MarkerProperties) {
         return new Marker(map, properties);
     }
 

@@ -1,7 +1,7 @@
 import convert from "convert";
 import { Length } from "convert/dist/types/units";
 import { locale } from "moment";
-import { Events, Notice, Scope } from "obsidian";
+import { Events, Menu, Notice, Point, Scope } from "obsidian";
 import {
     LayerGroup,
     LeafletMapOptions,
@@ -10,10 +10,15 @@ import {
     Popup,
     SavedMarkerProperties,
     SavedOverlayData,
-    TooltipDisplay
+    TooltipDisplay,
+    BaseMap as BaseMapDefinition
 } from "src/@types";
+
 import { Marker } from "src/layer";
 import { Overlay } from "src/layer";
+
+import { OverlayContextModal } from "src/modals/context";
+
 import {
     DEFAULT_MAP_OPTIONS,
     DISTANCE_DECIMALS,
@@ -21,12 +26,15 @@ import {
     LAT_LONG_DECIMALS,
     log
 } from "src/utils";
-import { LeafletSymbol } from "../utils/leaflet-import";
+
 import { popup } from "./popup";
+
+import { LeafletSymbol } from "../utils/leaflet-import";
 let L = window[LeafletSymbol];
-export abstract class BaseMap<
-    T extends L.ImageOverlay | L.TileLayer
-> extends Events {
+export abstract class BaseMap<T extends L.ImageOverlay | L.TileLayer>
+    extends Events
+    implements BaseMapDefinition<T>
+{
     isDrawing: boolean = false;
     private escapeScope: Scope;
     /** Abstract */
@@ -43,8 +51,10 @@ export abstract class BaseMap<
             bounds: [[number, number], [number, number]];
         }[];
     }): Promise<void>;
-    abstract type: string;
+    abstract popup: Popup;
+    type: string;
     abstract get bounds(): L.LatLngBounds;
+
     abstract get scale(): number;
     abstract get CRS(): L.CRS;
 
@@ -80,6 +90,15 @@ export abstract class BaseMap<
         return this.markerIcons.get("default");
     }
     displaying: Map<string, boolean> = new Map();
+
+    get displayed() {
+        return this.markers.filter(
+            (marker) =>
+                marker.layer === this.currentGroup.id &&
+                this.displaying.get(marker.type)
+        );
+    }
+
     private distanceEvent: L.LatLng = undefined;
     private distanceLine: L.Polyline;
     private previousDistanceLine: L.Polyline;
@@ -109,7 +128,6 @@ export abstract class BaseMap<
     }
 
     overlays: Overlay[] = [];
-    popup: Popup /* = popup(this) */;
 
     markers: Marker[] = [];
 
@@ -202,6 +220,10 @@ export abstract class BaseMap<
             this.trigger("marker-added", markers[0]);
         }
         return markers[0];
+    }
+
+    onMarkerClick(marker: Marker, evt: L.LeafletMouseEvent) {
+        
     }
 
     updateMarker(marker: Marker) {
@@ -309,6 +331,142 @@ export abstract class BaseMap<
     getZoom() {
         if (!this.rendered) return this.zoom.default;
         return this.leafletInstance.getZoom();
+    }
+    handleMapContext(evt: L.LeafletMouseEvent, overlay?: Overlay) {
+        if (overlay) {
+            const under = this.getOverlaysUnderClick(evt);
+            if (!under.length) {
+                under.push(overlay);
+            }
+
+            const openOverlayContext = (overlay: Overlay) => {
+                //@ts-expect-error
+                const modal = new OverlayContextModal(overlay, this);
+                modal.onClose = async () => {
+                    if (modal.deleted) {
+                        this.log("Overlay deleted in context menu. Removing.");
+                        overlay.remove();
+                        this.overlays = this.overlays.filter(
+                            (o) => o != overlay
+                        );
+                        this.trigger("markers-updated");
+
+                        return;
+                    }
+                    try {
+                        overlay.data.color = modal.tempOverlay.color;
+                        overlay.data.radius = modal.tempOverlay.radius;
+                        overlay.data.desc = modal.tempOverlay.desc;
+                        overlay.data.tooltip = modal.tempOverlay.tooltip;
+                        let newRadius = convert(Number(overlay.data.radius))
+                            .from(overlay.data.unit ?? "m")
+                            .to(this.type == "image" ? this.unit : "m");
+
+                        if (this.type == "image") {
+                            newRadius = newRadius / this.scale;
+                        }
+
+                        overlay.leafletInstance.setRadius(newRadius);
+                        overlay.leafletInstance.setStyle({
+                            color: overlay.data.color
+                        });
+
+                        await this.plugin.saveSettings();
+                    } catch (e) {
+                        console.error(
+                            "There was an error saving the overlay.\n\n" + e
+                        );
+                    }
+                };
+                modal.open();
+            };
+
+            let contextMenu = new Menu(this.plugin.app);
+
+            contextMenu.setNoIcon();
+            contextMenu.addItem((item) => {
+                item.setTitle("Create Marker");
+                item.onClick(() => {
+                    contextMenu.hide();
+                    this.handleMapContext(evt);
+                });
+            });
+            under.forEach((overlay, index) => {
+                contextMenu.addItem((item) => {
+                    item.setTitle("Overlay " + `${index + 1}`);
+                    item.onClick(() => {
+                        openOverlayContext(overlay);
+                    });
+                    item.dom.onmouseenter = () => {
+                        this.leafletInstance.fitBounds(
+                            overlay.leafletInstance.getBounds()
+                        );
+                    };
+                });
+            });
+
+            contextMenu.showAtPosition({
+                x: evt.originalEvent.clientX,
+                y: evt.originalEvent.clientY
+            });
+            return;
+        }
+
+        if (evt.originalEvent.getModifierState("Shift")) {
+            log(this.verbose, this.id, `Beginning overlay drawing context.`);
+            //begin drawing context
+
+            this.beginOverlayDrawingContext(evt);
+
+            return;
+        }
+
+        if (this.markerIcons.size <= 1) {
+            log(
+                this.verbose,
+                this.id,
+                `No additional marker types defined. Adding default marker.`
+            );
+            this.createMarker(
+                this.defaultIcon.type,
+                [evt.latlng.lat, evt.latlng.lng],
+                undefined
+            );
+            return;
+        }
+
+        let contextMenu = new Menu(this.plugin.app);
+
+        contextMenu.setNoIcon();
+
+        log(this.verbose, this.id, `Opening marker context menu.`);
+        this.markerIcons.forEach((marker: MarkerIcon) => {
+            if (!marker.type || !marker.html) return;
+            contextMenu.addItem((item) => {
+                item.setTitle(
+                    marker.type == "default" ? "Default" : marker.type
+                );
+                item.setActive(true);
+                item.onClick(async () => {
+                    log(
+                        this.verbose,
+                        this.id,
+                        `${marker.type} selected. Creating marker.`
+                    );
+                    this.createMarker(
+                        marker.type,
+                        [evt.latlng.lat, evt.latlng.lng],
+                        undefined
+                    );
+                    await this.plugin.saveSettings();
+                });
+            });
+        });
+
+        contextMenu.showAtPosition({
+            x: evt.originalEvent.clientX,
+            y: evt.originalEvent.clientY
+        } as Point);
     }
     isLayerRendered(layer: string) {
         return this.mapLayers.find(({ id }) => id === layer) ? true : false;
@@ -442,7 +600,9 @@ export abstract class BaseMap<
 
 export class RealMap extends BaseMap<L.TileLayer> {
     CRS = L.CRS.EPSG3857;
-    type = "real";
+    popup: Popup = popup(this);
+    type: "real" = "real";
+
     constructor(
         public plugin: ObsidianLeaflet,
         public options: LeafletMapOptions
@@ -458,6 +618,7 @@ export class RealMap extends BaseMap<L.TileLayer> {
             worldCopyJump: true,
             ...(this.plugin.isDesktop ? { fullscreenControl: true } : {})
         });
+        this.leafletInstance.createPane("base-layer");
     }
 
     get bounds() {
@@ -484,6 +645,7 @@ export class RealMap extends BaseMap<L.TileLayer> {
             bounds: [[number, number], [number, number]];
         }[];
     }) {
+        this.log("Building initial map layer.");
         this.currentLayer = L.tileLayer(
             "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
             {
@@ -492,7 +654,6 @@ export class RealMap extends BaseMap<L.TileLayer> {
                 className: this.options.darkMode ? "dark-mode" : ""
             }
         );
-
         const markerGroups = Object.fromEntries(
             this.markerTypes.map((type) => [type, L.layerGroup()])
         );
@@ -517,15 +678,21 @@ export class RealMap extends BaseMap<L.TileLayer> {
                 overlays: overlayGroups
             }
         ];
-        this.trigger(`layer-ready-for-features`, this.mapLayers[0]);
+        this.mapLayers[0].layer.once("load", () => {
+            this.rendered = true;
 
-        this.leafletInstance.setZoom(this.zoom.default, { animate: false });
+            this.log(
+                `Initial map layer rendered in ${
+                    /* (Date.now() - this._start) / */ 1000
+                } seconds.`
+            );
+            this.trigger("rendered");
+        });
+        this.trigger(`layer-ready-for-features`, this.mapLayers[0]);
+        this.trigger("first-layer-ready", this.mapLayers[0]);
+
         /** Move to supplied coordinates */
-        log(
-            this.verbose,
-            this.id,
-            `Moving to supplied coordinates: ${options.coords}`
-        );
+        this.log(`Moving to supplied coordinates: ${options.coords}`);
         this.setInitialCoords(options.coords);
         this.leafletInstance.panTo(this.initialCoords);
 
@@ -536,7 +703,160 @@ export class RealMap extends BaseMap<L.TileLayer> {
         this.leafletInstance.setZoom(this.zoom.default, {
             animate: false
         });
+
+        /** Bind Internal Map Events */
+        this.leafletInstance.on("contextmenu", (evt: L.LeafletMouseEvent) => {
+            this.handleMapContext(evt);
+        });
+        this.leafletInstance.on("click", () => {});
+
+        /* this.leafletInstance.on("zoomanim", (evt: L.ZoomAnimEvent) => {
+            //check markers
+            this.markers.forEach((marker) => {
+                if (marker.shouldShow(evt.zoom)) {
+                    this.leafletInstance.once("zoomend", () => marker.show());
+                } else if (marker.shouldHide(evt.zoom)) {
+                    marker.hide();
+                }
+            });
+        }); */
+
+        /** Stop Touchmove Propagation for Mobile */
+        this.contentEl.addEventListener("touchmove", (evt) => {
+            evt.stopPropagation();
+        });
+
         this.currentGroup.group.addTo(this.leafletInstance);
+        this.resetZoom();
+    }
+}
+export class ImageMap extends BaseMap<L.ImageOverlay> {
+    CRS = L.CRS.EPSG3857;
+    popup: Popup = popup(this);
+    type: "image" = "image";
+    constructor(
+        public plugin: ObsidianLeaflet,
+        public options: LeafletMapOptions
+    ) {
+        super(plugin, options);
+        this.leafletInstance = L.map(this.contentEl, {
+            crs: this.CRS,
+            maxZoom: this.zoom.max,
+            minZoom: this.zoom.min,
+            zoomDelta: this.zoom.delta,
+            zoomSnap: this.zoom.delta,
+            wheelPxPerZoomLevel: 60 * (1 / this.zoom.delta),
+            worldCopyJump: true,
+            ...(this.plugin.isDesktop ? { fullscreenControl: true } : {})
+        });
+        this.leafletInstance.createPane("base-layer");
+    }
+
+    get bounds() {
+        return this.leafletInstance.getBounds();
+    }
+
+    get scale() {
+        return convert(1).from("m").to(this.unit);
+    }
+
+    setInitialCoords(coords: [number, number]) {
+        this.initialCoords = coords;
+    }
+
+    async render(options: {
+        coords: [number, number];
+        zoomDistance: number;
+        layer: { data: string; id: string };
+        hasAdditional?: boolean;
+        imageOverlays?: {
+            id: string;
+            data: string;
+            alias: string;
+            bounds: [[number, number], [number, number]];
+        }[];
+    }) {
+        this.log("Building initial map layer.");
+        /* this.currentLayer = L.tileLayer(
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                attribution:
+                    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                className: this.options.darkMode ? "dark-mode" : ""
+            }
+        ); */
+        const markerGroups = Object.fromEntries(
+            this.markerTypes.map((type) => [type, L.layerGroup()])
+        );
+        const overlayGroups = {
+            none: L.layerGroup(),
+            ...Object.fromEntries(
+                this.markerTypes.map((type) => [type, L.layerGroup()])
+            )
+        };
+        const group = L.layerGroup([
+            this.currentLayer,
+            ...Object.values(markerGroups),
+            ...Object.values(overlayGroups)
+        ]);
+
+        this.mapLayers = [
+            {
+                group: group,
+                layer: this.currentLayer,
+                id: "real",
+                markers: markerGroups,
+                overlays: overlayGroups
+            }
+        ];
+        this.mapLayers[0].layer.once("load", () => {
+            this.rendered = true;
+
+            this.log(
+                `Initial map layer rendered in ${
+                    /* (Date.now() - this._start) / */ 1000
+                } seconds.`
+            );
+            this.trigger("rendered");
+        });
+        this.trigger(`layer-ready-for-features`, this.mapLayers[0]);
+        this.trigger("first-layer-ready", this.mapLayers[0]);
+
+        /** Move to supplied coordinates */
+        this.log(`Moving to supplied coordinates: ${options.coords}`);
+        this.setInitialCoords(options.coords);
+        this.leafletInstance.panTo(this.initialCoords);
+
+        if (options.zoomDistance) {
+            this.zoomDistance = options.zoomDistance;
+            this.setZoomByDistance(options.zoomDistance);
+        }
+        this.leafletInstance.setZoom(this.zoom.default, {
+            animate: false
+        });
+
+        /** Bind Internal Map Events */
+        this.leafletInstance.on("contextmenu", () => {});
+        this.leafletInstance.on("click", () => {});
+
+        /* this.leafletInstance.on("zoomanim", (evt: L.ZoomAnimEvent) => {
+            //check markers
+            this.markers.forEach((marker) => {
+                if (marker.shouldShow(evt.zoom)) {
+                    this.leafletInstance.once("zoomend", () => marker.show());
+                } else if (marker.shouldHide(evt.zoom)) {
+                    marker.hide();
+                }
+            });
+        }); */
+
+        /** Stop Touchmove Propagation for Mobile */
+        this.contentEl.addEventListener("touchmove", (evt) => {
+            evt.stopPropagation();
+        });
+
+        this.currentGroup.group.addTo(this.leafletInstance);
+        this.resetZoom();
     }
 }
 
@@ -549,6 +869,13 @@ export function formatNumber(number: number, digits: number) {
             maximumFractionDigits: digits
         }).format(number)
     );
+}
+
+export function formatLatLng(latlng: L.LatLng) {
+    return {
+        lat: formatNumber(latlng.lat, LAT_LONG_DECIMALS),
+        lng: formatNumber(latlng.lng, LAT_LONG_DECIMALS)
+    };
 }
 
 export async function copyToClipboard(loc: L.LatLng): Promise<void> {

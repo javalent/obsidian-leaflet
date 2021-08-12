@@ -1,16 +1,16 @@
 import { Modal, Notice, Setting, TextComponent } from "obsidian";
 
 import {
-    ObsidianLeaflet,
-    LeafletMap,
     SavedOverlayData,
     Marker,
-    TooltipDisplay
+    TooltipDisplay,
+    BaseMapType
 } from "src/@types";
 
 import { PathSuggestionModal } from "./path";
 import { CommandSuggestionModal } from "./command";
 import {
+    DISTANCE_DECIMALS,
     getGroupSeparator,
     removeValidationError,
     setValidationError
@@ -19,13 +19,15 @@ import {
 import { UNIT_NAME_ALIASES } from "src/utils";
 
 import { Overlay } from "src/layer";
+import { locale } from "moment";
+import { formatNumber } from "src/map/map";
 
 export class MarkerContextModal extends Modal {
     deleted: boolean = false;
     tempMarker: Marker;
     modal: CommandSuggestionModal | PathSuggestionModal;
     limit: number = 100;
-    constructor(public marker: Marker, public map: LeafletMap) {
+    constructor(public marker: Marker, public map: BaseMapType) {
         super(map.plugin.app);
         this.marker = marker;
         this.map = map;
@@ -211,7 +213,7 @@ export class OverlayContextModal extends Modal {
     tempOverlay: SavedOverlayData;
     modal: CommandSuggestionModal | PathSuggestionModal;
     limit: number = 100;
-    constructor(overlay: Overlay, public map: LeafletMap) {
+    constructor(overlay: Overlay, public map: BaseMapType) {
         super(map.plugin.app);
         this.map = map;
 
@@ -236,12 +238,12 @@ export class OverlayContextModal extends Modal {
             .addText((t) => {
                 radiusInput = t;
                 const regex = new RegExp(
-                    `\\${getGroupSeparator(this.map.locale) ?? ","}`,
+                    `\\${getGroupSeparator(locale()) ?? ","}`,
                     "g"
                 );
                 t.setValue(
-                    `${this.map.distanceFormatter
-                        .format(radius)
+                    `${formatNumber(radius, DISTANCE_DECIMALS)
+                        .toString()
                         .replace(regex, "")}`
                 );
                 t.inputEl.onblur = () => {

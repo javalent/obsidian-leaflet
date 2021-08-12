@@ -1,4 +1,4 @@
-import type { LeafletMap } from "src/@types";
+import type { BaseMapType } from "src/@types";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 
 import type { GPX as LeafletGPX, GPXOptions } from "leaflet";
@@ -25,7 +25,7 @@ export class GPX extends Layer<LeafletGPX> {
         return this.map.featureLayer;
     }
     constructor(
-        public map: LeafletMap,
+        public map: BaseMapType,
         gpx: string,
         options: GPXOptions,
         private icons: any

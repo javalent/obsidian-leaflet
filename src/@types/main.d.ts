@@ -1,9 +1,10 @@
 import { MarkdownPostProcessorContext, Platform, Plugin } from "obsidian";
-import { Icon, MarkerIcon, ObsidianAppData } from ".";
-import { LeafletMap } from "./map";
+import { RealMap } from "src/map/map";
+import { BaseMapType, Icon, MarkerIcon, ObsidianAppData } from ".";
+
 
 export interface MapInterface {
-    map: LeafletMap;
+    map: RealMap;
     source: string;
     el: HTMLElement;
     id: string;
@@ -74,5 +75,5 @@ declare class ObsidianLeaflet extends Plugin {
 
     generateMarkerMarkup(markers: Icon[]): MarkerIcon[];
 
-    registerMapEvents(map: LeafletMap): void;
+    registerMapEvents(map: BaseMapType): void;
 }

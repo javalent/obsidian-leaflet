@@ -1,7 +1,7 @@
-import { LayerGroup, LeafletMap } from "src/@types";
+import { BaseMapType, LayerGroup } from "src/@types";
 
 export abstract class Layer<T extends L.Layer> {
-    map: LeafletMap;
+    map: BaseMapType;
     layer: string;
 
     get mapLayer() {

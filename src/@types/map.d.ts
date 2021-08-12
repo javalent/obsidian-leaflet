@@ -2,11 +2,11 @@ import { Length } from "convert/dist/types/units";
 
 import L from "leaflet";
 import { DivIcon } from "leaflet";
-import { Events } from "obsidian";
+import { Events, Scope } from "obsidian";
 import { MarkerIcon, SavedMarkerProperties, SavedOverlayData } from ".";
 import { ObsidianLeaflet } from "./main";
 import { Marker } from ".";
-import { ObsidianAppData } from "./saved";
+import { ObsidianAppData, TooltipDisplay } from "./saved";
 import type { Overlay } from "src/layer";
 
 export interface LayerGroup {
@@ -204,6 +204,180 @@ declare class LeafletMap extends Events {
 
     remove(): void;
 }
+
+declare abstract class BaseMap<
+    T extends L.ImageOverlay | L.TileLayer
+> extends Events {
+    isDrawing: boolean;
+    plugin: ObsidianLeaflet;
+    options: LeafletMapOptions;
+    /** Abstract */
+    /* abstract initialize(): void; */
+    abstract render(options: {
+        coords: [number, number];
+        zoomDistance: number;
+        layer: { data: string; id: string };
+        hasAdditional?: boolean;
+        imageOverlays?: {
+            id: string;
+            data: string;
+            alias: string;
+            bounds: [[number, number], [number, number]];
+        }[];
+    }): Promise<void>;
+    abstract type: string;
+    abstract get bounds(): L.LatLngBounds;
+    abstract get scale(): number;
+    abstract get CRS(): L.CRS;
+
+    constructor(plugin: ObsidianLeaflet, options: LeafletMapOptions);
+
+    contentEl: HTMLElement;
+    currentLayer: T;
+    get currentGroup(): LayerGroup;
+    get data(): ObsidianAppData;
+    get defaultIcon(): MarkerIcon;
+
+    displaying: Map<string, boolean>;
+    get displayed(): Marker[];
+
+    featureLayer: L.FeatureGroup;
+
+    get id(): string;
+
+    initialCoords: [number, number];
+
+    get isFullscreen(): boolean;
+    leafletInstance: L.Map;
+    mapLayers: LayerGroup[];
+    get markerIcons(): Map<string, MarkerIcon>;
+    get markerTypes(): string[];
+
+    overlays: Overlay[];
+
+    popup: Popup;
+
+    markers: Marker[];
+
+    rendered: boolean;
+
+    tempCircle: L.Circle;
+
+    verbose: boolean;
+
+    zoom: {
+        min: number;
+        max: number;
+        default: number;
+        delta: number;
+    };
+    zoomDistance: number;
+
+    unit: Length;
+
+    /** Marker Methods */
+    addMarker(...markers: SavedMarkerProperties[]): Marker[];
+
+    createMarker(
+        type: string,
+        loc: [number, number],
+        percent: [number, number],
+        id: string,
+        link?: string,
+        layer?: string,
+        mutable?: boolean,
+        command?: boolean,
+        description?: string,
+        minZoom?: number,
+        maxZoom?: number,
+        tooltip?: TooltipDisplay
+    ): Marker;
+
+    onMarkerClick(marker: Marker, evt: L.LeafletMouseEvent): void;
+
+    updateMarker(marker: Marker): void;
+
+    /** Overlay Methods */
+    addOverlay(...overlays: SavedOverlayData[]): void;
+    createOverlay(overlay: SavedOverlayData): void;
+    beginOverlayDrawingContext(
+        original: L.LeafletMouseEvent,
+        marker?: Marker
+    ): void;
+
+    /** Other Methods */
+    closePopup(popup: L.Popup): void;
+    distance(latlng1: L.LatLng, latlng2: L.LatLng): string;
+    getMarkerById(id: string): Marker;
+    getOverlaysUnderClick(evt: L.LeafletMouseEvent): Overlay[];
+    getZoom(): number;
+    handleMapContext(evt: L.LeafletMouseEvent, overlay?: Overlay): void;
+    isLayerRendered(layer: string): boolean;
+    log(text: string): void;
+    removeMarker(marker: Marker): void;
+    resetZoom(): void;
+    abstract setInitialCoords(coords: [number, number]): void;
+
+    sortOverlays(): void;
+    setZoomByDistance(zoomDistance: number): void;
+    stopDrawingContext(): void;
+    toProperties(): SavedMapData;
+    //TODO: REWRITE
+    updateMarkerIcons(): void;
+}
+
+declare class RealMap extends BaseMap<L.TileLayer> {
+    CRS: L.CRS;
+    type: string;
+    constructor(plugin: ObsidianLeaflet, options: LeafletMapOptions);
+
+    get bounds(): L.LatLngBounds;
+
+    get scale(): number;
+
+    setInitialCoords(coords: [number, number]): void;
+
+    render(options: {
+        coords: [number, number];
+        zoomDistance: number;
+        layer: { data: string; id: string };
+        hasAdditional?: boolean;
+        imageOverlays?: {
+            id: string;
+            data: string;
+            alias: string;
+            bounds: [[number, number], [number, number]];
+        }[];
+    }): Promise<void>;
+}
+declare class ImageMap extends BaseMap<L.ImageOverlay> {
+    CRS: L.CRS;
+    type: string;
+    constructor(plugin: ObsidianLeaflet, options: LeafletMapOptions);
+
+    get bounds(): L.LatLngBounds;
+
+    get scale(): number;
+
+    setInitialCoords(coords: [number, number]): void;
+
+    render(options: {
+        coords: [number, number];
+        zoomDistance: number;
+        layer: { data: string; id: string };
+        hasAdditional?: boolean;
+        imageOverlays?: {
+            id: string;
+            data: string;
+            alias: string;
+            bounds: [[number, number], [number, number]];
+        }[];
+    }): Promise<void>;
+}
+
+export type BaseMapType = RealMap | ImageMap;
+
+interface SavedMapData {}
 
 declare class MarkerDivIcon extends DivIcon {
     options: MarkerDivIconOptions;

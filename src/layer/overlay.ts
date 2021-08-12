@@ -1,7 +1,8 @@
 import convert from "convert";
 
-import { LeafletMap, SavedOverlayData } from "src/@types";
-import { MODIFIER_KEY } from "src/utils";
+import { BaseMapType, SavedOverlayData } from "src/@types";
+import { formatLatLng, formatNumber } from "src/map/map";
+import { DISTANCE_DECIMALS, MODIFIER_KEY } from "src/utils";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { Layer } from "../layer/layer";
 
@@ -69,12 +70,10 @@ export class Overlay extends Layer<L.Circle> {
         if (this.data.desc) {
             return (
                 this.data.desc +
-                ` (${this.map.distanceFormatter.format(radius)} ${
-                    this.map.unit
-                })`
+                ` (${formatNumber(radius, DISTANCE_DECIMALS)} ${this.map.unit})`
             );
         } else {
-            return `${this.map.distanceFormatter.format(radius)} ${
+            return `${formatNumber(radius, DISTANCE_DECIMALS)} ${
                 this.map.unit
             }`;
         }
@@ -88,7 +87,7 @@ export class Overlay extends Layer<L.Circle> {
         return this.data.marker;
     }
 
-    constructor(public map: LeafletMap, public data: SavedOverlayData) {
+    constructor(public map: BaseMapType, public data: SavedOverlayData) {
         super();
         this.leafletInstance = L.circle(L.latLng(this.data.loc), {
             radius: this.radius,
@@ -128,7 +127,7 @@ export class Overlay extends Layer<L.Circle> {
 
         if (this.marker) {
             const marker = this.map.getMarkerById(this.marker);
-            
+
             if (!marker) return;
             marker.leafletInstance.on("drag", (evt: L.LeafletMouseEvent) => {
                 this.leafletInstance.setLatLng(
@@ -153,7 +152,7 @@ export class Overlay extends Layer<L.Circle> {
         );
     }
     focus() {
-        const { lat, lng } = this.map.formatLatLng(
+        const { lat, lng } = formatLatLng(
             this.leafletInstance.getBounds().getCenter()
         );
 
@@ -161,10 +160,10 @@ export class Overlay extends Layer<L.Circle> {
             `Feature was Control clicked. Moving to bounds [${lat}, ${lng}]`
         );
 
-        this.map.map.fitBounds(this.leafletInstance.getBounds());
+        this.map.leafletInstance.fitBounds(this.leafletInstance.getBounds());
     }
 
-    static from(map: LeafletMap, data: SavedOverlayData) {
+    static from(map: BaseMapType, data: SavedOverlayData) {
         return new Overlay(map, data);
     }
 

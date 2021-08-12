@@ -5,7 +5,6 @@ import {
     Notice,
     MarkdownView,
     MarkdownPostProcessorContext,
-    setIcon,
     Plugin,
     TFile,
     CachedMetadata,
@@ -40,9 +39,9 @@ import {
     ObsidianAppData,
     Icon,
     Marker,
-    LeafletMap,
     SavedOverlayData,
-    ObsidianLeaflet as ObsidianLeafletImplementation
+    ObsidianLeaflet as ObsidianLeafletImplementation,
+    BaseMapType
 } from "./@types";
 
 import { LeafletRenderer } from "./leaflet";
@@ -141,14 +140,15 @@ export default class ObsidianLeaflet
 
     async onunload(): Promise<void> {
         console.log("Unloading Obsidian Leaflet");
-        this.maps.forEach((map) => {
+        //TODO: FIX
+        /* this.maps.forEach((map) => {
             map?.map?.remove();
             let newPre = createEl("pre");
             newPre.createEl("code", {}, (code) => {
                 code.innerText = `\`\`\`leaflet\n${map.source}\`\`\``;
                 map.el.parentElement.replaceChild(newPre, map.el);
             });
-        });
+        }); */
         this.maps = [];
     }
 
@@ -513,11 +513,11 @@ export default class ObsidianLeaflet
             });
         }
 
-        map.on("rendered", async () => {
+        /* map.on("rendered", async () => {
             if (layerData.length > 1)
                 map.loadAdditionalMapLayers(layerData.slice(1));
             await this.saveSettings();
-        });
+        }); */
         /* } catch (e) {
             console.error(e);
             new Notice("There was an error loading the map.");
@@ -529,7 +529,7 @@ export default class ObsidianLeaflet
         long: string,
         coordinates: [string, string] | string,
         zoomTag: string,
-        map: LeafletMap
+        map: BaseMapType
     ): Promise<{
         coords: [number, number];
         distanceToZoom: number;
@@ -602,7 +602,7 @@ export default class ObsidianLeaflet
     private _getCoordsFromCache(
         cache: CachedMetadata,
         zoomTag: string,
-        map: LeafletMap
+        map: BaseMapType
     ): {
         latitude: string;
         longitude: string;
@@ -632,10 +632,10 @@ export default class ObsidianLeaflet
 
             distanceToZoom = convert(distance)
                 .from((unit as Length) ?? "m")
-                .to(map.type == "image" ? map.unit : "m");
-            if (map.type == "image") {
+                .to(/* map.type == "image" ? map.unit : */ "m");
+            /* if (map.type == "image") {
                 distanceToZoom = distanceToZoom / map.scale;
-            }
+            } */
         }
         return { latitude, longitude, distanceToZoom };
     }
@@ -765,7 +765,7 @@ export default class ObsidianLeaflet
         return ret;
     }
 
-    registerMapEvents(map: LeafletMap) {
+    registerMapEvents(map: BaseMapType) {
         this.registerDomEvent(map.contentEl, "dragover", (evt) => {
             evt.preventDefault();
         });
@@ -777,10 +777,12 @@ export default class ObsidianLeaflet
             )
                 .split("file=")
                 .pop();
+            const latlng = map.leafletInstance.mouseEventToLatLng(evt);
+            const loc: [number, number] = [latlng.lat, latlng.lng];
 
             let marker = map.createMarker(
-                map.defaultIcon,
-                map.map.mouseEventToLatLng(evt),
+                map.defaultIcon.type,
+                loc,
                 undefined,
                 file
             );

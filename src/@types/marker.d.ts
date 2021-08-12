@@ -1,4 +1,4 @@
-import { LeafletMap, TooltipDisplay } from ".";
+import { BaseMapType, TooltipDisplay } from ".";
 import { MarkerDivIcon, DivIconMarker } from "./map";
 
 export interface MarkerIcon {
@@ -90,5 +90,5 @@ declare class Marker {
 
     toProperties(): SavedMarkerProperties;
 
-    static from(map: LeafletMap, properties: MarkerProperties): Marker;
+    static from(map: BaseMapType, properties: MarkerProperties): Marker;
 }

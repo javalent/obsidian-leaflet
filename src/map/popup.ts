@@ -1,4 +1,8 @@
-import type { LeafletMap, LeafletOverlay, TooltipDisplay } from "src/@types";
+import type {
+    BaseMapType,
+    LeafletOverlay,
+    TooltipDisplay
+} from "src/@types";
 import { Marker } from "src/layer";
 import { BASE_POPUP_OPTIONS } from "src/utils";
 import { LeafletSymbol } from "../utils/leaflet-import";
@@ -15,7 +19,7 @@ class Popup {
     get displayOverlayTooltips() {
         return this.map.plugin.data.displayOverlayTooltips;
     }
-    constructor(private map: LeafletMap, private source?: L.Layer) {
+    constructor(private map: BaseMapType, private source?: L.Layer) {
         this.leafletInstance = L.popup({ ...BASE_POPUP_OPTIONS });
     }
     private canShowTooltip(
@@ -69,7 +73,7 @@ class Popup {
             .getElement()
             .removeEventListener("mouseleave", this.onMouseOut);
 
-        this.map.map.off("zoom", this.onZoomAnim);
+        this.map.leafletInstance.off("zoom", this.onZoomAnim);
         this.close();
     }
     private onMouseOut() {
@@ -108,7 +112,7 @@ class Popup {
         let popupElement: HTMLElement;
         let _this = this;
 
-        this.map.map.on("popupopen", () => {
+        this.map.leafletInstance.on("popupopen", () => {
             popupElement = this.leafletInstance.getElement();
             popupElement.addEventListener(
                 "mouseenter",
@@ -119,10 +123,10 @@ class Popup {
                 this.onMouseOut.bind(this)
             );
         });
-        this.map.map.openPopup(this.leafletInstance);
+        this.map.leafletInstance.openPopup(this.leafletInstance);
 
         if (this.handlerTarget instanceof L.Circle) {
-            this.map.map.on("zoom", this.onZoomAnim.bind(this));
+            this.map.leafletInstance.on("zoom", this.onZoomAnim.bind(this));
         }
 
         if (this.handlerTarget instanceof L.LatLng) {
@@ -205,6 +209,6 @@ class Popup {
     }
 }
 
-export function popup(map: LeafletMap, source?: L.Layer): Popup {
+export function popup(map: BaseMapType, source?: L.Layer): Popup {
     return new Popup(map, source);
 }

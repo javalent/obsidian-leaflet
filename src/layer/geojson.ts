@@ -1,4 +1,4 @@
-import type { DivIconMarker, LeafletMap } from "src/@types";
+import type { DivIconMarker, BaseMapType } from "src/@types";
 import type geojson from "geojson";
 
 import { Marker } from "./marker";
@@ -12,6 +12,7 @@ import {
 } from "src/utils";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { Layer } from "./layer";
+import { formatLatLng } from "src/map/map";
 let L = window[LeafletSymbol];
 
 export class GeoJSON extends Layer<L.GeoJSON> {
@@ -21,7 +22,7 @@ export class GeoJSON extends Layer<L.GeoJSON> {
         return this.map.featureLayer;
     }
     constructor(
-        public map: LeafletMap,
+        public map: BaseMapType,
         public parent: L.LayerGroup,
         public options: {
             color: string;
@@ -77,7 +78,7 @@ class GeoJSONMarker {
     iconDisplay: HTMLDivElement;
     descriptionDisplay: HTMLDivElement;
     constructor(
-        private map: LeafletMap,
+        private map: BaseMapType,
         private feature: geojson.Feature<geojson.Point, any>,
         latlng: L.LatLng
     ) {
@@ -102,7 +103,7 @@ class GeoJSONMarker {
             loc: latlng,
             link: "display.outerHTML",
             icon: icon.icon,
-            layer: this.map.group?.id,
+            layer: this.map.currentGroup?.id,
             mutable: false,
             command: false,
             zoom: this.map.zoom.max,
@@ -140,7 +141,7 @@ class GeoJSONFeature {
     constructor(
         public feature: geojson.Feature<geojson.Geometry, any>,
         public leafletInstance: L.GeoJSON,
-        public map: LeafletMap
+        public map: BaseMapType
     ) {
         this.title =
             feature.properties.title ?? feature.properties.name ?? null;
@@ -185,11 +186,11 @@ class GeoJSONFeature {
             );
             return;
         }
-        this.map.map.fire("click", evt, true);
+        this.map.leafletInstance.fire("click", evt, true);
     }
 
     private _focus() {
-        const { lat, lng } = this.map.formatLatLng(
+        const { lat, lng } = formatLatLng(
             this.leafletInstance.getBounds().getCenter()
         );
 
@@ -197,6 +198,6 @@ class GeoJSONFeature {
             `Feature was Control clicked. Moving to bounds [${lat}, ${lng}]`
         );
 
-        this.map.map.fitBounds(this.leafletInstance.getBounds());
+        this.map.leafletInstance.fitBounds(this.leafletInstance.getBounds());
     }
 }

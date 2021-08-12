@@ -1,4 +1,4 @@
-import { LeafletMap, ObsidianLeaflet, SavedOverlayData } from "src/@types";
+import { BaseMapType, ObsidianLeaflet, SavedOverlayData } from "src/@types";
 import {
     App,
     CachedMetadata,
@@ -19,7 +19,7 @@ export default class Watcher extends Events {
     constructor(
         private plugin: ObsidianLeaflet,
         public file: TFile,
-        public map: LeafletMap,
+        public map: BaseMapType,
         private fileIds: Map<string, string>
     ) {
         super();
@@ -33,7 +33,7 @@ export default class Watcher extends Events {
 
     private _onChange(file: TFile) {
         if (file !== this.file) return;
-        
+
         const cache = this.plugin.app.metadataCache.getFileCache(file);
         if (!("frontmatter" in cache)) return;
         this.frontmatter = cache.frontmatter;
@@ -112,14 +112,13 @@ export default class Watcher extends Events {
                                 "",
                                 true
                             ),
-                            layer: this.map.group.id,
+                            layer: this.map.currentGroup.id,
                             command: false,
                             mutable: false,
                             description: description,
                             minZoom: null,
                             maxZoom: null,
-                            tooltip: "hover",
-                            zoom: null
+                            tooltip: "hover"
                         });
                     }
                 );
@@ -177,10 +176,7 @@ export default class Watcher extends Events {
                         };
                     }
                 );
-                this.map.addOverlays(overlayArray, {
-                    mutable: false,
-                    sort: true
-                });
+                this.map.addOverlay(...overlayArray);
             } catch (e) {
                 new Notice(
                     `There was an error updating the overlays for ${file.name}.`

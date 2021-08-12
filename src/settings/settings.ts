@@ -28,8 +28,6 @@ import {
     ObsidianLeaflet
 } from "src/@types";
 
-import { latLng } from "leaflet";
-
 export class ObsidianLeafletSettingTab extends PluginSettingTab {
     plugin: ObsidianLeaflet;
     newMarker: Icon;
@@ -617,10 +615,8 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                                     ({ id }) => id != marker.id
                                 );
                                 map.createMarker(
-                                    this.plugin.markerIcons.find(
-                                        ({ type }) => type === marker.type
-                                    ),
-                                    latLng(marker.loc),
+                                    marker.type,
+                                    marker.loc,
                                     undefined,
                                     marker.link,
                                     marker.id,

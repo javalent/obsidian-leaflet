@@ -57,7 +57,7 @@ import { MarkerDivIcon, Popup } from "./@types/map";
 import { popup } from "./map/popup";
 import { Marker, GeoJSON, GPX, Overlay } from "./layer";
 import Watcher from "./utils/watcher";
-import { RealMap } from "./map/map";
+import { BaseMap, RealMap } from "./map/map";
 
 let L = window[LeafletSymbol];
 
@@ -88,7 +88,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             watcher.on("remove", () => this.watchers.delete(watcher));
         }
     }
-    map: LeafletMap;
+    map: RealMap;
     verbose: boolean;
     parentEl: HTMLElement;
     constructor(
@@ -106,9 +106,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
         this.containerEl.style.height = options.height;
         this.containerEl.style.width = "100%";
         this.containerEl.style.backgroundColor = "var(--background-secondary)";
-        
+
         if (options.type === "real") {
-            //@ts-expect-error
             this.map = new RealMap(this.plugin, {
                 ...options,
                 context: ctx.sourcePath
@@ -120,7 +119,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
         this.parentEl = ctx.containerEl;
         this._resize = new ResizeObserver(() => {
             if (this.map.rendered) {
-                this.map.map.invalidateSize();
+                this.map.leafletInstance.invalidateSize();
             }
         });
         this._resize.observe(this.containerEl);
@@ -133,6 +132,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             "MarkdownRenderChild loaded. Appending map."
         );
         this.containerEl.appendChild(this.map.contentEl);
+        this.map.resetZoom();
 
         if (!Array.from(this.parentEl.children).includes(this.containerEl)) {
             log(
@@ -164,7 +164,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
     async onunload() {
         super.onunload();
-        try {
+        /* try {
             this.map.remove();
         } catch (e) {}
 
@@ -196,7 +196,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         this.plugin.maps = this.plugin.maps.filter((m) => {
             return m.map != this.map;
-        });
+        }); */
     }
 }
 
@@ -217,6 +217,7 @@ class LeafletMap extends Events {
     map: L.Map;
     markers: Marker[] = [];
     zoom: { min: number; max: number; default: number; delta: number };
+    //@ts-expect-error
     popup: Popup = popup(this);
     mapLayers: LayerGroup[] = [];
     layer: L.ImageOverlay | L.TileLayer;
@@ -499,6 +500,7 @@ class LeafletMap extends Events {
             this._geojson.forEach((geoJSON) => {
                 try {
                     const geo = new GeoJSON(
+                        //@ts-expect-error
                         this,
                         this.featureLayer,
                         { color: this._geojsonColor },
@@ -533,6 +535,7 @@ class LeafletMap extends Events {
             );
 
             for (let gpx of this._gpx) {
+                //@ts-expect-error
                 const gpxInstance = new GPX(this, gpx, {}, this._gpxIcons);
                 gpxInstance.leafletInstance.addTo(this.featureLayer);
             }
@@ -712,6 +715,7 @@ class LeafletMap extends Events {
 
         const mapIcon = markerIcon?.icon ?? this.defaultIcon.icon;
 
+        //@ts-expect-error
         const marker = new Marker(this, {
             id: markerToBeAdded.id,
             type: markerToBeAdded.type,
@@ -747,6 +751,7 @@ class LeafletMap extends Events {
 
             const mapIcon = markerIcon?.icon ?? this.defaultIcon.icon;
 
+            //@ts-expect-error
             const marker = new Marker(this, {
                 id: markerToBeAdded.id,
                 type: markerToBeAdded.type,
@@ -799,6 +804,7 @@ class LeafletMap extends Events {
             type = "default";
         }
 
+        //@ts-expect-error
         const marker = new Marker(this, {
             id: id,
             type: type,
@@ -917,11 +923,13 @@ class LeafletMap extends Events {
             }
         }
         //Filter Markers
+        //@ts-expect-error
         filterMarkerControl({ position: "topright" }, this).addTo(this.map);
 
         //Edit markers
         const editMarkerControl = editMarkers(
             { position: "topright" },
+            //@ts-expect-error
             this,
             this.plugin
         ).addTo(this.map);
@@ -947,8 +955,10 @@ class LeafletMap extends Events {
         };
 
         //Zoom to Markers
+        //@ts-expect-error
         zoomControl({ position: "topleft" }, this).addTo(this.map);
         //Zoom to initial
+        //@ts-expect-error
         resetZoomControl({ position: "topleft" }, this).addTo(this.map);
 
         this.trigger("markers-updated");
@@ -959,6 +969,7 @@ class LeafletMap extends Events {
                 position: "bottomleft"
             },
             this._previousDistanceLine,
+            //@ts-expect-error
             this
         ).addTo(this.map);
     }
@@ -1042,6 +1053,7 @@ class LeafletMap extends Events {
                                   .to(this.unit); */
 
                 this._pushOverlay(
+                    //@ts-expect-error
                     new Overlay(this, {
                         radius: this._tempCircle.getRadius(),
                         color: this._tempCircle.options.color,
@@ -1071,6 +1083,7 @@ class LeafletMap extends Events {
 
     @catchError
     addOverlay(circle: SavedOverlayData) {
+        //@ts-expect-error
         this._pushOverlay(new Overlay(this, circle));
     }
 
@@ -1096,6 +1109,7 @@ class LeafletMap extends Events {
             }
 
             const openOverlayContext = (overlay: Overlay) => {
+                //@ts-expect-error
                 const modal = new OverlayContextModal(overlay, this);
                 modal.onClose = async () => {
                     if (modal.deleted) {
