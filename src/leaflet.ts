@@ -22,7 +22,7 @@ import type {
     MarkerIcon,
     ObsidianLeaflet,
     Marker as MarkerDefinition,
-    SavedOverlayData,
+    SavedOverlayData
 } from "./@types";
 import {
     DISTANCE_DECIMALS,
@@ -57,6 +57,7 @@ import { MarkerDivIcon, Popup } from "./@types/map";
 import { popup } from "./map/popup";
 import { Marker, GeoJSON, GPX, Overlay } from "./layer";
 import Watcher from "./utils/watcher";
+import { RealMap } from "./map/map";
 
 let L = window[LeafletSymbol];
 
@@ -97,15 +98,24 @@ export class LeafletRenderer extends MarkdownRenderChild {
         options: LeafletMapOptions = {}
     ) {
         super(container);
-        this.map = new LeafletMap(plugin, {
+        /* this.map = new LeafletMap(plugin, {
             ...options,
             context: ctx.sourcePath
-        });
-        this.verbose = options.verbose;
+        }); */
 
         this.containerEl.style.height = options.height;
         this.containerEl.style.width = "100%";
         this.containerEl.style.backgroundColor = "var(--background-secondary)";
+        
+        if (options.type === "real") {
+            //@ts-expect-error
+            this.map = new RealMap(this.plugin, {
+                ...options,
+                context: ctx.sourcePath
+            });
+        }
+
+        this.verbose = options.verbose;
 
         this.parentEl = ctx.containerEl;
         this._resize = new ResizeObserver(() => {

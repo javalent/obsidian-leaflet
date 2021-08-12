@@ -428,10 +428,10 @@ export default class ObsidianLeaflet
         /** Register File Watcher to Update Markers/Overlays */
         renderer.registerWatchers(watchers);
 
-        let mapData = this.data.mapMarkers.find(
-            ({ id: mapId }) => mapId == id
-        );
-        map.addMarkers([
+        let mapData = this.data.mapMarkers.find(({ id: mapId }) => mapId == id);
+        console.log("🚀 ~ file: main.ts ~ line 432 ~ mapData", mapData);
+
+        map.addMarker(
             ...markerArray,
             ...(mapData?.markers.map((m) => {
                 const layer =
@@ -440,17 +440,11 @@ export default class ObsidianLeaflet
                         : m.layer;
                 return { ...m, mutable: true, layer };
             }) ?? [])
-        ]);
+        );
 
-        map.addOverlays(immutableOverlayArray, {
-            mutable: false,
-            sort: true
-        });
+        map.addOverlay(...immutableOverlayArray);
         const mutableOverlays = new Set(mapData?.overlays ?? []);
-        map.addOverlays([...mutableOverlays], {
-            mutable: true,
-            sort: true
-        });
+        map.addOverlay(...mutableOverlays);
 
         let layerData: {
             data: string;
@@ -647,22 +641,14 @@ export default class ObsidianLeaflet
     }
 
     async loadSettings() {
-        this.data = Object.assign(
-            {},
-            DEFAULT_SETTINGS,
-            await this.loadData()
-        );
+        this.data = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
         this.data.previousVersion = this.manifest.version;
         if (typeof this.data.displayMarkerTooltips === "boolean") {
-            this.data.displayMarkerTooltips = this.data
-                .displayMarkerTooltips
+            this.data.displayMarkerTooltips = this.data.displayMarkerTooltips
                 ? "hover"
                 : "never";
         }
-        if (
-            !this.data.defaultMarker ||
-            !this.data.defaultMarker.iconName
-        ) {
+        if (!this.data.defaultMarker || !this.data.defaultMarker.iconName) {
             this.data.defaultMarker = DEFAULT_SETTINGS.defaultMarker;
             this.data.layerMarkers = false;
         }

@@ -1,10 +1,10 @@
+import convert from "convert";
 import { Length } from "convert/dist/types/units";
 import { locale } from "moment";
 import { Events, Notice, Scope } from "obsidian";
 import {
     LayerGroup,
     LeafletMapOptions,
-    Marker,
     MarkerIcon,
     ObsidianLeaflet,
     Popup,
@@ -12,6 +12,7 @@ import {
     SavedOverlayData,
     TooltipDisplay
 } from "src/@types";
+import { Marker } from "src/layer";
 import { Overlay } from "src/layer";
 import {
     DEFAULT_MAP_OPTIONS,
@@ -29,10 +30,21 @@ export abstract class BaseMap<
     isDrawing: boolean = false;
     private escapeScope: Scope;
     /** Abstract */
-    abstract initialize(): void;
-    abstract render(): Promise<void>;
-    abstract type: "image" | "real";
-    abstract get bounds(): L.Bounds;
+    /* abstract initialize(): void; */
+    abstract render(options: {
+        coords: [number, number];
+        zoomDistance: number;
+        layer: { data: string; id: string };
+        hasAdditional?: boolean;
+        imageOverlays?: {
+            id: string;
+            data: string;
+            alias: string;
+            bounds: [[number, number], [number, number]];
+        }[];
+    }): Promise<void>;
+    abstract type: string;
+    abstract get bounds(): L.LatLngBounds;
     abstract get scale(): number;
     abstract get CRS(): L.CRS;
 
@@ -49,7 +61,6 @@ export abstract class BaseMap<
         this.escapeScope.register(undefined, "Escape", () => {
             if (!this.isFullscreen) {
                 this.stopDrawingContext();
-
                 this.plugin.app.keymap.popScope(this.escapeScope);
             }
         });
@@ -97,7 +108,7 @@ export abstract class BaseMap<
         return Array.from(this.markerIcons.keys());
     }
 
-    overlays: Overlay[];
+    overlays: Overlay[] = [];
     popup: Popup /* = popup(this) */;
 
     markers: Marker[] = [];
@@ -108,15 +119,22 @@ export abstract class BaseMap<
 
     verbose: boolean;
 
-    zoom: { min: number; max: number; default: number; delta: number };
+    zoom = {
+        min: this.options.minZoom,
+        max: this.options.maxZoom,
+        default: this.options.defaultZoom,
+        delta: this.options.zoomDelta
+    };
     zoomDistance: number;
 
     unit: Length = "m";
 
     /** Marker Methods */
     addMarker(...markers: SavedMarkerProperties[]) {
+        console.log("🚀 ~ file: map.ts ~ line 123 ~ markers", markers);
         let toReturn: Marker[] = [];
         for (const marker of markers) {
+            console.log("🚀 ~ file: map.ts ~ line 137 ~ marker", marker);
             if (!this.markerTypes.includes(marker.type)) {
                 new Notice(
                     `Marker type "${marker.type}" does not exist, using default.`
@@ -134,7 +152,9 @@ export abstract class BaseMap<
                 loc: L.latLng(marker.loc),
                 link: marker.link,
                 icon: mapIcon,
-                layer: marker.layer ? marker.layer : this.currentGroup.id,
+                layer: marker.layer
+                    ? marker.layer
+                    : this.currentGroup?.id ?? null,
                 mutable: marker.mutable ?? false,
                 command: marker.command ?? false,
                 zoom: this.leafletInstance.getMaxZoom(),
@@ -204,7 +224,7 @@ export abstract class BaseMap<
     }
 
     /** Overlay Methods */
-    addOverlays(...overlays: SavedOverlayData[]) {
+    addOverlay(...overlays: SavedOverlayData[]) {
         for (let overlay of overlays) {
             //@ts-expect-error
             this.overlays.push(new Overlay(this, overlay));
@@ -212,7 +232,7 @@ export abstract class BaseMap<
         this.sortOverlays();
     }
     createOverlay(overlay: SavedOverlayData) {
-        this.addOverlays(overlay);
+        this.addOverlay(overlay);
         this.trigger("markers-updated");
     }
     beginOverlayDrawingContext(original: L.LeafletMouseEvent, marker?: Marker) {
@@ -327,12 +347,11 @@ export abstract class BaseMap<
         );
         this.leafletInstance.setView(this.initialCoords, this.zoom.default);
     }
-    setInitialCoords(arg0: any[]) {
-        throw new Error("Method not implemented.");
-    }
-    sortOverlays() {
-        log(this.verbose, this.id, `Sorting overlays.`);
+    abstract setInitialCoords(coords: [number, number]): void;
 
+    sortOverlays() {
+        if (!this.overlays.length) return;
+        log(this.verbose, this.id, `Sorting overlays.`);
         this.overlays.sort((a, b) => {
             return b.radiusInMeters - a.radiusInMeters;
         });
@@ -418,6 +437,106 @@ export abstract class BaseMap<
 
             delete this.currentGroup.markers[type];
         });
+    }
+}
+
+export class RealMap extends BaseMap<L.TileLayer> {
+    CRS = L.CRS.EPSG3857;
+    type = "real";
+    constructor(
+        public plugin: ObsidianLeaflet,
+        public options: LeafletMapOptions
+    ) {
+        super(plugin, options);
+        this.leafletInstance = L.map(this.contentEl, {
+            crs: this.CRS,
+            maxZoom: this.zoom.max,
+            minZoom: this.zoom.min,
+            zoomDelta: this.zoom.delta,
+            zoomSnap: this.zoom.delta,
+            wheelPxPerZoomLevel: 60 * (1 / this.zoom.delta),
+            worldCopyJump: true,
+            ...(this.plugin.isDesktop ? { fullscreenControl: true } : {})
+        });
+    }
+
+    get bounds() {
+        return this.leafletInstance.getBounds();
+    }
+
+    get scale() {
+        return convert(1).from("m").to(this.unit);
+    }
+
+    setInitialCoords(coords: [number, number]) {
+        this.initialCoords = coords;
+    }
+
+    async render(options: {
+        coords: [number, number];
+        zoomDistance: number;
+        layer: { data: string; id: string };
+        hasAdditional?: boolean;
+        imageOverlays?: {
+            id: string;
+            data: string;
+            alias: string;
+            bounds: [[number, number], [number, number]];
+        }[];
+    }) {
+        this.currentLayer = L.tileLayer(
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                attribution:
+                    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                className: this.options.darkMode ? "dark-mode" : ""
+            }
+        );
+
+        const markerGroups = Object.fromEntries(
+            this.markerTypes.map((type) => [type, L.layerGroup()])
+        );
+        const overlayGroups = {
+            none: L.layerGroup(),
+            ...Object.fromEntries(
+                this.markerTypes.map((type) => [type, L.layerGroup()])
+            )
+        };
+        const group = L.layerGroup([
+            this.currentLayer,
+            ...Object.values(markerGroups),
+            ...Object.values(overlayGroups)
+        ]);
+
+        this.mapLayers = [
+            {
+                group: group,
+                layer: this.currentLayer,
+                id: "real",
+                markers: markerGroups,
+                overlays: overlayGroups
+            }
+        ];
+        this.trigger(`layer-ready-for-features`, this.mapLayers[0]);
+
+        this.leafletInstance.setZoom(this.zoom.default, { animate: false });
+        /** Move to supplied coordinates */
+        log(
+            this.verbose,
+            this.id,
+            `Moving to supplied coordinates: ${options.coords}`
+        );
+        this.setInitialCoords(options.coords);
+        this.leafletInstance.panTo(this.initialCoords);
+
+        if (options.zoomDistance) {
+            this.zoomDistance = options.zoomDistance;
+            this.setZoomByDistance(options.zoomDistance);
+        }
+        this.leafletInstance.setZoom(this.zoom.default, {
+            animate: false
+        });
+        this.currentGroup.group.addTo(this.leafletInstance);
     }
 }
 
