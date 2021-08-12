@@ -1,3 +1,4 @@
+import "leaflet";
 import "../node_modules/leaflet/dist/leaflet.css";
 import "./assets/main.css";
 
@@ -29,7 +30,7 @@ import {
     DESCRIPTION_ICON,
     DESCRIPTION_ICON_SVG,
     parseLink,
-    log,
+    log
 } from "./utils";
 import {
     MapInterface,
