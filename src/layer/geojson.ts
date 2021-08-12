@@ -12,7 +12,7 @@ import {
 } from "src/utils";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { Layer } from "./layer";
-import { formatLatLng } from "src/map/map";
+import { formatLatLng } from "src/utils";
 let L = window[LeafletSymbol];
 
 export class GeoJSON extends Layer<L.GeoJSON> {

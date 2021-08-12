@@ -15,8 +15,47 @@ import { getType as lookupMimeType } from "mime/lite";
 import { parse as parseCSV } from "papaparse";
 
 import { BlockParameters, LeafletMap } from "src/@types";
-import { OVERLAY_TAG_REGEX } from "./constants";
+import { LAT_LONG_DECIMALS, OVERLAY_TAG_REGEX } from "./constants";
 import { DESCRIPTION_ICON } from ".";
+import { locale } from 'moment';
+
+export function formatNumber(number: number, digits: number) {
+    return Number(
+        new Intl.NumberFormat(locale(), {
+            style: "decimal",
+            maximumFractionDigits: digits
+        }).format(number)
+    );
+}
+
+export function formatLatLng(latlng: L.LatLng) {
+    return {
+        lat: formatNumber(latlng.lat, LAT_LONG_DECIMALS),
+        lng: formatNumber(latlng.lng, LAT_LONG_DECIMALS)
+    };
+}
+
+export async function copyToClipboard(loc: L.LatLng): Promise<void> {
+    await new Promise<void>((resolve, reject) => {
+        navigator.clipboard
+            .writeText(
+                `${formatNumber(loc.lat, LAT_LONG_DECIMALS)}, ${formatNumber(
+                    loc.lng,
+                    LAT_LONG_DECIMALS
+                )}`
+            )
+            .then(() => {
+                new Notice("Coordinates copied to clipboard.");
+                resolve();
+            })
+            .catch(() => {
+                new Notice(
+                    "There was an error trying to copy coordinates to clipboard."
+                );
+                reject();
+            });
+    });
+}
 
 export function renderError(el: HTMLElement, error: string): void {
     let pre = createEl("pre", { attr: { id: "leaflet-error" } });

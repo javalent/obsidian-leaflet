@@ -20,7 +20,7 @@ import { UNIT_NAME_ALIASES } from "src/utils";
 
 import { Overlay } from "src/layer";
 import { locale } from "moment";
-import { formatNumber } from "src/map/map";
+import { formatNumber } from "src/utils";
 
 export class MarkerContextModal extends Modal {
     deleted: boolean = false;

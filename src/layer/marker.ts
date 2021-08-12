@@ -15,7 +15,7 @@ import { divIconMarker } from "src/map";
 import { Layer } from "../layer/layer";
 import { popup } from "src/map/popup";
 import { MODIFIER_KEY } from "src/utils";
-import { copyToClipboard, formatLatLng } from "src/map/map";
+import { copyToClipboard, formatLatLng } from "src/utils";
 
 import { LeafletSymbol } from "../utils/leaflet-import";
 let L = window[LeafletSymbol];

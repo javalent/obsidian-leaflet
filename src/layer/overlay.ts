@@ -1,7 +1,7 @@
 import convert from "convert";
 
 import { BaseMapType, SavedOverlayData } from "src/@types";
-import { formatLatLng, formatNumber } from "src/map/map";
+import { formatLatLng, formatNumber } from "src/utils";
 import { DISTANCE_DECIMALS, MODIFIER_KEY } from "src/utils";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { Layer } from "../layer/layer";

@@ -1,6 +1,6 @@
 import convert from "convert";
 import { Length } from "convert/dist/types/units";
-import { locale } from "moment";
+
 import { Events, Menu, Notice, Point, Scope } from "obsidian";
 import {
     LayerGroup,
@@ -20,12 +20,14 @@ import { GPX, Marker, GeoJSON, Overlay } from "src/layer";
 import { OverlayContextModal } from "src/modals/context";
 
 import {
+    copyToClipboard,
     DEFAULT_MAP_OPTIONS,
     DISTANCE_DECIMALS,
+    formatLatLng,
+    formatNumber,
     getId,
     getImageDimensions,
     icon,
-    LAT_LONG_DECIMALS,
     log,
     MODIFIER_KEY
 } from "src/utils";
@@ -1155,41 +1157,3 @@ export class ImageMap extends BaseMap {
 }
 
 interface SavedMapData {}
-
-export function formatNumber(number: number, digits: number) {
-    return Number(
-        new Intl.NumberFormat(locale(), {
-            style: "decimal",
-            maximumFractionDigits: digits
-        }).format(number)
-    );
-}
-
-export function formatLatLng(latlng: L.LatLng) {
-    return {
-        lat: formatNumber(latlng.lat, LAT_LONG_DECIMALS),
-        lng: formatNumber(latlng.lng, LAT_LONG_DECIMALS)
-    };
-}
-
-export async function copyToClipboard(loc: L.LatLng): Promise<void> {
-    await new Promise<void>((resolve, reject) => {
-        navigator.clipboard
-            .writeText(
-                `${formatNumber(loc.lat, LAT_LONG_DECIMALS)}, ${formatNumber(
-                    loc.lng,
-                    LAT_LONG_DECIMALS
-                )}`
-            )
-            .then(() => {
-                new Notice("Coordinates copied to clipboard.");
-                resolve();
-            })
-            .catch(() => {
-                new Notice(
-                    "There was an error trying to copy coordinates to clipboard."
-                );
-                reject();
-            });
-    });
-}
