@@ -42,11 +42,11 @@ import {
     SavedOverlayData,
     ObsidianLeaflet as ObsidianLeafletImplementation,
     BaseMapType,
-    ImageMap
 } from "./@types";
 
 import { LeafletRenderer } from "./leaflet";
 import { markerDivIcon } from "./map";
+import { ImageMap } from "./map/map";
 import convert from "convert";
 
 import { Length } from "convert/dist/types/units";

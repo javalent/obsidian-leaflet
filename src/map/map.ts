@@ -1083,8 +1083,8 @@ export class ImageMap extends BaseMap {
 
         return layerGroup;
     }
-    loadAdditionalLayers(layers: { data: string; id: string; alias?: string }) {
-        
+    loadAdditionalLayers(layers: { data: string; id: string; alias?: string }[]) {
+
     }
     async buildLayer(layer: { data: string; id: string; alias?: string }) {
         const newLayer = await this._buildMapLayer(layer);
