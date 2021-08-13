@@ -9,7 +9,7 @@ import type { Marker } from ".";
 import type { ObsidianAppData, TooltipDisplay } from "./saved";
 import type { Overlay } from "src/layer";
 
-export interface LayerGroup {
+export interface LayerGroup<T extends L.TileLayer | L.ImageOverlay> {
     /** Layer group containing the marker layer groups */
     group: L.LayerGroup;
 
@@ -19,7 +19,7 @@ export interface LayerGroup {
     overlays: { [type: string]: L.LayerGroup };
 
     /** Actual rendered map layer */
-    layer: L.TileLayer | L.ImageOverlay;
+    layer: T;
 
     /** Reference ID */
     id: string;
@@ -99,7 +99,7 @@ declare class LeafletMap extends Events {
     markers: Marker[];
     zoom: { min: number; max: number; default: number; delta: number };
     popup: Popup;
-    mapLayers: LayerGroup[];
+    mapLayers: LayerGroup<L.TileLayer | L.ImageOverlay>[];
     featureLayer: L.FeatureGroup;
     layer: L.ImageOverlay | L.TileLayer;
     type: "image" | "real";
@@ -131,7 +131,7 @@ declare class LeafletMap extends Events {
         options: LeafletMapOptions
     );
 
-    get group(): LayerGroup;
+    get group(): LayerGroup<L.TileLayer | L.ImageOverlay>;
     get bounds(): L.LatLngBounds;
 
     get rendered(): boolean;
@@ -234,7 +234,7 @@ declare abstract class BaseMap/* <
 
     contentEl: HTMLElement;
     currentLayer: L.ImageOverlay | L.TileLayer;
-    get currentGroup(): LayerGroup;
+    get currentGroup(): LayerGroup<L.TileLayer | L.ImageOverlay>;
     get data(): ObsidianAppData;
     get defaultIcon(): MarkerIcon;
 
@@ -249,7 +249,7 @@ declare abstract class BaseMap/* <
 
     get isFullscreen(): boolean;
     leafletInstance: L.Map;
-    mapLayers: LayerGroup[];
+    mapLayers: LayerGroup<L.TileLayer | L.ImageOverlay>[];
     get markerIcons(): Map<string, MarkerIcon>;
     get markerTypes(): string[];
 
@@ -340,7 +340,6 @@ declare class RealMap extends BaseMap/* <L.TileLayer> */ {
     render(options: {
         coords: [number, number];
         zoomDistance: number;
-        layer: { data: string; id: string };
         hasAdditional?: boolean;
         imageOverlays?: {
             id: string;
@@ -364,7 +363,6 @@ declare class ImageMap extends BaseMap/* <L.ImageOverlay> */ {
     render(options: {
         coords: [number, number];
         zoomDistance: number;
-        layer: { data: string; id: string, alias?: string };
         hasAdditional?: boolean;
         imageOverlays?: {
             id: string;

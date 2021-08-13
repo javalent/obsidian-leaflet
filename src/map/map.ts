@@ -149,7 +149,7 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
         return this.leafletInstance.isFullscreen();
     }
     leafletInstance: L.Map;
-    mapLayers: LayerGroup[] = [];
+    mapLayers: LayerGroup<L.TileLayer | L.ImageOverlay>[] = [];
     get markerIcons(): Map<string, MarkerIcon> {
         return new Map(
             this.plugin.markerIcons.map((markerIcon) => [
@@ -170,7 +170,9 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
 
     tempCircle: L.Circle;
 
-    verbose: boolean;
+    get verbose() {
+        return this.options.verbose;
+    }
 
     zoom = {
         min: this.options.minZoom,
@@ -385,7 +387,6 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
         }
 
         if (this.options.geojson.length || this.options.gpx.length) {
-            this.featureLayer.addTo(this.currentGroup.group);
             if (this.options.zoomFeatures) {
                 this.log(`Zooming to features.`);
                 this.leafletInstance.fitBounds(this.featureLayer.getBounds());
@@ -850,6 +851,7 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
 
 export class RealMap extends BaseMap {
     CRS = L.CRS.EPSG3857;
+    mapLayers: LayerGroup<L.TileLayer>[] = [];
     popup: Popup = popup(this);
     type: "real" = "real";
 
@@ -925,7 +927,6 @@ export class RealMap extends BaseMap {
     async render(options: {
         coords: [number, number];
         zoomDistance: number;
-        layer: { data: string; id: string };
         hasAdditional?: boolean;
         imageOverlays?: {
             id: string;
@@ -979,10 +980,11 @@ export class RealMap extends BaseMap {
 }
 export class ImageMap extends BaseMap {
     CRS = L.CRS.Simple;
-    popup: Popup = popup(this);
-    type: "image" = "image";
     currentLayer: L.ImageOverlay;
     dimensions: { h: number; w: number };
+    mapLayers: LayerGroup<L.ImageOverlay>[] = [];
+    popup: Popup = popup(this);
+    type: "image" = "image";
     constructor(
         public plugin: ObsidianLeaflet,
         public options: LeafletMapOptions
@@ -1009,12 +1011,14 @@ export class ImageMap extends BaseMap {
         }
         this.initialCoords = [coords[0] * mult[0], coords[1] * mult[1]];
     }
-    private async _buildMapLayer(layer: {
+    private _buildMapLayer(layer: {
         data: string;
         id: string;
         alias?: string;
-    }): Promise<LayerGroup> {
-        const { h, w } = await getImageDimensions(layer.data);
+        h: number;
+        w: number;
+    }): LayerGroup<L.ImageOverlay> {
+        const { h, w } = layer;
 
         this.dimensions = { h, w };
 
@@ -1053,7 +1057,7 @@ export class ImageMap extends BaseMap {
             ...Object.values(overlayGroups)
         ]);
 
-        const layerGroup: LayerGroup = {
+        const layerGroup: LayerGroup<L.ImageOverlay> = {
             group: group,
             layer: mapLayer,
             id: layer.id,
@@ -1065,14 +1069,22 @@ export class ImageMap extends BaseMap {
 
         return layerGroup;
     }
-    loadAdditionalLayers(
-        layers: { data: string; id: string; alias?: string }[]
-    ) {}
-    async buildLayer(layer: { data: string; id: string; alias?: string }) {
-        const newLayer = await this._buildMapLayer(layer);
+    async buildLayer(layer: {
+        data: string;
+        id: string;
+        alias?: string;
+        h: number;
+        w: number;
+    }) {
+        const newLayer = this._buildMapLayer(layer);
 
         this.mapLayers.push(newLayer);
         this.trigger(`layer-ready-for-features`, newLayer);
+        if (this.mapLayers.length === 1) {
+            this.currentLayer = this.mapLayers[0].layer;
+            console.log(this.mapLayers[0]);
+            this.trigger("first-layer-ready", this.currentGroup);
+        }
 
         this.mapLayers[0].layer.once("load", () => {
             this.rendered = true;
@@ -1083,38 +1095,15 @@ export class ImageMap extends BaseMap {
             );
             this.trigger("rendered");
         });
-        return newLayer.layer as L.ImageOverlay;
-    }
-    async render(options: {
-        coords: [number, number];
-        zoomDistance: number;
-        layer: { data: string; id: string };
-        hasAdditional?: boolean;
-        imageOverlays?: {
-            id: string;
-            data: string;
-            alias: string;
-            bounds: [[number, number], [number, number]];
-        }[];
-    }) {
-        this.log("Beginning render process.");
-        this.currentLayer = await this.buildLayer(options.layer);
 
-        this.trigger("first-layer-ready", this.currentGroup);
+        return newLayer.layer;
+    }
+    async render(options: { coords: [number, number]; zoomDistance: number }) {
+        this.log("Beginning render process.");
 
         /** Move to supplied coordinates */
         this.log(`Moving to supplied coordinates: ${options.coords}`);
         this.setInitialCoords(options.coords);
-
-        this.leafletInstance.panTo(this.initialCoords);
-
-        if (options.zoomDistance) {
-            this.zoomDistance = options.zoomDistance;
-            this.setZoomByDistance(options.zoomDistance);
-        }
-        this.leafletInstance.setZoom(this.zoom.default, {
-            animate: false
-        });
 
         this.leafletInstance.on(
             "contextmenu",
@@ -1135,7 +1124,19 @@ export class ImageMap extends BaseMap {
 
         this.addFeatures();
 
-        this.currentGroup.group.addTo(this.leafletInstance);
+        this.on("first-layer-ready", () => {
+            this.leafletInstance.panTo(this.initialCoords);
+
+            if (options.zoomDistance) {
+                this.zoomDistance = options.zoomDistance;
+                this.setZoomByDistance(options.zoomDistance);
+            }
+            this.leafletInstance.setZoom(this.zoom.default, {
+                animate: false
+            });
+            this.featureLayer.addTo(this.currentGroup.group);
+            this.currentGroup.group.addTo(this.leafletInstance);
+        });
     }
 }
 

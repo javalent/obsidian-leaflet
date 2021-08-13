@@ -99,69 +99,6 @@ export function getId() {
     });
 }
 
-export async function toDataURL(
-    url: string,
-    app: App
-): Promise<{ id: string; data: string; alias: string }> {
-    //determine link type
-    try {
-        let response, blob: Blob, mimeType: string;
-        let id = url,
-            alias: string;
-        url = decodeURIComponent(url);
-        if (/https?:/.test(url)) {
-            //url
-            response = await fetch(url);
-            blob = await response.blob();
-        } else if (/obsidian:\/\/open/.test(url)) {
-            //obsidian link
-            let [, filePath] = url.match(/\?vault=[\s\S]+?&file=([\s\S]+)/);
-
-            filePath = decodeURIComponent(filePath);
-            let file = app.vault.getAbstractFileByPath(filePath);
-            if (!file || !(file instanceof TFile)) throw new Error();
-
-            let buffer = await app.vault.readBinary(file);
-            blob = new Blob([new Uint8Array(buffer)]);
-        } else {
-            //file exists on disk;
-            let file = app.metadataCache.getFirstLinkpathDest(
-                parseLink(url).split("|").shift(),
-                ""
-            );
-            if (!file || !(file instanceof TFile)) throw new Error();
-
-            mimeType =
-                lookupMimeType(file.extension) || "application/octet-stream";
-            let buffer = await app.vault.readBinary(file);
-            blob = new Blob([new Uint8Array(buffer)]);
-            alias = (
-                url.includes("|") ? url.split("|").pop() : file.basename
-            ).replace(/(\[|\])/g, "");
-        }
-
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                if (typeof reader.result === "string") {
-                    let data =
-                        "data:" +
-                        mimeType +
-                        reader.result.slice(reader.result.indexOf(";base64,"));
-                    resolve({ data, id, alias });
-                } else {
-                    new Notice("There was an error reading the image file.");
-                    reject();
-                }
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
-    } catch (e) {
-        throw new Error(`There was an error reading the image file: ${url}`);
-    }
-}
-
 export { compare as compareVersions } from "compare-versions";
 
 export const setValidationError = function (
@@ -232,6 +169,46 @@ export function getHeight(view: MarkdownView, height: string): string {
     } finally {
         return height;
     }
+}
+
+export async function getBlob(url: string, app: App) {
+    let response, blob: Blob, extension: string, alias: string;
+    url = decodeURIComponent(url);
+    try {
+        if (/https?:/.test(url)) {
+            //url
+            response = await fetch(url);
+            blob = await response.blob();
+        } else if (/obsidian:\/\/open/.test(url)) {
+            //obsidian link
+            let [, filePath] = url.match(/\?vault=[\s\S]+?&file=([\s\S]+)/);
+
+            filePath = decodeURIComponent(filePath);
+            let file = app.vault.getAbstractFileByPath(filePath);
+            if (!file) throw new Error();
+            extension = (file as TFile).extension;
+            let buffer = await app.vault.readBinary(file as TFile);
+            blob = new Blob([new Uint8Array(buffer)]);
+        } else {
+            //file exists on disk;
+            let file = app.metadataCache.getFirstLinkpathDest(
+                parseLink(url).split("|").shift(),
+                ""
+            );
+            if (!file) throw new Error();
+
+            extension = file.extension;
+
+            let buffer = await app.vault.readBinary(file);
+            blob = new Blob([new Uint8Array(buffer)]);
+            alias = (
+                url.includes("|") ? url.split("|").pop() : file.basename
+            ).replace(/(\[|\])/g, "");
+        }
+    } catch (e) {
+        console.error(e);
+    }
+    return { blob, id: url, alias, extension };
 }
 
 export function parseLink(link: string) {

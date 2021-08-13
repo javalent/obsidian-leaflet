@@ -20,7 +20,15 @@ module.exports = {
             {
                 test: /\.worker\.ts?$/,
                 loader: "worker-loader",
-                options: { inline: "no-fallback" }
+                options: {
+                    inline: "no-fallback",
+                    worker: {
+                        type: "Worker",
+                        options: {
+                            name: "Leaflet Image Loader"
+                        }
+                    }
+                }
             },
             {
                 test: /\.tsx?$/,

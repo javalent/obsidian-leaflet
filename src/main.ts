@@ -1,6 +1,7 @@
 import "leaflet";
 import "../node_modules/leaflet/dist/leaflet.css";
 import "./assets/main.css";
+import { getType as lookupMimeType } from "mime/lite";
 
 import {
     Notice,
@@ -20,7 +21,6 @@ import { ObsidianLeafletSettingTab } from "./settings/settings";
 import {
     getIcon,
     DEFAULT_SETTINGS,
-    toDataURL,
     getHeight,
     getParamsFromSource,
     getImmutableItems,
@@ -30,7 +30,8 @@ import {
     DESCRIPTION_ICON,
     DESCRIPTION_ICON_SVG,
     parseLink,
-    log
+    log,
+    getBlob
 } from "./utils";
 import {
     MapInterface,
@@ -74,16 +75,8 @@ declare module "obsidian" {
     }
 }
 
-import MyWorker from "./worker/test.worker.ts";
+import ImageWorker from "./worker/image.worker.ts";
 
-const worker = new MyWorker();
-
-worker.postMessage({ a: 1 });
-worker.onmessage = (event) => {};
-
-worker.addEventListener("message", (event) => {
-    console.log("🚀 ~ file: main.ts ~ line 85 ~ event", event);
-});
 export default class ObsidianLeaflet
     extends Plugin
     implements ObsidianLeafletImplementation
@@ -91,6 +84,7 @@ export default class ObsidianLeaflet
     data: ObsidianAppData;
     markerIcons: MarkerIcon[];
     maps: MapInterface[] = [];
+    ImageWorkers: Map<string, ImageWorker> = new Map();
     mapFiles: { file: string; maps: string[] }[] = [];
     watchers: Set<TFile> = new Set();
     Platform = Platform;
@@ -451,32 +445,13 @@ export default class ObsidianLeaflet
         const mutableOverlays = new Set(mapData?.overlays ?? []);
         map.addOverlay(...mutableOverlays);
 
-        let layerData: {
-            data: string;
-            id: string;
-            alias: string;
-        }[] = [];
+        map.render({
+            coords: coords,
+            zoomDistance: distanceToZoom
+        });
 
-        if (image != "real") {
-            layerData = await Promise.all(
-                layers.map(async (img) => {
-                    return await toDataURL(encodeURIComponent(img), this.app);
-                })
-            );
-            if (layerData.filter((d) => !d.data).length) {
-                throw new Error(
-                    "No valid layers were provided to the image map."
-                );
-            }
-        }
-        let imageOverlayData: {
-            data: string;
-            id: string;
-            alias: string;
-            bounds: [[number, number], [number, number]];
-        }[] = [];
-
-        if (imageOverlay.length) {
+        //TODO: Move image overlays to web worker
+        /* if (imageOverlay.length) {
             imageOverlayData = await Promise.all(
                 imageOverlay.map(async ([img, ...bounds]) => {
                     return {
@@ -485,17 +460,61 @@ export default class ObsidianLeaflet
                     };
                 })
             );
+        } */
+        /* layerData = await Promise.all(
+            layers.map(async (img) => {
+                return await toDataURL(encodeURIComponent(img), this.app);
+            })
+        );
+        if (layerData.filter((d) => !d.data).length) {
+            throw new Error(
+                "No valid layers were provided to the image map."
+            );
+        } */
+        if (map instanceof ImageMap) {
+            const worker = new ImageWorker();
+            this.ImageWorkers.set(id, worker);
+            const blobs = await Promise.all(
+                layers.map(async (img) => {
+                    return await getBlob(encodeURIComponent(img), this.app);
+                })
+            );
+
+            let count = 0;
+            worker.onmessage = (event) => {
+                const layer: {
+                    data: string;
+                    alias: string;
+                    id: string;
+                    h: number;
+                    w: number;
+                } = event.data.data;
+                const blob = blobs.find(({ id }) => id == event.data.id);
+                layer.id = event.data.id;
+                layer.alias = blob.alias;
+                let mimeType: string;
+                if (blob.extension) {
+                    mimeType = lookupMimeType(blob.extension);
+                }
+                layer.data = "data:" + mimeType + layer.data;
+
+                map.buildLayer(layer);
+
+                count++;
+                if (count === blobs.length - 1) {
+                    worker.terminate();
+                    this.ImageWorkers.delete(id);
+                }
+            };
+
+            worker.postMessage({
+                blobs,
+                type: "url"
+            });
+        } else {
         }
 
         this.registerMapEvents(map);
-
-        map.render({
-            coords: coords,
-            zoomDistance: distanceToZoom,
-            layer: layerData[0],
-            hasAdditional: layerData.length > 1,
-            imageOverlays: imageOverlayData
-        });
 
         ctx.addChild(renderer);
 
@@ -518,11 +537,6 @@ export default class ObsidianLeaflet
             });
         }
 
-        map.on("rendered", async () => {
-            if (layerData.length > 1 && map instanceof ImageMap)
-                map.loadAdditionalLayers(layerData.slice(1));
-            await this.saveSettings();
-        });
         /* } catch (e) {
             console.error(e);
             new Notice("There was an error loading the map.");

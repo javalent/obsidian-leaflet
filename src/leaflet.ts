@@ -223,7 +223,7 @@ class LeafletMap extends Events {
     zoom: { min: number; max: number; default: number; delta: number };
     //@ts-expect-error
     popup: Popup = popup(this);
-    mapLayers: LayerGroup[] = [];
+    mapLayers: LayerGroup<L.TileLayer | L.ImageOverlay>[] = [];
     layer: L.ImageOverlay | L.TileLayer;
     type: "image" | "real";
     initialCoords: [number, number];
@@ -1454,7 +1454,7 @@ class LeafletMap extends Events {
         data: string;
         id: string;
         alias?: string;
-    }): Promise<LayerGroup> {
+    }): Promise<LayerGroup<L.TileLayer | L.ImageOverlay>> {
         const { h, w } = await getImageDimensions(layer.data);
 
         let bounds: L.LatLngBounds;
@@ -1485,7 +1485,7 @@ class LeafletMap extends Events {
             ...Object.values(overlayGroups)
         ]);
 
-        const layerGroup: LayerGroup = {
+        const layerGroup: LayerGroup<L.TileLayer | L.ImageOverlay> = {
             group: group,
             layer: mapLayer,
             id: layer.id,
