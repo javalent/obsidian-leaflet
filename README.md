@@ -428,6 +428,7 @@ By default, the map will not show markers on the starting point, ending point or
 gpx: [[GPX_File.gpx]]
 gpxMarkers:
   start: start_marker_type
+  end: end_marker_type
   waypoint: waypoint_marker_type
 ```
 ````
