@@ -18,6 +18,7 @@
         "**/map/*",
         "**/modals/*",
         "**/settings/*",
-        "**/utils/*"
+        "**/utils/*",
+        "**/worker/*"
     ]
 }

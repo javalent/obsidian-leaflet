@@ -18,6 +18,11 @@ module.exports = {
     module: {
         rules: [
             {
+                test: /\.worker\.ts?$/,
+                loader: "worker-loader",
+                options: { inline: "no-fallback" }
+            },
+            {
                 test: /\.tsx?$/,
                 loader: "ts-loader",
                 options: {
@@ -44,9 +49,7 @@ module.exports = {
     },
     plugins: [
         new CopyPlugin({
-            patterns: [
-                { from: "./manifest.json", to: "." }
-            ]
+            patterns: [{ from: "./manifest.json", to: "." }]
         }),
         new webpack.optimize.LimitChunkCountPlugin({
             maxChunks: 1

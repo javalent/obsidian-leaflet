@@ -544,7 +544,10 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
 
             this.distanceLine = L.polyline([this.distanceEvent, evt.latlng]);
 
+            this.distanceLine.addTo(this.leafletInstance);
+
             this.distanceLine.bindTooltip(distanceTooltip);
+
             this.leafletInstance.on(
                 "mousemove",
                 (mvEvt: L.LeafletMouseEvent) => {
@@ -559,7 +562,6 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
                             this.markers.find((m) => m.isBeingHovered).loc
                         ]);
                     }
-                    this.distanceLine.addTo(this.leafletInstance);
 
                     /** Get New Distance */
                     const latlngs =

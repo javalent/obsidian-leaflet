@@ -17,15 +17,13 @@ import { parse as parseCSV } from "papaparse";
 import { BlockParameters, LeafletMap } from "src/@types";
 import { LAT_LONG_DECIMALS, OVERLAY_TAG_REGEX } from "./constants";
 import { DESCRIPTION_ICON } from ".";
-import { locale } from 'moment';
+import { locale } from "moment";
 
 export function formatNumber(number: number, digits: number) {
-    return Number(
-        new Intl.NumberFormat(locale(), {
-            style: "decimal",
-            maximumFractionDigits: digits
-        }).format(number)
-    );
+    return new Intl.NumberFormat(locale(), {
+        style: "decimal",
+        maximumFractionDigits: digits
+    }).format(number);
 }
 
 export function formatLatLng(latlng: L.LatLng) {
@@ -137,7 +135,9 @@ export async function toDataURL(
                 lookupMimeType(file.extension) || "application/octet-stream";
             let buffer = await app.vault.readBinary(file);
             blob = new Blob([new Uint8Array(buffer)]);
-            alias = (url.includes("|") ? url.split("|").pop() : file.basename).replace(/(\[|\])/g, "");
+            alias = (
+                url.includes("|") ? url.split("|").pop() : file.basename
+            ).replace(/(\[|\])/g, "");
         }
 
         return new Promise((resolve, reject) => {

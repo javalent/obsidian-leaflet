@@ -41,7 +41,7 @@ import {
     Marker,
     SavedOverlayData,
     ObsidianLeaflet as ObsidianLeafletImplementation,
-    BaseMapType,
+    BaseMapType
 } from "./@types";
 
 import { LeafletRenderer } from "./leaflet";
@@ -74,6 +74,16 @@ declare module "obsidian" {
     }
 }
 
+import MyWorker from "./worker/test.worker.ts";
+
+const worker = new MyWorker();
+
+worker.postMessage({ a: 1 });
+worker.onmessage = (event) => {};
+
+worker.addEventListener("message", (event) => {
+    console.log("🚀 ~ file: main.ts ~ line 85 ~ event", event);
+});
 export default class ObsidianLeaflet
     extends Plugin
     implements ObsidianLeafletImplementation
@@ -531,7 +541,6 @@ export default class ObsidianLeaflet
         file: TFile;
     }> {
         let latitude = lat;
-        console.log("🚀 ~ file: main.ts ~ line 538 ~ latitude", latitude);
         let longitude = long;
         let coords: [number, number] = [undefined, undefined];
         let distanceToZoom, file;
@@ -580,12 +589,6 @@ export default class ObsidianLeaflet
                 "There was an error with the provided latitude and longitude. Using defaults."
             );
         }
-
-        console.log(
-            "🚀 ~ file: main.ts ~ line 585 ~ map.type",
-            map.type,
-            coords
-        );
         if (map.type != "real") {
             if (!latitude || isNaN(coords[0])) {
                 coords[0] = 50;
@@ -601,7 +604,7 @@ export default class ObsidianLeaflet
                 coords[1] = this.data.long;
             }
         }
-        console.log("🚀 ~ file: main.ts ~ line 602 ~ coords", coords);
+
         return { coords, distanceToZoom, file };
     }
     private _getCoordsFromCache(
