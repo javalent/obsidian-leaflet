@@ -26,7 +26,7 @@ export function getIcon(iconName: string): IconDefinition {
     });
 }
 
-interface IInternalMarkerIcon {
+interface InternalMarkerIcon {
     html: string;
     node: Element;
 }
@@ -34,7 +34,7 @@ interface IInternalMarkerIcon {
 export function getMarkerIcon(
     marker: Icon,
     params?: IconParams
-): IInternalMarkerIcon {
+): InternalMarkerIcon {
     if (!marker) return null;
 
     if (marker.isImage) {

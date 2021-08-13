@@ -337,9 +337,7 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
         this.featureLayer = L.featureGroup();
         let added: number;
         if (this.options.geojson.length > 0) {
-            log(
-                this.verbose,
-                this.id,
+            this.log(
                 `Adding ${this.options.geojson.length} GeoJSON features to map.`
             );
             this.leafletInstance.createPane("geojson");
@@ -366,20 +364,14 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
                 }
             });
 
-            log(
-                this.verbose,
-                this.id,
+            this.log(
                 `${added} GeoJSON feature${added == 1 ? "" : "s"} added to map.`
             );
         }
 
         /** Add GPX to map */
         if (this.options.gpx.length > 0) {
-            log(
-                this.verbose,
-                this.id,
-                `Adding ${this.options.gpx.length} GPX features to map.`
-            );
+            this.log(`Adding ${this.options.gpx.length} GPX features to map.`);
 
             for (let gpx of this.options.gpx) {
                 const gpxInstance = new GPX(
@@ -395,11 +387,11 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
         if (this.options.geojson.length || this.options.gpx.length) {
             this.featureLayer.addTo(this.currentGroup.group);
             if (this.options.zoomFeatures) {
-                log(this.verbose, this.id, `Zooming to features.`);
+                this.log(`Zooming to features.`);
                 this.leafletInstance.fitBounds(this.featureLayer.getBounds());
                 const { lat, lng } = this.featureLayer.getBounds().getCenter();
 
-                log(this.verbose, this.id, `Features center: [${lat}, ${lng}]`);
+                this.log(`Features center: [${lat}, ${lng}]`);
                 this.setInitialCoords([lat, lng]);
                 this.zoom.default = this.leafletInstance.getBoundsZoom(
                     this.featureLayer.getBounds()
@@ -516,11 +508,7 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
                 this.data.copyOnClick &&
                 evt.originalEvent.getModifierState(MODIFIER_KEY)
             ) {
-                log(
-                    this.verbose,
-                    this.id,
-                    `Copying coordinates of click to clipboard.`
-                );
+                this.log(`Copying coordinates of click to clipboard.`);
                 await copyToClipboard(evt.latlng);
             }
         }
@@ -677,7 +665,7 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
         }
 
         if (evt.originalEvent.getModifierState("Shift")) {
-            log(this.verbose, this.id, `Beginning overlay drawing context.`);
+            this.log(`Beginning overlay drawing context.`);
             //begin drawing context
 
             this.beginOverlayDrawingContext(evt);
@@ -686,9 +674,7 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
         }
 
         if (this.markerIcons.size <= 1) {
-            log(
-                this.verbose,
-                this.id,
+            this.log(
                 `No additional marker types defined. Adding default marker.`
             );
             this.createMarker(
@@ -703,7 +689,7 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
 
         contextMenu.setNoIcon();
 
-        log(this.verbose, this.id, `Opening marker context menu.`);
+        this.log(`Opening marker context menu.`);
         this.markerIcons.forEach((marker: MarkerIcon) => {
             if (!marker.type || !marker.html) return;
             contextMenu.addItem((item) => {
@@ -712,11 +698,7 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
                 );
                 item.setActive(true);
                 item.onClick(async () => {
-                    log(
-                        this.verbose,
-                        this.id,
-                        `${marker.type} selected. Creating marker.`
-                    );
+                    this.log(`${marker.type} selected. Creating marker.`);
                     this.createMarker(
                         marker.type,
                         [evt.latlng.lat, evt.latlng.lng],
@@ -773,7 +755,7 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
 
     sortOverlays() {
         if (!this.overlays.length) return;
-        log(this.verbose, this.id, `Sorting overlays.`);
+        this.log(`Sorting overlays.`);
         this.overlays.sort((a, b) => {
             return b.radiusInMeters - a.radiusInMeters;
         });
@@ -782,7 +764,7 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
             overlay.leafletInstance.bringToFront();
         }
 
-        log(this.verbose, this.id, `Overlays sorted.`);
+        this.log(`Overlays sorted.`);
     }
     setZoomByDistance(zoomDistance: number) {
         if (!zoomDistance) {
@@ -928,9 +910,7 @@ export class RealMap extends BaseMap {
         this.mapLayers[0].layer.once("load", () => {
             this.rendered = true;
 
-            log(
-                this.verbose,
-                this.id,
+            this.log(
                 `Initial map layer rendered in ${
                     /* (Date.now() - this._start) /  */ 1000
                 } seconds.`
@@ -1083,9 +1063,9 @@ export class ImageMap extends BaseMap {
 
         return layerGroup;
     }
-    loadAdditionalLayers(layers: { data: string; id: string; alias?: string }[]) {
-
-    }
+    loadAdditionalLayers(
+        layers: { data: string; id: string; alias?: string }[]
+    ) {}
     async buildLayer(layer: { data: string; id: string; alias?: string }) {
         const newLayer = await this._buildMapLayer(layer);
 
@@ -1094,9 +1074,7 @@ export class ImageMap extends BaseMap {
 
         this.mapLayers[0].layer.once("load", () => {
             this.rendered = true;
-            log(
-                this.verbose,
-                this.id,
+            this.log(
                 `Initial map layer rendered in ${
                     Date.now() /*  - this._start */ / 1000
                 } seconds.`
@@ -1117,7 +1095,7 @@ export class ImageMap extends BaseMap {
             bounds: [[number, number], [number, number]];
         }[];
     }) {
-        log(this.verbose, this.id, "Beginning render process.");
+        this.log("Beginning render process.");
         this.currentLayer = await this.buildLayer(options.layer);
 
         this.trigger("first-layer-ready", this.currentGroup);
