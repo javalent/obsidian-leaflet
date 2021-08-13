@@ -77,6 +77,7 @@ declare module "obsidian" {
 
 import ImageWorker from "./worker/image.worker.ts";
 
+
 export default class ObsidianLeaflet
     extends Plugin
     implements ObsidianLeafletImplementation
@@ -85,6 +86,7 @@ export default class ObsidianLeaflet
     markerIcons: MarkerIcon[];
     maps: MapInterface[] = [];
     ImageWorkers: Map<string, ImageWorker> = new Map();
+    imageWorker = new ImageWorker();
     mapFiles: { file: string; maps: string[] }[] = [];
     watchers: Set<TFile> = new Set();
     Platform = Platform;
@@ -98,6 +100,7 @@ export default class ObsidianLeaflet
 
     async onload(): Promise<void> {
         console.log("Loading Obsidian Leaflet v" + this.manifest.version);
+        console.log('line 79', ImageWorker)
 
         await this.loadSettings();
 
@@ -461,19 +464,12 @@ export default class ObsidianLeaflet
                 })
             );
         } */
-        /* layerData = await Promise.all(
-            layers.map(async (img) => {
-                return await toDataURL(encodeURIComponent(img), this.app);
-            })
-        );
-        if (layerData.filter((d) => !d.data).length) {
-            throw new Error(
-                "No valid layers were provided to the image map."
-            );
-        } */
         if (map instanceof ImageMap) {
-            const worker = new ImageWorker();
+            const worker = this.imageWorker/* new ImageWorker(); */
+            
+
             this.ImageWorkers.set(id, worker);
+            log(verbose, id, `Parsing image layer data.`);
             const blobs = await Promise.all(
                 layers.map(async (img) => {
                     return await getBlob(encodeURIComponent(img), this.app);
@@ -482,6 +478,8 @@ export default class ObsidianLeaflet
 
             let count = 0;
             worker.onmessage = (event) => {
+                console.log("🚀 ~ file: main.ts ~ line 477 ~ event", event);
+                log(verbose, id, `Received layer data for ${event.data.id}.`);
                 const layer: {
                     data: string;
                     alias: string;

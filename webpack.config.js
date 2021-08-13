@@ -25,7 +25,8 @@ module.exports = {
                     worker: {
                         type: "Worker",
                         options: {
-                            name: "Leaflet Image Loader"
+                            name: "Leaflet Image Loader",
+                            esModule: false,
                         }
                     }
                 }
