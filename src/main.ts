@@ -75,8 +75,7 @@ declare module "obsidian" {
     }
 }
 
-import ImageWorker from "./worker/image.worker.ts";
-
+import Loader from "./worker/loader";
 
 export default class ObsidianLeaflet
     extends Plugin
@@ -85,8 +84,7 @@ export default class ObsidianLeaflet
     data: ObsidianAppData;
     markerIcons: MarkerIcon[];
     maps: MapInterface[] = [];
-    ImageWorkers: Map<string, ImageWorker> = new Map();
-    imageWorker = new ImageWorker();
+    ImageLoader = new Loader(this.app);
     mapFiles: { file: string; maps: string[] }[] = [];
     watchers: Set<TFile> = new Set();
     Platform = Platform;
@@ -100,7 +98,6 @@ export default class ObsidianLeaflet
 
     async onload(): Promise<void> {
         console.log("Loading Obsidian Leaflet v" + this.manifest.version);
-        console.log('line 79', ImageWorker)
 
         await this.loadSettings();
 
@@ -465,51 +462,20 @@ export default class ObsidianLeaflet
             );
         } */
         if (map instanceof ImageMap) {
-            const worker = this.imageWorker/* new ImageWorker(); */
-            
-
-            this.ImageWorkers.set(id, worker);
-            log(verbose, id, `Parsing image layer data.`);
-            const blobs = await Promise.all(
-                layers.map(async (img) => {
-                    return await getBlob(encodeURIComponent(img), this.app);
-                })
-            );
-
-            let count = 0;
-            worker.onmessage = (event) => {
-                console.log("🚀 ~ file: main.ts ~ line 477 ~ event", event);
-                log(verbose, id, `Received layer data for ${event.data.id}.`);
-                const layer: {
+            this.ImageLoader.on(
+                `${id}-layer-data-ready`,
+                (layer: {
                     data: string;
                     alias: string;
                     id: string;
                     h: number;
                     w: number;
-                } = event.data.data;
-                const blob = blobs.find(({ id }) => id == event.data.id);
-                layer.id = event.data.id;
-                layer.alias = blob.alias;
-                let mimeType: string;
-                if (blob.extension) {
-                    mimeType = lookupMimeType(blob.extension);
+                }) => {
+                    map.buildLayer(layer);
                 }
-                layer.data = "data:" + mimeType + layer.data;
+            );
 
-                map.buildLayer(layer);
-
-                count++;
-                if (count === blobs.length - 1) {
-                    worker.terminate();
-                    this.ImageWorkers.delete(id);
-                }
-            };
-
-            worker.postMessage({
-                blobs,
-                type: "url"
-            });
-        } else {
+            this.ImageLoader.load(id, layers);
         }
 
         this.registerMapEvents(map);

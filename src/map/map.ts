@@ -1101,10 +1101,6 @@ export class ImageMap extends BaseMap {
     async render(options: { coords: [number, number]; zoomDistance: number }) {
         this.log("Beginning render process.");
 
-        /** Move to supplied coordinates */
-        this.log(`Moving to supplied coordinates: ${options.coords}`);
-        this.setInitialCoords(options.coords);
-
         this.leafletInstance.on(
             "contextmenu",
             this.handleMapContext.bind(this)
@@ -1125,6 +1121,9 @@ export class ImageMap extends BaseMap {
         this.addFeatures();
 
         this.on("first-layer-ready", () => {
+            /** Move to supplied coordinates */
+            this.log(`Moving to supplied coordinates: ${options.coords}`);
+            this.setInitialCoords(options.coords);
             this.leafletInstance.panTo(this.initialCoords);
 
             if (options.zoomDistance) {
