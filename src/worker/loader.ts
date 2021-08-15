@@ -21,44 +21,17 @@ export default class Loader extends Events {
                     h: number;
                     w: number;
                 };
-            if (Platform.isDesktop) {
-                const worker = new ImageWorker();
 
-                this.workers.set(id, worker);
+            const worker = new ImageWorker();
 
-                let count = 0;
-                worker.onmessage = (event) => {
-                    layer = event.data.data;
+            this.workers.set(id, worker);
 
-                    layer.id = event.data.id;
-                    layer.alias = blob.alias;
-                    let mimeType: string;
-                    if (blob.extension) {
-                        mimeType = lookupMimeType(blob.extension);
-                    }
-                    layer.data = "data:" + mimeType + layer.data;
+            let count = 0;
+            worker.onmessage = async (event) => {
+                layer = event.data.data;
 
-                    this.trigger(`${id}-layer-data-ready`, layer);
-                    count++;
-                    if (count === layers.length - 1) {
-                        worker.terminate();
-                        this.workers.delete(id);
-                    }
-                };
-
-                worker.postMessage({
-                    blobs: [blob],
-                    type: "url"
-                });
-            } else {
-                console.log("Mobile platform!");
-                layer = {
-                    id: blob.id,
-                    alias: blob.alias,
-                    ...(await this.toDataURL(blob.blob)),
-                    h: 0,
-                    w: 0
-                };
+                layer.id = event.data.id;
+                layer.alias = blob.alias;
                 let mimeType: string;
                 if (blob.extension) {
                     mimeType = lookupMimeType(blob.extension);
@@ -68,13 +41,21 @@ export default class Loader extends Events {
                 layer.h = h;
                 layer.w = w;
                 this.trigger(`${id}-layer-data-ready`, layer);
-            }
+                count++;
+                if (count === layers.length - 1) {
+                    worker.terminate();
+                    this.workers.delete(id);
+                }
+            };
+
+            worker.postMessage({
+                blobs: [blob],
+                type: "url"
+            });
         }
     }
 
-    async toDataURL(
-        blob: Blob
-    ): Promise<{ data: string; }> {
+    async toDataURL(blob: Blob): Promise<{ data: string }> {
         //determine link type
         return new Promise(async (resolve, reject) => {
             const reader = new FileReader();
@@ -95,7 +76,7 @@ export default class Loader extends Events {
             reader.readAsDataURL(blob);
         });
     }
-    getImageDimensions(url: string): Promise<{ h: number, w: number }> {
+    getImageDimensions(url: string): Promise<{ h: number; w: number }> {
         return new Promise(function (resolved, reject) {
             var i = new Image();
             i.onload = function () {

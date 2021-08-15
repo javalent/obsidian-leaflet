@@ -16,7 +16,7 @@ export default {} as typeof Worker & (new () => Worker);
 
 async function toDataURL(
     blob: Blob
-): Promise<{ data: string; h: number; w: number }> {
+): Promise<{ data: string; /* h: number; w: number */ }> {
     //determine link type
     return new Promise(async (resolve, reject) => {
         const reader = new FileReader();
@@ -25,15 +25,15 @@ async function toDataURL(
                 let data = reader.result.slice(
                     reader.result.indexOf(";base64,")
                 );
-                resolve({ data, h, w });
+                resolve({ data/* , h, w */ });
             } else {
                 reject();
             }
         };
 
-        const bitmap = await createImageBitmap(blob);
+/*         const bitmap = await createImageBitmap(blob);
         const { height: h, width: w } = bitmap;
-
+ */
         reader.onerror = reject;
         reader.readAsDataURL(blob);
     });
