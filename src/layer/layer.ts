@@ -31,6 +31,7 @@ export abstract class Layer<T extends L.Layer> {
             this.show();
         } else if (this.layer) {
             this.map.on(`layer-ready-for-features`, (layer: LayerGroup<L.TileLayer | L.ImageOverlay>) => {
+                console.log("🚀 ~ file: layer.ts ~ line 34 ~ this.layer", this.layer, layer.id);
                 if (layer.id === this.layer) this.show();
             });
         } else {

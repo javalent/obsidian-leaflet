@@ -186,6 +186,7 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
 
     /** Marker Methods */
     addMarker(...markers: SavedMarkerProperties[]) {
+        console.log("🚀 ~ file: map.ts ~ line 189 ~ markers", markers);
         let toReturn: Marker[] = [];
         for (const marker of markers) {
             if (!this.markerTypes.includes(marker.type)) {
@@ -1082,7 +1083,6 @@ export class ImageMap extends BaseMap {
         this.trigger(`layer-ready-for-features`, newLayer);
         if (this.mapLayers.length === 1) {
             this.currentLayer = this.mapLayers[0].layer;
-            console.log(this.mapLayers[0]);
             this.trigger("first-layer-ready", this.currentGroup);
         }
 

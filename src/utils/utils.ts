@@ -208,7 +208,7 @@ export async function getBlob(url: string, app: App) {
     } catch (e) {
         console.error(e);
     }
-    return { blob, id: url, alias, extension };
+    return { blob, id: encodeURIComponent(url), alias, extension };
 }
 
 export function parseLink(link: string) {

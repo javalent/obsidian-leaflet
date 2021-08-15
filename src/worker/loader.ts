@@ -11,7 +11,7 @@ export default class Loader extends Events {
     constructor(public app: App) {
         super();
     }
-    async load(id: string, layers: string[]) {
+    async loadImage(id: string, layers: string[]) {
         for (let image of layers) {
             let blob = await getBlob(encodeURIComponent(image), this.app),
                 layer: {
@@ -70,7 +70,6 @@ export default class Loader extends Events {
                     reject();
                 }
             };
-            console.log("🚀 ~ file: loader.ts ~ line 1 ~ blob", blob);
 
             reader.onerror = reject;
             reader.readAsDataURL(blob);

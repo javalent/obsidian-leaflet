@@ -191,10 +191,7 @@ export default class ObsidianLeaflet
         } = params;
         if (!id) {
             new Notice(
-                "As of version 3.0.0, Obsidian Leaflet maps must have an ID."
-            );
-            new Notice(
-                "All marker data associated with this map will sync to the new ID."
+                "Obsidian Leaflet maps must have an ID."
             );
             throw new Error("ID required");
         }
@@ -202,26 +199,6 @@ export default class ObsidianLeaflet
         let view = this.app.workspace.getActiveViewOfType(MarkdownView);
 
         /** Get Markers from Parameters */
-
-        /** Update Old Map Data Format */
-        if (
-            this.data.mapMarkers.find(
-                ({ path, id: mapId }) =>
-                    (path == `${ctx.sourcePath}/${image}` && !mapId) ||
-                    path == `${ctx.sourcePath}/${id}`
-            )
-        ) {
-            log(verbose, id, "Map data found in an old format. Converting.");
-            let data = this.data.mapMarkers.find(
-                ({ path }) =>
-                    path == `${ctx.sourcePath}/${image}` ||
-                    path == `${ctx.sourcePath}/${id}`
-            );
-            this.data.mapMarkers = this.data.mapMarkers.filter(
-                (d) => d != data
-            );
-        }
-
         let geojsonData: any[] = [];
         if (!(geojson instanceof Array)) {
             geojson = [geojson];
@@ -317,6 +294,9 @@ export default class ObsidianLeaflet
         ) {
             log(verbose, id, "Loading immutable items.");
         }
+
+        //TODO: LET RENDERER HANDLE THIS
+
         let {
             markers: immutableMarkers,
             overlays: immutableOverlays,
@@ -451,16 +431,19 @@ export default class ObsidianLeaflet
         });
 
         //TODO: Move image overlays to web worker
-        /* if (imageOverlay.length) {
+        //maybe? may need this immediately otherwise they could flicker on
+        let imageOverlayData;
+        if (imageOverlay.length) {
             imageOverlayData = await Promise.all(
                 imageOverlay.map(async ([img, ...bounds]) => {
+                    const {blob} = await getBlob(img, this.app);
                     return {
-                        ...(await toDataURL(encodeURIComponent(img), this.app)),
+                        ...(await this.ImageLoader.toDataURL(blob)),
                         bounds
                     };
                 })
             );
-        } */
+        }
         if (map instanceof ImageMap) {
             this.ImageLoader.on(
                 `${id}-layer-data-ready`,
@@ -475,13 +458,16 @@ export default class ObsidianLeaflet
                 }
             );
 
-            this.ImageLoader.load(id, layers);
+            this.ImageLoader.loadImage(id, layers);
         }
 
         this.registerMapEvents(map);
 
         ctx.addChild(renderer);
 
+        /** Add Map to Map Store
+         * TODO: REFACTOR TO MAP<contentEl, { map, source, id }>
+         */
         this.maps = this.maps.filter((m) => m.el != el);
         this.maps.push({
             map: map,

@@ -2,7 +2,6 @@ const ctx: Worker = self as any;
 
 // Respond to message from parent thread
 ctx.onmessage = async (event) => {
-    console.log("🚀 ~ file: image.worker.ts ~ line 5 ~ event", event);
     if (!event.data.type) return;
 
     if (event.data.type === "url") {
