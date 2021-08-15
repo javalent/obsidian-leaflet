@@ -260,7 +260,9 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
         return markers[0];
     }
 
-    onMarkerClick(marker: Marker, evt: L.LeafletMouseEvent) {}
+    onMarkerClick(marker: Marker, evt: L.LeafletMouseEvent) {
+        this.handleMapDistance(evt);
+    }
 
     updateMarker(marker: Marker) {
         const existing = this.markers.find((m) => m.id == marker.id);
@@ -553,10 +555,21 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
             this.leafletInstance.on(
                 "mousemove",
                 (mvEvt: L.LeafletMouseEvent) => {
-                    if (!this.markers.find((m) => m.isBeingHovered)) {
+                    const latlng = mvEvt.latlng;
+                    const delta = [latlng.lat - this.distanceEvent.lat, latlng.lng - this.distanceEvent.lng];
+
+                    if (mvEvt.originalEvent.getModifierState("Shift")) {
+                        if (delta[0] > delta[1]) {
+                            latlng.lng = this.distanceEvent.lng;
+                        } else {
+                            latlng.lat = this.distanceEvent.lat;
+                        }
+                    }
+
+                    if (!this.markers.find((m) => m.isBeingHovered) || mvEvt.originalEvent.getModifierState(MODIFIER_KEY)) {
                         this.distanceLine.setLatLngs([
                             this.distanceEvent,
-                            mvEvt.latlng
+                            latlng
                         ]);
                     } else {
                         this.distanceLine.setLatLngs([
@@ -572,7 +585,7 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
 
                     /** Update Distance Line Tooltip */
                     distanceTooltip.setContent(display);
-                    distanceTooltip.setLatLng(mvEvt.latlng);
+                    distanceTooltip.setLatLng(latlng);
 
                     if (!this.distanceLine.isTooltipOpen()) {
                         distanceTooltip.openTooltip();

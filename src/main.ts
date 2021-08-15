@@ -493,6 +493,7 @@ export default class ObsidianLeaflet
             renderError(el, e.message);
         } */
     }
+    //TODO: Move to renderer
     private async _getCoordinates(
         lat: string,
         long: string,
@@ -784,10 +785,9 @@ export default class ObsidianLeaflet
                     );
                     if (!existingMarker) return;
 
-                    existingMarker.leafletInstance.setLatLng(
+                    existingMarker.setLatLng(
                         marker.leafletInstance.getLatLng()
                     );
-                    existingMarker.loc = marker.loc;
                 });
         });
 
@@ -804,10 +804,9 @@ export default class ObsidianLeaflet
                     );
                     if (!existingMarker) return;
 
-                    existingMarker.leafletInstance.setLatLng(
+                    existingMarker.setLatLng(
                         marker.leafletInstance.getLatLng()
                     );
-                    existingMarker.loc = marker.loc;
                 });
         });
 
@@ -816,9 +815,8 @@ export default class ObsidianLeaflet
                 ({ id, map: m }) => id == map.id && m.contentEl != map.contentEl
             );
             for (let { map } of otherMaps) {
-                let existing = map.markers.find((m) => m.id === marker.id);
-                existing.hide();
-                map.markers = map.markers.filter((m) => m != existing);
+                map.removeMarker(marker);
+                
             }
         });
 

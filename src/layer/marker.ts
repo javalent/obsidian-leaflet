@@ -287,12 +287,13 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                 markerSettingsModal.open();
             })
             .on("click", async (evt: L.LeafletMouseEvent) => {
-                L.DomEvent.stopPropagation(evt);
-
+                
                 if (this.map.isDrawing) {
                     this.map.onMarkerClick(this, evt);
                     return;
                 }
+                
+                L.DomEvent.stopPropagation(evt);
 
                 if (
                     evt.originalEvent.getModifierState("Alt") ||
@@ -329,7 +330,6 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             })
             .on("dragend", (evt: L.LeafletMouseEvent) => {
                 const old = this.loc;
-                /* this.loc = this.leafletInstance.getLatLng(); */
                 this.setLatLng(this.leafletInstance.getLatLng());
                 this.map.trigger("marker-data-updated", this, old);
             })
@@ -339,7 +339,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                 if (this.map.data.notePreview && this.link) {
                     this.map.plugin.app.workspace.trigger(
                         "link-hover",
-                        this, //hover popover
+                        this, //hover popover, but don't need
                         this.leafletInstance.getElement(), //targetEl
                         this.link.replace("^", "#^").split("|").shift(), //linkText
                         this.map.options.context //source
