@@ -5,22 +5,17 @@ import { getType as lookupMimeType } from "mime/lite";
 import { getBlob } from "../utils";
 
 import ImageWorker from "./image.worker";
+import { ImageLayerData } from "src/@types";
 
 export default class Loader extends Events {
     workers: Map<string, Worker> = new Map();
     constructor(public app: App) {
         super();
     }
-    async loadImage(id: string, layers: string[]) {
+    async loadImage(id: string, layers: string[]): Promise<void> {
         for (let image of layers) {
             let blob = await getBlob(encodeURIComponent(image), this.app),
-                layer: {
-                    data: string;
-                    alias: string;
-                    id: string;
-                    h: number;
-                    w: number;
-                };
+                layer: ImageLayerData;
 
             const worker = new ImageWorker();
 
@@ -53,6 +48,49 @@ export default class Loader extends Events {
                 type: "url"
             });
         }
+    }
+
+    async loadImageAsync(
+        id: string,
+        layers: string[]
+    ): Promise<ImageLayerData> {
+        return new Promise(async (resolve, reject) => {
+            for (let image of layers) {
+                let blob = await getBlob(encodeURIComponent(image), this.app),
+                    layer: ImageLayerData;
+
+                const worker = new ImageWorker();
+
+                this.workers.set(id, worker);
+
+                let count = 0;
+                worker.onmessage = async (event) => {
+                    layer = event.data.data;
+
+                    layer.id = event.data.id;
+                    layer.alias = blob.alias;
+                    let mimeType: string;
+                    if (blob.extension) {
+                        mimeType = lookupMimeType(blob.extension);
+                    }
+                    layer.data = "data:" + mimeType + layer.data;
+                    const { h, w } = await this.getImageDimensions(layer.data);
+                    layer.h = h;
+                    layer.w = w;
+                    count++;
+                    if (count === layers.length - 1) {
+                        worker.terminate();
+                        this.workers.delete(id);
+                    }
+                    resolve(layer);
+                };
+
+                worker.postMessage({
+                    blobs: [blob],
+                    type: "url"
+                });
+            }
+        });
     }
 
     async toDataURL(blob: Blob): Promise<{ data: string }> {

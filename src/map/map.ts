@@ -12,7 +12,9 @@ import {
     SavedOverlayData,
     TooltipDisplay,
     BaseMap as BaseMapDefinition,
-    BaseMapType
+    BaseMapType,
+    ImageLayerData,
+    SavedMapData
 } from "src/@types";
 
 import { GPX, Marker, GeoJSON, Overlay } from "src/layer";
@@ -319,7 +321,7 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
                     unit: "m",
                     desc: "",
                     mutable: true,
-                    marker: marker.id
+                    marker: marker?.id ?? null
                 });
 
                 await this.plugin.saveSettings();
@@ -556,7 +558,10 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
                 "mousemove",
                 (mvEvt: L.LeafletMouseEvent) => {
                     const latlng = mvEvt.latlng;
-                    const delta = [latlng.lat - this.distanceEvent.lat, latlng.lng - this.distanceEvent.lng];
+                    const delta = [
+                        latlng.lat - this.distanceEvent.lat,
+                        latlng.lng - this.distanceEvent.lng
+                    ];
 
                     if (mvEvt.originalEvent.getModifierState("Shift")) {
                         if (delta[0] > delta[1]) {
@@ -566,7 +571,10 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
                         }
                     }
 
-                    if (!this.markers.find((m) => m.isBeingHovered) || mvEvt.originalEvent.getModifierState(MODIFIER_KEY)) {
+                    if (
+                        !this.markers.find((m) => m.isBeingHovered) ||
+                        mvEvt.originalEvent.getModifierState(MODIFIER_KEY)
+                    ) {
                         this.distanceLine.setLatLngs([
                             this.distanceEvent,
                             latlng
@@ -823,7 +831,16 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
         }
     }
     toProperties(): SavedMapData {
-        return {};
+        return {
+            id: this.id,
+            lastAccessed: Date.now(),
+            markers: this.markers
+                .filter(({ mutable }) => mutable)
+                .map((marker) => marker.toProperties()),
+            overlays: this.overlays
+                .filter(({ mutable }) => mutable)
+                .map((overlay) => overlay.toProperties())
+        };
     }
     //TODO: REWRITE
     updateMarkerIcons() {
@@ -1083,13 +1100,7 @@ export class ImageMap extends BaseMap {
 
         return layerGroup;
     }
-    async buildLayer(layer: {
-        data: string;
-        id: string;
-        alias?: string;
-        h: number;
-        w: number;
-    }) {
+    async buildLayer(layer: ImageLayerData) {
         const newLayer = this._buildMapLayer(layer);
 
         this.mapLayers.push(newLayer);
@@ -1152,4 +1163,3 @@ export class ImageMap extends BaseMap {
     }
 }
 
-interface SavedMapData {}

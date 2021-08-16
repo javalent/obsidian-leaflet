@@ -42,7 +42,8 @@ import {
     Marker,
     SavedOverlayData,
     ObsidianLeaflet as ObsidianLeafletImplementation,
-    BaseMapType
+    BaseMapType,
+    ImageLayerData
 } from "./@types";
 
 import { LeafletRenderer } from "./leaflet";
@@ -190,9 +191,7 @@ export default class ObsidianLeaflet
             gpxMarkers
         } = params;
         if (!id) {
-            new Notice(
-                "Obsidian Leaflet maps must have an ID."
-            );
+            new Notice("Obsidian Leaflet maps must have an ID.");
             throw new Error("ID required");
         }
         log(verbose, id, "Beginning Markdown Postprocessor.");
@@ -436,7 +435,7 @@ export default class ObsidianLeaflet
         if (imageOverlay.length) {
             imageOverlayData = await Promise.all(
                 imageOverlay.map(async ([img, ...bounds]) => {
-                    const {blob} = await getBlob(img, this.app);
+                    const { blob } = await getBlob(img, this.app);
                     return {
                         ...(await this.ImageLoader.toDataURL(blob)),
                         bounds
@@ -444,16 +443,11 @@ export default class ObsidianLeaflet
                 })
             );
         }
+
         if (map instanceof ImageMap) {
             this.ImageLoader.on(
                 `${id}-layer-data-ready`,
-                (layer: {
-                    data: string;
-                    alias: string;
-                    id: string;
-                    h: number;
-                    w: number;
-                }) => {
+                (layer: ImageLayerData) => {
                     map.buildLayer(layer);
                 }
             );
@@ -634,32 +628,10 @@ export default class ObsidianLeaflet
             );
 
             this.data.mapMarkers.push({
-                id: map.id,
+                ...map.map.toProperties(),
                 files: this.mapFiles
                     .filter(({ maps }) => maps.indexOf(map.id) > -1)
-                    .map(({ file }) => file),
-                lastAccessed: Date.now(),
-                markers: map.map.markers
-                    .filter(({ mutable }) => mutable)
-                    .map((marker): SavedMarkerProperties => {
-                        return {
-                            type: marker.type,
-                            id: marker.id,
-                            loc: [marker.loc.lat, marker.loc.lng],
-                            percent: marker.percent,
-                            link: marker.link,
-                            layer: marker.layer,
-                            mutable: true,
-                            command: marker.command || false,
-                            description: marker.description ?? null,
-                            minZoom: marker.minZoom ?? null,
-                            maxZoom: marker.maxZoom ?? null,
-                            tooltip: marker.tooltip ?? null
-                        };
-                    }),
-                overlays: map.map.overlays
-                    .filter(({ mutable }) => mutable)
-                    .map((overlay) => overlay.toProperties())
+                    .map(({ file }) => file)
             });
         });
 
@@ -816,7 +788,6 @@ export default class ObsidianLeaflet
             );
             for (let { map } of otherMaps) {
                 map.removeMarker(marker);
-                
             }
         });
 

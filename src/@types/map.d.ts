@@ -9,6 +9,13 @@ import type { Marker } from ".";
 import type { ObsidianAppData, TooltipDisplay } from "./saved";
 import type { Overlay } from "src/layer";
 
+export interface ImageLayerData {
+    data: string;
+    alias: string;
+    id: string;
+    h: number;
+    w: number;
+}
 export interface LayerGroup<T extends L.TileLayer | L.ImageOverlay> {
     /** Layer group containing the marker layer groups */
     group: L.LayerGroup;
@@ -72,7 +79,7 @@ declare class Popup {
     leafletInstance: L.Popup;
     target: Marker | L.Circle | L.LatLng;
     handlerTarget: any;
-    constructor(map: LeafletMap, options: L.PopupOptions, source?: L.Layer);
+    constructor(map: BaseMapType, options: L.PopupOptions, source?: L.Layer);
     open(
         target: Marker | L.Circle | L.LatLng,
         content: ((source: L.Layer) => L.Content) | L.Content,
@@ -84,130 +91,11 @@ declare class Popup {
     setLatLng(latlng: L.LatLng): void;
 }
 
-declare class LeafletMap extends Events {
-    isLayerRendered(layer: string): boolean;
-    getZoom(): number;
-    handleMapContext(evt: L.LeafletMouseEvent, overlay?: Overlay): void;
-    beginOverlayDrawingContext(evt: L.LeafletMouseEvent, marker?: Marker): void;
-    getOverlaysUnderClick(evt: L.LeafletMouseEvent): Overlay[];
-    log(message: string): void;
-    data: ObsidianAppData;
-    id: string;
-    /* containerEl: HTMLElement; */
-    contentEl: HTMLElement;
-    map: L.Map;
-    markers: Marker[];
-    zoom: { min: number; max: number; default: number; delta: number };
-    popup: Popup;
-    mapLayers: LayerGroup<L.TileLayer | L.ImageOverlay>[];
-    featureLayer: L.FeatureGroup;
-    layer: L.ImageOverlay | L.TileLayer;
-    type: "image" | "real";
-
-    plugin: ObsidianLeaflet;
-    options: LeafletMapOptions;
-    initialCoords: [number, number];
-    displaying: Map<string, boolean>;
-
-    isDrawing: boolean;
-
-    overlays: Overlay[];
-
-    verbose: boolean;
-
-    get markerIcons(): Map<string, MarkerIcon>;
-
-    unit: Length;
-
-    locale: string;
-
-    distanceFormatter: Intl.NumberFormat;
-
-    formatLatLng(latlng: L.LatLng): { lat: number; lng: number };
-
-    constructor(
-        plugin: ObsidianLeaflet,
-        el: HTMLElement,
-        options: LeafletMapOptions
-    );
-
-    get group(): LayerGroup<L.TileLayer | L.ImageOverlay>;
-    get bounds(): L.LatLngBounds;
-
-    get rendered(): boolean;
-    set rendered(v: boolean);
-
-    get displayedMarkers(): Marker[];
-
-    get scale(): number;
-
-    get CRS(): L.CRS;
-    get mutableMarkers(): Marker[];
-    get isFullscreen(): boolean;
-
-    get defaultIcon(): MarkerIcon;
-
-    render(
-        /* type: "real" | "image",
-         */ options?: {
-            coords?: [number, number];
-            zoomDistance?: number;
-            layers?: { data: string; id: string }[];
-        }
-    ): Promise<void>;
-        
-    updateMarkerIcons(): void;
-
-    addOverlay(circle: SavedOverlayData, mutable: boolean): void;
-
-    addOverlays(
-        overlayArray: SavedOverlayData[],
-        options: { mutable: boolean; sort: boolean }
-    ): void;
-
-    addMarker(markerToBeAdded: SavedMarkerProperties): void;
-
-    addMarkers(markersToBeAdded: SavedMarkerProperties[]): void;
-
-    createMarker(
-        markerIcon: MarkerIcon,
-        loc: L.LatLng,
-        percent: [number, number],
-        link?: string | undefined,
-        id?: string,
-        layer?: string | undefined,
-        mutable?: boolean,
-        command?: boolean,
-        zoom?: number
-    ): Marker;
-
-    updateMarker(marker: Marker): void;
-
-    removeMarker(marker: Marker): void;
-
-    setInitialCoords(coords: [number, number]): void;
-    setZoomByDistance(zoomDistance: number): void;
-
-    resetZoom(): void;
-
-    getMarkerById(id: string): Marker;
-
-    distance(latlng1: L.LatLng, latlng2: L.LatLng): string;
-
-    sortOverlays(): void;
-
-    stopDrawing(): void;
-    copyLatLngToClipboard(loc: L.LatLng): Promise<void>;
-
-    onMarkerClick(marker: Marker, evt: L.LeafletMouseEvent): void;
-    closePopup(popup: L.Popup): void;
-
-    remove(): void;
-}
-
-declare abstract class BaseMap/* <
+declare abstract class BaseMap /* <
     T extends L.ImageOverlay | L.TileLayer
-> */ extends Events {
+> */
+    extends Events
+{
     isDrawing: boolean;
     plugin: ObsidianLeaflet;
     options: LeafletMapOptions;
@@ -326,7 +214,7 @@ declare abstract class BaseMap/* <
     updateMarkerIcons(): void;
 }
 
-declare class RealMap extends BaseMap/* <L.TileLayer> */ {
+declare class RealMap extends BaseMap /* <L.TileLayer> */ {
     CRS: L.CRS;
     type: string;
     constructor(plugin: ObsidianLeaflet, options: LeafletMapOptions);
@@ -349,7 +237,7 @@ declare class RealMap extends BaseMap/* <L.TileLayer> */ {
         }[];
     }): Promise<void>;
 }
-declare class ImageMap extends BaseMap/* <L.ImageOverlay> */ {
+declare class ImageMap extends BaseMap /* <L.ImageOverlay> */ {
     CRS: L.CRS;
     type: string;
     constructor(plugin: ObsidianLeaflet, options: LeafletMapOptions);
@@ -372,12 +260,17 @@ declare class ImageMap extends BaseMap/* <L.ImageOverlay> */ {
         }[];
     }): Promise<void>;
 
-    loadAdditionalLayers(layers: { data: string; id: string, alias?: string }[]): void;
+    buildLayer(layer: ImageLayerData): Promise<void>;
 }
 
 export type BaseMapType = RealMap | ImageMap;
 
-interface SavedMapData {}
+export interface SavedMapData {
+    id: string;
+    lastAccessed: number;
+    markers: SavedMarkerProperties[];
+    overlays: SavedOverlayData[];
+}
 
 declare class MarkerDivIcon extends DivIcon {
     options: MarkerDivIconOptions;
