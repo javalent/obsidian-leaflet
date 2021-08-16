@@ -40,7 +40,7 @@ import {
     filterMarkerControl,
     resetZoomControl,
     zoomControl
-} from "../controls/controls";
+} from "../controls";
 
 import { LeafletSymbol } from "../utils/leaflet-import";
 let L = window[LeafletSymbol];
