@@ -202,6 +202,7 @@ declare abstract class BaseMap /* <
     handleMapContext(evt: L.LeafletMouseEvent, overlay?: Overlay): void;
     isLayerRendered(layer: string): boolean;
     log(text: string): void;
+    remove(): void;
     removeMarker(marker: Marker): void;
     resetZoom(): void;
     abstract setInitialCoords(coords: [number, number]): void;

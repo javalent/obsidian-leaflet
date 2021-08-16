@@ -41,7 +41,7 @@ import {
     filterMarkerControl,
     resetZoomControl,
     zoomControl
-} from "./controls";
+} from "../controls/controls";
 
 import { LeafletSymbol } from "../utils/leaflet-import";
 let L = window[LeafletSymbol];
@@ -745,6 +745,12 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
     log(text: string) {
         log(this.verbose, this.id, text);
     }
+    remove() {
+
+        this.stopDrawingContext();
+        this.leafletInstance.remove();
+
+    }
     removeMarker(marker: Marker) {
         if (!marker) return;
 
@@ -753,6 +759,7 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
 
         this.trigger("markers-updated");
     }
+
     resetZoom() {
         this.leafletInstance.invalidateSize();
         this.log(`Element added to note, resetting zoom.`);
@@ -1162,4 +1169,3 @@ export class ImageMap extends BaseMap {
         });
     }
 }
-
