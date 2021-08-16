@@ -28,7 +28,6 @@ import {
     formatLatLng,
     formatNumber,
     getId,
-    getImageDimensions,
     icon,
     log,
     MODIFIER_KEY

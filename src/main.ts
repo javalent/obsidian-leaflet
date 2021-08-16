@@ -1,7 +1,6 @@
 import "leaflet";
 import "../node_modules/leaflet/dist/leaflet.css";
 import "./assets/main.css";
-import { getType as lookupMimeType } from "mime/lite";
 
 import {
     Notice,
