@@ -419,7 +419,10 @@ export default class ObsidianLeaflet
             }) ?? [])
         );
 
-        map.addOverlay(...immutableOverlayArray, ...new Set(mapData?.overlays ?? []));
+        map.addOverlay(
+            ...immutableOverlayArray,
+            ...new Set(mapData?.overlays ?? [])
+        );
 
         map.render({
             coords: coords,
@@ -445,7 +448,9 @@ export default class ObsidianLeaflet
             this.ImageLoader.on(
                 `${id}-layer-data-ready`,
                 (layer: ImageLayerData) => {
-                    map.log(`Data ready for layer ${layer.id}.`);
+                    map.log(
+                        `Data ready for layer ${encodeURIComponent(layer.id)}.`
+                    );
                     map.buildLayer(layer);
                 }
             );
