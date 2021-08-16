@@ -137,7 +137,7 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
 
     private distanceEvent: L.LatLng = undefined;
     private distanceLine: L.Polyline;
-    private previousDistanceLine: L.Polyline;
+    previousDistanceLine: L.Polyline;
     featureLayer: L.FeatureGroup;
 
     get id() {
@@ -187,7 +187,6 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
 
     /** Marker Methods */
     addMarker(...markers: SavedMarkerProperties[]) {
-        console.log("🚀 ~ file: map.ts ~ line 189 ~ markers", markers);
         let toReturn: Marker[] = [];
         for (const marker of markers) {
             if (!this.markerTypes.includes(marker.type)) {
@@ -456,7 +455,6 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
             {
                 position: "bottomleft"
             },
-            this.previousDistanceLine,
             this
         ).addTo(this.leafletInstance);
     }
@@ -524,15 +522,12 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
                 !evt.originalEvent.getModifierState("Alt")) ||
             evt.originalEvent.getModifierState("Control")
         ) {
-            if (this.distanceEvent != undefined) {
-                this.stopDrawingContext();
+            if (this.distanceEvent == undefined) {
+                return;
             }
-            return;
         }
         if (this.distanceEvent != undefined) {
-            this.log(`Distance measurement context ending.`);
             this.previousDistanceLine = this.distanceLine;
-            this.distanceLine = null;
             this.stopDrawingContext();
         } else {
             this.log(`Distance measurement context starting.`);
@@ -541,17 +536,15 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
             this.isDrawing = true;
             this.plugin.app.keymap.pushScope(this.escapeScope);
 
-            const distanceTooltip = L.tooltip({
-                permanent: true,
-                direction: "top",
-                sticky: true
-            });
+            const distanceTooltip = popup(this, { permanent: true });
 
             this.distanceLine = L.polyline([this.distanceEvent, evt.latlng]);
 
             this.distanceLine.addTo(this.leafletInstance);
 
-            this.distanceLine.bindTooltip(distanceTooltip);
+            const latlngs = this.distanceLine.getLatLngs() as L.LatLng[];
+            const display = this.distance(latlngs[0], latlngs[1]);
+            distanceTooltip.open(this.distanceLine, display);
 
             this.leafletInstance.on(
                 "mousemove",
@@ -590,13 +583,7 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
                         this.distanceLine.getLatLngs() as L.LatLng[];
                     const display = this.distance(latlngs[0], latlngs[1]);
 
-                    /** Update Distance Line Tooltip */
-                    distanceTooltip.setContent(display);
-                    distanceTooltip.setLatLng(latlng);
-
-                    if (!this.distanceLine.isTooltipOpen()) {
-                        distanceTooltip.openTooltip();
-                    }
+                    distanceTooltip.open(this.distanceLine, display);
 
                     this.distanceDisplay.setText(display);
                     this.distanceLine.redraw();
@@ -745,10 +732,8 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
         log(this.verbose, this.id, text);
     }
     remove() {
-
         this.stopDrawingContext();
         this.leafletInstance.remove();
-
     }
     removeMarker(marker: Marker) {
         if (!marker) return;
@@ -822,6 +807,7 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
 
             this.distanceLine.unbindTooltip();
             this.distanceLine.remove();
+            this.distanceLine = null;
 
             /** Get Last Distance */
             if (this.previousDistanceLine) {
@@ -891,6 +877,7 @@ export class RealMap extends BaseMap {
     mapLayers: LayerGroup<L.TileLayer>[] = [];
     popup: Popup = popup(this);
     type: "real" = "real";
+    private _start: number;
 
     constructor(
         public plugin: ObsidianLeaflet,
@@ -953,7 +940,7 @@ export class RealMap extends BaseMap {
 
             this.log(
                 `Initial map layer rendered in ${
-                    /* (Date.now() - this._start) /  */ 1000
+                    (Date.now() - this._start) /  1000
                 } seconds.`
             );
             this.trigger("rendered");
@@ -973,6 +960,7 @@ export class RealMap extends BaseMap {
         }[];
     }) {
         this.log("Building initial map layer.");
+        this._start = Date.now();
 
         this.currentLayer = await this.buildLayer();
 
@@ -1022,6 +1010,7 @@ export class ImageMap extends BaseMap {
     mapLayers: LayerGroup<L.ImageOverlay>[] = [];
     popup: Popup = popup(this);
     type: "image" = "image";
+    private _start: number;
     constructor(
         public plugin: ObsidianLeaflet,
         public options: LeafletMapOptions
@@ -1120,7 +1109,7 @@ export class ImageMap extends BaseMap {
             this.rendered = true;
             this.log(
                 `Initial map layer rendered in ${
-                    Date.now() /*  - this._start */ / 1000
+                    Date.now()  - this._start / 1000
                 } seconds.`
             );
             this.trigger("rendered");
@@ -1130,6 +1119,8 @@ export class ImageMap extends BaseMap {
     }
     async render(options: { coords: [number, number]; zoomDistance: number }) {
         this.log("Beginning render process.");
+        this._start = Date.now();
+
 
         this.leafletInstance.on(
             "contextmenu",

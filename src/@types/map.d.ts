@@ -77,11 +77,12 @@ export interface LeafletMapOptions {
 
 declare class Popup {
     leafletInstance: L.Popup;
-    target: Marker | L.Circle | L.LatLng;
+    target: Marker | L.Circle | L.LatLng | L.Polyline;
     handlerTarget: any;
-    constructor(map: BaseMapType, options: L.PopupOptions, source?: L.Layer);
+    options: L.PopupOptions;
+    constructor(map: BaseMapType, options?: L.PopupOptions);
     open(
-        target: Marker | L.Circle | L.LatLng,
+        target: Marker | L.Circle | L.LatLng | L.Polyline,
         content: ((source: L.Layer) => L.Content) | L.Content,
         handler?: L.Layer
     ): void;
@@ -138,14 +139,15 @@ declare abstract class BaseMap /* <
     get isFullscreen(): boolean;
     leafletInstance: L.Map;
     mapLayers: LayerGroup<L.TileLayer | L.ImageOverlay>[];
+
+    markers: Marker[];
     get markerIcons(): Map<string, MarkerIcon>;
     get markerTypes(): string[];
 
     overlays: Overlay[];
 
     popup: Popup;
-
-    markers: Marker[];
+    previousDistanceLine: L.Polyline;
 
     rendered: boolean;
 

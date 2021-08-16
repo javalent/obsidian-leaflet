@@ -238,7 +238,7 @@ export default class ObsidianLeaflet
             gpx = [gpx];
         }
         if (gpx.length) {
-            log(verbose, id, "Loading GeoJSON files.");
+            log(verbose, id, "Loading GPX files.");
             for (let link of gpx.flat(Infinity)) {
                 const file = this.app.metadataCache.getFirstLinkpathDest(
                     parseLink(link),
@@ -419,9 +419,7 @@ export default class ObsidianLeaflet
             }) ?? [])
         );
 
-        map.addOverlay(...immutableOverlayArray);
-        const mutableOverlays = new Set(mapData?.overlays ?? []);
-        map.addOverlay(...mutableOverlays);
+        map.addOverlay(...immutableOverlayArray, ...new Set(mapData?.overlays ?? []));
 
         map.render({
             coords: coords,
@@ -447,10 +445,12 @@ export default class ObsidianLeaflet
             this.ImageLoader.on(
                 `${id}-layer-data-ready`,
                 (layer: ImageLayerData) => {
+                    map.log(`Data ready for layer ${layer.id}.`);
                     map.buildLayer(layer);
                 }
             );
 
+            map.log(`Loading layer data for ${id}.`);
             this.ImageLoader.loadImage(id, layers);
         }
 
@@ -522,9 +522,7 @@ export default class ObsidianLeaflet
             latitude = coordinates[0];
             longitude = coordinates[1];
 
-            map.log(
-                `Using supplied coordinates [${latitude}, ${longitude}]`
-            );
+            map.log(`Using supplied coordinates [${latitude}, ${longitude}]`);
         }
 
         let err: boolean = false;
