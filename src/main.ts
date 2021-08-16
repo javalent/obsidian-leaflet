@@ -257,26 +257,43 @@ export default class ObsidianLeaflet
             }
         }
 
+        //TODO: Move image overlays to web worker
+        //maybe? may need this immediately otherwise they could flicker on
+        let imageOverlayData;
+        if (imageOverlay.length) {
+            imageOverlayData = await Promise.all(
+                imageOverlay.map(async ([img, ...bounds]) => {
+                    return {
+                        ...(await this.ImageLoader.loadImageAsync(id, [img])),
+                        bounds
+                    };
+                })
+            );
+        }
+
         const renderer = new LeafletRenderer(this, ctx, el, {
-            height: getHeight(view, height) ?? "500px",
-            type: image != "real" ? "image" : "real",
-            minZoom: +minZoom,
-            maxZoom: +maxZoom,
-            defaultZoom: +defaultZoom,
-            zoomDelta: +zoomDelta,
-            unit: unit,
-            scale: scale,
-            distanceMultiplier: distanceMultiplier,
-            id: id,
-            darkMode: `${darkMode}` === "true",
-            overlayColor: overlayColor,
             bounds: bounds,
+            context: ctx.sourcePath,
+            darkMode: `${darkMode}` === "true",
+            defaultZoom: +defaultZoom,
+            distanceMultiplier: distanceMultiplier,
             geojson: geojsonData,
             geojsonColor: geojsonColor,
             gpx: gpxData,
             gpxIcons: gpxIcons,
-            zoomFeatures: zoomFeatures,
-            verbose: verbose
+            hasAdditional: layers.length > 1,
+            height: getHeight(view, height) ?? "500px",
+            id: id,
+            imageOverlays: imageOverlayData ?? [],
+            maxZoom: +maxZoom,
+            minZoom: +minZoom,
+            overlayColor: overlayColor,
+            scale: scale,
+            type: image != "real" ? "image" : "real",
+            unit: unit,
+            verbose: verbose,
+            zoomDelta: +zoomDelta,
+            zoomFeatures: zoomFeatures
         });
         const map = renderer.map;
 
@@ -428,21 +445,6 @@ export default class ObsidianLeaflet
             coords: coords,
             zoomDistance: distanceToZoom
         });
-
-        //TODO: Move image overlays to web worker
-        //maybe? may need this immediately otherwise they could flicker on
-        let imageOverlayData;
-        if (imageOverlay.length) {
-            imageOverlayData = await Promise.all(
-                imageOverlay.map(async ([img, ...bounds]) => {
-                    const { blob } = await getBlob(img, this.app);
-                    return {
-                        ...(await this.ImageLoader.toDataURL(blob)),
-                        bounds
-                    };
-                })
-            );
-        }
 
         if (map instanceof ImageMap) {
             this.ImageLoader.on(

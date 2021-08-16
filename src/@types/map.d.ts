@@ -49,30 +49,37 @@ export interface DivIconMarkerOptions extends L.MarkerOptions {
     icon: MarkerDivIcon;
 }
 export interface LeafletMapOptions {
-    context?: string;
-    height?: string;
-    type?: "image" | "real";
-    id?: string;
-    minZoom?: number;
-    maxZoom?: number;
-    defaultZoom?: number;
-    zoomDelta?: number;
-    unit?: string;
-    scale?: number;
-    distanceMultiplier?: number;
-    darkMode?: boolean;
-    overlayColor?: string;
     bounds?: [[number, number], [number, number]];
+    context?: string;
+    darkMode?: boolean;
+    defaultZoom?: number;
+    distanceMultiplier?: number;
     geojson?: any[];
     geojsonColor?: string;
-    zoomFeatures?: boolean;
-    verbose?: boolean;
     gpx?: string[];
     gpxIcons?: {
         start: string;
         end: string;
         waypoint: string;
     };
+    hasAdditional?: boolean;
+    height?: string;
+    id?: string;
+    imageOverlays?: {
+        alias: string;
+        bounds: [[number, number], [number, number]];
+        data: string;
+        id: string;
+    }[];
+    maxZoom?: number;
+    minZoom?: number;
+    overlayColor?: string;
+    scale?: number;
+    unit?: string;
+    type?: "image" | "real";
+    verbose?: boolean;
+    zoomDelta?: number;
+    zoomFeatures?: boolean;
 }
 
 declare class Popup {
@@ -295,15 +302,14 @@ declare class DivIconMarker extends L.Marker {
 declare class DistanceDisplay extends L.Control {
     controlEl: HTMLElement;
     textEl: HTMLSpanElement;
-    line: L.Polyline;
-    map: L.Map;
-    popups: [L.Popup, L.Popup];
-    constructor(opts: L.ControlOptions, line: L.Polyline);
+    get line(): L.Polyline;
+    map: BaseMapType;
+    popups: [Popup, Popup];
+    constructor(opts: L.ControlOptions, map: BaseMapType);
     initEvents(): void;
     onMouseEnter(): void;
     onClick(evt: MouseEvent): void;
     onMouseLeave(): void;
     onAdd(map: L.Map): HTMLElement;
     setText(text: string): void;
-    setLine(line: L.Polyline): void;
 }

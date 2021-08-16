@@ -30,13 +30,7 @@ declare module "leaflet" {
 export class LeafletRenderer extends MarkdownRenderChild {
     watchers: Set<Watcher> = new Set();
     resize: ResizeObserver;
-    registerWatchers(watchers: Map<TFile, Map<string, string>>) {
-        for (const [file, fileIds] of watchers) {
-            const watcher = new Watcher(this.plugin, file, this.map, fileIds);
-            this.watchers.add(watcher);
-            watcher.on("remove", () => this.watchers.delete(watcher));
-        }
-    }
+
     map: BaseMapType;
     verbose: boolean;
     parentEl: HTMLElement;
@@ -44,7 +38,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
         private plugin: ObsidianLeaflet,
         private ctx: MarkdownPostProcessorContext,
         container: HTMLElement,
-        options: LeafletMapOptions = {}
+        private options: LeafletMapOptions = {}
     ) {
         super(container);
 
@@ -52,19 +46,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
         this.containerEl.style.width = "100%";
         this.containerEl.style.backgroundColor = "var(--background-secondary)";
 
-        if (options.type === "real") {
-            this.map = new RealMap(this.plugin, {
-                ...options,
-                context: ctx.sourcePath
-            });
-        } else {
-            this.map = new ImageMap(this.plugin, {
-                ...options,
-                context: ctx.sourcePath
-            });
-        }
-
-        this.verbose = options.verbose;
+        this.buildMap();
 
         this.parentEl = ctx.containerEl;
         this.resize = new ResizeObserver(() => {
@@ -73,6 +55,17 @@ export class LeafletRenderer extends MarkdownRenderChild {
             }
         });
         this.resize.observe(this.containerEl);
+    }
+
+    async buildMap() {
+        if (this.options.type === "real") {
+            this.map = new RealMap(this.plugin, this.options);
+        } else {
+            this.map = new ImageMap(this.plugin, this.options);
+        }
+
+        await this.loadImmutableData();
+        await this.loadFeatureData();
     }
 
     async onload() {
@@ -143,5 +136,16 @@ export class LeafletRenderer extends MarkdownRenderChild {
         this.plugin.maps = this.plugin.maps.filter((m) => {
             return m.map != this.map;
         });
+    }
+
+    async loadFeatureData() {}
+    async loadImmutableData() {}
+
+    registerWatchers(watchers: Map<TFile, Map<string, string>>) {
+        for (const [file, fileIds] of watchers) {
+            const watcher = new Watcher(this.plugin, file, this.map, fileIds);
+            this.watchers.add(watcher);
+            watcher.on("remove", () => this.watchers.delete(watcher));
+        }
     }
 }

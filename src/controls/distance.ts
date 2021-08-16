@@ -8,9 +8,11 @@ const L = window[LeafletSymbol];
 
 class DistanceDisplay extends L.Control {
     controlEl: HTMLElement;
-    textEl: HTMLSpanElement;
-
+    get line() {
+        return this.map.previousDistanceLine;
+    }
     popups: [Popup, Popup];
+    textEl: HTMLSpanElement;
     constructor(opts: L.ControlOptions, public map: BaseMapType) {
         super(opts);
         this.popups = [
@@ -29,9 +31,6 @@ class DistanceDisplay extends L.Control {
                 autoPan: false
             })
         ];
-    }
-    get line() {
-        return this.map.previousDistanceLine;
     }
     initEvents() {
         this.controlEl.onmouseenter = this.onMouseEnter.bind(this);

@@ -14,7 +14,8 @@ import {
     BaseMap as BaseMapDefinition,
     BaseMapType,
     ImageLayerData,
-    SavedMapData
+    SavedMapData,
+    DistanceDisplay
 } from "src/@types";
 
 import { GPX, Marker, GeoJSON, Overlay } from "src/layer";
@@ -52,7 +53,9 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
     /* <T> */
     isDrawing: boolean = false;
     private escapeScope: Scope;
-    distanceDisplay: any;
+    distanceDisplay: DistanceDisplay;
+    layerControl: L.Control.Layers;
+    layerControlAdded = false;
     /** Abstract */
     /* abstract initialize(): void; */
     abstract render(options: {
@@ -336,7 +339,16 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
     }
 
     /** Other Methods */
-
+    addLayerControl() {
+        if (this.layerControlAdded) return;
+        this.layerControl = L.control.layers({}, {});
+        this.layerControlAdded = true;
+        const layerIcon = icon({ iconName: "layer-group", prefix: "fas" })
+            .node[0];
+        layerIcon.setAttr(`style`, "color: var(--text-normal);margin: auto;");
+        this.layerControl.addTo(this.leafletInstance);
+        this.layerControl.getContainer().children[0].appendChild(layerIcon);
+    }
     addFeatures() {
         /** Add GeoJSON to map */
         this.featureLayer = L.featureGroup();
@@ -404,23 +416,44 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
         }
 
         /** Add Image Overlays to Map */
-        /* if (options.imageOverlays.length) {
-            this._addLayerControl();
-            this.map.createPane("image-overlay");
-            for (let overlay of options.imageOverlays) {
-                let bounds = overlay.bounds.length
-                    ? overlay.bounds
-                    : this.bounds;
+        if (this.options.imageOverlays.length) {
+            if (this.mapLayers.length) {
+                this.addLayerControl();
+                this.leafletInstance.createPane("image-overlay");
+                for (let overlay of this.options.imageOverlays) {
+                    let bounds = overlay.bounds.length
+                        ? overlay.bounds
+                        : this.bounds;
 
-                const image = L.imageOverlay(overlay.data, bounds, {
-                    pane: "image-overlay"
+                    const image = L.imageOverlay(overlay.data, bounds, {
+                        pane: "image-overlay"
+                    });
+
+                    this.layerControl.addOverlay(image, overlay.alias);
+                }
+            } else {
+                this.on("first-layer-ready", () => {
+                    this.addLayerControl();
+                    this.leafletInstance.createPane("image-overlay");
+                    for (let overlay of this.options.imageOverlays) {
+                        let bounds = overlay.bounds.length
+                            ? overlay.bounds
+                            : this.bounds;
+
+                        const image = L.imageOverlay(overlay.data, bounds, {
+                            pane: "image-overlay"
+                        });
+
+                        this.layerControl.addOverlay(image, overlay.alias);
+                    }
                 });
-
-                this._layerControl.addOverlay(image, overlay.alias);
             }
-        } */
+        }
     }
     buildControls() {
+        if (this.options.hasAdditional) {
+            this.addLayerControl();
+        }
         //Full screen
         if (this.plugin.isDesktop) {
             const fsButton = this.contentEl.querySelector(
@@ -940,7 +973,7 @@ export class RealMap extends BaseMap {
 
             this.log(
                 `Initial map layer rendered in ${
-                    (Date.now() - this._start) /  1000
+                    (Date.now() - this._start) / 1000
                 } seconds.`
             );
             this.trigger("rendered");
@@ -948,17 +981,7 @@ export class RealMap extends BaseMap {
         return layer;
     }
 
-    async render(options: {
-        coords: [number, number];
-        zoomDistance: number;
-        hasAdditional?: boolean;
-        imageOverlays?: {
-            id: string;
-            data: string;
-            alias: string;
-            bounds: [[number, number], [number, number]];
-        }[];
-    }) {
+    async render(options: { coords: [number, number]; zoomDistance: number }) {
         this.log("Building initial map layer.");
         this._start = Date.now();
 
@@ -1105,11 +1128,16 @@ export class ImageMap extends BaseMap {
             this.trigger("first-layer-ready", this.currentGroup);
         }
 
+        this.layerControl.addBaseLayer(
+            newLayer.group,
+            layer.alias ?? `Layer ${this.mapLayers.length}`
+        );
+
         this.mapLayers[0].layer.once("load", () => {
             this.rendered = true;
             this.log(
                 `Initial map layer rendered in ${
-                    Date.now()  - this._start / 1000
+                    Date.now() - this._start / 1000
                 } seconds.`
             );
             this.trigger("rendered");
@@ -1120,7 +1148,6 @@ export class ImageMap extends BaseMap {
     async render(options: { coords: [number, number]; zoomDistance: number }) {
         this.log("Beginning render process.");
         this._start = Date.now();
-
 
         this.leafletInstance.on(
             "contextmenu",
