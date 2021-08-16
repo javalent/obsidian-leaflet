@@ -1,65 +1,14 @@
-import convert from "convert";
-import type gpx from "leaflet-gpx";
-
 import {
-    Events,
-    Notice,
-    moment,
-    Menu,
-    Point,
     MarkdownRenderChild,
     TFile,
-    Scope,
     MarkdownPostProcessorContext
 } from "obsidian";
 
-import type { Length } from "convert/dist/types/units";
+import type { LeafletMapOptions, ObsidianLeaflet } from "./@types";
+import type { BaseMapType, MarkerDivIcon } from "./@types/map";
 
-import type {
-    LayerGroup,
-    LeafletMapOptions,
-    SavedMarkerProperties,
-    MarkerIcon,
-    ObsidianLeaflet,
-    Marker as MarkerDefinition,
-    SavedOverlayData
-} from "./@types";
-import {
-    DISTANCE_DECIMALS,
-    LAT_LONG_DECIMALS,
-    DEFAULT_MAP_OPTIONS,
-    MODIFIER_KEY
-} from "./utils/constants";
-
-import { icon } from "./utils/icons";
-
-import {
-    getId,
-    getImageDimensions,
-    getHex,
-    log,
-    catchErrorAsync,
-    catchError
-} from "./utils/utils";
-
-import {
-    DistanceDisplay,
-    distanceDisplay,
-    editMarkers,
-    filterMarkerControl,
-    resetZoomControl,
-    zoomControl
-} from "./controls/controls";
-
-import { OverlayContextModal } from "./modals/context";
-import { LeafletSymbol } from "./utils/leaflet-import";
-import { BaseMapType, MarkerDivIcon, Popup } from "./@types/map";
-import { popup } from "./map/popup";
-import { Marker, GeoJSON, GPX, Overlay } from "./layer";
 import Watcher from "./utils/watcher";
 import { RealMap, ImageMap } from "./map/map";
-
-let L = window[LeafletSymbol];
 
 declare module "leaflet" {
     interface Map {
@@ -98,10 +47,6 @@ export class LeafletRenderer extends MarkdownRenderChild {
         options: LeafletMapOptions = {}
     ) {
         super(container);
-        /* this.map = new LeafletMap(plugin, {
-            ...options,
-            context: ctx.sourcePath
-        }); */
 
         this.containerEl.style.height = options.height;
         this.containerEl.style.width = "100%";
@@ -131,17 +76,11 @@ export class LeafletRenderer extends MarkdownRenderChild {
     }
 
     async onload() {
-        log(
-            this.verbose,
-            this.map.id,
-            "MarkdownRenderChild loaded. Appending map."
-        );
+        this.map.log("MarkdownRenderChild loaded. Appending map.");
         this.containerEl.appendChild(this.map.contentEl);
 
         if (!this.parentEl.contains(this.containerEl)) {
-            log(
-                this.verbose,
-                this.map.id,
+            this.map.log(
                 "Map element is off the page and not loaded into DOM. Will auto-detect and reset zoom."
             );
             const observer = new MutationObserver((mutationsList, observer) => {
@@ -167,6 +106,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
     }
 
     async onunload() {
+        this.map.log("Unloading map.");
         super.onunload();
         this.resize.disconnect();
         try {
@@ -189,6 +129,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
         containsThisMap = fileContent.match(r)?.length > 0 || false;
 
         if (!containsThisMap) {
+            this.map.log("Map instance was removed from note.");
             //Block was deleted or id was changed
 
             let mapFile = this.plugin.mapFiles.find(

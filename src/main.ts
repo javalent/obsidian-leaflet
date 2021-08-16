@@ -387,7 +387,7 @@ export default class ObsidianLeaflet
         });
 
         /** Get initial coordinates and zoom level */
-        log(verbose, id, "Getting initiatial coordinates.");
+        map.log("Getting initiatial coordinates.");
         const { coords, distanceToZoom, file } = await this._getCoordinates(
             lat,
             long,
@@ -517,15 +517,13 @@ export default class ObsidianLeaflet
                         map
                     ));
 
-                log(map.verbose, map.id, "Coordinates file found.");
+                map.log("Coordinates file found.");
             }
         } else if (coordinates && coordinates.length == 2) {
             latitude = coordinates[0];
             longitude = coordinates[1];
 
-            log(
-                map.verbose,
-                map.id,
+            map.log(
                 `Using supplied coordinates [${latitude}, ${longitude}]`
             );
         }
