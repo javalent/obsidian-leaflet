@@ -1,4 +1,4 @@
-import { App, Events, Notice, Platform } from "obsidian";
+import { App, Events, Notice } from "obsidian";
 
 import { getType as lookupMimeType } from "mime/lite";
 

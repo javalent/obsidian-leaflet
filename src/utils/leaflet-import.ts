@@ -1,12 +1,16 @@
 import { MAP_OVERLAY_STROKE_OPACITY, MAP_OVERLAY_STROKE_WIDTH } from ".";
-import L from 'leaflet';
-import 'leaflet-fullscreen';
-import 'leaflet-gpx';
+import L from "leaflet";
+import "leaflet-fullscreen";
+import "leaflet-gpx";
 
 declare global {
     interface Window {
         [LeafletSymbol]: typeof L;
     }
+}
+
+declare module "leaflet" {
+    function noConflict(): typeof L;
 }
 
 export const LeafletSymbol = "obsidian-leaflet-plugin";
@@ -20,6 +24,4 @@ window.L.Circle.mergeOptions({
     opacity: MAP_OVERLAY_STROKE_OPACITY
 });
 
-
 window[LeafletSymbol] = L.noConflict();
-

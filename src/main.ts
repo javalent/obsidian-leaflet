@@ -45,7 +45,7 @@ import {
     ImageLayerData
 } from "./@types";
 
-import { LeafletRenderer } from "./leaflet";
+import { LeafletRenderer } from "./renderer";
 import { markerDivIcon } from "./map";
 import { ImageMap } from "./map/map";
 import convert from "convert";
