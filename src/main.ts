@@ -140,15 +140,15 @@ export default class ObsidianLeaflet
 
     async onunload(): Promise<void> {
         console.log("Unloading Obsidian Leaflet");
-        //TODO: FIX
-        /* this.maps.forEach((map) => {
+
+        this.maps.forEach((map) => {
             map?.map?.remove();
             let newPre = createEl("pre");
             newPre.createEl("code", {}, (code) => {
                 code.innerText = `\`\`\`leaflet\n${map.source}\`\`\``;
                 map.el.parentElement.replaceChild(newPre, map.el);
             });
-        }); */
+        });
         this.maps = [];
     }
 
