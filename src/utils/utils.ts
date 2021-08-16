@@ -11,10 +11,9 @@ import {
 } from "obsidian";
 import Color from "color";
 
-import { getType as lookupMimeType } from "mime/lite";
 import { parse as parseCSV } from "papaparse";
 
-import { BlockParameters, LeafletMap } from "src/@types";
+import { BaseMapType, BlockParameters } from "src/@types";
 import { LAT_LONG_DECIMALS, OVERLAY_TAG_REGEX } from "./constants";
 import { DESCRIPTION_ICON } from ".";
 import { locale } from "moment";
@@ -876,7 +875,7 @@ export function getGroupSeparator(locale: string) {
 }
 
 export function catchError(
-    target: LeafletMap,
+    target: BaseMapType,
     name: string,
     descriptor: PropertyDescriptor
 ) {
@@ -898,7 +897,7 @@ export function catchError(
 }
 
 export function catchErrorAsync(
-    target: LeafletMap,
+    target: BaseMapType,
     name: string,
     descriptor: PropertyDescriptor
 ) {
