@@ -1,4 +1,4 @@
-import { BaseMapType } from "src/@types";
+import type { BaseMapType } from "src/@types";
 import { getId } from "src/utils";
 import { FontAwesomeControl, FontAwesomeControlOptions } from "./controls";
 import { LeafletSymbol } from "src/utils/leaflet-import";
