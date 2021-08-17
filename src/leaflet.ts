@@ -849,6 +849,7 @@ class LeafletMap extends Events {
             }
 
             for (let gpx of this._gpx) {
+                
                 new L.GPX(gpx, {
                     /* async: true, */
                     marker_options: MarkerOptions
@@ -915,6 +916,7 @@ class LeafletMap extends Events {
         });
 
         this.group.group.addTo(this.map);
+        
     }
     private _buildDisplayForTooltip(
         title: string,

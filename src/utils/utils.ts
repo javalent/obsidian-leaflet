@@ -96,7 +96,9 @@ export async function toDataURL(
                 lookupMimeType(file.extension) || "application/octet-stream";
             let buffer = await app.vault.readBinary(file);
             blob = new Blob([new Uint8Array(buffer)]);
-            alias = (url.includes("|") ? url.split("|").pop() : file.basename).replace(/(\[|\])/g, "");
+            alias = (
+                url.includes("|") ? url.split("|").pop() : file.basename
+            ).replace(/(\[|\])/g, "");
         }
 
         return new Promise((resolve, reject) => {
@@ -518,58 +520,63 @@ export async function getImmutableItems(
                 const id = getId();
 
                 if (frontmatter.location) {
-                    let err = false,
-                        [lat, long] = frontmatter.location;
-
-                    try {
-                        lat =
-                            typeof lat === "number"
-                                ? lat
-                                : Number(lat?.split("%").shift());
-                        long =
-                            typeof long === "number"
-                                ? long
-                                : Number(long?.split("%").shift());
-                    } catch (e) {
-                        err = true;
+                    let locations = frontmatter.location;
+                    if (locations.length && !(locations[0] instanceof Array)) {
+                        locations = [locations];
                     }
+                    for (const location of locations) {
+                        let err = false,
+                            [lat, long] = location;
 
-                    if (err || isNaN(lat) || isNaN(long)) {
-                        new Notice(
-                            "Could not parse location in " + file.basename
-                        );
-                        continue;
-                    }
-
-                    let min, max;
-                    if (frontmatter.mapzoom) {
-                        let [minZoom, maxZoom] = frontmatter.mapzoom;
-                        if (isNaN(Number(minZoom))) {
-                            min = undefined;
-                        } else {
-                            min = Number(minZoom);
+                        try {
+                            lat =
+                                typeof lat === "number"
+                                    ? lat
+                                    : Number(lat?.split("%").shift());
+                            long =
+                                typeof long === "number"
+                                    ? long
+                                    : Number(long?.split("%").shift());
+                        } catch (e) {
+                            err = true;
                         }
-                        if (isNaN(Number(maxZoom))) {
-                            max = undefined;
-                        } else {
-                            max = Number(maxZoom);
+
+                        if (err || isNaN(lat) || isNaN(long)) {
+                            new Notice(
+                                "Could not parse location in " + file.basename
+                            );
+                            continue;
                         }
+
+                        let min, max;
+                        if (frontmatter.mapzoom) {
+                            let [minZoom, maxZoom] = frontmatter.mapzoom;
+                            if (isNaN(Number(minZoom))) {
+                                min = undefined;
+                            } else {
+                                min = Number(minZoom);
+                            }
+                            if (isNaN(Number(maxZoom))) {
+                                max = undefined;
+                            } else {
+                                max = Number(maxZoom);
+                            }
+                        }
+
+                        markersToReturn.push([
+                            frontmatter.mapmarker || "default",
+                            lat,
+                            long,
+                            linkText,
+                            undefined,
+                            false,
+                            id,
+                            null,
+                            min,
+                            max
+                        ]);
                     }
 
-                    markersToReturn.push([
-                        frontmatter.mapmarker || "default",
-                        lat,
-                        long,
-                        linkText,
-                        undefined,
-                        false,
-                        id,
-                        null,
-                        min,
-                        max
-                    ]);
-
-                    /* watchers.set(file, watchers.get(file).add(id)); */
                     idMap.set("marker", id);
                 }
 
@@ -647,12 +654,7 @@ export async function getImmutableItems(
                     idMap.set("overlay", id);
                 }
 
-                if (
-                    Object.prototype.hasOwnProperty.call(
-                        frontmatter,
-                        overlayTag
-                    )
-                ) {
+                if (overlayTag in frontmatter) {
                     const match =
                         frontmatter[overlayTag].match(OVERLAY_TAG_REGEX);
                     if (!match) {
@@ -662,16 +664,23 @@ export async function getImmutableItems(
                         continue;
                     }
                     /* const id = getId(); */
+                    let location = frontmatter.location;
+                    if (!location) continue;
+                    if (
+                        location instanceof Array &&
+                        !(location[0] instanceof Array)
+                    ) {
+                        location = [location];
+                    }
                     overlaysToReturn.push([
                         overlayColor,
-                        frontmatter.location,
+                        location[0],
                         frontmatter[overlayTag],
                         `${file.basename}: ${overlayTag}`,
                         id
                     ]);
 
                     idMap.set("overlayTag", id);
-                    //watchers.set(file, `overlayTag|${id}`);
                 }
                 watchers.set(file, idMap);
             }
