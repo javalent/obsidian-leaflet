@@ -655,7 +655,7 @@ You can override this behavior in the right-click context menu of a marker.
 
 **Please back up your `data.json` file before changing this setting.**
 
-This setting will allow you to save the `data.json` file to a directory other than the default Obsidian config directory. This could be useful if, for example, you have different config directories set up on mobile and desktop.
+This setting will allow you to save the `data.json` file to a directory other than the default Obsidian config directory. This could be useful if, for example, you have different config directories set up on mobile and desktop. Data will always be saved in the default Obsidian directory as well.
 
 **The plugin will save the file in `<directory>/plugins/obsidian-leaflet-plugin`, just like the default configuration.**
 

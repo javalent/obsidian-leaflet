@@ -1077,22 +1077,23 @@ export default class ObsidianLeaflet
     }
 
     async saveData(data: Record<any, any>) {
-
         if (this.configDirectory) {
-
-            if (!(await this.app.vault.adapter.exists(this.configDirectory))) {
-                await this.app.vault.adapter.mkdir(this.configDirectory);
+            try {
+                if (
+                    !(await this.app.vault.adapter.exists(this.configDirectory))
+                ) {
+                    await this.app.vault.adapter.mkdir(this.configDirectory);
+                }
+                await this.app.vault.adapter.write(
+                    this.configFilePath,
+                    JSON.stringify(data)
+                );
+            } catch (e) {
+                console.error(e);
+                new Notice(
+                    "There was an error saving into the configured directory."
+                );
             }
-
-            if (await this.app.vault.adapter.exists(this.configFilePath)) {
-                await this.app.vault.adapter.remove(this.configFilePath);
-            }
-
-            await this.app.vault.adapter.write(
-                this.configFilePath,
-                JSON.stringify(data)
-            );
-
         }
         await super.saveData(data);
     }
