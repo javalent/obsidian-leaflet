@@ -25,8 +25,8 @@ import {
     getId,
     OVERLAY_TAG_REGEX,
     DEFAULT_BLOCK_PARAMETERS,
-    getHeightFromView,
-    parseLink
+    parseLink,
+    getHeight
 } from "./utils";
 import convert from "convert";
 
@@ -55,12 +55,11 @@ export class LeafletRenderer extends MarkdownRenderChild {
     map: BaseMapType;
     verbose: boolean;
     parentEl: HTMLElement;
-    private _options: LeafletMapOptions;
+    options: LeafletMapOptions;
     constructor(
         public plugin: ObsidianLeaflet,
         private ctx: MarkdownPostProcessorContext,
         container: HTMLElement,
-        private options: LeafletMapOptions = {},
         private params: BlockParameters
     ) {
         super(container);
@@ -72,18 +71,14 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         this.parentEl = ctx.containerEl;
 
-        this._options = {
+        this.options = {
             bounds: this.params.bounds,
             context: ctx.sourcePath,
             darkMode: `${this.params.darkMode}` === "true",
             defaultZoom: +this.params.defaultZoom,
             distanceMultiplier: this.params.distanceMultiplier,
-            /*             geojson: geojsonData,
-            geojsonColor, */
-            /*             gpx: gpxData,
-            gpxIcons, */
             hasAdditional: this.params.layers.length > 1,
-            height: getHeightFromView(this.parentEl, this.params.height),
+            height: getHeight(this.parentEl, this.params.height),
             id: this.params.id,
             imageOverlays: [],
             layers: this.params.layers,
@@ -99,7 +94,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             zoomFeatures: this.params.zoomFeatures
         };
 
-        this.containerEl.style.height = options.height;
+        this.containerEl.style.height = this.options.height;
         this.containerEl.style.width = "100%";
         this.containerEl.style.backgroundColor = "var(--background-secondary)";
 

@@ -156,62 +156,14 @@ export default class ObsidianLeaflet
         /* try { */
         /** Get Parameters from Source */
         let params = getParamsFromSource(source);
-        let {
-            height = "500px",
-            minZoom = 1,
-            maxZoom = 10,
-            defaultZoom = 5,
-            zoomDelta = 1,
 
-            id = undefined,
-            scale = 1,
-            unit = "m",
-            distanceMultiplier = 1,
-            darkMode = "false",
-            image = "real",
-            layers = [],
-
-            overlayColor = "blue",
-            bounds = undefined,
-
-            zoomFeatures = false,
-            verbose = false
-        } = params;
-        if (!id) {
+        if (!params.id) {
             new Notice("Obsidian Leaflet maps must have an ID.");
             throw new Error("ID required");
         }
-        log(verbose, id, "Beginning Markdown Postprocessor.");
-        let view = this.app.workspace.getActiveViewOfType(MarkdownView);
+        log(params.verbose, params.id, "Beginning Markdown Postprocessor.");
 
-        const renderer = new LeafletRenderer(
-            this,
-            ctx,
-            el,
-            {
-                bounds,
-                context: ctx.sourcePath,
-                darkMode: `${darkMode}` === "true",
-                defaultZoom: +defaultZoom,
-                distanceMultiplier,
-                hasAdditional: layers.length > 1,
-                height: getHeight(view, height) ?? "500px",
-                id,
-                imageOverlays: [],
-                layers,
-                maxZoom: +maxZoom,
-                minZoom: +minZoom,
-                overlayTag: params.overlayTag,
-                overlayColor,
-                scale,
-                type: image != "real" ? "image" : "real",
-                unit,
-                verbose,
-                zoomDelta: +zoomDelta,
-                zoomFeatures: zoomFeatures
-            },
-            params
-        );
+        const renderer = new LeafletRenderer(this, ctx, el, params);
         const map = renderer.map;
 
         this.registerMapEvents(map);
@@ -219,24 +171,23 @@ export default class ObsidianLeaflet
         ctx.addChild(renderer);
 
         /** Add Map to Map Store
-         * TODO: REFACTOR TO MAP<contentEl, { map, source, id }>
          */
         this.maps = this.maps.filter((m) => m.el != el);
         this.maps.push({
             map: map,
             source: source,
             el: el,
-            id: id
+            id: params.id
         });
 
         if (this.mapFiles.find(({ file }) => file == ctx.sourcePath)) {
             this.mapFiles
                 .find(({ file }) => file == ctx.sourcePath)
-                .maps.push(id);
+                .maps.push(params.id);
         } else {
             this.mapFiles.push({
                 file: ctx.sourcePath,
-                maps: [id]
+                maps: [params.id]
             });
         }
 
@@ -246,128 +197,6 @@ export default class ObsidianLeaflet
             renderError(el, e.message);
         } */
     }
-    //TODO: Move to renderer
-    private async _getCoordinates(
-        lat: string,
-        long: string,
-        coordinates: [string, string] | string,
-        zoomTag: string,
-        map: BaseMapType
-    ): Promise<{
-        coords: [number, number];
-        distanceToZoom: number;
-        file: TFile;
-    }> {
-        let latitude = lat;
-        let longitude = long;
-        let coords: [number, number] = [undefined, undefined];
-        let distanceToZoom, file;
-        if (typeof coordinates == "string" && coordinates.length) {
-            file = this.app.metadataCache.getFirstLinkpathDest(
-                parseLink(coordinates),
-                ""
-            );
-            if (file && file instanceof TFile) {
-                //internal, try to read note yaml for coords
-                ({ latitude, longitude, distanceToZoom } =
-                    this._getCoordsFromCache(
-                        this.app.metadataCache.getFileCache(file),
-                        zoomTag,
-                        map
-                    ));
-
-                map.log("Coordinates file found.");
-            }
-        } else if (coordinates && coordinates.length == 2) {
-            latitude = coordinates[0];
-            longitude = coordinates[1];
-
-            map.log(`Using supplied coordinates [${latitude}, ${longitude}]`);
-        }
-
-        let err: boolean = false;
-        try {
-            coords = [
-                Number(`${latitude}`?.split("%").shift()),
-                Number(`${longitude}`?.split("%").shift())
-            ];
-        } catch (e) {
-            err = true;
-        }
-
-        if (
-            (latitude || longitude) &&
-            (err || isNaN(coords[0]) || isNaN(coords[1]))
-        ) {
-            new Notice(
-                "There was an error with the provided latitude and longitude. Using defaults."
-            );
-        }
-        if (map.type != "real") {
-            if (!latitude || isNaN(coords[0])) {
-                coords[0] = 50;
-            }
-            if (!longitude || isNaN(coords[1])) {
-                coords[1] = 50;
-            }
-        } else {
-            if (!latitude || isNaN(coords[0])) {
-                coords[0] = this.data.lat;
-            }
-            if (!longitude || isNaN(coords[1])) {
-                coords[1] = this.data.long;
-            }
-        }
-
-        return { coords, distanceToZoom, file };
-    }
-    private _getCoordsFromCache(
-        cache: CachedMetadata,
-        zoomTag: string,
-        map: BaseMapType
-    ): {
-        latitude: string;
-        longitude: string;
-        distanceToZoom: number;
-    } {
-        /* const cache = await this.app.metadataCache.getFileCache(file); */
-        let latitude, longitude, distanceToZoom;
-        if (
-            cache &&
-            cache.frontmatter &&
-            cache.frontmatter.location &&
-            cache.frontmatter.location instanceof Array
-        ) {
-            let locations = cache.frontmatter.location;
-            if (
-                !(locations instanceof Array && locations[0] instanceof Array)
-            ) {
-                locations = [locations];
-            }
-            const location = locations[0];
-            latitude = location[0];
-            longitude = location[1];
-        }
-
-        if (
-            zoomTag &&
-            Object.prototype.hasOwnProperty.call(cache.frontmatter, zoomTag)
-        ) {
-            const overlay = cache.frontmatter[zoomTag];
-            const [, distance, unit] = overlay?.match(OVERLAY_TAG_REGEX) ?? [];
-            if (!distance) return;
-            //try to scale default zoom
-
-            distanceToZoom = convert(distance)
-                .from((unit as Length) ?? "m")
-                .to(/* map.type == "image" ? map.unit : */ "m");
-            /* if (map.type == "image") {
-                distanceToZoom = distanceToZoom / map.scale;
-            } */
-        }
-        return { latitude, longitude, distanceToZoom };
-    }
-
     async loadSettings() {
         this.data = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
         this.data.previousVersion = this.manifest.version;
