@@ -55,6 +55,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
             }
         });
         this.resize.observe(this.containerEl);
+        
+        this.map.on("removed", () => this.resize.disconnect());
     }
 
     async buildMap() {

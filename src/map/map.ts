@@ -288,7 +288,6 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
 
     /** Overlay Methods */
     addOverlay(...overlays: SavedOverlayData[]) {
-
         for (let overlay of overlays) {
             this.overlays.push(new Overlay(this, overlay));
         }
@@ -768,6 +767,8 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
     remove() {
         this.stopDrawingContext();
         this.leafletInstance.remove();
+        this.rendered = false;
+        this.trigger("removed");
     }
     removeMarker(marker: Marker) {
         if (!marker) return;
