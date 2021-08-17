@@ -16,13 +16,14 @@ import type { BaseMapType, ImageLayerData, MarkerDivIcon } from "./@types/map";
 import Watcher from "./utils/watcher";
 import { RealMap, ImageMap } from "./map/map";
 import Loader from "./worker/loader";
-import { log } from "console";
+
 import { Length } from "convert/dist/types/units";
 import {
     getImmutableItems,
     getId,
     OVERLAY_TAG_REGEX,
-    DEFAULT_BLOCK_PARAMETERS
+    DEFAULT_BLOCK_PARAMETERS,
+    getHeightFromView
 } from "./utils";
 
 declare module "leaflet" {
@@ -50,6 +51,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
     map: BaseMapType;
     verbose: boolean;
     parentEl: HTMLElement;
+    private _options: LeafletMapOptions;
     constructor(
         public plugin: ObsidianLeaflet,
         private ctx: MarkdownPostProcessorContext,
@@ -64,13 +66,43 @@ export class LeafletRenderer extends MarkdownRenderChild {
             ...params
         };
 
+        this.parentEl = ctx.containerEl;
+
+        this._options = {
+            bounds: this.params.bounds,
+            context: ctx.sourcePath,
+            darkMode: `${this.params.darkMode}` === "true",
+            defaultZoom: +this.params.defaultZoom,
+            distanceMultiplier: this.params.distanceMultiplier,
+            /*             geojson: geojsonData,
+            geojsonColor, */
+            /*             gpx: gpxData,
+            gpxIcons, */
+            hasAdditional: this.params.layers.length > 1,
+            height: getHeightFromView(
+                this.parentEl,
+                this.params.height
+            ),
+            id: this.params.id,
+            imageOverlays: [],
+            layers: this.params.layers,
+            maxZoom: +this.params.maxZoom,
+            minZoom: +this.params.minZoom,
+            overlayTag: this.params.overlayTag,
+            overlayColor: this.params.overlayColor,
+            scale: this.params.scale,
+            type: this.params.image != "real" ? "image" : "real",
+            unit: this.params.unit,
+            verbose: this.params.verbose,
+            zoomDelta: +this.params.zoomDelta,
+            zoomFeatures: this.params.zoomFeatures
+        };
+
         this.containerEl.style.height = options.height;
         this.containerEl.style.width = "100%";
         this.containerEl.style.backgroundColor = "var(--background-secondary)";
 
         this.buildMap();
-
-        this.parentEl = ctx.containerEl;
         this.resize = new ResizeObserver(() => {
             if (this.map && this.map.rendered) {
                 this.map.leafletInstance.invalidateSize();

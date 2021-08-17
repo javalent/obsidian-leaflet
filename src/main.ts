@@ -304,9 +304,9 @@ export default class ObsidianLeaflet
         /** Get initial coordinates and zoom level */
         map.log("Getting initiatial coordinates.");
         const { coords, distanceToZoom, file } = await this._getCoordinates(
-            lat,
-            long,
-            coordinates,
+            params.lat,
+            params.long,
+            params.coordinates,
             params.zoomTag,
             map
         );

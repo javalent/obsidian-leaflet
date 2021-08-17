@@ -159,6 +159,35 @@ export function getHeight(view: MarkdownView, height: string): string {
                 parseFloat(computedStyle.paddingBottom);
 
             height = `${(clHeight * Number(perc)) / 100}px`;
+            console.log("🚀 ~ file: utils.ts ~ line 162 ~ height", height);
+        }
+    } catch (e) {
+        new Notice(
+            "There was a problem with the provided height. Using 500px."
+        );
+        height = "500px";
+    } finally {
+        return height;
+    }
+}
+export function getHeightFromView(el: HTMLElement, height: string): string {
+    try {
+        if (!/\d+(px|%)/.test(height))
+            throw new Error("Unparseable height provided.");
+        if (/\d+%/.test(height)) {
+            const element = el.closest(".markdown-preview-view");
+            let [, perc] = height.match(/(\d+)%/);
+
+            let computedStyle = getComputedStyle(element);
+
+            let clHeight = element.clientHeight; // height with padding
+
+            clHeight -=
+                parseFloat(computedStyle.paddingTop) +
+                parseFloat(computedStyle.paddingBottom);
+
+            height = `${(clHeight * Number(perc)) / 100}px`;
+            console.log("🚀 ~ file: utils.ts ~ line 189 ~ height", height);
         }
     } catch (e) {
         new Notice(
