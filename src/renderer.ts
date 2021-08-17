@@ -52,12 +52,13 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         this.parentEl = ctx.containerEl;
         this.resize = new ResizeObserver(() => {
-            if (this.map.rendered) {
+            if (this.map && this.map.rendered) {
                 this.map.leafletInstance.invalidateSize();
             }
         });
-        this.resize.observe(this.containerEl);
 
+        this.resize.observe(this.containerEl);
+        
         this.map.on("removed", () => this.resize.disconnect());
     }
 

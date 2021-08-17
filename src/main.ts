@@ -40,13 +40,11 @@ import {
     Marker,
     SavedOverlayData,
     ObsidianLeaflet as ObsidianLeafletImplementation,
-    BaseMapType,
-    ImageLayerData
+    BaseMapType
 } from "./@types";
 
 import { LeafletRenderer } from "./renderer";
 import { markerDivIcon } from "./map";
-import { ImageMap } from "./map/map";
 import convert from "convert";
 
 import { Length } from "convert/dist/types/units";
@@ -73,9 +71,6 @@ declare module "obsidian" {
         dom: HTMLDivElement;
     }
 }
-
-import Loader from "./worker/loader";
-
 export default class ObsidianLeaflet
     extends Plugin
     implements ObsidianLeafletImplementation
@@ -83,7 +78,6 @@ export default class ObsidianLeaflet
     data: ObsidianAppData;
     markerIcons: MarkerIcon[];
     maps: MapInterface[] = [];
-    ImageLoader = new Loader(this.app);
     mapFiles: { file: string; maps: string[] }[] = [];
     watchers: Set<TFile> = new Set();
     Platform = Platform;
@@ -148,8 +142,6 @@ export default class ObsidianLeaflet
                 map.el.parentElement.replaceChild(newPre, map.el);
             });
         });
-
-        this.ImageLoader.unload();
 
         this.maps = [];
     }
@@ -261,7 +253,7 @@ export default class ObsidianLeaflet
 
         //TODO: Move image overlays to web worker
         //maybe? may need this immediately otherwise they could flicker on
-        let imageOverlayData;
+        /* let imageOverlayData;
         if (imageOverlay.length) {
             imageOverlayData = await Promise.all(
                 imageOverlay.map(async ([img, ...bounds]) => {
@@ -271,7 +263,7 @@ export default class ObsidianLeaflet
                     };
                 })
             );
-        }
+        } */
 
         const renderer = new LeafletRenderer(this, ctx, el, {
             bounds,
@@ -286,7 +278,7 @@ export default class ObsidianLeaflet
             hasAdditional: layers.length > 1,
             height: getHeight(view, height) ?? "500px",
             id,
-            imageOverlays: imageOverlayData ?? [],
+            imageOverlays: [],
             layers,
             maxZoom: +maxZoom,
             minZoom: +minZoom,
@@ -450,7 +442,7 @@ export default class ObsidianLeaflet
             zoomDistance: distanceToZoom
         });
 
-/*         if (map instanceof ImageMap) {
+        /*         if (map instanceof ImageMap) {
             this.ImageLoader.on(
                 `${id}-layer-data-ready`,
                 (layer: ImageLayerData) => {
