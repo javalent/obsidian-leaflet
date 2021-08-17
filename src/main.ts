@@ -29,8 +29,7 @@ import {
     DESCRIPTION_ICON,
     DESCRIPTION_ICON_SVG,
     parseLink,
-    log,
-    getBlob
+    log
 } from "./utils";
 import {
     MapInterface,
@@ -587,7 +586,9 @@ export default class ObsidianLeaflet
             cache.frontmatter.location instanceof Array
         ) {
             let locations = cache.frontmatter.location;
-            if (!(locations instanceof Array)) {
+            if (
+                !(locations instanceof Array && locations[0] instanceof Array)
+            ) {
                 locations = [locations];
             }
             const location = locations[0];
