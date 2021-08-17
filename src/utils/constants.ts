@@ -1,5 +1,9 @@
 import { Platform } from "obsidian";
-import { LeafletMapOptions, ObsidianAppData } from "src/@types";
+import {
+    BlockParameters,
+    LeafletMapOptions,
+    ObsidianAppData
+} from "src/@types";
 
 export const OVERLAY_TAG_REGEX = /^(\d+(?:\.\d+)?)\s?(\w*)/;
 
@@ -8,6 +12,31 @@ export const MAP_OVERLAY_STROKE_OPACITY = 0.6;
 
 export const LAT_LONG_DECIMALS = 4;
 export const DISTANCE_DECIMALS = 1;
+
+export const DEFAULT_BLOCK_PARAMETERS: BlockParameters = {
+    height: "500px",
+    minZoom: 1,
+    maxZoom: 10,
+    defaultZoom: 5,
+    zoomDelta: 1,
+    scale: 1,
+    unit: "m",
+    distanceMultiplier: 1,
+    darkMode: "false",
+    image: "real",
+    layers: [],
+    imageOverlay: [],
+    overlay: [],
+    overlayColor: "blue",
+    linksFrom: [],
+    linksTo: [],
+    geojson: [],
+    geojsonColor: "#3388ff",
+    zoomFeatures: false,
+    verbose: false,
+    gpx: []
+};
+
 export const DEFAULT_MAP_OPTIONS: LeafletMapOptions = {
     type: "real",
     minZoom: 1,
@@ -48,7 +77,7 @@ export const BASE_POPUP_OPTIONS = {
     autoPan: false
 };
 
-export const MODIFIER_KEY = Platform.isMacOS ? "Meta" : "Control"; 
+export const MODIFIER_KEY = Platform.isMacOS ? "Meta" : "Control";
 
 /** From https://github.com/leaflet-extras/leaflet-providers/blob/master/leaflet-providers.js */
 /** CURRENTLY UNUSED */

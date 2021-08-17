@@ -33,8 +33,6 @@ export default class Watcher extends Events {
     ) {
         super();
 
-        console.log(fileIds);
-
         this.renderer.registerEvent(
             this.plugin.app.metadataCache.on("changed", (file) =>
                 this._onChange(file)

@@ -4,12 +4,26 @@ import {
     MarkdownPostProcessorContext
 } from "obsidian";
 
-import type { LeafletMapOptions, ObsidianLeaflet } from "./@types";
+import type {
+    BlockParameters,
+    LeafletMapOptions,
+    ObsidianLeaflet,
+    SavedMarkerProperties,
+    SavedOverlayData
+} from "./@types";
 import type { BaseMapType, ImageLayerData, MarkerDivIcon } from "./@types/map";
 
 import Watcher from "./utils/watcher";
 import { RealMap, ImageMap } from "./map/map";
 import Loader from "./worker/loader";
+import { log } from "console";
+import { Length } from "convert/dist/types/units";
+import {
+    getImmutableItems,
+    getId,
+    OVERLAY_TAG_REGEX,
+    DEFAULT_BLOCK_PARAMETERS
+} from "./utils";
 
 declare module "leaflet" {
     interface Map {
@@ -40,9 +54,15 @@ export class LeafletRenderer extends MarkdownRenderChild {
         public plugin: ObsidianLeaflet,
         private ctx: MarkdownPostProcessorContext,
         container: HTMLElement,
-        private options: LeafletMapOptions = {}
+        private options: LeafletMapOptions = {},
+        private params: BlockParameters
     ) {
         super(container);
+
+        this.params = {
+            ...DEFAULT_BLOCK_PARAMETERS,
+            ...params
+        };
 
         this.containerEl.style.height = options.height;
         this.containerEl.style.width = "100%";
@@ -58,7 +78,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
         });
 
         this.resize.observe(this.containerEl);
-        
+
         this.map.on("removed", () => this.resize.disconnect());
     }
 
@@ -92,7 +112,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             this.loader.loadImage(this.map.id, [this.options.layers[0]]);
         }
 
-        await this.loadImmutableData();
+        //await this.loadImmutableData();
         await this.loadFeatureData();
     }
 
@@ -128,9 +148,13 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
     async onunload() {
         this.map.log("Unloading map.");
+
         super.onunload();
 
+        this.loader.unload();
+
         this.resize.disconnect();
+
         try {
             this.map.remove();
         } catch (e) {}
@@ -168,7 +192,127 @@ export class LeafletRenderer extends MarkdownRenderChild {
     }
 
     async loadFeatureData() {}
-    async loadImmutableData() {}
+    async loadImmutableData() {
+        if (
+            (this.params.marker ?? []).length ||
+            (this.params.commandMarker ?? []).length ||
+            (this.params.markerTag ?? []).length ||
+            (this.params.markerFile ?? []).length ||
+            (this.params.markerFolder ?? []).length ||
+            (this.params.linksTo ?? []).length ||
+            (this.params.linksFrom ?? []).length ||
+            (this.params.overlayTag ?? []).length
+        ) {
+            this.map.log("Loading immutable items.");
+        }
+
+        //TODO: LET RENDERER HANDLE THIS
+
+        let {
+            markers: immutableMarkers,
+            overlays: immutableOverlays,
+            files: watchers
+        } = await getImmutableItems(
+            /* source */
+            this.plugin.app,
+            this.params.marker as string[],
+            this.params.commandMarker as string[],
+            this.params.markerTag as string[][],
+            this.params.markerFile as string[],
+            this.params.markerFolder as string[],
+            this.params.linksTo.flat(Infinity),
+            this.params.linksFrom.flat(Infinity),
+            this.params.overlayTag,
+            this.params.overlayColor
+        );
+
+        if (
+            (immutableMarkers ?? []).length ||
+            (immutableOverlays ?? []).length
+        ) {
+            this.map.log(
+                `Found ${immutableMarkers.length} markers and ${immutableOverlays.length} overlays from ${watchers.size} files.`
+            );
+        }
+        /** Build arrays of markers and overlays to pass to map */
+        let markerArray: SavedMarkerProperties[] = immutableMarkers.map(
+            ([
+                type,
+                lat,
+                long,
+                link,
+                layer,
+                command,
+                id,
+                desc,
+                minZoom,
+                maxZoom
+            ]) => {
+                return {
+                    type: type,
+                    loc: [Number(lat), Number(long)],
+                    percent: undefined,
+                    link: link?.trim(),
+                    id: id,
+                    layer: layer,
+                    mutable: false,
+                    command: command,
+                    description: desc,
+                    minZoom,
+                    maxZoom,
+                    tooltip: "hover",
+                    zoom: undefined
+                };
+            }
+        );
+
+        let immutableOverlayArray: SavedOverlayData[] = [
+            ...immutableOverlays,
+            ...(this.params.overlay ?? [])
+        ].map(([color, loc, length, desc, id = getId()]) => {
+            const match = `${length}`.match(OVERLAY_TAG_REGEX) ?? [];
+
+            if (!match || isNaN(Number(match[1]))) {
+                throw new Error(
+                    "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`."
+                );
+            }
+            const [, radius, unit] = match ?? [];
+            return {
+                radius: Number(radius),
+                loc: loc,
+                color: color,
+                unit: unit && unit.length ? (unit as Length) : undefined,
+                layer: this.params.layers[0],
+                desc: desc,
+                id: id,
+                mutable: false
+            };
+        });
+
+        /** Register File Watcher to Update Markers/Overlays */
+        this.registerWatchers(watchers);
+
+        let mapData = this.plugin.data.mapMarkers.find(
+            ({ id: mapId }) => mapId == this.params.id
+        );
+
+        this.map.addMarker(
+            ...markerArray,
+            ...(mapData?.markers.map((m) => {
+                const layer =
+                    decodeURIComponent(m.layer) === m.layer
+                        ? encodeURIComponent(m.layer)
+                        : m.layer;
+                return { ...m, mutable: true, layer };
+            }) ?? [])
+        );
+
+        this.map.addOverlay(
+            ...immutableOverlayArray,
+            ...new Set(mapData?.overlays ?? [])
+        );
+    }
 
     registerWatchers(watchers: Map<TFile, Map<string, string>>) {
         for (const [file, fileIds] of watchers) {

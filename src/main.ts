@@ -40,7 +40,8 @@ import {
     Marker,
     SavedOverlayData,
     ObsidianLeaflet as ObsidianLeafletImplementation,
-    BaseMapType
+    BaseMapType,
+    BlockParameters
 } from "./@types";
 
 import { LeafletRenderer } from "./renderer";
@@ -71,6 +72,7 @@ declare module "obsidian" {
         dom: HTMLDivElement;
     }
 }
+
 export default class ObsidianLeaflet
     extends Plugin
     implements ObsidianLeafletImplementation
@@ -265,138 +267,39 @@ export default class ObsidianLeaflet
             );
         } */
 
-        const renderer = new LeafletRenderer(this, ctx, el, {
-            bounds,
-            context: ctx.sourcePath,
-            darkMode: `${darkMode}` === "true",
-            defaultZoom: +defaultZoom,
-            distanceMultiplier,
-            geojson: geojsonData,
-            geojsonColor,
-            gpx: gpxData,
-            gpxIcons,
-            hasAdditional: layers.length > 1,
-            height: getHeight(view, height) ?? "500px",
-            id,
-            imageOverlays: [],
-            layers,
-            maxZoom: +maxZoom,
-            minZoom: +minZoom,
-            overlayTag: params.overlayTag,
-            overlayColor,
-            scale,
-            type: image != "real" ? "image" : "real",
-            unit,
-            verbose,
-            zoomDelta: +zoomDelta,
-            zoomFeatures: zoomFeatures
-        });
-        const map = renderer.map;
-
-        if (
-            (params.marker ?? []).length ||
-            (params.commandMarker ?? []).length ||
-            (params.markerTag ?? []).length ||
-            (params.markerFile ?? []).length ||
-            (params.markerFolder ?? []).length ||
-            (params.linksTo ?? []).length ||
-            (params.linksFrom ?? []).length ||
-            (params.overlayTag ?? []).length
-        ) {
-            log(verbose, id, "Loading immutable items.");
-        }
-
-        //TODO: LET RENDERER HANDLE THIS
-
-        let {
-            markers: immutableMarkers,
-            overlays: immutableOverlays,
-            files: watchers
-        } = await getImmutableItems(
-            /* source */
-            this.app,
-            params.marker as string[],
-            params.commandMarker as string[],
-            params.markerTag as string[][],
-            params.markerFile as string[],
-            params.markerFolder as string[],
-            linksTo.flat(Infinity),
-            linksFrom.flat(Infinity),
-            params.overlayTag,
-            overlayColor
-        );
-
-        if (
-            (params.marker ?? []).length ||
-            (params.commandMarker ?? []).length ||
-            (params.markerTag ?? []).length ||
-            (params.markerFile ?? []).length ||
-            (params.markerFolder ?? []).length ||
-            (params.linksTo ?? []).length ||
-            (params.linksFrom ?? []).length ||
-            (params.overlayTag ?? []).length
-        ) {
-            log(
+        const renderer = new LeafletRenderer(
+            this,
+            ctx,
+            el,
+            {
+                bounds,
+                context: ctx.sourcePath,
+                darkMode: `${darkMode}` === "true",
+                defaultZoom: +defaultZoom,
+                distanceMultiplier,
+                geojson: geojsonData,
+                geojsonColor,
+                gpx: gpxData,
+                gpxIcons,
+                hasAdditional: layers.length > 1,
+                height: getHeight(view, height) ?? "500px",
+                id,
+                imageOverlays: [],
+                layers,
+                maxZoom: +maxZoom,
+                minZoom: +minZoom,
+                overlayTag: params.overlayTag,
+                overlayColor,
+                scale,
+                type: image != "real" ? "image" : "real",
+                unit,
                 verbose,
-                id,
-                `Found ${immutableMarkers.length} markers and ${immutableOverlays.length} overlays from ${watchers.size} files.`
-            );
-        }
-        /** Build arrays of markers and overlays to pass to map */
-        let markerArray: SavedMarkerProperties[] = immutableMarkers.map(
-            ([
-                type,
-                lat,
-                long,
-                link,
-                layer,
-                command,
-                id,
-                desc,
-                minZoom,
-                maxZoom
-            ]) => {
-                return {
-                    type: type,
-                    loc: [Number(lat), Number(long)],
-                    percent: undefined,
-                    link: link?.trim(),
-                    id: id,
-                    layer: layer,
-                    mutable: false,
-                    command: command,
-                    description: desc,
-                    minZoom,
-                    maxZoom,
-                    tooltip: "hover",
-                    zoom: undefined
-                };
-            }
+                zoomDelta: +zoomDelta,
+                zoomFeatures: zoomFeatures
+            },
+            params
         );
-
-        let immutableOverlayArray: SavedOverlayData[] = [
-            ...immutableOverlays,
-            ...overlay
-        ].map(([color, loc, length, desc, id = getId()]) => {
-            const match = `${length}`.match(OVERLAY_TAG_REGEX) ?? [];
-
-            if (!match || isNaN(Number(match[1]))) {
-                throw new Error(
-                    "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`."
-                );
-            }
-            const [, radius, unit] = match ?? [];
-            return {
-                radius: Number(radius),
-                loc: loc,
-                color: color,
-                unit: unit && unit.length ? (unit as Length) : undefined,
-                layer: layers[0],
-                desc: desc,
-                id: id,
-                mutable: false
-            };
-        });
+        const map = renderer.map;
 
         /** Get initial coordinates and zoom level */
         map.log("Getting initiatial coordinates.");
@@ -408,55 +311,18 @@ export default class ObsidianLeaflet
             map
         );
 
-        if (file) {
-            watchers.set(
-                file,
-                watchers.get(file)?.set("coordinates", "coordinates") ??
-                    new Map([["coordinates", "coordinates"]])
-            );
-        }
-
         /** Register File Watcher to Update Markers/Overlays */
-        renderer.registerWatchers(watchers);
-
-        let mapData = this.data.mapMarkers.find(({ id: mapId }) => mapId == id);
-
-        map.addMarker(
-            ...markerArray,
-            ...(mapData?.markers.map((m) => {
-                const layer =
-                    decodeURIComponent(m.layer) === m.layer
-                        ? encodeURIComponent(m.layer)
-                        : m.layer;
-                return { ...m, mutable: true, layer };
-            }) ?? [])
+        renderer.registerWatchers(
+            new Map([[file, new Map([["coordinates", "coordinates"]])]])
         );
 
-        map.addOverlay(
-            ...immutableOverlayArray,
-            ...new Set(mapData?.overlays ?? [])
-        );
+        renderer.loadImmutableData();
 
         map.render({
             coords: coords,
             zoomDistance: distanceToZoom
         });
 
-        /*         if (map instanceof ImageMap) {
-            this.ImageLoader.on(
-                `${id}-layer-data-ready`,
-                (layer: ImageLayerData) => {
-                    map.log(
-                        `Data ready for layer ${decodeURIComponent(layer.id)}.`
-                    );
-                    map.buildLayer(layer);
-                }
-            );
-
-            map.log(`Loading layer data for ${id}.`);
-            this.ImageLoader.loadImage(id, layers);
-        }
- */
         this.registerMapEvents(map);
 
         ctx.addChild(renderer);
