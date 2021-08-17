@@ -2,7 +2,7 @@ import { App, Events, Notice } from "obsidian";
 
 import { getType as lookupMimeType } from "mime/lite";
 
-import { getBlob } from "../utils";
+import { getBlob, getId } from "../utils";
 
 import ImageWorker from "./image.worker";
 import { ImageLayerData } from "src/@types";
@@ -18,10 +18,9 @@ export default class Loader extends Events {
                 layer: ImageLayerData;
 
             const worker = new ImageWorker();
+            const wId = getId();
+            this.workers.set(wId, worker);
 
-            this.workers.set(id, worker);
-
-            let count = 0;
             worker.onmessage = async (event) => {
                 layer = event.data.data;
 
@@ -36,11 +35,9 @@ export default class Loader extends Events {
                 layer.h = h;
                 layer.w = w;
                 this.trigger(`${id}-layer-data-ready`, layer);
-                count++;
-                if (count === layers.length - 1) {
-                    worker.terminate();
-                    this.workers.delete(id);
-                }
+
+                worker.terminate();
+                this.workers.delete(wId);
             };
 
             worker.postMessage({
@@ -61,9 +58,9 @@ export default class Loader extends Events {
 
                 const worker = new ImageWorker();
 
-                this.workers.set(id, worker);
+                const wId = getId();
+                this.workers.set(wId, worker);
 
-                let count = 0;
                 worker.onmessage = async (event) => {
                     layer = event.data.data;
 
@@ -77,11 +74,10 @@ export default class Loader extends Events {
                     const { h, w } = await this.getImageDimensions(layer.data);
                     layer.h = h;
                     layer.w = w;
-                    count++;
-                    if (count === layers.length - 1) {
-                        worker.terminate();
-                        this.workers.delete(id);
-                    }
+
+                    worker.terminate();
+                    this.workers.delete(wId);
+
                     resolve(layer);
                 };
 
@@ -91,6 +87,12 @@ export default class Loader extends Events {
                 });
             }
         });
+    }
+    unload() {
+        for (let [, worker] of this.workers) {
+            worker.terminate();
+        }
+        this.workers = new Map();
     }
 
     async toDataURL(blob: Blob): Promise<{ data: string }> {

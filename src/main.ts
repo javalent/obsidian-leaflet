@@ -148,6 +148,9 @@ export default class ObsidianLeaflet
                 map.el.parentElement.replaceChild(newPre, map.el);
             });
         });
+
+        this.ImageLoader.unload();
+
         this.maps = [];
     }
 
@@ -451,7 +454,7 @@ export default class ObsidianLeaflet
                 `${id}-layer-data-ready`,
                 (layer: ImageLayerData) => {
                     map.log(
-                        `Data ready for layer ${encodeURIComponent(layer.id)}.`
+                        `Data ready for layer ${decodeURIComponent(layer.id)}.`
                     );
                     map.buildLayer(layer);
                 }

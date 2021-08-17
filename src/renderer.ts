@@ -101,6 +101,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
     async onunload() {
         this.map.log("Unloading map.");
         super.onunload();
+
         this.resize.disconnect();
         try {
             this.map.remove();
