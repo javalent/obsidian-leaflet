@@ -485,7 +485,8 @@ export default class ObsidianLeaflet
                                     });
                                 map.overlays = map.overlays.filter(
                                     ({ id }) => id != fileIds.get("overlayTag")
-                                );let locations = frontmatter.location ?? [0, 0];
+                                );
+                                let locations = frontmatter.location ?? [0, 0];
                                 if (
                                     locations &&
                                     locations instanceof Array &&
@@ -558,7 +559,11 @@ export default class ObsidianLeaflet
                             }
                         }
 
-                        if (markers && markers.length && frontmatter.mapmarker) {
+                        if (
+                            markers &&
+                            markers.length &&
+                            frontmatter.mapmarker
+                        ) {
                             try {
                                 const { mapmarker } = frontmatter;
 
@@ -955,13 +960,34 @@ export default class ObsidianLeaflet
         }
         return { latitude, longitude, distanceToZoom };
     }
-
+    get configDirectory() {
+        if (!this.AppData.configDirectory) return;
+        return `${this.AppData.configDirectory}/plugins/obsidian-leaflet-plugin`;
+    }
+    get configFilePath() {
+        if (!this.AppData.configDirectory) return;
+        return `${this.configDirectory}/data.json`;
+    }
     async loadSettings() {
         this.AppData = Object.assign(
             {},
             DEFAULT_SETTINGS,
             await this.loadData()
         );
+
+        if (
+            this.configDirectory &&
+            (await this.app.vault.adapter.exists(this.configFilePath))
+        ) {
+            this.AppData = Object.assign(
+                {},
+                this.AppData,
+                JSON.parse(
+                    await this.app.vault.adapter.read(this.configFilePath)
+                )
+            );
+        }
+
         this.AppData.previousVersion = this.manifest.version;
         if (typeof this.AppData.displayMarkerTooltips === "boolean") {
             this.AppData.displayMarkerTooltips = this.AppData
@@ -1048,6 +1074,27 @@ export default class ObsidianLeaflet
         this.maps.forEach((map) => {
             map.map.updateMarkerIcons();
         });
+    }
+
+    async saveData(data: Record<any, any>) {
+
+        if (this.configDirectory) {
+
+            if (!(await this.app.vault.adapter.exists(this.configDirectory))) {
+                await this.app.vault.adapter.mkdir(this.configDirectory);
+            }
+
+            if (await this.app.vault.adapter.exists(this.configFilePath)) {
+                await this.app.vault.adapter.remove(this.configFilePath);
+            }
+
+            await this.app.vault.adapter.write(
+                this.configFilePath,
+                JSON.stringify(data)
+            );
+
+        }
+        await super.saveData(data);
     }
 
     generateMarkerMarkup(

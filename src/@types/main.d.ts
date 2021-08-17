@@ -4,6 +4,7 @@ import { LeafletMap, Marker } from "./map";
 
 declare class ObsidianLeaflet extends Plugin {
     AppData: IObsidianAppData;
+    get configDirectory(): string;
     markerIcons: IMarkerIcon[];
     maps: IMapInterface[];
     mapFiles: { file: string; maps: string[] }[];
