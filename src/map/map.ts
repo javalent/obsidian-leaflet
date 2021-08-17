@@ -46,36 +46,31 @@ import {
 import { LeafletSymbol } from "../utils/leaflet-import";
 let L = window[LeafletSymbol];
 
-export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
-    extends Events
-    implements BaseMapDefinition
-{
-    /* <T> */
-    isDrawing: boolean = false;
-    private escapeScope: Scope;
+export abstract class BaseMap extends Events implements BaseMapDefinition {
+    abstract get bounds(): L.LatLngBounds;
+
+    CRS: L.CRS;
     distanceDisplay: DistanceDisplay;
+
+    private escapeScope: Scope;
+
+    isDrawing: boolean = false;
     layerControl: L.Control.Layers;
     layerControlAdded = false;
-    /** Abstract */
-    /* abstract initialize(): void; */
+
     abstract render(options: {
         coords: [number, number];
         zoomDistance: number;
-        layer: { data: string; id: string };
-        hasAdditional?: boolean;
-        imageOverlays?: {
-            id: string;
-            data: string;
-            alias: string;
-            bounds: [[number, number], [number, number]];
-        }[];
     }): Promise<void>;
     abstract popup: Popup;
-    type: string;
-    abstract get bounds(): L.LatLngBounds;
+    renderOptions: {
+        coords: [number, number];
+        zoomDistance: number;
+    };
 
+    type: string;
     abstract get scale(): number;
-    CRS: L.CRS;
+    start: number;
 
     constructor(
         public plugin: ObsidianLeaflet,
@@ -111,6 +106,47 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
             ...(this.plugin.isDesktop ? { fullscreenControl: true } : {})
         });
         this.leafletInstance.createPane("base-layer");
+
+        /** Bind Map Events */
+        this.leafletInstance.on("contextmenu", (evt: L.LeafletMouseEvent) =>
+            this.handleMapContext(evt)
+        );
+        this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) =>
+            this.handleMapClick(evt)
+        );
+
+        this.leafletInstance.on("zoomanim", (evt: L.ZoomAnimEvent) => {
+            //check markers
+            this.markers.forEach((marker) => {
+                if (marker.shouldShow(evt.zoom)) {
+                    this.leafletInstance.once("zoomend", () => marker.show());
+                } else if (marker.shouldHide(evt.zoom)) {
+                    marker.hide();
+                }
+            });
+        });
+        
+        this.addFeatures();
+
+        this.on("first-layer-ready", () => {
+            /** Move to supplied coordinates */
+
+            this.log(
+                `Moving to supplied coordinates: ${this.renderOptions.coords}`
+            );
+            this.setInitialCoords(this.renderOptions.coords);
+            this.leafletInstance.panTo(this.initialCoords);
+
+            if (this.renderOptions.zoomDistance) {
+                this.zoomDistance = this.renderOptions.zoomDistance;
+                this.setZoomByDistance(this.renderOptions.zoomDistance);
+            }
+            this.leafletInstance.setZoom(this.zoom.default, {
+                animate: false
+            });
+            this.featureLayer.addTo(this.currentGroup.group);
+            this.currentGroup.group.addTo(this.leafletInstance);
+        });
 
         this.buildControls();
     }
@@ -912,7 +948,6 @@ export class RealMap extends BaseMap {
     mapLayers: LayerGroup<L.TileLayer>[] = [];
     popup: Popup = popup(this);
     type: "real" = "real";
-    private _start: number;
 
     constructor(
         public plugin: ObsidianLeaflet,
@@ -975,7 +1010,7 @@ export class RealMap extends BaseMap {
 
             this.log(
                 `Initial map layer rendered in ${
-                    (Date.now() - this._start) / 1000
+                    (Date.now() - this.start) / 1000
                 } seconds.`
             );
             this.trigger("rendered");
@@ -984,48 +1019,14 @@ export class RealMap extends BaseMap {
     }
 
     async render(options: { coords: [number, number]; zoomDistance: number }) {
-        this.log("Building initial map layer.");
-        this._start = Date.now();
+        this.renderOptions = options;
+        this.log("Beginning render process.");
+        this.start = Date.now();
 
+        this.log("Building initial map layer.");
         this.currentLayer = await this.buildLayer();
 
-        this.leafletInstance.setZoom(this.zoom.default, { animate: false });
-
         this.trigger("first-layer-ready", this.mapLayers[0]);
-
-        /** Move to supplied coordinates */
-        this.log(`Moving to supplied coordinates: ${options.coords}`);
-        this.setInitialCoords(options.coords);
-        this.leafletInstance.panTo(this.initialCoords);
-
-        if (options.zoomDistance) {
-            this.zoomDistance = options.zoomDistance;
-            this.setZoomByDistance(options.zoomDistance);
-        }
-        this.leafletInstance.setZoom(this.zoom.default, {
-            animate: false
-        });
-
-        /** Bind Internal Map Events */
-        this.leafletInstance.on("contextmenu", (evt: L.LeafletMouseEvent) => {
-            this.handleMapContext(evt);
-        });
-        this.leafletInstance.on("click", () => {});
-
-        this.leafletInstance.on("zoomanim", (evt: L.ZoomAnimEvent) => {
-            //check markers
-            this.markers.forEach((marker) => {
-                if (marker.shouldShow(evt.zoom)) {
-                    this.leafletInstance.once("zoomend", () => marker.show());
-                } else if (marker.shouldHide(evt.zoom)) {
-                    marker.hide();
-                }
-            });
-        });
-
-        this.addFeatures();
-
-        this.currentGroup.group.addTo(this.leafletInstance);
     }
 }
 export class ImageMap extends BaseMap {
@@ -1035,7 +1036,6 @@ export class ImageMap extends BaseMap {
     mapLayers: LayerGroup<L.ImageOverlay>[] = [];
     popup: Popup = popup(this);
     type: "image" = "image";
-    private _start: number;
     constructor(
         public plugin: ObsidianLeaflet,
         public options: LeafletMapOptions
@@ -1069,6 +1069,9 @@ export class ImageMap extends BaseMap {
         h: number;
         w: number;
     }): LayerGroup<L.ImageOverlay> {
+        if (!this.mapLayers.length) {
+            this.log("Building initial map layer.");
+        }
         const { h, w } = layer;
 
         this.dimensions = { h, w };
@@ -1139,7 +1142,7 @@ export class ImageMap extends BaseMap {
             this.rendered = true;
             this.log(
                 `Initial map layer rendered in ${
-                    Date.now() - this._start / 1000
+                    (Date.now() - this.start) / 1000
                 } seconds.`
             );
             this.trigger("rendered");
@@ -1148,43 +1151,9 @@ export class ImageMap extends BaseMap {
         return newLayer.layer;
     }
     async render(options: { coords: [number, number]; zoomDistance: number }) {
+        this.renderOptions = options;
+
         this.log("Beginning render process.");
-        this._start = Date.now();
-
-        this.leafletInstance.on(
-            "contextmenu",
-            this.handleMapContext.bind(this)
-        );
-        this.leafletInstance.on("click", this.handleMapClick.bind(this));
-
-        this.leafletInstance.on("zoomanim", (evt: L.ZoomAnimEvent) => {
-            //check markers
-            this.markers.forEach((marker) => {
-                if (marker.shouldShow(evt.zoom)) {
-                    this.leafletInstance.once("zoomend", () => marker.show());
-                } else if (marker.shouldHide(evt.zoom)) {
-                    marker.hide();
-                }
-            });
-        });
-
-        this.addFeatures();
-
-        this.on("first-layer-ready", () => {
-            /** Move to supplied coordinates */
-            this.log(`Moving to supplied coordinates: ${options.coords}`);
-            this.setInitialCoords(options.coords);
-            this.leafletInstance.panTo(this.initialCoords);
-
-            if (options.zoomDistance) {
-                this.zoomDistance = options.zoomDistance;
-                this.setZoomByDistance(options.zoomDistance);
-            }
-            this.leafletInstance.setZoom(this.zoom.default, {
-                animate: false
-            });
-            this.featureLayer.addTo(this.currentGroup.group);
-            this.currentGroup.group.addTo(this.leafletInstance);
-        });
+        this.start = Date.now();
     }
 }
