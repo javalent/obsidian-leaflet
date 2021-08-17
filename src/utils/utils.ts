@@ -147,7 +147,6 @@ export function getHeight(el: HTMLElement, height: string): string {
             throw new Error("Unparseable height provided.");
         if (/\d+%/.test(height)) {
             const element = el.closest(".markdown-preview-view");
-            console.log("🚀 ~ file: utils.ts ~ line 150 ~ el", el);
             let [, perc] = height.match(/(\d+)%/);
 
             let computedStyle = getComputedStyle(element);
@@ -159,7 +158,6 @@ export function getHeight(el: HTMLElement, height: string): string {
                 parseFloat(computedStyle.paddingBottom);
 
             height = `${(clHeight * Number(perc)) / 100}px`;
-            console.log("🚀 ~ file: utils.ts ~ line 189 ~ height", height);
         }
     } catch (e) {
         new Notice(
