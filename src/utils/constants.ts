@@ -67,7 +67,8 @@ export const DEFAULT_SETTINGS: ObsidianAppData = {
     warnedAboutMapMarker: false,
     copyOnClick: false,
     displayMarkerTooltips: "hover",
-    displayOverlayTooltips: true
+    displayOverlayTooltips: true,
+    configDirectory: null
 };
 export const BASE_POPUP_OPTIONS = {
     className: "leaflet-marker-link-popup",

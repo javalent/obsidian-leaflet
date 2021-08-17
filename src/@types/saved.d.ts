@@ -36,4 +36,5 @@ export interface ObsidianAppData {
     copyOnClick: boolean;
     displayOverlayTooltips: boolean;
     displayMarkerTooltips: TooltipDisplay;
+    configDirectory: string;
 }

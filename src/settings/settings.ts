@@ -3,7 +3,8 @@ import {
     Setting,
     App,
     Notice,
-    ButtonComponent
+    ButtonComponent,
+    TFolder
 } from "obsidian";
 import { parse as parseCSV, unparse as unparseCSV } from "papaparse";
 
@@ -27,6 +28,7 @@ import type {
     TooltipDisplay,
     ObsidianLeaflet
 } from "src/@types";
+import { FolderSuggestionModal } from "src/modals/path";
 
 export class ObsidianLeafletSettingTab extends PluginSettingTab {
     plugin: ObsidianLeaflet;
@@ -419,6 +421,82 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             });
     }
     createMarkerSettings(containerEl: HTMLElement) {
+        const configSetting = new Setting(containerEl)
+            .addText(async (text) => {
+                let folders = this.app.vault
+                    .getAllLoadedFiles()
+                    .filter((f) => f instanceof TFolder);
+
+                text.setPlaceholder(
+                    this.data.configDirectory ?? this.app.vault.configDir
+                );
+                const modal = new FolderSuggestionModal(this.app, text, [
+                    ...(folders as TFolder[])
+                ]);
+
+                modal.onClose = async () => {
+                    if (!text.inputEl.value) {
+                        this.data.configDirectory = null;
+                    } else {
+                        const exists = await this.app.vault.adapter.exists(
+                            text.inputEl.value
+                        );
+
+                        if (!exists) {
+                            //confirm}
+
+                            this.data.configDirectory = text.inputEl.value;
+                            await this.plugin.saveSettings();
+                        }
+                    }
+                };
+
+                text.inputEl.onblur = async () => {
+                    if (!text.inputEl.value) {
+                        return;
+                    }
+                    const exists = await this.app.vault.adapter.exists(
+                        text.inputEl.value
+                    );
+
+                    this.data.configDirectory = text.inputEl.value;
+
+                    await this.plugin.saveSettings();
+                    this.display();
+                };
+            })
+            .addExtraButton((b) => {
+                b.setTooltip("Reset to Default")
+                    .setIcon("undo-glyph")
+                    .onClick(async () => {
+                        this.data.configDirectory = null;
+                        await this.plugin.saveSettings();
+                        this.display();
+                    });
+            });
+        configSetting.descEl.createSpan({
+            text: "Please back up your data before changing this setting."
+        });
+        configSetting.descEl.createEl("br");
+        configSetting.descEl.createSpan({
+            text: "Current directory: "
+        });
+        const configDirectory =
+            this.data.configDirectory ?? this.app.vault.configDir;
+        configSetting.descEl.createEl("code", {
+            text: configDirectory
+        });
+
+        let name = configSetting.nameEl.createDiv();
+        name.appendChild(
+            icon(
+                findIconDefinition({
+                    iconName: "exclamation-triangle",
+                    prefix: "fas"
+                })
+            ).node[0]
+        );
+        name.appendChild(createSpan({ text: "Default Config Directory" }));
         new Setting(containerEl)
             .setName("Default Marker Tooltip Behavior")
             .setDesc(

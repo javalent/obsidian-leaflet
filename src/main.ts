@@ -197,8 +197,29 @@ export default class ObsidianLeaflet
             renderError(el, e.message);
         } */
     }
+    get configDirectory() {
+        if (!this.data.configDirectory) return;
+        return `${this.data.configDirectory}/plugins/obsidian-leaflet-plugin`;
+    }
+    get configFilePath() {
+        if (!this.data.configDirectory) return;
+        return `${this.configDirectory}/data.json`;
+    }
     async loadSettings() {
         this.data = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+
+        if (
+            this.configDirectory &&
+            (await this.app.vault.adapter.exists(this.configFilePath))
+        ) {
+            this.data = Object.assign(
+                {},
+                this.data,
+                JSON.parse(
+                    await this.app.vault.adapter.read(this.configFilePath)
+                )
+            );
+        }
         this.data.previousVersion = this.manifest.version;
         if (typeof this.data.displayMarkerTooltips === "boolean") {
             this.data.displayMarkerTooltips = this.data.displayMarkerTooltips
@@ -244,7 +265,27 @@ export default class ObsidianLeaflet
             map.map.updateMarkerIcons();
         });
     }
-
+    async saveData(data: Record<any, any>) {
+        if (this.configDirectory) {
+            try {
+                if (
+                    !(await this.app.vault.adapter.exists(this.configDirectory))
+                ) {
+                    await this.app.vault.adapter.mkdir(this.configDirectory);
+                }
+                await this.app.vault.adapter.write(
+                    this.configFilePath,
+                    JSON.stringify(data)
+                );
+            } catch (e) {
+                console.error(e);
+                new Notice(
+                    "There was an error saving into the configured directory."
+                );
+            }
+        }
+        await super.saveData(data);
+    }
     generateMarkerMarkup(
         markers: Icon[] = this.data.markerIcons
     ): MarkerIcon[] {
