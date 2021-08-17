@@ -5,10 +5,11 @@ import {
 } from "obsidian";
 
 import type { LeafletMapOptions, ObsidianLeaflet } from "./@types";
-import type { BaseMapType, MarkerDivIcon } from "./@types/map";
+import type { BaseMapType, ImageLayerData, MarkerDivIcon } from "./@types/map";
 
 import Watcher from "./utils/watcher";
 import { RealMap, ImageMap } from "./map/map";
+import Loader from "./worker/loader";
 
 declare module "leaflet" {
     interface Map {
@@ -29,6 +30,7 @@ declare module "leaflet" {
 
 export class LeafletRenderer extends MarkdownRenderChild {
     watchers: Set<Watcher> = new Set();
+    loader: Loader = new Loader(this.plugin.app);
     resize: ResizeObserver;
 
     map: BaseMapType;
@@ -55,7 +57,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             }
         });
         this.resize.observe(this.containerEl);
-        
+
         this.map.on("removed", () => this.resize.disconnect());
     }
 
@@ -64,6 +66,29 @@ export class LeafletRenderer extends MarkdownRenderChild {
             this.map = new RealMap(this.plugin, this.options);
         } else {
             this.map = new ImageMap(this.plugin, this.options);
+
+            let additionalLayers = this.options.layers.length > 1;
+            this.loader.on(
+                `${this.map.id}-layer-data-ready`,
+                (layer: ImageLayerData) => {
+                    this.map.log(
+                        `Data ready for layer ${decodeURIComponent(layer.id)}.`
+                    );
+                    if (this.map instanceof ImageMap) {
+                        this.map.buildLayer(layer);
+                    }
+                    if (additionalLayers) {
+                        additionalLayers = false;
+                        this.loader.loadImage(
+                            this.map.id,
+                            this.options.layers.slice(1)
+                        );
+                    }
+                }
+            );
+
+            this.map.log(`Loading layer data for ${this.map.id}.`);
+            this.loader.loadImage(this.map.id, [this.options.layers[0]]);
         }
 
         await this.loadImmutableData();

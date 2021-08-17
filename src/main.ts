@@ -287,6 +287,7 @@ export default class ObsidianLeaflet
             height: getHeight(view, height) ?? "500px",
             id,
             imageOverlays: imageOverlayData ?? [],
+            layers,
             maxZoom: +maxZoom,
             minZoom: +minZoom,
             overlayTag: params.overlayTag,
@@ -449,7 +450,7 @@ export default class ObsidianLeaflet
             zoomDistance: distanceToZoom
         });
 
-        if (map instanceof ImageMap) {
+/*         if (map instanceof ImageMap) {
             this.ImageLoader.on(
                 `${id}-layer-data-ready`,
                 (layer: ImageLayerData) => {
@@ -463,7 +464,7 @@ export default class ObsidianLeaflet
             map.log(`Loading layer data for ${id}.`);
             this.ImageLoader.loadImage(id, layers);
         }
-
+ */
         this.registerMapEvents(map);
 
         ctx.addChild(renderer);

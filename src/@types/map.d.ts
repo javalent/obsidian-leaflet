@@ -71,6 +71,7 @@ export interface LeafletMapOptions {
         data: string;
         id: string;
     }[];
+    layers?: string[]
     maxZoom?: number;
     minZoom?: number;
     overlayColor?: string;
