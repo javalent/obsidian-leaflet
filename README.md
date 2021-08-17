@@ -479,7 +479,7 @@ All markers created from the note will automatically have their link set to the 
 
 #### location
 
-The location tag can be a set of coordinates or an array of coordinates. Each set of coordinates will be set to the `mapmarker` type, and any other tags that use the location will use the *first* set of coordinates.
+The location tag can be a set of coordinates or an array of coordinates. Each set of coordinates will be set to the `mapmarker` type, and any other tags that use the location will use the _first_ set of coordinates.
 
 ```
 ---
@@ -650,6 +650,18 @@ Marker data in this format can then be re-imported. This feature is still under 
 Setting this will cause marker tooltips to default to this behavior.
 
 You can override this behavior in the right-click context menu of a marker.
+
+### Default Config Directory
+
+**Please back up your `data.json` file before changing this setting.**
+
+This setting will allow you to save the `data.json` file to a directory other than the default Obsidian config directory. This could be useful if, for example, you have different config directories set up on mobile and desktop. Data will always be saved in the default Obsidian directory as well.
+
+**The plugin will save the file in `<directory>/plugins/obsidian-leaflet-plugin`, just like the default configuration.**
+
+**The directory must be located inside your vault.**
+
+The suggester will **not** show hidden folders; if you wish the plugin to save the data into a hidden folder, you have to enter the path manually. This should be **from the root of the vault.**
 
 ### Display Note Preview
 

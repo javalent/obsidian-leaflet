@@ -3,7 +3,8 @@ import {
     Setting,
     App,
     Notice,
-    ButtonComponent
+    ButtonComponent,
+    TFolder
 } from "obsidian";
 import { parse as parseCSV, unparse as unparseCSV } from "papaparse";
 
@@ -29,6 +30,7 @@ import {
 
 import { latLng } from "leaflet";
 import { TooltipDisplay } from "./@types/map";
+import { FolderSuggestionModal } from "./modals/path";
 
 export class ObsidianLeafletSettingTab extends PluginSettingTab {
     plugin: ObsidianLeaflet;
@@ -421,38 +423,83 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             });
     }
     createMarkerSettings(containerEl: HTMLElement) {
-        new Setting(containerEl)
-            .setName("Default Marker Tooltip Behavior")
-            .setDesc(
-                "New markers will be created to this setting by default. Can be overridden per-marker."
-            )
-            .addDropdown((drop) => {
-                drop.addOption("always", "Always");
-                drop.addOption("hover", "Hover");
-                drop.addOption("never", "Never");
-                drop.setValue(
-                    this.plugin.AppData.displayMarkerTooltips ?? "hover"
-                ).onChange((value: TooltipDisplay) => {
-                    this.plugin.AppData.displayMarkerTooltips = value;
-                });
-            });
-        /* new Setting(containerEl)
-            .setName("Display Marker Tooltips")
-            .setDesc(
-                "Marker tooltips will display when hovered. Note previews will still be displayed."
-            )
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(this.data.displayMarkerTooltips)
+        const configSetting = new Setting(containerEl)
+            .addText(async (text) => {
+                let folders = this.app.vault
+                    .getAllLoadedFiles()
+                    .filter((f) => f instanceof TFolder);
 
-                    .onChange(async (v) => {
-                        this.data.displayMarkerTooltips = v;
+                text.setPlaceholder(
+                    this.data.configDirectory ?? this.app.vault.configDir
+                );
+                const modal = new FolderSuggestionModal(this.app, text, [
+                    ...(folders as TFolder[])
+                ]);
 
+                modal.onClose = async () => {
+                    if (!text.inputEl.value) {
+                        this.data.configDirectory = null;
+                    } else {
+                        const exists = await this.app.vault.adapter.exists(
+                            text.inputEl.value
+                        );
+
+                        if (!exists) {
+                            //confirm}
+
+                            this.data.configDirectory = text.inputEl.value;
+                            await this.plugin.saveSettings();
+                        }
+                    }
+                };
+
+                text.inputEl.onblur = async () => {
+                    if (!text.inputEl.value) {
+                        return;
+                    }
+                    const exists = await this.app.vault.adapter.exists(
+                        text.inputEl.value
+                    );
+
+                    this.data.configDirectory = text.inputEl.value;
+
+                    await this.plugin.saveSettings();
+                    this.display();
+                };
+            })
+            .addExtraButton((b) => {
+                b.setTooltip("Reset to Default")
+                    .setIcon("undo-glyph")
+                    .onClick(async () => {
+                        this.data.configDirectory = null;
                         await this.plugin.saveSettings();
-
                         this.display();
-                    })
-            ); */
+                    });
+            });
+        configSetting.descEl.createSpan({
+            text: "Please back up your data before changing this setting."
+        });
+        configSetting.descEl.createEl("br");
+        configSetting.descEl.createSpan({
+            text: "Current directory: "
+        });
+        const configDirectory =
+            this.data.configDirectory ?? this.app.vault.configDir;
+        configSetting.descEl.createEl("code", {
+            text: configDirectory
+        });
+
+        let name = configSetting.nameEl.createDiv();
+        name.appendChild(
+            icon(
+                findIconDefinition({
+                    iconName: "exclamation-triangle",
+                    prefix: "fas"
+                })
+            ).node[0]
+        );
+        name.appendChild(createSpan({ text: "Default Config Directory" }));
+
         new Setting(containerEl)
             .setName("Display Note Preview")
             .setDesc(
@@ -468,19 +515,6 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                 })
             );
         new Setting(containerEl)
-            .setName("Display Overlay Tooltips")
-            .setDesc("Overlay tooltips will display when hovered.")
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(this.data.displayOverlayTooltips)
-                    .onChange(async (v) => {
-                        this.data.displayOverlayTooltips = v;
-
-                        await this.plugin.saveSettings();
-                        this.display();
-                    })
-            );
-        new Setting(containerEl)
             .setName("Copy Coordinates on Shift-Click")
             .setDesc(
                 "Map coordinates will be copied to the clipboard when shift-clicking."
@@ -492,6 +526,34 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                     this.display();
                 })
+            );
+        new Setting(containerEl)
+            .setName("Default Marker Tooltip Behavior")
+            .setDesc(
+                "New markers will be created to this setting by default. Can be overridden per-marker."
+            )
+            .addDropdown((drop) => {
+                drop.addOption("always", "Always");
+                drop.addOption("hover", "Hover");
+                drop.addOption("never", "Never");
+                drop.setValue(
+                    this.plugin.AppData.displayMarkerTooltips ?? "hover"
+                ).onChange((value: TooltipDisplay) => {
+                    this.plugin.AppData.displayMarkerTooltips = value;
+                });
+            });
+        new Setting(containerEl)
+            .setName("Display Overlay Tooltips")
+            .setDesc("Overlay tooltips will display when hovered.")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(this.data.displayOverlayTooltips)
+                    .onChange(async (v) => {
+                        this.data.displayOverlayTooltips = v;
+
+                        await this.plugin.saveSettings();
+                        this.display();
+                    })
             );
     }
     createCSVSetting(containerEl: HTMLElement) {

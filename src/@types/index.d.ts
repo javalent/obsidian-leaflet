@@ -207,4 +207,5 @@ export interface IObsidianAppData {
     copyOnClick: boolean;
     displayOverlayTooltips: boolean;
     displayMarkerTooltips: TooltipDisplay;
+    configDirectory: string;
 }

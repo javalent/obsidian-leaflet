@@ -11,7 +11,7 @@ import {
 } from "src/utils";
 
 import { UNIT_NAME_ALIASES } from "src/utils";
-import convert from "convert";
+
 import { TooltipDisplay } from "src/@types/map";
 export class MarkerContextModal extends Modal {
     deleted: boolean = false;
