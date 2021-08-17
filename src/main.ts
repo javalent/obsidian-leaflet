@@ -162,9 +162,7 @@ export default class ObsidianLeaflet
             maxZoom = 10,
             defaultZoom = 5,
             zoomDelta = 1,
-            lat,
-            long,
-            coordinates = undefined,
+
             id = undefined,
             scale = 1,
             unit = "m",
@@ -172,18 +170,12 @@ export default class ObsidianLeaflet
             darkMode = "false",
             image = "real",
             layers = [],
-            imageOverlay = [],
-            overlay = [],
+
             overlayColor = "blue",
             bounds = undefined,
-            linksFrom = [],
-            linksTo = [],
-            geojson = [],
-            geojsonColor = "#3388ff",
+
             zoomFeatures = false,
-            verbose = false,
-            gpx = [],
-            gpxMarkers
+            verbose = false
         } = params;
         if (!id) {
             new Notice("Obsidian Leaflet maps must have an ID.");
@@ -191,81 +183,6 @@ export default class ObsidianLeaflet
         }
         log(verbose, id, "Beginning Markdown Postprocessor.");
         let view = this.app.workspace.getActiveViewOfType(MarkdownView);
-
-        /** Get Markers from Parameters */
-        let geojsonData: any[] = [];
-        if (!(geojson instanceof Array)) {
-            geojson = [geojson];
-        }
-        if (geojson.length) {
-            log(verbose, id, "Loading GeoJSON files.");
-            for (let link of geojson.flat(Infinity)) {
-                const file = this.app.metadataCache.getFirstLinkpathDest(
-                    parseLink(link),
-                    ""
-                );
-                if (file && file instanceof TFile) {
-                    let data = await this.app.vault.read(file);
-                    try {
-                        data = JSON.parse(data);
-                    } catch (e) {
-                        new Notice(
-                            "Could not parse GeoJSON file " +
-                                link +
-                                "\n\n" +
-                                e.message
-                        );
-                        continue;
-                    }
-                    geojsonData.push(data);
-                }
-            }
-        }
-        let gpxData: any[] = [];
-        let gpxIcons: {
-            start: string;
-            end: string;
-            waypoint: string;
-        } = {
-            ...{ start: null, end: null, waypoint: null },
-            ...gpxMarkers
-        };
-        if (!(gpx instanceof Array)) {
-            gpx = [gpx];
-        }
-        if (gpx.length) {
-            log(verbose, id, "Loading GPX files.");
-            for (let link of gpx.flat(Infinity)) {
-                const file = this.app.metadataCache.getFirstLinkpathDest(
-                    parseLink(link),
-                    ""
-                );
-                if (file && file instanceof TFile) {
-                    let data = await this.app.vault.read(file);
-                    /* try {
-                            data = JSON.parse(data);
-                        } catch (e) {
-                            new Notice("Could not parse GeoJSON file " + link);
-                            continue;
-                        } */
-                    gpxData.push(data);
-                }
-            }
-        }
-
-        //TODO: Move image overlays to web worker
-        //maybe? may need this immediately otherwise they could flicker on
-        /* let imageOverlayData;
-        if (imageOverlay.length) {
-            imageOverlayData = await Promise.all(
-                imageOverlay.map(async ([img, ...bounds]) => {
-                    return {
-                        ...(await this.ImageLoader.loadImageAsync(id, [img])),
-                        bounds
-                    };
-                })
-            );
-        } */
 
         const renderer = new LeafletRenderer(
             this,
@@ -277,10 +194,6 @@ export default class ObsidianLeaflet
                 darkMode: `${darkMode}` === "true",
                 defaultZoom: +defaultZoom,
                 distanceMultiplier,
-                geojson: geojsonData,
-                geojsonColor,
-                gpx: gpxData,
-                gpxIcons,
                 hasAdditional: layers.length > 1,
                 height: getHeight(view, height) ?? "500px",
                 id,
@@ -300,28 +213,6 @@ export default class ObsidianLeaflet
             params
         );
         const map = renderer.map;
-
-        /** Get initial coordinates and zoom level */
-        map.log("Getting initiatial coordinates.");
-        const { coords, distanceToZoom, file } = await this._getCoordinates(
-            params.lat,
-            params.long,
-            params.coordinates,
-            params.zoomTag,
-            map
-        );
-
-        /** Register File Watcher to Update Markers/Overlays */
-        renderer.registerWatchers(
-            new Map([[file, new Map([["coordinates", "coordinates"]])]])
-        );
-
-        renderer.loadImmutableData();
-
-        map.render({
-            coords: coords,
-            zoomDistance: distanceToZoom
-        });
 
         this.registerMapEvents(map);
 

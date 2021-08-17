@@ -54,14 +54,9 @@ export interface LeafletMapOptions {
     darkMode?: boolean;
     defaultZoom?: number;
     distanceMultiplier?: number;
-    geojson?: any[];
+
     geojsonColor?: string;
-    gpx?: string[];
-    gpxIcons?: {
-        start: string;
-        end: string;
-        waypoint: string;
-    };
+
     hasAdditional?: boolean;
     height?: string;
     id?: string;
@@ -71,7 +66,7 @@ export interface LeafletMapOptions {
         data: string;
         id: string;
     }[];
-    layers?: string[]
+    layers?: string[];
     maxZoom?: number;
     minZoom?: number;
     overlayColor?: string;
@@ -140,6 +135,14 @@ declare abstract class BaseMap /* <
     get displayed(): Marker[];
 
     featureLayer: L.FeatureGroup;
+
+    geojsonData: any[];
+    gpxData: string[];
+    gpxIcons: {
+        start: string;
+        end: string;
+        waypoint: string;
+    };
 
     get id(): string;
 
@@ -212,6 +215,17 @@ declare abstract class BaseMap /* <
     getZoom(): number;
     handleMapContext(evt: L.LeafletMouseEvent, overlay?: Overlay): void;
     isLayerRendered(layer: string): boolean;
+
+    loadFeatureData(data: {
+        geojsonData: any[];
+        gpxData: string[];
+        gpxIcons: {
+            start: string;
+            end: string;
+            waypoint: string;
+        };
+    }): void;
+
     log(text: string): void;
     remove(): void;
     removeMarker(marker: Marker): void;

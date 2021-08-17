@@ -1,7 +1,9 @@
 import {
     MarkdownRenderChild,
     TFile,
-    MarkdownPostProcessorContext
+    MarkdownPostProcessorContext,
+    Notice,
+    CachedMetadata
 } from "obsidian";
 
 import type {
@@ -23,8 +25,10 @@ import {
     getId,
     OVERLAY_TAG_REGEX,
     DEFAULT_BLOCK_PARAMETERS,
-    getHeightFromView
+    getHeightFromView,
+    parseLink
 } from "./utils";
+import convert from "convert";
 
 declare module "leaflet" {
     interface Map {
@@ -79,10 +83,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             /*             gpx: gpxData,
             gpxIcons, */
             hasAdditional: this.params.layers.length > 1,
-            height: getHeightFromView(
-                this.parentEl,
-                this.params.height
-            ),
+            height: getHeightFromView(this.parentEl, this.params.height),
             id: this.params.id,
             imageOverlays: [],
             layers: this.params.layers,
@@ -144,8 +145,28 @@ export class LeafletRenderer extends MarkdownRenderChild {
             this.loader.loadImage(this.map.id, [this.options.layers[0]]);
         }
 
-        //await this.loadImmutableData();
+        await this.loadImmutableData();
         await this.loadFeatureData();
+
+        /** Get initial coordinates and zoom level */
+        this.map.log("Getting initiatial coordinates.");
+        const { coords, distanceToZoom, file } = await this._getCoordinates(
+            this.params.lat,
+            this.params.long,
+            this.params.coordinates,
+            this.params.zoomTag,
+            this.map
+        );
+
+        /** Register File Watcher to Update Markers/Overlays */
+        this.registerWatchers(
+            new Map([[file, new Map([["coordinates", "coordinates"]])]])
+        );
+
+        this.map.render({
+            coords: coords,
+            zoomDistance: distanceToZoom
+        });
     }
 
     async onload() {
@@ -223,7 +244,80 @@ export class LeafletRenderer extends MarkdownRenderChild {
         });
     }
 
-    async loadFeatureData() {}
+    async loadFeatureData() {
+        /** Get Markers from Parameters */
+        let geojson = this.params.geojson,
+            geojsonData: any[] = [];
+        if (!(geojson instanceof Array)) {
+            geojson = [geojson];
+        }
+        if (geojson.length) {
+            this.map.log("Loading GeoJSON files.");
+            for (let link of geojson.flat(Infinity)) {
+                const file = this.plugin.app.metadataCache.getFirstLinkpathDest(
+                    parseLink(link),
+                    ""
+                );
+                if (file && file instanceof TFile) {
+                    let data = await this.plugin.app.vault.read(file);
+                    try {
+                        data = JSON.parse(data);
+                    } catch (e) {
+                        new Notice(
+                            "Could not parse GeoJSON file " +
+                                link +
+                                "\n\n" +
+                                e.message
+                        );
+                        continue;
+                    }
+                    geojsonData.push(data);
+                }
+            }
+        }
+        let gpx = this.params.gpx,
+            gpxData: string[] = [];
+        let gpxIcons: {
+            start: string;
+            end: string;
+            waypoint: string;
+        } = {
+            ...{ start: null, end: null, waypoint: null },
+            ...this.params.gpxMarkers
+        };
+        if (!(gpx instanceof Array)) {
+            gpx = [gpx];
+        }
+        if (gpx.length) {
+            this.map.log("Loading GPX files.");
+            for (let link of gpx.flat(Infinity)) {
+                const file = this.plugin.app.metadataCache.getFirstLinkpathDest(
+                    parseLink(link),
+                    ""
+                );
+                if (file && file instanceof TFile) {
+                    let data = await this.plugin.app.vault.read(file);
+                    gpxData.push(data);
+                }
+            }
+        }
+
+        //TODO: Move image overlays to web worker
+        //maybe? may need this immediately otherwise they could flicker on
+        /* let imageOverlayData;
+        if (imageOverlay.length) {
+            imageOverlayData = await Promise.all(
+                imageOverlay.map(async ([img, ...bounds]) => {
+                    return {
+                        ...(await this.ImageLoader.loadImageAsync(id, [img])),
+                        bounds
+                    };
+                })
+            );
+        } */
+
+        this.map.loadFeatureData({ geojsonData, gpxData, gpxIcons });
+    }
     async loadImmutableData() {
         if (
             (this.params.marker ?? []).length ||
@@ -352,5 +446,126 @@ export class LeafletRenderer extends MarkdownRenderChild {
             this.watchers.add(watcher);
             watcher.on("remove", () => this.watchers.delete(watcher));
         }
+    }
+    //TODO: Move to renderer
+    private async _getCoordinates(
+        lat: string,
+        long: string,
+        coordinates: [string, string] | string,
+        zoomTag: string,
+        map: BaseMapType
+    ): Promise<{
+        coords: [number, number];
+        distanceToZoom: number;
+        file: TFile;
+    }> {
+        let latitude = lat;
+        let longitude = long;
+        let coords: [number, number] = [undefined, undefined];
+        let distanceToZoom, file;
+        if (typeof coordinates == "string" && coordinates.length) {
+            file = this.plugin.app.metadataCache.getFirstLinkpathDest(
+                parseLink(coordinates),
+                ""
+            );
+            if (file && file instanceof TFile) {
+                //internal, try to read note yaml for coords
+                ({ latitude, longitude, distanceToZoom } =
+                    this._getCoordsFromCache(
+                        this.plugin.app.metadataCache.getFileCache(file),
+                        zoomTag,
+                        map
+                    ));
+
+                map.log("Coordinates file found.");
+            }
+        } else if (coordinates && coordinates.length == 2) {
+            latitude = coordinates[0];
+            longitude = coordinates[1];
+
+            map.log(`Using supplied coordinates [${latitude}, ${longitude}]`);
+        }
+
+        let err: boolean = false;
+        try {
+            coords = [
+                Number(`${latitude}`?.split("%").shift()),
+                Number(`${longitude}`?.split("%").shift())
+            ];
+        } catch (e) {
+            err = true;
+        }
+
+        if (
+            (latitude || longitude) &&
+            (err || isNaN(coords[0]) || isNaN(coords[1]))
+        ) {
+            new Notice(
+                "There was an error with the provided latitude and longitude. Using defaults."
+            );
+        }
+        if (map.type != "real") {
+            if (!latitude || isNaN(coords[0])) {
+                coords[0] = 50;
+            }
+            if (!longitude || isNaN(coords[1])) {
+                coords[1] = 50;
+            }
+        } else {
+            if (!latitude || isNaN(coords[0])) {
+                coords[0] = this.plugin.data.lat;
+            }
+            if (!longitude || isNaN(coords[1])) {
+                coords[1] = this.plugin.data.long;
+            }
+        }
+
+        return { coords, distanceToZoom, file };
+    }
+    private _getCoordsFromCache(
+        cache: CachedMetadata,
+        zoomTag: string,
+        map: BaseMapType
+    ): {
+        latitude: string;
+        longitude: string;
+        distanceToZoom: number;
+    } {
+        /* const cache = await this.app.metadataCache.getFileCache(file); */
+        let latitude, longitude, distanceToZoom;
+        if (
+            cache &&
+            cache.frontmatter &&
+            cache.frontmatter.location &&
+            cache.frontmatter.location instanceof Array
+        ) {
+            let locations = cache.frontmatter.location;
+            if (
+                !(locations instanceof Array && locations[0] instanceof Array)
+            ) {
+                locations = [locations];
+            }
+            const location = locations[0];
+            latitude = location[0];
+            longitude = location[1];
+        }
+
+        if (
+            zoomTag &&
+            Object.prototype.hasOwnProperty.call(cache.frontmatter, zoomTag)
+        ) {
+            const overlay = cache.frontmatter[zoomTag];
+            const [, distance, unit] = overlay?.match(OVERLAY_TAG_REGEX) ?? [];
+            if (!distance) return;
+            //try to scale default zoom
+
+            distanceToZoom = convert(distance)
+                .from((unit as Length) ?? "m")
+                .to(/* map.type == "image" ? map.unit : */ "m");
+            /* if (map.type == "image") {
+                distanceToZoom = distanceToZoom / map.scale;
+            } */
+        }
+        return { latitude, longitude, distanceToZoom };
     }
 }

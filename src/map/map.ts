@@ -54,6 +54,18 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
     private escapeScope: Scope;
 
+    geojsonData: any[] = [];
+    gpxData: string[] = [];
+    gpxIcons: {
+        start: string;
+        end: string;
+        waypoint: string;
+    } = {
+        start: null,
+        end: null,
+        waypoint: null
+    };
+
     isDrawing: boolean = false;
     layerControl: L.Control.Layers;
     layerControlAdded = false;
@@ -68,9 +80,10 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         zoomDistance: number;
     };
 
-    type: string;
     abstract get scale(): number;
     start: number;
+
+    type: string;
 
     constructor(
         public plugin: ObsidianLeaflet,
@@ -125,7 +138,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 }
             });
         });
-        
+
         this.addFeatures();
 
         this.on("first-layer-ready", () => {
@@ -389,14 +402,14 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         /** Add GeoJSON to map */
         this.featureLayer = L.featureGroup();
         let added: number;
-        if (this.options.geojson.length > 0) {
+        if (this.geojsonData.length > 0) {
             this.log(
-                `Adding ${this.options.geojson.length} GeoJSON features to map.`
+                `Adding ${this.geojsonData.length} GeoJSON features to map.`
             );
             this.leafletInstance.createPane("geojson");
 
             added = 0;
-            this.options.geojson.forEach((geoJSON) => {
+            this.geojsonData.forEach((geoJSON) => {
                 try {
                     const geo = new GeoJSON(
                         this as BaseMapType,
@@ -423,21 +436,21 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         }
 
         /** Add GPX to map */
-        if (this.options.gpx.length > 0) {
-            this.log(`Adding ${this.options.gpx.length} GPX features to map.`);
+        if (this.gpxData.length > 0) {
+            this.log(`Adding ${this.gpxData.length} GPX features to map.`);
 
-            for (let gpx of this.options.gpx) {
+            for (let gpx of this.gpxData) {
                 const gpxInstance = new GPX(
                     this as BaseMapType,
                     gpx,
                     {},
-                    this.options.gpxIcons
+                    this.gpxIcons
                 );
                 gpxInstance.leafletInstance.addTo(this.featureLayer);
             }
         }
 
-        if (this.options.geojson.length || this.options.gpx.length) {
+        if (this.geojsonData.length || this.gpxData.length) {
             if (this.options.zoomFeatures) {
                 this.log(`Zooming to features.`);
                 this.leafletInstance.fitBounds(this.featureLayer.getBounds());
@@ -797,6 +810,31 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     isLayerRendered(layer: string) {
         return this.mapLayers.find(({ id }) => id === layer) ? true : false;
     }
+    loadFeatureData(data: {
+        geojsonData: any[];
+        gpxData: string[];
+        gpxIcons: {
+            start: string;
+            end: string;
+            waypoint: string;
+        };
+    }) {
+        this.geojsonData = [
+            ...(this.geojsonData ?? []),
+            ...(data.geojsonData ?? [])
+        ];
+        this.gpxData = [...(this.gpxData ?? []), ...(data.gpxData ?? [])];
+        this.gpxIcons = {
+            ...{
+                start: null,
+                end: null,
+                waypoint: null
+            },
+            ...(this.gpxIcons ?? {}),
+            ...data.gpxIcons
+        };
+        this.addFeatures();
+    }
     log(text: string) {
         log(this.verbose, this.id, text);
     }
@@ -816,6 +854,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     }
 
     resetZoom() {
+        if (!this.rendered) return;
         this.leafletInstance.invalidateSize();
         this.log(`Element added to note, resetting zoom.`);
         if (this.zoomDistance) {
