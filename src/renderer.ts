@@ -150,7 +150,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         /** Get initial coordinates and zoom level */
         this.map.log("Getting initiatial coordinates.");
-        const { coords, distanceToZoom, file } = await this._getCoordinates(
+        const { coords, zoomDistance, file } = await this._getCoordinates(
             this.params.lat,
             this.params.long,
             this.params.coordinates,
@@ -163,9 +163,26 @@ export class LeafletRenderer extends MarkdownRenderChild {
             new Map([[file, new Map([["coordinates", "coordinates"]])]])
         );
 
+        //TODO: Move image overlays to web worker
+        //maybe? may need this immediately otherwise they could flicker on
+        let imageOverlayData;
+        if (this.params.imageOverlay.length) {
+            imageOverlayData = await Promise.all(
+                this.params.imageOverlay.map(async ([img, ...bounds]) => {
+                    return {
+                        ...(await this.loader.loadImageAsync(this.map.id, [
+                            img
+                        ])),
+                        bounds
+                    };
+                })
+            );
+        }
+
         this.map.render({
-            coords: coords,
-            zoomDistance: distanceToZoom
+            coords,
+            zoomDistance,
+            imageOverlayData
         });
     }
 
@@ -301,20 +318,6 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 }
             }
         }
-
-        //TODO: Move image overlays to web worker
-        //maybe? may need this immediately otherwise they could flicker on
-        /* let imageOverlayData;
-        if (imageOverlay.length) {
-            imageOverlayData = await Promise.all(
-                imageOverlay.map(async ([img, ...bounds]) => {
-                    return {
-                        ...(await this.ImageLoader.loadImageAsync(id, [img])),
-                        bounds
-                    };
-                })
-            );
-        } */
 
         this.map.loadFeatureData({ geojsonData, gpxData, gpxIcons });
     }
@@ -456,13 +459,13 @@ export class LeafletRenderer extends MarkdownRenderChild {
         map: BaseMapType
     ): Promise<{
         coords: [number, number];
-        distanceToZoom: number;
+        zoomDistance: number;
         file: TFile;
     }> {
         let latitude = lat;
         let longitude = long;
         let coords: [number, number] = [undefined, undefined];
-        let distanceToZoom, file;
+        let zoomDistance, file;
         if (typeof coordinates == "string" && coordinates.length) {
             file = this.plugin.app.metadataCache.getFirstLinkpathDest(
                 parseLink(coordinates),
@@ -470,11 +473,10 @@ export class LeafletRenderer extends MarkdownRenderChild {
             );
             if (file && file instanceof TFile) {
                 //internal, try to read note yaml for coords
-                ({ latitude, longitude, distanceToZoom } =
+                ({ latitude, longitude, zoomDistance } =
                     this._getCoordsFromCache(
                         this.plugin.app.metadataCache.getFileCache(file),
-                        zoomTag,
-                        map
+                        zoomTag
                     ));
 
                 map.log("Coordinates file found.");
@@ -520,19 +522,18 @@ export class LeafletRenderer extends MarkdownRenderChild {
             }
         }
 
-        return { coords, distanceToZoom, file };
+        return { coords, zoomDistance, file };
     }
     private _getCoordsFromCache(
         cache: CachedMetadata,
-        zoomTag: string,
-        map: BaseMapType
+        zoomTag: string
     ): {
         latitude: string;
         longitude: string;
-        distanceToZoom: number;
+        zoomDistance: number;
     } {
         /* const cache = await this.app.metadataCache.getFileCache(file); */
-        let latitude, longitude, distanceToZoom;
+        let latitude, longitude, zoomDistance;
         if (
             cache &&
             cache.frontmatter &&
@@ -559,13 +560,13 @@ export class LeafletRenderer extends MarkdownRenderChild {
             if (!distance) return;
             //try to scale default zoom
 
-            distanceToZoom = convert(distance)
+            zoomDistance = convert(distance)
                 .from((unit as Length) ?? "m")
-                .to(/* map.type == "image" ? map.unit : */ "m");
-            /* if (map.type == "image") {
-                distanceToZoom = distanceToZoom / map.scale;
-            } */
+                .to(this.map.type == "image" ? this.map.unit : "m");
+            if (this.map.type == "image") {
+                zoomDistance = zoomDistance / this.map.scale;
+            }
         }
-        return { latitude, longitude, distanceToZoom };
+        return { latitude, longitude, zoomDistance };
     }
 }

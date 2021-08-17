@@ -65,6 +65,12 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         end: null,
         waypoint: null
     };
+    imageOverlayData: {
+        id: string;
+        data: string;
+        alias: string;
+        bounds: [[number, number], [number, number]];
+    }[] = [];
 
     isDrawing: boolean = false;
     layerControl: L.Control.Layers;
@@ -73,6 +79,12 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     abstract render(options: {
         coords: [number, number];
         zoomDistance: number;
+        imageOverlayData: {
+            id: string;
+            data: string;
+            alias: string;
+            bounds: [[number, number], [number, number]];
+        }[];
     }): Promise<void>;
     abstract popup: Popup;
     renderOptions: {
@@ -139,9 +151,8 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             });
         });
 
-        this.addFeatures();
-
         this.on("first-layer-ready", () => {
+            this.addFeatures();
             /** Move to supplied coordinates */
 
             this.log(
@@ -465,11 +476,11 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         }
 
         /** Add Image Overlays to Map */
-        if (this.options.imageOverlays.length) {
+        if (this.imageOverlayData &&  this.imageOverlayData.length) {
             if (this.mapLayers.length) {
                 this.addLayerControl();
                 this.leafletInstance.createPane("image-overlay");
-                for (let overlay of this.options.imageOverlays) {
+                for (let overlay of this.imageOverlayData) {
                     let bounds = overlay.bounds.length
                         ? overlay.bounds
                         : this.bounds;
@@ -484,7 +495,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 this.on("first-layer-ready", () => {
                     this.addLayerControl();
                     this.leafletInstance.createPane("image-overlay");
-                    for (let overlay of this.options.imageOverlays) {
+                    for (let overlay of this.imageOverlayData) {
                         let bounds = overlay.bounds.length
                             ? overlay.bounds
                             : this.bounds;
@@ -1057,8 +1068,21 @@ export class RealMap extends BaseMap {
         return layer;
     }
 
-    async render(options: { coords: [number, number]; zoomDistance: number }) {
-        this.renderOptions = options;
+    async render(options: {
+        coords: [number, number];
+        zoomDistance: number;
+        imageOverlayData: {
+            id: string;
+            data: string;
+            alias: string;
+            bounds: [[number, number], [number, number]];
+        }[];
+    }) {
+        this.renderOptions = {
+            coords: options.coords,
+            zoomDistance: options.zoomDistance
+        };
+        this.imageOverlayData = options.imageOverlayData;
         this.log("Beginning render process.");
         this.start = Date.now();
 
@@ -1189,8 +1213,21 @@ export class ImageMap extends BaseMap {
 
         return newLayer.layer;
     }
-    async render(options: { coords: [number, number]; zoomDistance: number }) {
-        this.renderOptions = options;
+    async render(options: {
+        coords: [number, number];
+        zoomDistance: number;
+        imageOverlayData: {
+            id: string;
+            data: string;
+            alias: string;
+            bounds: [[number, number], [number, number]];
+        }[];
+    }) {
+        this.renderOptions = {
+            coords: options.coords,
+            zoomDistance: options.zoomDistance
+        };
+        this.imageOverlayData = options.imageOverlayData;
 
         this.log("Beginning render process.");
         this.start = Date.now();

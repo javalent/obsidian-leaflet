@@ -104,14 +104,10 @@ declare abstract class BaseMap /* <
     isDrawing: boolean;
     plugin: ObsidianLeaflet;
     options: LeafletMapOptions;
-    /** Abstract */
-    /* abstract initialize(): void; */
     abstract render(options: {
         coords: [number, number];
         zoomDistance: number;
-        layer: { data: string; id: string };
-        hasAdditional?: boolean;
-        imageOverlays?: {
+        imageOverlayData?: {
             id: string;
             data: string;
             alias: string;
@@ -254,8 +250,7 @@ declare class RealMap extends BaseMap /* <L.TileLayer> */ {
     render(options: {
         coords: [number, number];
         zoomDistance: number;
-        hasAdditional?: boolean;
-        imageOverlays?: {
+        imageOverlayData?: {
             id: string;
             data: string;
             alias: string;
@@ -277,8 +272,7 @@ declare class ImageMap extends BaseMap /* <L.ImageOverlay> */ {
     render(options: {
         coords: [number, number];
         zoomDistance: number;
-        hasAdditional?: boolean;
-        imageOverlays?: {
+        imageOverlayData?: {
             id: string;
             data: string;
             alias: string;
