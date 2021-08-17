@@ -477,6 +477,24 @@ All markers created from the note will automatically have their link set to the 
 | mapmarkers      | Array of markers to create. See below for syntax.                                               |
 | mapoverlay      | Array of overlays to create. See below for syntax.                                              |
 
+#### location
+
+The location tag can be a set of coordinates or an array of coordinates. Each set of coordinates will be set to the `mapmarker` type, and any other tags that use the location will use the *first* set of coordinates.
+
+```
+---
+
+location: [25, 25]
+
+# OR
+
+location:
+ - [25, 25]
+ - [26, 26]
+ ...
+---
+```
+
 ##### mapmarkers
 
 The `mapmarkers` parameter can be used to define an arbitrary number of markers to display on the map. This does not require the `location` tag to be set.
