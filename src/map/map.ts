@@ -513,8 +513,8 @@ export abstract class BaseMap /* <T extends L.ImageOverlay | L.TileLayer> */
         }
         return display + ` ${this.unit}`;
     }
-    getMarkerById(id: string): Marker {
-        return this.markers.find(({ id: marker }) => marker === id);
+    getMarkersById(id: string): Marker[] {
+        return this.markers.filter(({ id: marker }) => marker === id);
     }
     getOverlaysUnderClick(evt: L.LeafletMouseEvent) {
         const overlays = [...this.overlays].filter(

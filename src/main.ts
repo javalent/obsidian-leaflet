@@ -272,26 +272,27 @@ export default class ObsidianLeaflet
         }
 
         const renderer = new LeafletRenderer(this, ctx, el, {
-            bounds: bounds,
+            bounds,
             context: ctx.sourcePath,
             darkMode: `${darkMode}` === "true",
             defaultZoom: +defaultZoom,
-            distanceMultiplier: distanceMultiplier,
+            distanceMultiplier,
             geojson: geojsonData,
-            geojsonColor: geojsonColor,
+            geojsonColor,
             gpx: gpxData,
-            gpxIcons: gpxIcons,
+            gpxIcons,
             hasAdditional: layers.length > 1,
             height: getHeight(view, height) ?? "500px",
-            id: id,
+            id,
             imageOverlays: imageOverlayData ?? [],
             maxZoom: +maxZoom,
             minZoom: +minZoom,
-            overlayColor: overlayColor,
-            scale: scale,
+            overlayTag: params.overlayTag,
+            overlayColor,
+            scale,
             type: image != "real" ? "image" : "real",
-            unit: unit,
-            verbose: verbose,
+            unit,
+            verbose,
             zoomDelta: +zoomDelta,
             zoomFeatures: zoomFeatures
         });
@@ -585,7 +586,11 @@ export default class ObsidianLeaflet
             cache.frontmatter.location &&
             cache.frontmatter.location instanceof Array
         ) {
-            const location = cache.frontmatter.location;
+            let locations = cache.frontmatter.location;
+            if (!(locations instanceof Array)) {
+                locations = [locations];
+            }
+            const location = locations[0];
             latitude = location[0];
             longitude = location[1];
         }

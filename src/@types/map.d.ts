@@ -74,6 +74,7 @@ export interface LeafletMapOptions {
     maxZoom?: number;
     minZoom?: number;
     overlayColor?: string;
+    overlayTag?: string;
     scale?: number;
     unit?: string;
     type?: "image" | "real";
@@ -205,7 +206,7 @@ declare abstract class BaseMap /* <
     /** Other Methods */
     closePopup(popup: L.Popup): void;
     distance(latlng1: L.LatLng, latlng2: L.LatLng): string;
-    getMarkerById(id: string): Marker;
+    getMarkersById(id: string): Marker[];
     getOverlaysUnderClick(evt: L.LeafletMouseEvent): Overlay[];
     getZoom(): number;
     handleMapContext(evt: L.LeafletMouseEvent, overlay?: Overlay): void;

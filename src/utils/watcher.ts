@@ -15,6 +15,7 @@ import { Length } from "convert/dist/types/units";
 import { OVERLAY_TAG_REGEX } from ".";
 
 import { LeafletSymbol } from "src/utils/leaflet-import";
+import { marker } from "leaflet";
 const L = window[LeafletSymbol];
 export default class Watcher extends Events {
     frontmatter: FrontMatterCache;
@@ -25,6 +26,8 @@ export default class Watcher extends Events {
         private fileIds: Map<string, string>
     ) {
         super();
+
+        console.log(fileIds)
 
         this.plugin.app.metadataCache.on("changed", (file) =>
             this._onChange(file)
@@ -40,21 +43,38 @@ export default class Watcher extends Events {
         if (!("frontmatter" in cache)) return;
         this.frontmatter = cache.frontmatter;
         let overlays = [];
-        const marker = this.map.getMarkerById(this.fileIds.get("marker"));
+        const markers = this.map.getMarkersById(this.fileIds.get("marker"));
 
         if (
-            marker &&
+            markers &&
             this.frontmatter.location &&
             this.frontmatter.location instanceof Array
         ) {
             try {
-                const { location } = this.frontmatter;
+                let locations = this.frontmatter.location;
                 if (
-                    location.length == 2 &&
-                    location.every((v) => typeof v == "number")
+                    locations &&
+                    locations instanceof Array &&
+                    !(locations[0] instanceof Array)
                 ) {
-                    if (!marker.loc.equals(L.latLng(<L.LatLngTuple>location))) {
-                        marker.setLatLng(L.latLng(<L.LatLngTuple>location));
+                    locations = [locations];
+                }
+
+                for (let index in locations) {
+                    const location = locations[index];
+                    const marker = markers[index];
+
+                    if (
+                        location.length == 2 &&
+                        location.every((v: any) => typeof v == "number")
+                    ) {
+                        if (
+                            !marker.loc.equals(
+                                L.latLng(<L.LatLngTuple>location)
+                            )
+                        ) {
+                            marker.setLatLng(L.latLng(<L.LatLngTuple>location));
+                        }
                     }
                 }
             } catch (e) {
@@ -64,7 +84,7 @@ export default class Watcher extends Events {
             }
         }
 
-        if (marker && this.frontmatter.mapmarker) {
+        if (markers && this.frontmatter.mapmarker) {
             try {
                 const { mapmarker } = this.frontmatter;
 
@@ -73,9 +93,11 @@ export default class Watcher extends Events {
                         ({ type }) => type == mapmarker
                     )
                 ) {
-                    marker.icon = this.plugin.markerIcons.find(
-                        ({ type }) => type == mapmarker
-                    );
+                    for (const marker of markers) {
+                        marker.icon = this.plugin.markerIcons.find(
+                            ({ type }) => type == mapmarker
+                        );
+                    }
                 }
             } catch (e) {
                 new Notice(
@@ -85,13 +107,13 @@ export default class Watcher extends Events {
         }
         if (this.frontmatter.mapmarkers) {
             try {
-                const marker = this.map.getMarkerById(
+                const markers = this.map.getMarkersById(
                     this.fileIds.get("mapmarkers")
                 );
                 const { mapmarkers } = this.frontmatter;
-
-                this.map.removeMarker(marker);
-
+                for (const marker of markers) {
+                    this.map.removeMarker(marker);
+                }
                 mapmarkers.forEach(
                     ([type, location, description]: [
                         type: string,
@@ -125,7 +147,7 @@ export default class Watcher extends Events {
             }
         }
 
-        if (marker)
+        if (markers) {
             try {
                 this.map.overlays
                     .filter(
@@ -178,23 +200,31 @@ export default class Watcher extends Events {
                     `There was an error updating the overlays for ${file.name}.`
                 );
             }
+        }
+
+        
+
     }
     private _onRename(file: TAbstractFile) {
         if (file !== this.file) return;
-        const marker = this.map.getMarkerById(this.fileIds.get("marker"));
+        const markers = this.map.getMarkersById(this.fileIds.get("marker"));
 
-        marker.link = this.plugin.app.metadataCache.fileToLinktext(
-            this.file,
-            "",
-            true
-        );
+        for (const marker of markers) {
+            marker.link = this.plugin.app.metadataCache.fileToLinktext(
+                this.file,
+                "",
+                true
+            );
+        }
     }
     private _onDelete(file: TAbstractFile) {
         if (file !== this.file) return;
         this.file = null;
-        const marker = this.map.getMarkerById(this.fileIds.get("marker"));
+        const markers = this.map.getMarkersById(this.fileIds.get("marker"));
 
-        this.map.removeMarker(marker);
+        for (const marker of markers) {
+            this.map.removeMarker(marker);
+        }
 
         this.map.overlays
             .filter(({ data }) => data.id === this.fileIds.get("overlay"))
