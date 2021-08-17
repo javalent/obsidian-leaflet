@@ -30,9 +30,12 @@ export abstract class Layer<T extends L.Layer> {
         if (this.map.isLayerRendered(this.layer)) {
             this.show();
         } else if (this.layer) {
-            this.map.on(`layer-ready-for-features`, (layer: LayerGroup<L.TileLayer | L.ImageOverlay>) => {
-                if (layer.id === this.layer) this.show();
-            });
+            this.map.on(
+                `layer-ready-for-features`,
+                (layer: LayerGroup<L.TileLayer | L.ImageOverlay>) => {
+                    if (layer.id === this.layer) this.show();
+                }
+            );
         } else {
             this.map.on(
                 "first-layer-ready",

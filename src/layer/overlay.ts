@@ -42,6 +42,10 @@ export class Overlay extends Layer<L.Circle> {
         this.data.color = color;
     }
 
+    get id() {
+        return this.data.id;
+    }
+
     get latlng() {
         return this.leafletInstance.getLatLng();
     }
@@ -126,14 +130,17 @@ export class Overlay extends Layer<L.Circle> {
             });
 
         if (this.marker) {
-            const marker = this.map.getMarkerById(this.marker);
+            const markers = this.map.getMarkersById(this.marker);
 
-            if (!marker) return;
-            marker.leafletInstance.on("drag", (evt: L.LeafletMouseEvent) => {
-                this.leafletInstance.setLatLng(
-                    marker.leafletInstance.getLatLng()
-                );
-            });
+            if (!markers || !markers.length) return;
+            markers[0].leafletInstance.on(
+                "drag",
+                (evt: L.LeafletMouseEvent) => {
+                    this.leafletInstance.setLatLng(
+                        markers[0].leafletInstance.getLatLng()
+                    );
+                }
+            );
         }
     }
     public isUnder(evt: L.LeafletMouseEvent) {

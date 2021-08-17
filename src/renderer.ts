@@ -35,7 +35,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
     verbose: boolean;
     parentEl: HTMLElement;
     constructor(
-        private plugin: ObsidianLeaflet,
+        public plugin: ObsidianLeaflet,
         private ctx: MarkdownPostProcessorContext,
         container: HTMLElement,
         private options: LeafletMapOptions = {}
@@ -143,7 +143,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
     registerWatchers(watchers: Map<TFile, Map<string, string>>) {
         for (const [file, fileIds] of watchers) {
-            const watcher = new Watcher(this.plugin, file, this.map, fileIds);
+            const watcher = new Watcher(this, file, fileIds);
             this.watchers.add(watcher);
             watcher.on("remove", () => this.watchers.delete(watcher));
         }
