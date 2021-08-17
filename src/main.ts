@@ -250,7 +250,12 @@ export default class ObsidianLeaflet
                         try {
                             data = JSON.parse(data);
                         } catch (e) {
-                            new Notice("Could not parse GeoJSON file " + link + '\n\n' + e.message);
+                            new Notice(
+                                "Could not parse GeoJSON file " +
+                                    link +
+                                    "\n\n" +
+                                    e.message
+                            );
                             continue;
                         }
                         geojsonData.push(data);
@@ -358,6 +363,7 @@ export default class ObsidianLeaflet
                     `Found ${immutableMarkers.length} markers and ${immutableOverlays.length} overlays from ${watchers.size} files.`
                 );
             }
+
             /** Build arrays of markers and overlays to pass to map */
             let markerArray: IMarkerData[] = immutableMarkers.map(
                 ([
@@ -479,42 +485,70 @@ export default class ObsidianLeaflet
                                     });
                                 map.overlays = map.overlays.filter(
                                     ({ id }) => id != fileIds.get("overlayTag")
-                                );
+                                );let locations = frontmatter.location ?? [0, 0];
+                                if (
+                                    locations &&
+                                    locations instanceof Array &&
+                                    !(locations[0] instanceof Array)
+                                ) {
+                                    locations = [locations];
+                                }
                                 overlays.push([
                                     overlayColor ?? "blue",
-                                    frontmatter.location ?? [0, 0],
+                                    locations[0],
                                     frontmatter[params.overlayTag],
                                     `${file.basename}: ${params.overlayTag}`,
                                     fileIds.get("overlayTag")
                                 ]);
                             }
                         }
-                        const marker = map.getMarkerById(fileIds.get("marker"));
+                        const markers = map.getMarkerById(
+                            fileIds.get("marker")
+                        );
 
                         if (
-                            marker &&
-                            marker.length &&
+                            markers &&
+                            markers.length &&
                             frontmatter.location &&
                             frontmatter.location instanceof Array
                         ) {
                             try {
-                                const { location } = frontmatter;
+                                let locations = frontmatter.location;
                                 if (
-                                    location.length == 2 &&
-                                    location.every((v) => typeof v == "number")
+                                    locations &&
+                                    locations instanceof Array &&
+                                    !(locations[0] instanceof Array)
                                 ) {
+                                    locations = [locations];
+                                }
+
+                                for (let index in locations) {
+                                    const location = locations[index];
+                                    const marker = markers[index];
+
                                     if (
-                                        !marker[0].loc.equals(
-                                            L.latLng(
-                                                <Leaflet.LatLngTuple>location
-                                            )
+                                        location.length == 2 &&
+                                        location.every(
+                                            (v: any) => typeof v == "number"
                                         )
                                     ) {
-                                        marker[0].setLatLng(
-                                            L.latLng(
-                                                <Leaflet.LatLngTuple>location
+                                        if (
+                                            !marker.loc.equals(
+                                                L.latLng(
+                                                    <Leaflet.LatLngTuple>(
+                                                        location
+                                                    )
+                                                )
                                             )
-                                        );
+                                        ) {
+                                            marker.setLatLng(
+                                                L.latLng(
+                                                    <Leaflet.LatLngTuple>(
+                                                        location
+                                                    )
+                                                )
+                                            );
+                                        }
                                     }
                                 }
                             } catch (e) {
@@ -524,7 +558,7 @@ export default class ObsidianLeaflet
                             }
                         }
 
-                        if (marker && marker.length && frontmatter.mapmarker) {
+                        if (markers && markers.length && frontmatter.mapmarker) {
                             try {
                                 const { mapmarker } = frontmatter;
 
@@ -533,7 +567,7 @@ export default class ObsidianLeaflet
                                         ({ type }) => type == mapmarker
                                     )
                                 ) {
-                                    marker[0].icon = this.markerIcons.find(
+                                    markers[0].icon = this.markerIcons.find(
                                         ({ type }) => type == mapmarker
                                     );
                                 }
@@ -586,7 +620,7 @@ export default class ObsidianLeaflet
                             }
                         }
 
-                        if (marker)
+                        if (markers)
                             try {
                                 map.overlays
                                     .filter(
@@ -894,7 +928,11 @@ export default class ObsidianLeaflet
             cache.frontmatter.location &&
             cache.frontmatter.location instanceof Array
         ) {
-            const location = cache.frontmatter.location;
+            let locations = cache.frontmatter.location;
+            if (!(locations instanceof Array)) {
+                locations = [locations];
+            }
+            const location = locations[0];
             latitude = location[0];
             longitude = location[1];
         }
