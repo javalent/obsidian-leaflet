@@ -5,7 +5,8 @@
     "main": "main.js",
     "scripts": {
         "dev": "webpack --config webpack.dev.js -w",
-        "build": "webpack"
+        "build": "webpack",
+        "postinstall": "npx download-cli --out src/leaflet-gpx https://raw.githubusercontent.com/mpetazzoni/leaflet-gpx/main/gpx.js"
     },
     "keywords": [],
     "author": "",
@@ -30,7 +31,6 @@
         "ignore-loader": "^0.1.2",
         "leaflet": "^1.7.1",
         "leaflet-fullscreen": "^1.0.2",
-        "leaflet-gpx": "^1.5.2",
         "mime": "^2.5.2",
         "mini-css-extract-plugin": "^2.1.0",
         "obsidian": "https://github.com/obsidianmd/obsidian-api/tarball/master",
