@@ -527,7 +527,9 @@ export async function getImmutableItems(
 
                 if (
                     !frontmatter ||
-                    (!frontmatter.location && !frontmatter.mapoverlay)
+                    (!frontmatter.location &&
+                        !frontmatter.mapoverlay &&
+                        !frontmatter.mapmarkers)
                 )
                     continue;
 
