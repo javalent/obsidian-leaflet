@@ -2,6 +2,7 @@ import { MAP_OVERLAY_STROKE_OPACITY, MAP_OVERLAY_STROKE_WIDTH } from ".";
 import L from "leaflet";
 import "leaflet-fullscreen";
 import "leaflet-gpx";
+import "leaflet-hotline"
 
 declare global {
     interface Window {

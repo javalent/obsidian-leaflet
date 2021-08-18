@@ -161,6 +161,21 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             this.setInitialCoords(this.renderOptions.coords);
             this.leafletInstance.panTo(this.initialCoords);
 
+            if (
+                (this.geojsonData.length || this.gpxData.length) &&
+                this.options.zoomFeatures
+            ) {
+                this.log(`Zooming to features.`);
+                this.leafletInstance.fitBounds(this.featureLayer.getBounds());
+                const { lat, lng } = this.featureLayer.getBounds().getCenter();
+
+                this.log(`Features center: [${lat}, ${lng}]`);
+                this.setInitialCoords([lat, lng]);
+                this.zoom.default = this.leafletInstance.getBoundsZoom(
+                    this.featureLayer.getBounds()
+                );
+            }
+
             if (this.renderOptions.zoomDistance) {
                 this.zoomDistance = this.renderOptions.zoomDistance;
                 this.setZoomByDistance(this.renderOptions.zoomDistance);
@@ -476,7 +491,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         }
 
         /** Add Image Overlays to Map */
-        if (this.imageOverlayData &&  this.imageOverlayData.length) {
+        if (this.imageOverlayData && this.imageOverlayData.length) {
             if (this.mapLayers.length) {
                 this.addLayerControl();
                 this.leafletInstance.createPane("image-overlay");
@@ -844,7 +859,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             ...(this.gpxIcons ?? {}),
             ...data.gpxIcons
         };
-        this.addFeatures();
+        /* this.addFeatures(); */
     }
     log(text: string) {
         log(this.verbose, this.id, text);
