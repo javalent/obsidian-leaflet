@@ -268,7 +268,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             for (let link of geojson.flat(Infinity)) {
                 const file = this.plugin.app.metadataCache.getFirstLinkpathDest(
                     parseLink(link),
-                    ""
+                    this.ctx.sourcePath
                 );
                 if (file && file instanceof TFile) {
                     let data = await this.plugin.app.vault.read(file);
@@ -305,7 +305,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             for (let link of gpx.flat(Infinity)) {
                 const file = this.plugin.app.metadataCache.getFirstLinkpathDest(
                     parseLink(link),
-                    ""
+                    this.ctx.sourcePath
                 );
                 if (file && file instanceof TFile) {
                     let data = await this.plugin.app.vault.read(file);
@@ -464,7 +464,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
         if (typeof coordinates == "string" && coordinates.length) {
             file = this.plugin.app.metadataCache.getFirstLinkpathDest(
                 parseLink(coordinates),
-                ""
+                this.ctx.sourcePath
             );
             if (file && file instanceof TFile) {
                 //internal, try to read note yaml for coords
