@@ -1,28 +1,26 @@
 import { MAP_OVERLAY_STROKE_OPACITY, MAP_OVERLAY_STROKE_WIDTH } from ".";
-import L from "leaflet";
-import "leaflet-fullscreen";
-import "../leaflet-gpx/gpx";
-import "leaflet-hotline"
+import type * as Leaflet from "leaflet";
 
 declare global {
     interface Window {
-        [LeafletSymbol]: typeof L;
+        [LeafletSymbol]: typeof Leaflet;
     }
-}
-
-declare module "leaflet" {
-    function noConflict(): typeof L;
 }
 
 export const LeafletSymbol = "obsidian-leaflet-plugin";
 
-/* require("leaflet");
+const WindowL = window.L;
+
+require("leaflet");
 require("leaflet-fullscreen");
-require("leaflet-gpx"); */
+require("leaflet-hotline");
+require("../leaflet-gpx/gpx");
 
 window.L.Circle.mergeOptions({
     weight: MAP_OVERLAY_STROKE_WIDTH,
     opacity: MAP_OVERLAY_STROKE_OPACITY
 });
 
-window[LeafletSymbol] = L.noConflict();
+window[LeafletSymbol] = window.L;
+
+window.L = WindowL;
