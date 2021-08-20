@@ -126,16 +126,16 @@ class GeoJSONMarker {
                     !evt.originalEvent.getModifierState("Alt")) &&
                 this.title
             ) {
-                this.parent.popup.target = this.marker;
-                this.parent.popup.open(this.descriptionDisplay);
+                this.parent.popup
+                    .setTarget(this.marker)
+                    .open(this.descriptionDisplay);
                 return;
             }
         });
         this.leafletInstance.on("mouseover", () => {
             if (this.map.isDrawing || !this.description) return;
 
-            this.parent.popup.target = this.marker;
-            this.parent.popup.open(this.iconDisplay);
+            this.parent.popup.setTarget(this.marker).open(this.iconDisplay);
         });
     }
 }
@@ -173,8 +173,9 @@ class GeoJSONFeature {
     onLayerMouseover() {
         if (!this.title && !this.description) return;
         if (this.map.isDrawing) return;
-        this.parent.popup.target = this.leafletInstance.getBounds().getCenter();
-        this.parent.popup.open(this.iconDisplay, this.leafletInstance);
+        this.parent.popup
+            .setTarget(this.leafletInstance.getBounds().getCenter())
+            .open(this.iconDisplay, this.leafletInstance);
     }
     onLayerClick(evt: L.LeafletMouseEvent) {
         if (evt.originalEvent.getModifierState(MODIFIER_KEY)) {
@@ -186,11 +187,10 @@ class GeoJSONFeature {
                 !evt.originalEvent.getModifierState("Alt")) &&
             this.title
         ) {
-            this.parent.popup.target = evt.latlng;
-            this.parent.popup.open(
-                this.descriptionDisplay,
-                this.leafletInstance
-            );
+            this.parent.popup
+                .setTarget(evt.latlng)
+                .open(this.descriptionDisplay, this.leafletInstance);
+            L.DomEvent.stopPropagation(evt);
             return;
         }
         this.map.leafletInstance.fire("click", evt, true);

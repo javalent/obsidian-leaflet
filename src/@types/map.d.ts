@@ -82,7 +82,6 @@ export interface LeafletMapOptions {
 
 declare class Popup {
     leafletInstance: L.Popup;
-    target: Layer<any> | L.LatLng | L.Polyline;
     handlerTarget: any;
     options: L.PopupOptions;
     constructor(
@@ -98,6 +97,7 @@ declare class Popup {
     isOpen(): boolean;
     setContent(content: ((source: L.Layer) => L.Content) | L.Content): void;
     setLatLng(latlng: L.LatLng): void;
+    setTarget(target: Layer<any> | L.LatLng | L.Polyline): Popup;
 }
 
 declare abstract class BaseMap /* <

@@ -17,6 +17,7 @@ class DistanceDisplay extends L.Control {
         super(opts);
         this.popups = [
             popup(this.map, null, {
+                permanent: true,
                 className: "leaflet-marker-link-popup",
                 autoClose: false,
                 closeButton: false,
@@ -24,6 +25,7 @@ class DistanceDisplay extends L.Control {
                 autoPan: false
             }),
             popup(this.map, null, {
+                permanent: true,
                 className: "leaflet-marker-link-popup",
                 autoClose: false,
                 closeButton: false,
@@ -41,10 +43,7 @@ class DistanceDisplay extends L.Control {
         if (this.line) {
             const latlngs = this.line.getLatLngs() as L.LatLng[];
 
-            this.popups[0].target = latlngs[0];
-
-            this.popups[0].setLatLng(latlngs[0]);
-            this.popups[0].setContent(
+            this.popups[0].setTarget(latlngs[0]).open(
                 `[${latlngs[0].lat.toLocaleString("en-US", {
                     maximumFractionDigits: LAT_LONG_DECIMALS
                 })}, ${latlngs[0].lng.toLocaleString("en-US", {
@@ -53,9 +52,7 @@ class DistanceDisplay extends L.Control {
             );
             this.map.leafletInstance.openPopup(this.popups[0].leafletInstance);
 
-            this.popups[1].target = latlngs[1];
-            this.popups[1].setLatLng(latlngs[1]);
-            this.popups[1].setContent(
+            this.popups[1].setTarget(latlngs[1]).open(
                 `[${latlngs[1].lat.toLocaleString("en-US", {
                     maximumFractionDigits: LAT_LONG_DECIMALS
                 })}, ${latlngs[1].lng.toLocaleString("en-US", {

@@ -620,8 +620,9 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         ) {
             this.log(`Map popup context detected. Opening popup.`);
             const latlng = formatLatLng(evt.latlng);
-            this.popup.target = evt.latlng;
-            this.popup.open(`[${latlng.lat}, ${latlng.lng}]`);
+            this.popup
+                .setTarget(evt.latlng)
+                .open(`[${latlng.lat}, ${latlng.lng}]`);
             if (
                 this.data.copyOnClick &&
                 evt.originalEvent.getModifierState(MODIFIER_KEY)

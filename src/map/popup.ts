@@ -19,11 +19,12 @@ class Popup {
     }
     constructor(
         private map: BaseMapType,
-        public target: Layer<any> | L.LatLng | L.Polyline,
+        private target: Layer<any> | L.LatLng | L.Polyline,
         options?: Options
     ) {
         this.options = { ...BASE_POPUP_OPTIONS, ...options };
         this.map.on("should-close-popup", (source) => {
+            if (this.options.permanent) return;
             if (source != this) this.close();
         });
     }
@@ -92,10 +93,18 @@ class Popup {
     private onMouseOver() {
         clearTimeout(this._timeoutHandler);
     }
+
+    setTarget(target: Layer<any> | L.Polyline | L.LatLng) {
+        this.target = target;
+        this.leafletInstance = this.getPopup();
+        return this;
+    }
+
     open(
         content: ((source: L.Layer) => L.Content) | L.Content,
         handler?: L.Layer
     ) {
+        console.log("🚀 ~ file: popup.ts ~ line 107 ~ content", content);
         if ("tooltip" in this.target && !this.canShowTooltip(this.target))
             return;
 
@@ -173,6 +182,7 @@ class Popup {
     }
 
     close() {
+        console.trace();
         if (!this.leafletInstance) return;
         if (this.target instanceof Marker && this.target.tooltip === "always")
             return;
