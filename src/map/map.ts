@@ -157,6 +157,10 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             this.addFeatures();
             /** Move to supplied coordinates */
 
+            console.log(
+                "🚀 ~ file: map.ts ~ line 163 ~ this.renderOptions",
+                this.renderOptions
+            );
             this.log(
                 `Moving to supplied coordinates: ${this.renderOptions.coords}`
             );
@@ -1122,6 +1126,7 @@ export class ImageMap extends BaseMap {
     dimensions: { h: number; w: number };
     mapLayers: LayerGroup<L.ImageOverlay>[] = [];
     type: "image" = "image";
+    readyToRender: boolean;
     constructor(
         public plugin: ObsidianLeaflet,
         public options: LeafletMapOptions
@@ -1254,5 +1259,17 @@ export class ImageMap extends BaseMap {
 
         this.log("Beginning render process.");
         this.start = Date.now();
+
+        this.trigger("ready-to-render");
+        this.readyToRender = true;
+    }
+    registerLayerToBuild(layer: ImageLayerData) {
+        if (this.readyToRender) {
+            this.buildLayer(layer);
+        } else {
+            this.on("ready-to-render", () => {
+                this.buildLayer(layer);
+            });
+        }
     }
 }

@@ -125,7 +125,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                         `Data ready for layer ${decodeURIComponent(layer.id)}.`
                     );
                     if (this.map instanceof ImageMap) {
-                        this.map.buildLayer(layer);
+                        this.map.registerLayerToBuild(layer);
                     }
                     if (additionalLayers) {
                         additionalLayers = false;
