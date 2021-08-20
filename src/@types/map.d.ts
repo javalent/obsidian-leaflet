@@ -105,9 +105,6 @@ declare abstract class BaseMap /* <
 > */
     extends Events
 {
-    isDrawing: boolean;
-    plugin: ObsidianLeaflet;
-    options: LeafletMapOptions;
     abstract render(options: {
         coords: [number, number];
         zoomDistance: number;
@@ -125,9 +122,12 @@ declare abstract class BaseMap /* <
 
     constructor(plugin: ObsidianLeaflet, options: LeafletMapOptions);
 
+    canvas: L.Canvas;
+
+    get currentGroup(): LayerGroup<L.TileLayer | L.ImageOverlay>;
     contentEl: HTMLElement;
     currentLayer: L.ImageOverlay | L.TileLayer;
-    get currentGroup(): LayerGroup<L.TileLayer | L.ImageOverlay>;
+
     get data(): ObsidianAppData;
     get defaultIcon(): MarkerIcon;
 
@@ -148,7 +148,9 @@ declare abstract class BaseMap /* <
 
     initialCoords: [number, number];
 
+    isDrawing: boolean;
     get isFullscreen(): boolean;
+
     leafletInstance: L.Map;
     mapLayers: LayerGroup<L.TileLayer | L.ImageOverlay>[];
 
@@ -156,8 +158,10 @@ declare abstract class BaseMap /* <
     get markerIcons(): Map<string, MarkerIcon>;
     get markerTypes(): string[];
 
+    options: LeafletMapOptions;
     overlays: Overlay[];
 
+    plugin: ObsidianLeaflet;
     popup: Popup;
     previousDistanceLine: L.Polyline;
 

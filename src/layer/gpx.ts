@@ -1,9 +1,11 @@
 import type { BaseMapType } from "src/@types";
-import { GPX as LeafletGPX, GPXOptions } from "leaflet";
 import { Layer } from "../layer/layer";
 
 import { LeafletSymbol } from "src/utils/leaflet-import";
-import { Menu } from "obsidian";
+import { gpx as gpxtoGeoJSON } from "@tmcw/togeojson";
+
+import gpxParser from "gpx-parser-builder";
+
 let L = window[LeafletSymbol];
 
 declare module "leaflet" {
@@ -38,18 +40,24 @@ const MarkerOptions: L.MarkerOptions = {
     }
 };
 
-export class GPX extends Layer<LeafletGPX> {
-    leafletInstance: LeafletGPX;
+export class GPX extends Layer<L.GeoJSON> {
+    leafletInstance: L.GeoJSON;
     style: { opacity: string; color: string };
     hotline: string;
     popup: null;
+    gpx: GeoJSON.FeatureCollection;
+    domObject: Record<any, any>;
+    data: any;
     get group() {
         return this.map.featureLayer;
+    }
+    get renderer() {
+        return this.map.canvas;
     }
     constructor(
         public map: BaseMapType,
         gpx: string,
-        options: GPXOptions,
+        /* options: GPXOptions, */
         private icons: any
     ) {
         super();
@@ -72,21 +80,18 @@ export class GPX extends Layer<LeafletGPX> {
             };
         }
 
-        this.leafletInstance = new L.GPX(gpx, {
-            marker_options: MarkerOptions
+        //@ts-expect-error
+        window.GPX = this;
+        this.data = gpxParser.parse(gpx);
+        this.gpx = gpxtoGeoJSON(
+            new DOMParser().parseFromString(gpx, "text/xml")
+        );
+        this.leafletInstance = L.geoJSON(this.gpx, {
+            pane: "gpx",
+            interactive: true
         });
 
-        //@ts-expect-error
-        window.INSTANCE = this;
-
-        //@ts-expect-error
-        this.leafletInstance.on("loaded", ({ layers }) => {
-            this.featureGroup = layers;
-
-            this.initialize();
-        });
-
-        this.leafletInstance.on("contextmenu", (evt: L.LeafletMouseEvent) => {
+        /*         this.leafletInstance.on("contextmenu", (evt: L.LeafletMouseEvent) => {
             console.log("🚀 ~ file: gpx.ts ~ line 89 ~ evt", evt);
             L.DomEvent.stopPropagation(evt);
             const menu = new Menu(this.map.plugin.app);
@@ -98,7 +103,9 @@ export class GPX extends Layer<LeafletGPX> {
                     menu.hide();
                     this.show();
                     if (this.hotline) {
-                        this.hotlines[this.hotline].remove();
+                        this.hotlines[this.hotline].setStyle({
+                            color: "transparent"
+                        });
                         this.hotline = null;
                     }
                 });
@@ -111,19 +118,15 @@ export class GPX extends Layer<LeafletGPX> {
                     );
                     item.onClick(() => {
                         if (this.hotline) {
-                            this.hotlines[this.hotline].remove();
+                            this.hotlines[this.hotline].setStyle({
+                                color: "transparent"
+                            });
                         }
                         this.hotline = key;
                         this.hide();
                         menu.hide();
                         this.hotlines[key].addTo(this.group);
                         this.hotlines[key].redraw();
-
-                        console.log(
-                            "🚀 ~ file: gpx.ts ~ line 113 ~ this.hotlines[this.hotline]",
-                            this.hotline,
-                            this.hotlines[this.hotline]
-                        );
                     });
                 });
             });
@@ -132,9 +135,7 @@ export class GPX extends Layer<LeafletGPX> {
                 x: evt.originalEvent.clientX,
                 y: evt.originalEvent.clientY
             });
-        });
-
-        this.leafletInstance.reload();
+        }); */
     }
     hide() {
         if (this.polyline) {
@@ -150,68 +151,13 @@ export class GPX extends Layer<LeafletGPX> {
             });
         }
     }
-    initialize() {
-        if (this.polyline) {
-            this.buildHotlines();
-        }
-    }
 
     hotlines: Record<string, L.Polyline> = {};
 
-    buildHotlines() {
-        let data = [];
-        const elevations = this.leafletInstance.get_elevation_data();
-
-        for (const index in this.latlngs) {
-            const latlng = this.latlngs[index];
-            data.push(
-                new L.LatLng(latlng.lat, latlng.lng, elevations[index][1])
-            );
-        }
-
-        this.hotlines.elevation = L.hotline(data, {
-            min: this.leafletInstance.get_elevation_min(),
-            max: this.leafletInstance.get_elevation_max(),
-            weight: 3
-        });
-        data = [];
-        const speed = this.leafletInstance.get_speed_data();
-
-        for (const index in this.latlngs) {
-            const latlng = this.latlngs[index];
-            data.push(new L.LatLng(latlng.lat, latlng.lng, speed[index][1]));
-        }
-
-        const min_speed = Math.min(...speed.map((v) => v[0]));
-
-        this.hotlines.speed = L.hotline(data, {
-            min: min_speed,
-            max: this.leafletInstance.get_speed_max(),
-            weight: 3
-        });
-    }
-
-    get elevation() {
-        return {
-            data: this.leafletInstance.get_elevation_data(),
-            min: this.leafletInstance.get_elevation_min(),
-            max: this.leafletInstance.get_elevation_max()
-        };
-    }
-    get speed() {
-        return {
-            data: this.leafletInstance.get_speed_data(),
-            min: this.leafletInstance.get_elevation_min(),
-            max: this.leafletInstance.get_elevation_max()
-        };
-    }
     featureGroup: L.FeatureGroup;
-    get latlngs() {
-        return this.polyline?.getLatLngs() as L.LatLng[];
-    }
     get polyline() {
         return this.featureGroup
-            .getLayers()
+            ?.getLayers()
             ?.filter((l) => l instanceof L.Polyline)
             ?.shift() as L.Polyline;
     }

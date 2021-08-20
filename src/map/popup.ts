@@ -182,7 +182,6 @@ class Popup {
     }
 
     close() {
-        console.trace();
         if (!this.leafletInstance) return;
         if (this.target instanceof Marker && this.target.tooltip === "always")
             return;

@@ -49,6 +49,7 @@ let L = window[LeafletSymbol];
 export abstract class BaseMap extends Events implements BaseMapDefinition {
     abstract get bounds(): L.LatLngBounds;
 
+    canvas: L.Canvas;
     CRS: L.CRS;
     distanceDisplay: DistanceDisplay;
 
@@ -133,6 +134,10 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             ...(this.plugin.isDesktop ? { fullscreenControl: true } : {})
         });
         this.leafletInstance.createPane("base-layer");
+        this.leafletInstance.createPane("geojson");
+        this.leafletInstance.createPane("gpx");
+
+        this.canvas = L.canvas({ pane: "gpx" }).addTo(this.leafletInstance);
 
         /** Bind Map Events */
         this.leafletInstance.on("contextmenu", (evt: L.LeafletMouseEvent) =>
@@ -438,7 +443,6 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             this.log(
                 `Adding ${this.geojsonData.length} GeoJSON features to map.`
             );
-            this.leafletInstance.createPane("geojson");
 
             added = 0;
             console.log(
@@ -479,7 +483,6 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 const gpxInstance = new GPX(
                     this as BaseMapType,
                     gpx,
-                    {},
                     this.gpxIcons
                 );
                 gpxInstance.leafletInstance.addTo(this.featureLayer);
