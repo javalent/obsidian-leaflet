@@ -150,7 +150,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
     divIcon: MarkerDivIcon;
     displayed: boolean;
     tooltip?: TooltipDisplay;
-    popup: Popup;
+    popup = popup(this.map, this);
     private _icon: MarkerIcon;
     isBeingHovered: boolean = false;
     constructor(
@@ -205,12 +205,6 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         this.percent = percent;
         this.description = description;
         this.tooltip = tooltip;
-
-        if (this.tooltip === "always") {
-            this.popup = popup(this.map);
-        } else {
-            this.popup = this.map.popup;
-        }
 
         this.minZoom = minZoom;
         this.maxZoom = maxZoom;
@@ -273,11 +267,10 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                         }
 
                         if (this.tooltip === "always" && !this.popup) {
-                            this.popup = popup(this.map);
-                            this.popup.open(this, this.target.display);
+                            this.popup = popup(this.map, this);
+                            this.popup.open(this.target.display);
                         } else if (this.tooltip !== "always") {
                             this.popup.close();
-                            this.popup = this.map.popup;
                         }
 
                         this.map.trigger("marker-updated", this);
@@ -287,12 +280,11 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                 markerSettingsModal.open();
             })
             .on("click", async (evt: L.LeafletMouseEvent) => {
-                
                 if (this.map.isDrawing) {
                     this.map.onMarkerClick(this, evt);
                     return;
                 }
-                
+
                 L.DomEvent.stopPropagation(evt);
 
                 if (
@@ -301,7 +293,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                 ) {
                     this.map.onMarkerClick(this, evt);
                     const latlng = formatLatLng(this.latLng);
-                    this.popup.open(this, `[${latlng.lat}, ${latlng.lng}]`);
+                    this.popup.open(`[${latlng.lat}, ${latlng.lng}]`);
 
                     if (
                         this.map.data.copyOnClick &&
@@ -348,7 +340,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                 }
 
                 if (this.target) {
-                    this.popup.open(this, this.target.display);
+                    this.popup.open(this.target.display);
                 }
             })
             .on("mouseout", (evt: L.LeafletMouseEvent) => {
@@ -446,7 +438,10 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         }
         this.leafletInstance.setLatLng(latlng);
     }
-
+    onShow() {}
+    onHide() {
+        this.popup.close();
+    }
     show() {
         if (
             this.shouldShow(this.map.getZoom()) &&
@@ -455,6 +450,9 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         ) {
             this.group.addLayer(this.leafletInstance);
             this.displayed = true;
+            /* if (this.tooltip === "always" && this.target) {
+                this.popup.open(this.target.display);
+            } */
         }
     }
     shouldShow(zoom: number) {

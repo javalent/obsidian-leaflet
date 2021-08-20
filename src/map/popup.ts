@@ -1,5 +1,6 @@
 import type { BaseMapType, LeafletOverlay, TooltipDisplay } from "src/@types";
-import { Marker } from "src/layer";
+import { Marker, Overlay } from "src/layer";
+import { Layer } from "src/layer/layer";
 import { BASE_POPUP_OPTIONS } from "src/utils";
 import { LeafletSymbol } from "../utils/leaflet-import";
 let L = window[LeafletSymbol];
@@ -7,7 +8,7 @@ let L = window[LeafletSymbol];
 class Popup {
     leafletInstance: L.Popup;
     private _timeoutHandler: ReturnType<typeof setTimeout>;
-    target: Marker | L.Circle | L.LatLng | L.Polyline;
+
     handlerTarget: any;
     options: Options;
     get displayMarkerTooltips() {
@@ -16,9 +17,12 @@ class Popup {
     get displayOverlayTooltips() {
         return this.map.plugin.data.displayOverlayTooltips;
     }
-    constructor(private map: BaseMapType, options?: Options) {
+    constructor(
+        private map: BaseMapType,
+        public target: Layer<any> | L.LatLng | L.Polyline,
+        options?: Options
+    ) {
         this.options = { ...BASE_POPUP_OPTIONS, ...options };
-        this.leafletInstance = L.popup(this.options);
     }
     private canShowTooltip(
         target: Marker | LeafletOverlay,
@@ -28,7 +32,7 @@ class Popup {
             target instanceof Marker
                 ? this.displayMarkerTooltips
                 : this.displayOverlayTooltips;
-        if (tooltip === "always") return false;
+        if (tooltip === "always") return true;
         if (tooltip === "hover" && global) return true;
         if (tooltip === "never") return false;
         return global;
@@ -86,44 +90,42 @@ class Popup {
         clearTimeout(this._timeoutHandler);
     }
     open(
-        target: Marker | L.Circle | L.LatLng | L.Polyline,
         content: ((source: L.Layer) => L.Content) | L.Content,
         handler?: L.Layer
     ) {
-        if ("tooltip" in target && !this.canShowTooltip(target, target.tooltip))
+        if ("tooltip" in this.target && !this.canShowTooltip(this.target))
             return;
+
+        if (!this.leafletInstance) this.leafletInstance = this.getPopup();
 
         if (this._timeoutHandler) {
             clearTimeout(this._timeoutHandler);
         }
 
-        if (this.leafletInstance.isOpen() && this.target == target) {
+        if (this.leafletInstance.isOpen()) {
             this.leafletInstance.setContent(content);
-            if (target instanceof L.Polyline) {
+            if (this.target instanceof L.Polyline) {
                 this.leafletInstance.setLatLng(
-                    target.getLatLngs()[1] as L.LatLng
+                    this.target.getLatLngs()[1] as L.LatLng
                 );
             }
             return;
         }
 
-        this.target = target;
-
         if (this.target instanceof L.Polyline) {
             this.target.on("remove", () => this.close());
         }
 
-        this.handlerTarget = handler ?? target;
+        this.handlerTarget = handler ?? this.target;
 
         if (this.leafletInstance && this.leafletInstance.isOpen()) {
             this.close();
-            if (target instanceof L.Layer) target.closePopup();
+            if (this.target instanceof L.Layer) this.target.closePopup();
         }
 
-        this.leafletInstance = this._getPopup(target).setContent(content);
-        let popupElement: HTMLElement;
-        let _this = this;
+        this.leafletInstance.setContent(content);
 
+        let popupElement: HTMLElement;
         this.map.leafletInstance.on("popupopen", () => {
             if (this.options.permanent) return;
             popupElement = this.leafletInstance.getElement();
@@ -136,21 +138,23 @@ class Popup {
                 this.onMouseOut.bind(this)
             );
         });
+
         this.map.leafletInstance.addLayer(this.leafletInstance);
-        if (this.handlerTarget instanceof L.Circle) {
+
+        if (this.handlerTarget instanceof Overlay) {
             this.map.leafletInstance.on("zoom", this.onZoomAnim.bind(this));
         }
 
         if (this.options.permanent) return;
         if (this.handlerTarget instanceof L.LatLng) {
-            this._timeoutHandler = setTimeout(function () {
+            this._timeoutHandler = setTimeout(() => {
                 popupElement.removeEventListener(
                     "mouseenter",
                     this.onMouseOver
                 );
                 popupElement.removeEventListener("mouseleave", this.onMouseOut);
 
-                _this.close();
+                this.close();
             }, 1000);
         } else if (this.handlerTarget instanceof L.Layer) {
             this.handlerTarget
@@ -165,71 +169,74 @@ class Popup {
 
     close() {
         if (!this.leafletInstance) return;
-        this.map.closePopup(this.leafletInstance);
+        this.leafletInstance.removeFrom(this.map.leafletInstance);
     }
 
-    private _getPopup(
-        target: Marker | L.Circle | L.LatLng | L.Polyline
-    ): L.Popup {
-        if (this.leafletInstance.isOpen() && this.target == target) {
-            return this.leafletInstance;
-        }
-
-        this.target = target;
-
+    private getPopup(): L.Popup {
         if (this.leafletInstance && this.leafletInstance.isOpen()) {
             this.close();
         }
 
-        return this.buildPopup(target);
+        return this.buildPopup();
     }
 
-    private buildPopup(
-        target: Marker | L.Circle | L.LatLng | L.Polyline
-    ): L.Popup {
-        if (target instanceof L.LatLng) {
-            return L.popup(this.options).setLatLng(target);
-        } else if (target instanceof L.Polyline) {
+    private buildPopup(): L.Popup {
+        console.log(
+            "🚀 ~ file: popup.ts ~ line 185 ~ this.target ",
+            this.target
+        );
+        if (this.target instanceof L.LatLng) {
+            return L.popup(this.options).setLatLng(this.target);
+        } else if (this.target instanceof L.Polyline) {
             return L.popup(this.options).setLatLng(
-                target.getLatLngs()[1] as L.LatLng
+                this.target.getLatLngs()[1] as L.LatLng
             );
-        } else if (target instanceof L.Circle) {
+        } else if (this.target instanceof Overlay) {
             return L.popup({
                 ...this.options,
                 offset: new L.Point(
                     0,
-                    (-1 * target.getElement().getBoundingClientRect().height) /
+                    (-1 *
+                        this.target.leafletInstance
+                            .getElement()
+                            .getBoundingClientRect().height) /
                         2 +
                         10 // not sure why circles have this extra padding..........
                 )
-            }).setLatLng(target.getLatLng());
+            }).setLatLng(this.target.leafletInstance.getLatLng());
         } else {
             return L.popup({
                 ...this.options,
                 offset: new L.Point(
                     0,
                     (-1 *
-                        target.leafletInstance
+                        this.target.leafletInstance
                             .getElement()
                             .getBoundingClientRect().height) /
                         2
                 )
-            }).setLatLng(target.leafletInstance.getLatLng());
+            }).setLatLng(this.target.leafletInstance.getLatLng());
         }
     }
     isOpen() {
         return this.leafletInstance.isOpen();
     }
     setContent(content: ((source: L.Layer) => L.Content) | L.Content) {
+        if (!this.leafletInstance) this.leafletInstance = this.getPopup();
         this.leafletInstance.setContent(content);
     }
     setLatLng(latlng: L.LatLng) {
+        if (!this.leafletInstance) this.leafletInstance = this.getPopup();
         this.leafletInstance.setLatLng(latlng);
     }
 }
 interface Options extends L.PopupOptions {
     permanent?: boolean;
 }
-export function popup(map: BaseMapType, options?: Options): Popup {
-    return new Popup(map, options);
+export function popup(
+    map: BaseMapType,
+    target: Layer<any> | L.LatLng | L.Polyline,
+    options?: Options
+): Popup {
+    return new Popup(map, target, options);
 }

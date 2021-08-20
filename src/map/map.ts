@@ -86,7 +86,9 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             bounds: [[number, number], [number, number]];
         }[];
     }): Promise<void>;
-    abstract popup: Popup;
+
+    popup: Popup = popup(this, null);
+
     renderOptions: {
         coords: [number, number];
         zoomDistance: number;
@@ -618,7 +620,8 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         ) {
             this.log(`Map popup context detected. Opening popup.`);
             const latlng = formatLatLng(evt.latlng);
-            this.popup.open(evt.latlng, `[${latlng.lat}, ${latlng.lng}]`);
+            this.popup.target = evt.latlng;
+            this.popup.open(`[${latlng.lat}, ${latlng.lng}]`);
             if (
                 this.data.copyOnClick &&
                 evt.originalEvent.getModifierState(MODIFIER_KEY)
@@ -648,15 +651,16 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             this.isDrawing = true;
             this.plugin.app.keymap.pushScope(this.escapeScope);
 
-            const distanceTooltip = popup(this, { permanent: true });
-
             this.distanceLine = L.polyline([this.distanceEvent, evt.latlng]);
 
             this.distanceLine.addTo(this.leafletInstance);
 
+            const distanceTooltip = popup(this, this.distanceLine, {
+                permanent: true
+            });
             const latlngs = this.distanceLine.getLatLngs() as L.LatLng[];
             const display = this.distance(latlngs[0], latlngs[1]);
-            distanceTooltip.open(this.distanceLine, display);
+            distanceTooltip.open(display);
 
             this.leafletInstance.on(
                 "mousemove",
@@ -695,7 +699,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                         this.distanceLine.getLatLngs() as L.LatLng[];
                     const display = this.distance(latlngs[0], latlngs[1]);
 
-                    distanceTooltip.open(this.distanceLine, display);
+                    distanceTooltip.open(display);
 
                     this.distanceDisplay.setText(display);
                     this.distanceLine.redraw();
@@ -1015,7 +1019,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 export class RealMap extends BaseMap {
     CRS = L.CRS.EPSG3857;
     mapLayers: LayerGroup<L.TileLayer>[] = [];
-    popup: Popup = popup(this);
+
     type: "real" = "real";
 
     constructor(
@@ -1116,7 +1120,6 @@ export class ImageMap extends BaseMap {
     currentLayer: L.ImageOverlay;
     dimensions: { h: number; w: number };
     mapLayers: LayerGroup<L.ImageOverlay>[] = [];
-    popup: Popup = popup(this);
     type: "image" = "image";
     constructor(
         public plugin: ObsidianLeaflet,

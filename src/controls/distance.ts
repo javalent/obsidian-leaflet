@@ -16,14 +16,14 @@ class DistanceDisplay extends L.Control {
     constructor(opts: L.ControlOptions, public map: BaseMapType) {
         super(opts);
         this.popups = [
-            popup(this.map, {
+            popup(this.map, null, {
                 className: "leaflet-marker-link-popup",
                 autoClose: false,
                 closeButton: false,
                 closeOnClick: false,
                 autoPan: false
             }),
-            popup(this.map, {
+            popup(this.map, null, {
                 className: "leaflet-marker-link-popup",
                 autoClose: false,
                 closeButton: false,
@@ -41,6 +41,8 @@ class DistanceDisplay extends L.Control {
         if (this.line) {
             const latlngs = this.line.getLatLngs() as L.LatLng[];
 
+            this.popups[0].target = latlngs[0];
+
             this.popups[0].setLatLng(latlngs[0]);
             this.popups[0].setContent(
                 `[${latlngs[0].lat.toLocaleString("en-US", {
@@ -51,6 +53,7 @@ class DistanceDisplay extends L.Control {
             );
             this.map.leafletInstance.openPopup(this.popups[0].leafletInstance);
 
+            this.popups[1].target = latlngs[1];
             this.popups[1].setLatLng(latlngs[1]);
             this.popups[1].setContent(
                 `[${latlngs[1].lat.toLocaleString("en-US", {

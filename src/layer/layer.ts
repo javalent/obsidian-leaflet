@@ -19,11 +19,14 @@ export abstract class Layer<T extends L.Layer> {
     abstract leafletInstance: T;
     abstract get group(): L.LayerGroup;
 
+    onShow() {}
     show() {
         if (this.group) {
             this.group.addLayer(this.leafletInstance);
         }
+        this.onShow();
     }
+    onHide() {}
     hide() {
         this.group && this.group.removeLayer(this.leafletInstance);
     }

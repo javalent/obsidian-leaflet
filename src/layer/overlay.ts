@@ -11,7 +11,7 @@ let L = window[LeafletSymbol];
 export class Overlay extends Layer<L.Circle> {
     leafletInstance: L.Circle;
 
-    popup = popup(this.map);
+    popup = popup(this.map, this);
 
     get radius() {
         let radius = this.radiusInMeters;
@@ -122,14 +122,14 @@ export class Overlay extends Layer<L.Circle> {
             })
             .on("mouseover", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
-                this.popup.open(this.leafletInstance, this.description);
+                this.popup.open(this.description);
             })
             .on("click", (evt: L.LeafletMouseEvent) => {
                 if (evt.originalEvent.getModifierState(MODIFIER_KEY)) {
                     this.focus();
                     return;
                 }
-                this.popup.open(this.leafletInstance, this.description);
+                this.popup.open(this.description);
             });
 
         if (this.marker) {

@@ -8,6 +8,7 @@ import type { ObsidianLeaflet } from "./main";
 import type { Marker } from ".";
 import type { ObsidianAppData, TooltipDisplay } from "./saved";
 import type { Overlay } from "src/layer";
+import { Layer } from "src/layer/layer";
 
 export interface ImageLayerData {
     data: string;
@@ -81,12 +82,15 @@ export interface LeafletMapOptions {
 
 declare class Popup {
     leafletInstance: L.Popup;
-    target: Marker | L.Circle | L.LatLng | L.Polyline;
+    target: Layer<any> | L.LatLng | L.Polyline;
     handlerTarget: any;
     options: L.PopupOptions;
-    constructor(map: BaseMapType, options?: L.PopupOptions);
+    constructor(
+        map: BaseMapType,
+        target: Layer<any> | L.LatLng | L.Polyline,
+        options?: L.PopupOptions
+    );
     open(
-        target: Marker | L.Circle | L.LatLng | L.Polyline,
         content: ((source: L.Layer) => L.Content) | L.Content,
         handler?: L.Layer
     ): void;
