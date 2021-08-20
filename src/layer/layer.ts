@@ -1,8 +1,10 @@
-import { BaseMapType, LayerGroup } from "src/@types";
+import { BaseMapType, LayerGroup, Popup } from "src/@types";
 
 export abstract class Layer<T extends L.Layer> {
     map: BaseMapType;
     layer: string;
+
+    abstract popup: Popup;
 
     get mapLayer() {
         if (!this.layer) {

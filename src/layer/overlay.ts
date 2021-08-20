@@ -1,6 +1,7 @@
 import convert from "convert";
 
 import { BaseMapType, SavedOverlayData } from "src/@types";
+import { popup } from "src/map/popup";
 import { formatLatLng, formatNumber } from "src/utils";
 import { DISTANCE_DECIMALS, MODIFIER_KEY } from "src/utils";
 import { LeafletSymbol } from "src/utils/leaflet-import";
@@ -9,6 +10,8 @@ import { Layer } from "../layer/layer";
 let L = window[LeafletSymbol];
 export class Overlay extends Layer<L.Circle> {
     leafletInstance: L.Circle;
+
+    popup = popup(this.map);
 
     get radius() {
         let radius = this.radiusInMeters;
@@ -119,14 +122,14 @@ export class Overlay extends Layer<L.Circle> {
             })
             .on("mouseover", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
-                this.map.popup.open(this.leafletInstance, this.description);
+                this.popup.open(this.leafletInstance, this.description);
             })
             .on("click", (evt: L.LeafletMouseEvent) => {
                 if (evt.originalEvent.getModifierState(MODIFIER_KEY)) {
                     this.focus();
                     return;
                 }
-                this.map.popup.open(this.leafletInstance, this.description);
+                this.popup.open(this.leafletInstance, this.description);
             });
 
         if (this.marker) {

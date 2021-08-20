@@ -136,7 +136,7 @@ class Popup {
                 this.onMouseOut.bind(this)
             );
         });
-        this.map.leafletInstance.openPopup(this.leafletInstance);
+        this.map.leafletInstance.addLayer(this.leafletInstance);
         if (this.handlerTarget instanceof L.Circle) {
             this.map.leafletInstance.on("zoom", this.onZoomAnim.bind(this));
         }

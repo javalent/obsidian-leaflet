@@ -13,11 +13,13 @@ import {
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { Layer } from "./layer";
 import { formatLatLng } from "src/utils";
+import { popup } from "src/map/popup";
 let L = window[LeafletSymbol];
 
 export class GeoJSON extends Layer<L.GeoJSON> {
     leafletInstance: L.GeoJSON;
     private _display: HTMLDivElement;
+    popup = popup(this.map);
     get group() {
         return this.map.featureLayer;
     }
@@ -33,7 +35,7 @@ export class GeoJSON extends Layer<L.GeoJSON> {
         this.leafletInstance = L.geoJSON(data, {
             pane: "geojson",
             pointToLayer: (geojsonPoint, latlng) => {
-                return new GeoJSONMarker(this.map, geojsonPoint, latlng)
+                return new GeoJSONMarker(this, geojsonPoint, latlng)
                     .leafletInstance;
             },
             style: (feature) => {
@@ -58,7 +60,7 @@ export class GeoJSON extends Layer<L.GeoJSON> {
                 /** Propogate click */
                 if (feature.geometry?.type == "Point") return;
 
-                new GeoJSONFeature(feature, layer, this.map);
+                new GeoJSONFeature(this, feature, layer);
             }
         });
     }
@@ -77,8 +79,11 @@ class GeoJSONMarker {
     description: string;
     iconDisplay: HTMLDivElement;
     descriptionDisplay: HTMLDivElement;
+    get map() {
+        return this.parent.map;
+    }
     constructor(
-        private map: BaseMapType,
+        private parent: GeoJSON,
         private feature: geojson.Feature<geojson.Point, any>,
         latlng: L.LatLng
     ) {
@@ -128,7 +133,7 @@ class GeoJSONMarker {
         this.leafletInstance.on("mouseover", () => {
             if (this.map.isDrawing || !this.description) return;
 
-            this.map.popup.open(this.marker, this.iconDisplay);
+            this.parent.popup.open(this.marker, this.iconDisplay);
         });
     }
 }
@@ -138,10 +143,13 @@ class GeoJSONFeature {
     description: string;
     iconDisplay: HTMLDivElement;
     descriptionDisplay: HTMLDivElement;
+    get map() {
+        return this.parent.map;
+    }
     constructor(
+        private parent: GeoJSON,
         public feature: geojson.Feature<geojson.Geometry, any>,
-        public leafletInstance: L.GeoJSON,
-        public map: BaseMapType
+        public leafletInstance: L.GeoJSON
     ) {
         this.title =
             feature.properties.title ?? feature.properties.name ?? null;
@@ -163,7 +171,7 @@ class GeoJSONFeature {
     onLayerMouseover() {
         if (!this.title && !this.description) return;
         if (this.map.isDrawing) return;
-        this.map.popup.open(
+        this.parent.popup.open(
             this.leafletInstance.getBounds().getCenter(),
             this.iconDisplay,
             this.leafletInstance
@@ -179,7 +187,7 @@ class GeoJSONFeature {
                 !evt.originalEvent.getModifierState("Alt")) &&
             this.title
         ) {
-            this.map.popup.open(
+            this.parent.popup.open(
                 evt.latlng,
                 this.descriptionDisplay,
                 this.leafletInstance

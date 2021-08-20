@@ -42,6 +42,7 @@ export class GPX extends Layer<LeafletGPX> {
     leafletInstance: LeafletGPX;
     style: { opacity: string; color: string };
     hotline: string;
+    popup: null;
     get group() {
         return this.map.featureLayer;
     }

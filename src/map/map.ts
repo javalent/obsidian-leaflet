@@ -435,6 +435,10 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             this.leafletInstance.createPane("geojson");
 
             added = 0;
+            console.log(
+                "🚀 ~ file: map.ts ~ line 464 ~ this.options.geojsonColor",
+                this.options.geojsonColor
+            );
             this.geojsonData.forEach((geoJSON) => {
                 try {
                     const geo = new GeoJSON(
