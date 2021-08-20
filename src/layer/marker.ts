@@ -257,19 +257,28 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                         this.command = markerSettingsModal.tempMarker.command;
 
                         if (
-                            this.shouldShow(this.map.leafletInstance.getZoom())
+                            this.shouldShow(
+                                this.map.leafletInstance.getZoom()
+                            ) &&
+                            !this.displayed
                         ) {
                             this.show();
                         } else if (
-                            this.shouldHide(this.map.leafletInstance.getZoom())
+                            this.shouldHide(
+                                this.map.leafletInstance.getZoom()
+                            ) &&
+                            this.displayed
                         ) {
                             this.hide();
                         }
 
-                        if (this.tooltip === "always" && !this.popup) {
-                            this.popup = popup(this.map, this);
+                        console.log(
+                            "🚀 ~ file: marker.ts ~ line 272 ~ this.tooltip",
+                            this.tooltip
+                        );
+                        if (this.tooltip === "always") {
                             this.popup.open(this.target.display);
-                        } else if (this.tooltip !== "always") {
+                        } else {
                             this.popup.close();
                         }
 
@@ -438,10 +447,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         }
         this.leafletInstance.setLatLng(latlng);
     }
-    onShow() {}
-    onHide() {
-        this.popup.close();
-    }
+
     show() {
         if (
             this.shouldShow(this.map.getZoom()) &&
@@ -450,9 +456,11 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         ) {
             this.group.addLayer(this.leafletInstance);
             this.displayed = true;
-            /* if (this.tooltip === "always" && this.target) {
-                this.popup.open(this.target.display);
-            } */
+            if (this.tooltip === "always" && this.target) {
+                this.leafletInstance.on("add", () => {
+                    this.popup.open(this.target.display);
+                });
+            }
         }
     }
     shouldShow(zoom: number) {
@@ -474,6 +482,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         if (this.group && this.displayed) {
             this.remove();
             this.displayed = false;
+            this.popup.close();
         }
     }
     shouldHide(zoom: number) {

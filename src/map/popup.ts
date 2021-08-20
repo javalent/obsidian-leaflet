@@ -23,6 +23,9 @@ class Popup {
         options?: Options
     ) {
         this.options = { ...BASE_POPUP_OPTIONS, ...options };
+        this.map.on("should-close-popup", (source) => {
+            if (source != this) this.close();
+        });
     }
     private canShowTooltip(
         target: Marker | LeafletOverlay,
@@ -112,6 +115,8 @@ class Popup {
             return;
         }
 
+        this.map.trigger("should-close-popup", this);
+
         if (this.target instanceof L.Polyline) {
             this.target.on("remove", () => this.close());
         }
@@ -169,6 +174,8 @@ class Popup {
 
     close() {
         if (!this.leafletInstance) return;
+        if (this.target instanceof Marker && this.target.tooltip === "always")
+            return;
         this.leafletInstance.removeFrom(this.map.leafletInstance);
     }
 
@@ -181,10 +188,6 @@ class Popup {
     }
 
     private buildPopup(): L.Popup {
-        console.log(
-            "🚀 ~ file: popup.ts ~ line 185 ~ this.target ",
-            this.target
-        );
         if (this.target instanceof L.LatLng) {
             return L.popup(this.options).setLatLng(this.target);
         } else if (this.target instanceof L.Polyline) {
