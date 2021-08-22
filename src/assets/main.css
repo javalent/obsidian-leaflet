@@ -415,3 +415,7 @@ input.is-invalid {
 .block-language-leaflet .leaflet-default-icon-path {
     background-image: unset !important;
 }
+
+.leaflet-gpx-targeted {
+    filter: drop-shadow(0 0 3px green);
+}

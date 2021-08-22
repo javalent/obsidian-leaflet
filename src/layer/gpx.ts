@@ -4,7 +4,9 @@ import { Layer } from "../layer/layer";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { gpx as gpxtoGeoJSON } from "@tmcw/togeojson";
 
+//@ts-expect-error
 import gpxParser from "gpx-parser-builder";
+import { gpxControl } from "src/controls/gpx";
 
 let L = window[LeafletSymbol];
 
@@ -91,51 +93,11 @@ export class GPX extends Layer<L.GeoJSON> {
             interactive: true
         });
 
-        /*         this.leafletInstance.on("contextmenu", (evt: L.LeafletMouseEvent) => {
-            console.log("🚀 ~ file: gpx.ts ~ line 89 ~ evt", evt);
-            L.DomEvent.stopPropagation(evt);
-            const menu = new Menu(this.map.plugin.app);
-            menu.setNoIcon();
-
-            menu.addItem((item) => {
-                item.setTitle("Route");
-                item.onClick(() => {
-                    menu.hide();
-                    this.show();
-                    if (this.hotline) {
-                        this.hotlines[this.hotline].setStyle({
-                            color: "transparent"
-                        });
-                        this.hotline = null;
-                    }
-                });
-            });
-            Object.keys(this.hotlines).forEach((key) => {
-                menu.addItem((item) => {
-                    item.setTitle(
-                        key[0].toLocaleUpperCase() +
-                            key.slice(1).toLocaleLowerCase()
-                    );
-                    item.onClick(() => {
-                        if (this.hotline) {
-                            this.hotlines[this.hotline].setStyle({
-                                color: "transparent"
-                            });
-                        }
-                        this.hotline = key;
-                        this.hide();
-                        menu.hide();
-                        this.hotlines[key].addTo(this.group);
-                        this.hotlines[key].redraw();
-                    });
-                });
-            });
-
-            menu.showAtPosition({
-                x: evt.originalEvent.clientX,
-                y: evt.originalEvent.clientY
-            });
-        }); */
+        this.leafletInstance.on('click', (evt: L.LeafletMouseEvent) => {
+            (evt.originalEvent.target as SVGPathElement).addClass("leaflet-gpx-targeted");
+            const control = gpxControl({ position: 'bottomleft'}, this.map).addTo(this.map.leafletInstance);
+            
+        })
     }
     hide() {
         if (this.polyline) {
