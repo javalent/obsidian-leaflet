@@ -392,13 +392,13 @@ input.is-invalid {
 }
 
 .block-language-leaflet .leaflet-pane.leaflet-geojson-pane {
-    z-index: 399;
-}
-.block-language-leaflet .leaflet-pane.leaflet-image-overlay-pane {
     z-index: 398;
 }
-.block-language-leaflet .leaflet-pane.leaflet-gpx-pane {
+.block-language-leaflet .leaflet-pane.leaflet-image-overlay-pane {
     z-index: 397;
+}
+.block-language-leaflet .leaflet-pane.leaflet-gpx-pane {
+    z-index: 399;
 }
 .block-language-leaflet .leaflet-pane.leaflet-base-layer-pane {
     z-index: 300;
