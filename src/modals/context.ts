@@ -19,8 +19,10 @@ import {
 import { UNIT_NAME_ALIASES } from "src/utils";
 
 import { Overlay } from "src/layer";
-import { locale } from "moment";
+
 import { formatNumber } from "src/utils";
+
+const locale = window.moment.locale;
 
 export class MarkerContextModal extends Modal {
     deleted: boolean = false;

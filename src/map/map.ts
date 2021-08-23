@@ -44,8 +44,20 @@ import {
 } from "../controls";
 
 import { LeafletSymbol } from "../utils/leaflet-import";
+import { gpxControl } from "src/controls/gpx";
 let L = window[LeafletSymbol];
-
+declare module "leaflet" {
+    function hotline(data: L.LatLng[], options: HotlineOptions): L.Polyline;
+    interface Hotline extends L.Canvas {}
+    interface HotlineOptions {
+        weight?: number;
+        outlineWidth?: number;
+        outlineColor?: string;
+        palette?: Record<number, string>;
+        min?: number;
+        max?: number;
+    }
+}
 export abstract class BaseMap extends Events implements BaseMapDefinition {
     abstract get bounds(): L.LatLngBounds;
 
@@ -56,6 +68,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     private escapeScope: Scope;
 
     geojsonData: any[] = [];
+    gpxControl: ReturnType<typeof gpxControl>;
     gpxData: string[] = [];
     gpxIcons: {
         start: string;
@@ -137,7 +150,10 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.leafletInstance.createPane("geojson");
         this.leafletInstance.createPane("gpx");
 
-        this.canvas = L.canvas({ pane: "gpx" }).addTo(this.leafletInstance);
+        //@ts-expect-error
+        this.canvas = L.Hotline.renderer({ pane: "gpx" }).addTo(
+            this.leafletInstance
+        );
 
         /** Bind Map Events */
         this.leafletInstance.on("contextmenu", (evt: L.LeafletMouseEvent) =>
@@ -228,6 +244,8 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     private distanceLine: L.Polyline;
     previousDistanceLine: L.Polyline;
     featureLayer: L.FeatureGroup;
+    geojsonLayer: L.FeatureGroup;
+    gpxLayer: L.FeatureGroup;
 
     get id() {
         return this.options.id;
@@ -444,6 +462,8 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 `Adding ${this.geojsonData.length} GeoJSON features to map.`
             );
 
+            this.geojsonLayer = L.featureGroup().addTo(this.featureLayer);
+
             added = 0;
             console.log(
                 "🚀 ~ file: map.ts ~ line 464 ~ this.options.geojsonColor",
@@ -458,7 +478,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                         geoJSON
                     );
 
-                    geo.leafletInstance.addTo(this.featureLayer);
+                    geo.leafletInstance.addTo(this.geojsonLayer);
 
                     added++;
                 } catch (e) {
@@ -478,15 +498,20 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         /** Add GPX to map */
         if (this.gpxData.length > 0) {
             this.log(`Adding ${this.gpxData.length} GPX features to map.`);
-
+            this.gpxLayer = L.featureGroup().addTo(this.featureLayer);
             for (let gpx of this.gpxData) {
                 const gpxInstance = new GPX(
                     this as BaseMapType,
                     gpx,
                     this.gpxIcons
                 );
-                gpxInstance.leafletInstance.addTo(this.featureLayer);
+                gpxInstance.leafletInstance.addTo(this.gpxLayer);
             }
+
+            this.gpxControl = gpxControl(
+                { position: "bottomleft" },
+                this
+            ).addTo(this.leafletInstance);
         }
 
         if (this.geojsonData.length || this.gpxData.length) {

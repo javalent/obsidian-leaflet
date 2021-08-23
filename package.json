@@ -6,6 +6,7 @@
     "scripts": {
         "dev": "webpack --config webpack.dev.js -w",
         "build": "webpack",
+        "analyze": "webpack --profile --json > stats.json && webpack-bundle-analyzer ./stats.json",
         "postinstall": "npx download-cli --out src/leaflet-gpx https://raw.githubusercontent.com/mpetazzoni/leaflet-gpx/main/gpx.js"
     },
     "keywords": [],
@@ -29,7 +30,9 @@
         "convert": "^1.8.3",
         "copy-webpack-plugin": "^9.0.1",
         "css-loader": "^5.2.7",
+        "gpx-parse": "^0.10.4",
         "gpx-parser-builder": "^1.0.2",
+        "gpxparser": "^3.0.8",
         "ignore-loader": "^0.1.2",
         "leaflet": "^1.7.1",
         "leaflet-fullscreen": "^1.0.2",
@@ -37,13 +40,16 @@
         "mini-css-extract-plugin": "^2.1.0",
         "obsidian": "https://github.com/obsidianmd/obsidian-api/tarball/master",
         "papaparse": "^5.3.0",
+        "query-selector": "^2.0.0",
         "ts-loader": "^9.2.3",
         "tslib": "^2.0.3",
         "txml": "^5.0.1",
         "typescript": "^4.3.5",
         "webpack": "^5.44.0",
+        "webpack-bundle-analyzer": "^4.4.2",
         "webpack-cli": "^4.7.2",
-        "worker-loader": "^3.0.8"
+        "worker-loader": "^3.0.8",
+        "xmldom": "^0.6.0"
     },
     "dependencies": {
         "leaflet-hotline": "^0.4.0"

@@ -30,10 +30,10 @@ export abstract class FontAwesomeControl extends L.Control {
             "div",
             "leaflet-bar leaflet-control " + this.cls
         );
-        this.controlEl.removeAttribute('title');
+        this.controlEl.removeAttribute("title");
         this.link = this.controlEl.createEl("a", {
             cls: this.cls + "-icon",
-            href: "#",
+            href: "#"
         });
         this.link.appendChild(
             icon({ prefix: "fas", iconName: this.icon }).node[0]
@@ -61,5 +61,15 @@ export abstract class FontAwesomeControl extends L.Control {
         if (this.enabled) return;
         this.controlEl.removeClass("disabled");
         this.enabled = true;
+    }
+    setTooltip(tooltip: string) {
+        this.tooltip = tooltip;
+        this.controlEl.children[0].setAttrs({
+            "aria-label": this.tooltip
+        });
+    }
+    removeTooltip() {
+        this.tooltip = null;
+        this.controlEl.children[0].removeAttribute("aria-label");
     }
 }

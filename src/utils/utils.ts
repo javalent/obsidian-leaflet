@@ -16,7 +16,8 @@ import { parse as parseCSV } from "papaparse";
 import { BaseMapType, BlockParameters } from "src/@types";
 import { LAT_LONG_DECIMALS, OVERLAY_TAG_REGEX } from "./constants";
 import { DESCRIPTION_ICON } from ".";
-import { locale } from "moment";
+
+const locale = window.moment.locale;
 
 export function formatNumber(number: number, digits: number) {
     return new Intl.NumberFormat(locale(), {

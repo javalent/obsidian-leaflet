@@ -9,6 +9,7 @@ import type { Marker } from ".";
 import type { ObsidianAppData, TooltipDisplay } from "./saved";
 import type { Overlay } from "src/layer";
 import { Layer } from "src/layer/layer";
+import { GPXControl } from "./controls";
 
 export interface ImageLayerData {
     data: string;
@@ -137,6 +138,9 @@ declare abstract class BaseMap /* <
     featureLayer: L.FeatureGroup;
 
     geojsonData: any[];
+
+    gpxControl: GPXControl;
+    gpxLayer: L.FeatureGroup;
     gpxData: string[];
     gpxIcons: {
         start: string;

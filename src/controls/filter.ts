@@ -88,7 +88,7 @@ class FilterMarkers extends FontAwesomeControl {
         this.section.empty();
         this.inputs = new Map();
         const buttons = this.section.createDiv(
-            "leaflet-control-filter-button-group"
+            "leaflet-control-expandable-button-group"
         );
         buttons.createEl("button", { text: "All" }).onclick = (evt) => {
             evt.stopPropagation();
@@ -117,7 +117,7 @@ class FilterMarkers extends FontAwesomeControl {
                 const id = getId();
                 const input = li.createEl("input", {
                     attr: {
-                        id: "leaflet-control-filter-item-label-" + id,
+                        id: "leaflet-control-expandable-item-label-" + id,
                         ...(this.map.displaying.get(type)
                             ? { checked: true }
                             : {})
@@ -126,10 +126,10 @@ class FilterMarkers extends FontAwesomeControl {
                 });
 
                 const label = li.createEl("label", {
-                    attr: { for: "leaflet-control-filter-item-label-" + id }
+                    attr: { for: "leaflet-control-expandable-item-label-" + id }
                 });
                 label.createDiv({
-                    cls: "leaflet-control-filter-icon"
+                    cls: "leaflet-control-expandable-icon"
                 }).innerHTML = markerIcon.html;
 
                 label.createDiv({
@@ -180,7 +180,7 @@ export function filterMarkerControl(opts: L.ControlOptions, map: BaseMapType) {
     const options: FontAwesomeControlOptions = {
         ...opts,
         icon: "filter",
-        cls: "leaflet-control-filter",
+        cls: "leaflet-control-expandable",
         tooltip: "Filter Markers"
     };
     return new FilterMarkers(options, map);

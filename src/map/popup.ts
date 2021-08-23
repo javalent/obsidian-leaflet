@@ -104,7 +104,7 @@ class Popup {
         content: ((source: L.Layer) => L.Content) | L.Content,
         handler?: L.Layer
     ) {
-        console.log("🚀 ~ file: popup.ts ~ line 107 ~ content", content);
+        
         if ("tooltip" in this.target && !this.canShowTooltip(this.target))
             return;
 

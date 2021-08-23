@@ -4,29 +4,14 @@ import { Layer } from "../layer/layer";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { gpx as gpxtoGeoJSON } from "@tmcw/togeojson";
 
-//@ts-expect-error
-import gpxParser from "gpx-parser-builder";
 import { gpxControl } from "src/controls/gpx";
 
+import gpxWorker from "../worker/gpx.worker";
+import type { HotlineOptions } from "leaflet";
+import { popup } from "src/map/popup";
+import { GPXPoint } from "src/@types/layers";
+
 let L = window[LeafletSymbol];
-
-declare module "leaflet" {
-    function hotline(data: L.LatLng[], options: HotlineOptions): L.Polyline;
-    interface HotlineOptions {
-        weight?: number;
-        outlineWidth?: number;
-        outlineColor?: string;
-        palette?: Record<number, string>;
-        min?: number;
-        max?: number;
-    }
-
-    interface GPX {
-        get_speed_data(): [number, number, string][];
-        get_speed_min(): number;
-        get_speed_max(): number;
-    }
-}
 
 const MarkerOptions: L.MarkerOptions = {
     startIconUrl: null,
@@ -42,14 +27,24 @@ const MarkerOptions: L.MarkerOptions = {
     }
 };
 
+const HOTLINE_OPTIONS: HotlineOptions = {
+    weight: 3,
+    outlineWidth: 1
+};
+
 export class GPX extends Layer<L.GeoJSON> {
     leafletInstance: L.GeoJSON;
     style: { opacity: string; color: string };
-    hotline: string;
-    popup: null;
+    hotline: L.Polyline;
+    popup = popup(this.map, this, { permanent: true });
     gpx: GeoJSON.FeatureCollection;
     domObject: Record<any, any>;
     data: any;
+    worker: Worker;
+
+    parsed: boolean;
+    displaying: string;
+
     get group() {
         return this.map.featureLayer;
     }
@@ -82,9 +77,18 @@ export class GPX extends Layer<L.GeoJSON> {
             };
         }
 
+        this.worker = new gpxWorker();
+
+        this.worker.postMessage({ string: gpx });
+
+        this.worker.onmessage = (event) => {
+            this.data = event.data.data;
+            this.parsed = true;
+            this.worker.terminate();
+        };
+
         //@ts-expect-error
         window.GPX = this;
-        this.data = gpxParser.parse(gpx);
         this.gpx = gpxtoGeoJSON(
             new DOMParser().parseFromString(gpx, "text/xml")
         );
@@ -93,11 +97,122 @@ export class GPX extends Layer<L.GeoJSON> {
             interactive: true
         });
 
-        this.leafletInstance.on('click', (evt: L.LeafletMouseEvent) => {
-            (evt.originalEvent.target as SVGPathElement).addClass("leaflet-gpx-targeted");
-            const control = gpxControl({ position: 'bottomleft'}, this.map).addTo(this.map.leafletInstance);
-            
-        })
+        this.leafletInstance.on("mouseover", (evt: L.LeafletMouseEvent) => {
+            (evt.originalEvent.target as SVGPathElement).addClass(
+                "leaflet-gpx-targeted"
+            );
+        });
+        this.leafletInstance.on("mouseout", (evt: L.LeafletMouseEvent) => {
+            (evt.originalEvent.target as SVGPathElement).removeClass(
+                "leaflet-gpx-targeted"
+            );
+        });
+        this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) => {
+            this.map.gpxControl.setTarget(this);
+        });
+    }
+    switch(which: "cad" | "ele" | "hr" | "speed" | "default") {
+        if (this.map.leafletInstance.hasLayer(this.hotline))
+            this.hotline.remove();
+        this.displaying = which;
+        switch (which) {
+            case "cad": {
+                this.hotline = L.hotline(this.cad.data, {
+                    min: this.cad.min,
+                    max: this.cad.max,
+                    ...HOTLINE_OPTIONS
+                }).addTo(this.map.leafletInstance);
+                break;
+            }
+            case "ele": {
+                this.hotline = L.hotline(this.ele.data, {
+                    min: this.ele.min,
+                    max: this.ele.max,
+                    ...HOTLINE_OPTIONS
+                }).addTo(this.map.leafletInstance);
+                break;
+            }
+            case "hr": {
+                this.hotline = L.hotline(this.hr.data, {
+                    min: this.hr.min,
+                    max: this.hr.max,
+                    ...HOTLINE_OPTIONS
+                }).addTo(this.map.leafletInstance);
+                break;
+            }
+            case "speed": {
+                this.hotline = L.hotline(this.speed.data, {
+                    min: this.speed.min,
+                    max: this.speed.max,
+                    ...HOTLINE_OPTIONS
+                }).addTo(this.map.leafletInstance);
+                break;
+            }
+        }
+        this.bindHotlineEvents();
+    }
+    bindHotlineEvents() {
+        if (this.map.leafletInstance.hasLayer(this.hotline)) {
+            this.hotline.on("mousemove", (evt: L.LeafletMouseEvent) => {
+                const closest = this.findClosestPoint(evt.latlng);
+                const content = `Lat: ${closest.lat}, Lng: ${closest.lng}
+Elevation: ${closest.ele} m,
+Speed: ${closest.extensions.speed} m/s
+`;
+                this.popup.setTarget(evt.latlng).open(content);
+            });
+            this.hotline.on("mouseout", (evt) => {
+                this.popup.close();
+            });
+        }
+    }
+    findClosestPoint(latlng: L.LatLng): GPXPoint {
+        const sort = [...this.points];
+        sort.sort(
+            (a, b) =>
+                this.map.leafletInstance.distance(a, latlng) -
+                this.map.leafletInstance.distance(b, latlng)
+        );
+        return sort[0];
+    }
+    get flags(): Record<string, boolean> {
+        return this.data.tracks[0].flags;
+    }
+    get points(): GPXPoint[] {
+        return this.data.tracks[0].points;
+    }
+    get speed(): {
+        raw: number[];
+        data: L.LatLng[];
+        min: number;
+        max: number;
+        average: number;
+    } {
+        return this.data.tracks[0].maps.speed;
+    }
+    get cad(): {
+        raw: number[];
+        data: L.LatLng[];
+        min: number;
+        max: number;
+    } {
+        return this.data.tracks[0].maps.cad;
+    }
+    get ele(): {
+        raw: number[];
+        data: L.LatLng[];
+        min: number;
+        max: number;
+    } {
+        return this.data.tracks[0].maps.ele;
+    }
+    get hr(): {
+        raw: number[];
+        data: L.LatLng[];
+        min: number;
+        max: number;
+    } {
+        return this.data.tracks[0].maps.hr;
     }
     hide() {
         if (this.polyline) {
