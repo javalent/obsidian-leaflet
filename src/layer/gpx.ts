@@ -95,8 +95,6 @@ export class GPX extends Layer<L.GeoJSON> {
             this.worker.terminate();
         };
 
-        //@ts-expect-error
-        window.GPX = this;
         this.gpx = gpxtoGeoJSON(
             new DOMParser().parseFromString(gpx, "text/xml")
         );
@@ -253,7 +251,6 @@ export class GPX extends Layer<L.GeoJSON> {
     }
     show() {
         if (this.leafletInstance) {
-            console.log("show");
             this.leafletInstance.setStyle({
                 color: this.map.options.gpxColor,
                 weight: 2
@@ -277,7 +274,6 @@ export class GPX extends Layer<L.GeoJSON> {
         el.createSpan({ text: `Lat: ${lat}, Lng: ${lng}` });
         el.createSpan({ text: `Time: ${point.meta.time.toLocaleString()}` });
 
-        console.log("🚀 ~ file: gpx.ts ~ line 289 ~ point.meta", point.meta);
         if (point.meta.elevation && !isNaN(point.meta.elevation))
             el.createSpan({
                 text: `Elevation: ${point.meta.elevation.toFixed(2)} m`
