@@ -50,6 +50,7 @@ export interface BlockParameters {
     gpxColor?: string;
     zoomFeatures?: boolean;
     verbose?: boolean;
+    isMapView?: boolean;
 }
 
 declare class ObsidianLeaflet extends Plugin {

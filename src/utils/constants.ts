@@ -5,6 +5,8 @@ import {
     ObsidianAppData
 } from "src/@types";
 
+export const VIEW_TYPE = "obsidian-leaflet-map-view";
+
 export const OVERLAY_TAG_REGEX = /^(\d+(?:\.\d+)?)\s?(\w*)/;
 
 export const MAP_OVERLAY_STROKE_WIDTH = 2;
@@ -24,6 +26,7 @@ export const DEFAULT_BLOCK_PARAMETERS: BlockParameters = {
     height: "500px",
     image: "real",
     imageOverlay: [],
+    isMapView: false,
     layers: [],
     linksFrom: [],
     linksTo: [],
@@ -51,7 +54,8 @@ export const DEFAULT_MAP_OPTIONS: LeafletMapOptions = {
     distanceMultiplier: 1,
     darkMode: false,
     overlayColor: "blue",
-    osmLayer: true
+    osmLayer: true,
+    isMapView: false
 };
 export const DEFAULT_SETTINGS: ObsidianAppData = {
     mapMarkers: [],
@@ -72,7 +76,9 @@ export const DEFAULT_SETTINGS: ObsidianAppData = {
     copyOnClick: false,
     displayMarkerTooltips: "hover",
     displayOverlayTooltips: true,
-    configDirectory: null
+    configDirectory: null,
+    mapViewEnabled: true,
+    mapViewParameters: {}
 };
 export const BASE_POPUP_OPTIONS = {
     className: "leaflet-marker-link-popup",

@@ -8,8 +8,9 @@ import type { ObsidianLeaflet } from "./main";
 import type { Marker } from ".";
 import type { ObsidianAppData, TooltipDisplay } from "./saved";
 import type { Overlay } from "src/layer";
-import { Layer } from "src/layer/layer";
-import { GPXControl } from "./controls";
+import type { Layer } from "src/layer/layer";
+import type { GPXControl } from "./controls";
+import type { LeafletRenderer } from "src/renderer";
 
 export interface ImageLayerData {
     data: string;
@@ -69,6 +70,8 @@ export interface LeafletMapOptions {
         data: string;
         id: string;
     }[];
+
+    isMapView: boolean;
 
     layers?: string[];
 
@@ -130,7 +133,7 @@ declare abstract class BaseMap /* <
     abstract get scale(): number;
     abstract get CRS(): L.CRS;
 
-    constructor(plugin: ObsidianLeaflet, options: LeafletMapOptions);
+    constructor(renderer: LeafletRenderer, options: LeafletMapOptions);
 
     canvas: L.Canvas;
 
@@ -174,10 +177,12 @@ declare abstract class BaseMap /* <
     options: LeafletMapOptions;
     overlays: Overlay[];
 
-    plugin: ObsidianLeaflet;
+    get plugin(): ObsidianLeaflet;
+
     popup: Popup;
     previousDistanceLine: L.Polyline;
 
+    renderer: LeafletRenderer;
     rendered: boolean;
 
     tempCircle: L.Circle;
@@ -260,7 +265,7 @@ declare abstract class BaseMap /* <
 declare class RealMap extends BaseMap /* <L.TileLayer> */ {
     CRS: L.CRS;
     type: string;
-    constructor(plugin: ObsidianLeaflet, options: LeafletMapOptions);
+    constructor(renderer: LeafletRenderer, options: LeafletMapOptions);
 
     get bounds(): L.LatLngBounds;
 
@@ -282,7 +287,7 @@ declare class RealMap extends BaseMap /* <L.TileLayer> */ {
 declare class ImageMap extends BaseMap /* <L.ImageOverlay> */ {
     CRS: L.CRS;
     type: string;
-    constructor(plugin: ObsidianLeaflet, options: LeafletMapOptions);
+    constructor(renderer: LeafletRenderer, options: LeafletMapOptions);
 
     get bounds(): L.LatLngBounds;
 

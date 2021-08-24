@@ -1,5 +1,5 @@
 /** Settings Interfaces */
-import { SavedMarkerProperties, SavedOverlayData } from ".";
+import { BlockParameters, SavedMarkerProperties, SavedOverlayData } from ".";
 
 export type TooltipDisplay = "always" | "hover" | "never";
 
@@ -37,4 +37,6 @@ export interface ObsidianAppData {
     displayOverlayTooltips: boolean;
     displayMarkerTooltips: TooltipDisplay;
     configDirectory: string;
+    mapViewParameters: BlockParameters;
+    mapViewEnabled: boolean;
 }
