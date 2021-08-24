@@ -10,6 +10,7 @@ import { popup } from "src/map/popup";
 import { GPXPoint } from "src/@types/layers";
 
 import { GeoJSON } from "./geojson";
+import { formatLatLng } from "src/utils";
 
 let L = window[LeafletSymbol];
 
@@ -47,6 +48,8 @@ export class GPX extends Layer<L.GeoJSON> {
 
     parsed: boolean;
     displaying: string;
+
+    targeted: boolean = false;
 
     get group() {
         return this.map.featureLayer;
@@ -105,14 +108,20 @@ export class GPX extends Layer<L.GeoJSON> {
         );
 
         this.leafletInstance.on("mouseover", (evt: L.LeafletMouseEvent) => {
-            if (!this.map.leafletInstance.hasLayer(this.hotline)) {
+            if (
+                !this.map.leafletInstance.hasLayer(this.hotline) &&
+                !this.targeted
+            ) {
                 (evt.originalEvent.target as SVGPathElement).addClass(
                     "leaflet-gpx-targeted"
                 );
             }
         });
         this.leafletInstance.on("mouseout", (evt: L.LeafletMouseEvent) => {
-            if (this.map.leafletInstance.hasLayer(this.hotline)) {
+            if (
+                this.map.leafletInstance.hasLayer(this.hotline) ||
+                this.targeted
+            ) {
                 this.popup.close();
             } else {
                 (evt.originalEvent.target as SVGPathElement).removeClass(
@@ -124,12 +133,12 @@ export class GPX extends Layer<L.GeoJSON> {
             this.map.gpxControl.setTarget(this);
         });
         this.leafletInstance.on("mousemove", (evt: L.LeafletMouseEvent) => {
-            if (this.map.leafletInstance.hasLayer(this.hotline)) {
+            if (
+                this.map.leafletInstance.hasLayer(this.hotline) ||
+                this.targeted
+            ) {
                 const closest = this.findClosestPoint(evt.latlng);
-                const content = `Lat: ${closest.lat}, Lng: ${closest.lng}
-    Elevation: ${closest.meta.elevation} m,
-    Speed: ${closest.meta.speed} m/s
-    `;
+                const content = this.popupContent(closest);
                 this.popup.setTarget(evt.latlng).open(content);
             }
         });
@@ -138,6 +147,7 @@ export class GPX extends Layer<L.GeoJSON> {
         if (this.map.leafletInstance.hasLayer(this.hotline))
             this.hotline.remove();
         this.displaying = which;
+        this.hide();
         switch (which) {
             case "cad": {
                 this.hotline = L.hotline(this.cad.points, {
@@ -175,14 +185,11 @@ export class GPX extends Layer<L.GeoJSON> {
                 }).addTo(this.map.leafletInstance);
                 break;
             }
+            default: {
+                this.show();
+            }
         }
-        this.leafletInstance.setStyle({ color: "transparent", weight: 7 });
     }
-    /*     bindHotlineEvents() {
-        if (this.map.leafletInstance.hasLayer(this.hotline)) {
-
-        }
-    } */
     findClosestPoint(latlng: L.LatLng): GPXPoint {
         const sort = [...this.points];
         sort.sort(
@@ -237,16 +244,19 @@ export class GPX extends Layer<L.GeoJSON> {
         return this.data.atemp;
     }
     hide() {
-        if (this.polyline) {
-            this.polyline.setStyle({
-                color: "transparent"
+        if (this.leafletInstance) {
+            this.leafletInstance.setStyle({
+                color: "transparent",
+                weight: 10
             });
         }
     }
     show() {
-        if (this.polyline) {
-            this.polyline.setStyle({
-                color: /* this.map.gpxColor ?? */ "blue"
+        if (this.leafletInstance) {
+            console.log("show");
+            this.leafletInstance.setStyle({
+                color: this.map.options.gpxColor,
+                weight: 2
             });
         }
     }
@@ -259,5 +269,35 @@ export class GPX extends Layer<L.GeoJSON> {
             ?.getLayers()
             ?.filter((l) => l instanceof L.Polyline)
             ?.shift() as L.Polyline;
+    }
+    popupContent(point: GPXPoint): HTMLElement {
+        const { lat, lng } = formatLatLng(point);
+
+        const el = createDiv("gpx-popup");
+        el.createSpan({ text: `Lat: ${lat}, Lng: ${lng}` });
+        el.createSpan({ text: `Time: ${point.meta.time.toLocaleString()}` });
+
+        console.log("🚀 ~ file: gpx.ts ~ line 289 ~ point.meta", point.meta);
+        if (point.meta.elevation && !isNaN(point.meta.elevation))
+            el.createSpan({
+                text: `Elevation: ${point.meta.elevation.toFixed(2)} m`
+            });
+        if (point.meta.speed && !isNaN(point.meta.speed))
+            el.createSpan({
+                text: `Speed: ${point.meta.speed.toFixed(2)} m/s`
+            });
+        if (point.meta.atemp && !isNaN(point.meta.atemp))
+            el.createSpan({
+                text: `Temperature: ${point.meta.atemp.toFixed(2)} °C`
+            });
+        if (point.meta.hr && !isNaN(point.meta.hr))
+            el.createSpan({
+                text: `Heart Rate: ${point.meta.hr.toFixed(2)}`
+            });
+        if (point.meta.cad && !isNaN(point.meta.cad))
+            el.createSpan({
+                text: `Cadence: ${point.meta.cad.toFixed(2)} step/s`
+            });
+        return el;
     }
 }

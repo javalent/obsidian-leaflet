@@ -2,7 +2,8 @@ import { BaseMapType } from "src/@types";
 import { GPX } from "src/layer";
 import { FontAwesomeControl, FontAwesomeControlOptions } from "./controls";
 import { LeafletSymbol } from "src/utils/leaflet-import";
-import { Platform } from "obsidian";
+import { ExtraButtonComponent, Platform } from "obsidian";
+import { BULLSEYE } from "src/utils";
 const L = window[LeafletSymbol];
 class GPXControl extends FontAwesomeControl {
     target: GPX;
@@ -30,25 +31,26 @@ class GPXControl extends FontAwesomeControl {
 
         /*         this.map.on("click", () => this.collapse(), this); */
 
-        L.DomEvent.on(this.controlEl, "mouseenter", () => this.expand());
+        /* L.DomEvent.on(this.controlEl, "mouseenter", () => this.expand()); */
         /*         L.DomEvent.on(this.controlEl, "mouseleave", () => this.collapse()); */
 
-        if (Platform.isMobile) {
+        /* if (Platform.isMobile) {
             L.DomEvent.on(this.controlEl, "click", this.expand, this);
         } else {
             L.DomEvent.on(this.controlEl, "focus", this.expand, this);
-        }
+        } */
     }
     setTarget(gpx: GPX) {
         this.target = gpx;
-/*         this.map.leafletInstance.fitBounds(
-            this.target.leafletInstance.getBounds()
-        ); */
+        this.target.targeted = true;
         this.removeTooltip();
         this.expand();
     }
     removeTarget() {
+        this.target.switch("default");
+        this.target.targeted = false;
         this.target = null;
+        this.collapse();
         this.setTooltip(
             `Zoom to ${this.map.gpxData.length} GPX Track${
                 this.map.gpxData.length == 1 ? "" : "s"
@@ -88,21 +90,36 @@ class GPXControl extends FontAwesomeControl {
     private draw() {
         this.section.empty();
 
-        const data = this.section.createDiv("gpx-data");
+        let data: HTMLElement;
+        let ul: HTMLElement;
 
-        const ul = this.section.createEl("div", "input-container");
+        let heatLines = false;
 
         if (!isNaN(this.target.speed.avg)) {
+            if (!heatLines) {
+                heatLines = true;
+                data = this.section.createDiv("gpx-data");
+
+                ul = this.section.createEl("div", "input-container");
+                ul.createSpan({
+                    text: "Heatlines"
+                });
+            }
+            data.createDiv("data-item").createSpan({
+                text: `Speed: ${this.target.speed.avg} m/s`
+            });
+
             const li = ul.createDiv("input-item");
             const input = li.createEl("input", {
                 attr: {
                     id: "leaflet-gpx-control-speed",
-                    name: "leaflet-gpx-control-radio-group",
+                    "data-which": "speed",
+                    name: "leaflet-gpx-control-checkbox-group",
                     ...(this.target.displaying == "speed"
                         ? { checked: true }
                         : {})
                 },
-                type: "radio"
+                type: "checkbox"
             });
             li.createEl("label", {
                 attr: { for: "leaflet-gpx-control-speed" },
@@ -110,20 +127,33 @@ class GPXControl extends FontAwesomeControl {
             });
 
             input.onclick = (evt) => {
-                this.target.switch("speed");
+                this.trySwitch("speed");
             };
         }
         if (!isNaN(this.target.cad.avg)) {
+            if (!heatLines) {
+                heatLines = true;
+                data = this.section.createDiv("gpx-data");
+
+                ul = this.section.createEl("div", "input-container");
+                ul.createSpan({
+                    text: "Heatlines"
+                });
+            }
+            data.createDiv("data-item").createSpan({
+                text: `Cadence: ${this.target.cad.avg} steps/s`
+            });
             const li = ul.createDiv("input-item");
             const input = li.createEl("input", {
                 attr: {
                     id: "leaflet-gpx-control-cad",
-                    name: "leaflet-gpx-control-radio-group",
+                    "data-which": "cad",
+                    name: "leaflet-gpx-control-checkbox-group",
                     ...(this.target.displaying == "cad"
                         ? { checked: true }
                         : {})
                 },
-                type: "radio"
+                type: "checkbox"
             });
             li.createEl("label", {
                 attr: { for: "leaflet-gpx-control-cad" },
@@ -131,20 +161,33 @@ class GPXControl extends FontAwesomeControl {
             });
 
             input.onclick = (evt) => {
-                this.target.switch("cad");
+                this.trySwitch("cad");
             };
         }
         if (!isNaN(this.target.elevation.avg)) {
+            if (!heatLines) {
+                heatLines = true;
+                data = this.section.createDiv("gpx-data");
+
+                ul = this.section.createEl("div", "input-container");
+                ul.createSpan({
+                    text: "Heatlines"
+                });
+            }
+            data.createDiv("data-item").createSpan({
+                text: `Elevation: ${this.target.elevation.avg} meters`
+            });
             const li = ul.createDiv("input-item");
             const input = li.createEl("input", {
                 attr: {
                     id: "leaflet-gpx-control-ele",
-                    name: "leaflet-gpx-control-radio-group",
+                    "data-which": "ele",
+                    name: "leaflet-gpx-control-checkbox-group",
                     ...(this.target.displaying == "ele"
                         ? { checked: true }
                         : {})
                 },
-                type: "radio"
+                type: "checkbox"
             });
             li.createEl("label", {
                 attr: { for: "leaflet-gpx-control-ele" },
@@ -152,18 +195,31 @@ class GPXControl extends FontAwesomeControl {
             });
 
             input.onclick = (evt) => {
-                this.target.switch("ele");
+                this.trySwitch("ele");
             };
         }
         if (!isNaN(this.target.hr.avg)) {
+            if (!heatLines) {
+                heatLines = true;
+                data = this.section.createDiv("gpx-data");
+
+                ul = this.section.createEl("div", "input-container");
+                ul.createSpan({
+                    text: "Heatlines"
+                });
+            }
+            data.createDiv("data-item").createSpan({
+                text: `Heart Rate: ${this.target.hr.avg}`
+            });
             const li = ul.createDiv("input-item");
             const input = li.createEl("input", {
                 attr: {
                     id: "leaflet-gpx-control-hr",
-                    name: "leaflet-gpx-control-radio-group",
+                    "data-which": "hr",
+                    name: "leaflet-gpx-control-checkbox-group",
                     ...(this.target.displaying == "hr" ? { checked: true } : {})
                 },
-                type: "radio"
+                type: "checkbox"
             });
             li.createEl("label", {
                 attr: { for: "leaflet-gpx-control-hr" },
@@ -171,9 +227,33 @@ class GPXControl extends FontAwesomeControl {
             });
 
             input.onclick = (evt) => {
-                this.target.switch("hr");
+                this.trySwitch("hr");
             };
         }
+
+        const buttons = this.section.createDiv("control-buttons");
+        new ExtraButtonComponent(buttons)
+            .setIcon(BULLSEYE)
+            .setTooltip("Zoom to GPX")
+            .onClick(() => {
+                this.map.leafletInstance.fitBounds(
+                    this.target.leafletInstance.getBounds()
+                );
+            });
+        new ExtraButtonComponent(buttons)
+            .setIcon("cross-in-box")
+            .setTooltip("Deselect")
+            .onClick(() => {
+                this.removeTarget();
+            });
+    }
+    trySwitch(str: "hr" | "cad" | "speed" | "ele") {
+        if (this.target.displaying === str) {
+            this.target.switch("default");
+        } else {
+            this.target.switch(str);
+        }
+        this.draw();
     }
 }
 

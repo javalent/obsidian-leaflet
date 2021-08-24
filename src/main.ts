@@ -29,7 +29,9 @@ import {
     DESCRIPTION_ICON,
     DESCRIPTION_ICON_SVG,
     parseLink,
-    log
+    log,
+    BULLSEYE,
+    BULLSEYE_ICON_SVG
 } from "./utils";
 import {
     MapInterface,
@@ -97,6 +99,7 @@ export default class ObsidianLeaflet
         await this.loadSettings();
 
         addIcon(DESCRIPTION_ICON, DESCRIPTION_ICON_SVG);
+        addIcon(BULLSEYE, BULLSEYE_ICON_SVG);
 
         this.markerIcons = this.generateMarkerMarkup(this.data.markerIcons);
 
@@ -153,7 +156,6 @@ export default class ObsidianLeaflet
         el: HTMLElement,
         ctx: MarkdownPostProcessorContext
     ): Promise<void> {
-        
         /* try { */
         /** Get Parameters from Source */
         let params = getParamsFromSource(source);

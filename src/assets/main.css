@@ -392,6 +392,32 @@ input.is-invalid {
     margin-right: 0px;
 }
 
+.block-language-leaflet
+    .leaflet-control-expandable.leaflet-control-gpx
+    .gpx-data {
+    padding: 6px 10px 6px 6px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+.block-language-leaflet
+    .leaflet-control-expandable.leaflet-control-gpx
+    .input-container {
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+.block-language-leaflet
+    .leaflet-control-expandable.leaflet-control-gpx
+    .control-buttons {
+    display: flex;
+    justify-content: space-evenly;
+    margin: 0.25rem;
+}
+
+.gpx-popup {
+    display: flex;
+    flex-flow: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+
 .block-language-leaflet .leaflet-pane.leaflet-geojson-pane {
     z-index: 398;
 }
