@@ -14,6 +14,8 @@ import { formatLatLng } from "src/utils";
 
 let L = window[LeafletSymbol];
 
+const locale = window.moment.locale;
+
 const MarkerOptions: L.MarkerOptions = {
     startIconUrl: null,
     endIconUrl: null,
@@ -272,7 +274,7 @@ export class GPX extends Layer<L.GeoJSON> {
 
         const el = createDiv("gpx-popup");
         el.createSpan({ text: `Lat: ${lat}, Lng: ${lng}` });
-        el.createSpan({ text: `Time: ${point.meta.time.toLocaleString()}` });
+        el.createSpan({ text: `Time: ${point.meta.time.toLocaleString(locale())}` });
 
         if (point.meta.elevation && !isNaN(point.meta.elevation))
             el.createSpan({
