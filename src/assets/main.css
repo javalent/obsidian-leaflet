@@ -322,9 +322,6 @@ input.is-invalid {
 .block-language-leaflet .leaflet-control-expandable {
     background: #fff;
 }
-.block-language-leaflet .leaflet-control-expandable.expanded {
-    padding: 6px 10px 6px 6px;
-}
 .block-language-leaflet
     .leaflet-control-expandable:not(.expanded)
     > .leaflet-control-expandable-list {
@@ -340,6 +337,10 @@ input.is-invalid {
 }
 
 .block-language-leaflet .leaflet-control-expandable .input-container {
+    margin: 0;
+}
+.block-language-leaflet .leaflet-control-expandable.expanded .input-container {
+    padding: 6px 10px 6px 6px;
     margin: 0;
 }
 
@@ -398,7 +399,10 @@ input.is-invalid {
     z-index: 397;
 }
 .block-language-leaflet .leaflet-pane.leaflet-gpx-pane {
-    z-index: 399;
+    z-index: 405;
+}
+.block-language-leaflet .leaflet-pane.leaflet-gpx-canvas-pane {
+    z-index: 301;
 }
 .block-language-leaflet .leaflet-pane.leaflet-base-layer-pane {
     z-index: 300;

@@ -272,10 +272,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                             this.hide();
                         }
 
-                        console.log(
-                            "🚀 ~ file: marker.ts ~ line 272 ~ this.tooltip",
-                            this.tooltip
-                        );
+                        
                         if (this.tooltip === "always") {
                             this.popup.open(this.target.display);
                         } else {

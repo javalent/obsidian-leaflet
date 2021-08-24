@@ -1,612 +1,732 @@
-//@ts-nocheck
-import QSA from "query-selector";
 import { DOMParser } from "xmldom";
 
 const ctx: Worker = self as any;
 
 // Respond to message from parent thread
 ctx.onmessage = async (event) => {
-    const parser = new gpxParser();
-
     try {
         let str = event.data.string;
         str = str.replace(/>\s+</g, "><");
-        str = str.replace(/gpxtpx:|gpxx:|ns3:|gpxdata:|wptx1:|ctx:/g, "");
+        str = str.replace(
+            /gpxtpx:|gpxx:|ns3:|gpxdata:|wptx1:|ctx:|mytrails:/g,
+            ""
+        );
         str = str.replace(/cadence>/g, "cad>");
         str = str.replace(/heartrate>/g, "hr>");
-        str = str.replace(/<\/atemp>/g, "</temp>");
-        str = str.replace(/<atemp>/g, "<temp>");
+        str = str.replace(/<\/temp>/g, "</atemp>");
+        str = str.replace(/<temp>/g, "<atemp>");
 
-        ctx.postMessage({ data: parser.parse(str) });
+        const parser = new GPXParser(str);
+        ctx.postMessage({ data: parser.info });
     } catch (e) {
-        console.log("🚀 ~ file: gpx.worker.ts ~ line 66 ~ e", e);
         ctx.postMessage({ error: e });
     }
 };
 
 export default {} as typeof Worker & (new () => Worker);
+const _MAX_POINT_INTERVAL_MS = 15000;
+const _SECOND_IN_MILLIS = 1000;
+const _MINUTE_IN_MILLIS = 60 * _SECOND_IN_MILLIS;
+const _HOUR_IN_MILLIS = 60 * _MINUTE_IN_MILLIS;
+const _DAY_IN_MILLIS = 24 * _HOUR_IN_MILLIS;
 
-/**
- * GPX file parser
- *
- * @constructor
- */
-let gpxParser = function () {
-    this.xmlSource = "";
-    this.metadata = {};
-    this.waypoints = [];
-    this.tracks = [];
-    this.routes = [];
+const _GPX_STYLE_NS = "http://www.topografix.com/GPX/gpx_style/0/2";
+const _DEFAULT_POLYLINE_OPTS = {
+    color: "blue"
 };
-
-/**
- * Parse a gpx formatted string to a GPXParser Object
- *
- * @param {string} gpxstring - A GPX formatted String
- *
- * @return {gpxParser} A GPXParser object
- */
-
-gpxParser.prototype.querySelectorAll = function (element, selector) {
-    return QSA(selector, element);
+const _DEFAULT_GPX_OPTS = {
+    parseElements: ["track", "route", "waypoint"],
+    joinTrackSegments: true
 };
+class GPXParser {
+    info: any;
+    layers: any = {};
+    options: Record<any, any>;
+    constructor(public xml: string, options: any = {}) {
+        options.max_point_interval =
+            options.max_point_interval || _MAX_POINT_INTERVAL_MS;
+        options.polyline_options = options.polyline_options || {};
+        options.gpx_options = this._merge_objs(
+            _DEFAULT_GPX_OPTS,
+            options.gpx_options || {}
+        );
+        this.options = options;
+        this._init_info();
+        this._parse(this.xml);
+    }
+    get_duration_string(duration: number, hidems: boolean) {
+        let s = "";
 
-gpxParser.prototype.querySelector = function (element, selector) {
-    return this.querySelectorAll(element, selector)?.shift();
-};
-
-gpxParser.prototype.parse = function (gpxstring) {
-    let keepThis = this;
-
-    let domParser = new DOMParser();
-    this.xmlSource = domParser.parseFromString(gpxstring, "text/xml");
-
-    let metadata = this.querySelector(this.xmlSource, "metadata");
-    if (metadata != null) {
-        this.metadata.name = this.getElementValue(metadata, "name");
-        this.metadata.desc = this.getElementValue(metadata, "desc");
-        this.metadata.time = this.getElementValue(metadata, "time");
-
-        let author = {};
-        let authorElem = this.querySelector(this.metadata, "author");
-        if (authorElem != null) {
-            author.name = this.getElementValue(authorElem, "name");
-            author.email = {};
-            let emailElem = this.querySelector(authorElem, "email");
-            if (emailElem != null) {
-                author.email.id = emailElem.getAttribute("id");
-                author.email.domain = emailElem.getAttribute("domain");
-            }
-
-            let link = {};
-            let linkElem = this.querySelector(authorElem, "link");
-            if (linkElem != null) {
-                link.href = linkElem.getAttribute("href");
-                link.text = this.getElementValue(linkElem, "text");
-                link.type = this.getElementValue(linkElem, "type");
-            }
-            author.link = link;
+        if (duration >= _DAY_IN_MILLIS) {
+            s += Math.floor(duration / _DAY_IN_MILLIS) + "d ";
+            duration = duration % _DAY_IN_MILLIS;
         }
-        this.metadata.author = author;
 
-        let link = {};
-        let linkElem = this.queryDirectSelector(metadata, "link");
-        if (linkElem != null) {
-            link.href = linkElem.getAttribute("href");
-            link.text = this.getElementValue(linkElem, "text");
-            link.type = this.getElementValue(linkElem, "type");
-            this.metadata.link = link;
+        if (duration >= _HOUR_IN_MILLIS) {
+            s += Math.floor(duration / _HOUR_IN_MILLIS) + ":";
+            duration = duration % _HOUR_IN_MILLIS;
         }
+
+        var mins = Math.floor(duration / _MINUTE_IN_MILLIS);
+        duration = duration % _MINUTE_IN_MILLIS;
+        if (mins < 10) s += "0";
+        s += mins + "'";
+
+        var secs = Math.floor(duration / _SECOND_IN_MILLIS);
+        duration = duration % _SECOND_IN_MILLIS;
+        if (secs < 10) s += "0";
+        s += secs;
+
+        if (!hidems && duration > 0)
+            s += "." + Math.round(Math.floor(duration) * 1000) / 1000;
+        else s += '"';
+
+        return s;
     }
 
-    var wpts = [].slice.call(this.querySelectorAll(this.xmlSource, "wpt"));
-    for (let idx in wpts) {
-        var wpt = wpts[idx];
-        let pt = {};
-        pt.name = keepThis.getElementValue(wpt, "name");
-        pt.sym = keepThis.getElementValue(wpt, "sym");
-        pt.lat = parseFloat(wpt.getAttribute("lat"));
-        pt.lon = parseFloat(wpt.getAttribute("lon"));
-
-        let floatValue = parseFloat(keepThis.getElementValue(wpt, "ele"));
-        pt.ele = isNaN(floatValue) ? null : floatValue;
-
-        pt.cmt = keepThis.getElementValue(wpt, "cmt");
-        pt.desc = keepThis.getElementValue(wpt, "desc");
-
-        let time = keepThis.getElementValue(wpt, "time");
-        pt.time = time == null ? null : new Date(time);
-
-        keepThis.waypoints.push(pt);
+    get_duration_string_iso(duration: number, hidems: boolean) {
+        let s = this.get_duration_string(duration, hidems);
+        return s.replace("'", ":").replace('"', "");
     }
 
-    var rtes = [].slice.call(this.querySelectorAll(this.xmlSource, "rte"));
-    for (let idx in rtes) {
-        let rte = rtes[idx];
-        let route = {};
-        route.name = keepThis.getElementValue(rte, "name");
-        route.cmt = keepThis.getElementValue(rte, "cmt");
-        route.desc = keepThis.getElementValue(rte, "desc");
-        route.src = keepThis.getElementValue(rte, "src");
-        route.number = keepThis.getElementValue(rte, "number");
-
-        let type = keepThis.queryDirectSelector(rte, "type");
-        route.type = type != null ? type.innerHTML : null;
-
-        let link = {};
-        let linkElem = this.querySelector(rte, "link");
-        if (linkElem != null) {
-            link.href = linkElem.getAttribute("href");
-            link.text = keepThis.getElementValue(linkElem, "text");
-            link.type = keepThis.getElementValue(linkElem, "type");
-        }
-        route.link = link;
-
-        let routepoints = [];
-        var rtepts = [].slice.call(this.querySelectorAll(rte, "rtept"));
-
-        for (let idxIn in rtepts) {
-            let rtept = rtepts[idxIn];
-            let pt = {};
-            pt.lat = parseFloat(rtept.getAttribute("lat"));
-            pt.lon = parseFloat(rtept.getAttribute("lon"));
-
-            let floatValue = parseFloat(keepThis.getElementValue(rtept, "ele"));
-            pt.ele = isNaN(floatValue) ? null : floatValue;
-
-            let time = keepThis.getElementValue(rtept, "time");
-            pt.time = time == null ? null : new Date(time);
-
-            routepoints.push(pt);
-        }
-
-        route.distance = keepThis.calculDistance(routepoints);
-        route.elevation = keepThis.calcElevation(routepoints);
-        route.slopes = keepThis.calculSlope(routepoints, route.distance.cumul);
-        route.points = routepoints;
-
-        keepThis.routes.push(route);
+    // Public methods
+    to_miles(v: number) {
+        return v / 1.60934;
+    }
+    to_ft(v: number) {
+        return v * 3.28084;
+    }
+    m_to_km(v: number) {
+        return v / 1000;
+    }
+    m_to_mi(v: number) {
+        return v / 1609.34;
+    }
+    ms_to_kmh(v: number) {
+        return v * 3.6;
+    }
+    ms_to_mih(v: number) {
+        return (v / 1609.34) * 3600;
     }
 
-    var trks = [].slice.call(this.querySelectorAll(this.xmlSource, "trk"));
-    for (let idx in trks) {
-        let trk = trks[idx];
-        let track = {};
+    get_name() {
+        return this.info.name;
+    }
+    get_desc() {
+        return this.info.desc;
+    }
+    get_author() {
+        return this.info.author;
+    }
+    get_copyright() {
+        return this.info.copyright;
+    }
+    get_distance() {
+        return this.info.length;
+    }
+    get_distance_imp() {
+        return this.to_miles(this.m_to_km(this.get_distance()));
+    }
 
-        track.name = keepThis.getElementValue(trk, "name");
-        track.cmt = keepThis.getElementValue(trk, "cmt");
-        track.desc = keepThis.getElementValue(trk, "desc");
-        track.src = keepThis.getElementValue(trk, "src");
-        track.number = keepThis.getElementValue(trk, "number");
+    get_start_time() {
+        return this.info.duration.start;
+    }
+    get_end_time() {
+        return this.info.duration.end;
+    }
+    get_moving_time() {
+        return this.info.duration.moving;
+    }
+    get_total_time() {
+        return this.info.duration.total;
+    }
 
-        let type = keepThis.queryDirectSelector(trk, "type");
-        track.type = type != null ? type.innerHTML : null;
+    get_moving_pace() {
+        return this.get_moving_time() / this.m_to_km(this.get_distance());
+    }
+    get_moving_pace_imp() {
+        return this.get_moving_time() / this.get_distance_imp();
+    }
+    get_moving_speed() {
+        return (
+            this.m_to_km(this.get_distance()) /
+            (this.get_moving_time() / (3600 * 1000))
+        );
+    }
+    get_moving_speed_imp() {
+        return (
+            this.to_miles(this.m_to_km(this.get_distance())) /
+            (this.get_moving_time() / (3600 * 1000))
+        );
+    }
 
-        let link = {};
-        let linkElem = this.querySelector(trk, "link");
-        if (linkElem != null) {
-            link.href = linkElem.getAttribute("href");
-            link.text = keepThis.getElementValue(linkElem, "text");
-            link.type = keepThis.getElementValue(linkElem, "type");
-        }
-        track.link = link;
+    get_total_speed() {
+        return (
+            this.m_to_km(this.get_distance()) /
+            (this.get_total_time() / (3600 * 1000))
+        );
+    }
+    get_total_speed_imp() {
+        return (
+            this.to_miles(this.m_to_km(this.get_distance())) /
+            (this.get_total_time() / (3600 * 1000))
+        );
+    }
 
-        let trackpoints = [];
-        let trkpts = [].slice.call(this.querySelectorAll(trk, "trkpt"));
-        const flags = {
-            cad: false,
-            ele: false,
-            hr: false,
-            temp: false,
-            time: false
-        };
-        for (let idxIn in trkpts) {
-            var trkpt = trkpts[idxIn];
-            let pt = {};
-            pt.lat = parseFloat(trkpt.getAttribute("lat"));
-            pt.lon = parseFloat(trkpt.getAttribute("lon"));
-            pt.lng = pt.lon;
-
-            let floatValue = parseFloat(keepThis.getElementValue(trkpt, "ele"));
-            pt.ele = isNaN(floatValue) ? null : floatValue;
-            flags.ele = pt.ele !== null;
-
-            let time = keepThis.getElementValue(trkpt, "time");
-            pt.time = time == null ? null : new Date(time);
-            flags.time = pt.time !== null;
-
-            let extensions = keepThis.querySelector(trkpt, "extensions");
-            const trkptext = this.querySelector(
-                extensions,
-                "TrackPointExtension"
+    get_elevation_gain() {
+        return this.info.elevation.gain;
+    }
+    get_elevation_loss() {
+        return this.info.elevation.loss;
+    }
+    get_elevation_gain_imp() {
+        return this.to_ft(this.get_elevation_gain());
+    }
+    get_elevation_loss_imp() {
+        return this.to_ft(this.get_elevation_loss());
+    }
+    get_elevation_data() {
+        return this.info.elevation.points.map((p: any) => {
+            return this._prepare_data_point(
+                p,
+                this.m_to_km,
+                null,
+                function (a: number, b: number) {
+                    return a.toFixed(2) + " km, " + b.toFixed(0) + " m";
+                }
             );
+        });
+    }
+    get_elevation_data_imp() {
+        return this.info.elevation.points.map((p: any) => {
+            return this._prepare_data_point(
+                p,
+                this.m_to_mi,
+                this.to_ft,
+                function (a: number, b: number) {
+                    return a.toFixed(2) + " mi, " + b.toFixed(0) + " ft";
+                }
+            );
+        });
+    }
+    get_elevation_max() {
+        return this.info.elevation.max;
+    }
+    get_elevation_min() {
+        return this.info.elevation.min;
+    }
+    get_elevation_max_imp() {
+        return this.to_ft(this.get_elevation_max());
+    }
+    get_elevation_min_imp() {
+        return this.to_ft(this.get_elevation_min());
+    }
 
-            pt.extensions = null;
-            if (trkptext) {
-                let exts = Array.from(trkptext.childNodes);
-                exts = exts.reduce((acc, node) => {
-                    const content = isNaN(Number(node.textContent))
-                        ? node.textContent
-                        : Number(node.textContent);
-                    acc[node.tagName] = content;
-                    return acc;
-                }, {});
-                pt.extensions = exts;
-                if (!(pt.extensions && "speed" in pt.extensions)) {
-                    if (idxIn == trkpts.length - 1) {
-                        pt.extensions.speed =
-                            trkpts[idxIn - 1].extensions.speed;
-                    } else {
-                        const time =
-                            new Date(trkpts[idxIn + 1]) - new Date(pt.time);
-                        const dist = keepThis.calcDistanceBetween(
-                            pt,
-                            trkpts[idxIn + 1]
+    get_speed_data() {
+        return this.info.speed.points.map((p: any) => {
+            return this._prepare_data_point(
+                p,
+                this.m_to_km,
+                this.ms_to_kmh,
+                function (a: number, b: number) {
+                    return a.toFixed(2) + " km, " + b.toFixed(2) + " km/h";
+                }
+            );
+        });
+    }
+    get_speed_data_imp() {
+        return this.info.elevation.points.map((p: any) => {
+            return this._prepare_data_point(
+                p,
+                this.m_to_mi,
+                this.ms_to_mih,
+                function (a: number, b: number) {
+                    return a.toFixed(2) + " mi, " + b.toFixed(2) + " mi/h";
+                }
+            );
+        });
+    }
+    get_speed_max() {
+        return this.m_to_km(this.info.speed.max) * 3600;
+    }
+    get_speed_max_imp() {
+        return this.to_miles(this.get_speed_max());
+    }
+
+    get_average_hr() {
+        return this.info.hr.avg;
+    }
+    get_average_temp() {
+        return this.info.atemp.avg;
+    }
+    get_average_cadence() {
+        return this.info.cad.avg;
+    }
+    get_heartrate_data() {
+        return this.info.hr.points.map((p: any) => {
+            return this._prepare_data_point(
+                p,
+                this.m_to_km,
+                null,
+                function (a: number, b: number) {
+                    return a.toFixed(2) + " km, " + b.toFixed(0) + " bpm";
+                }
+            );
+        });
+    }
+    get_heartrate_data_imp() {
+        return this.info.hr.points.map((p: any) => {
+            return this._prepare_data_point(
+                p,
+                this.m_to_mi,
+                null,
+                function (a: number, b: number) {
+                    return a.toFixed(2) + " mi, " + b.toFixed(0) + " bpm";
+                }
+            );
+        });
+    }
+    get_cadence_data() {
+        return this.info.cad.points.map((p: any) => {
+            return this._prepare_data_point(
+                p,
+                this.m_to_km,
+                null,
+                function (a: number, b: number) {
+                    return a.toFixed(2) + " km, " + b.toFixed(0) + " rpm";
+                }
+            );
+        });
+    }
+    get_temp_data() {
+        return this.info.atemp.points.map((p: any) => {
+            return this._prepare_data_point(
+                p,
+                this.m_to_km,
+                null,
+                function (a: number, b: number) {
+                    return a.toFixed(2) + " km, " + b.toFixed(0) + " degrees";
+                }
+            );
+        });
+    }
+    get_cadence_data_imp() {
+        return this.info.cad.points.map((p: any) => {
+            return this._prepare_data_point(
+                p,
+                this.m_to_mi,
+                null,
+                function (a: number, b: number) {
+                    return a.toFixed(2) + " mi, " + b.toFixed(0) + " rpm";
+                }
+            );
+        });
+    }
+    get_temp_data_imp() {
+        return this.info.atemp.points.map((p: any) => {
+            return this._prepare_data_point(
+                p,
+                this.m_to_mi,
+                null,
+                function (a: number, b: number) {
+                    return a.toFixed(2) + " mi, " + b.toFixed(0) + " degrees";
+                }
+            );
+        });
+    }
+
+    // Private methods
+    _merge_objs(a: Record<any, any>, b: Record<any, any>) {
+        var _: Record<any, any> = {};
+        for (var attr in a) {
+            _[attr] = a[attr];
+        }
+        for (var attr in b) {
+            _[attr] = b[attr];
+        }
+        return _;
+    }
+
+    _prepare_data_point(
+        p: any,
+        trans1: (...args: any[]) => any,
+        trans2: (...args: any[]) => any,
+        trans_tooltip: any
+    ) {
+        var r = [
+            (trans1 && trans1(p[0])) || p[0],
+            (trans2 && trans2(p[1])) || p[1]
+        ];
+        r.push(
+            (trans_tooltip && trans_tooltip(r[0], r[1])) || r[0] + ": " + r[1]
+        );
+        return r;
+    }
+
+    _init_info() {
+        this.info = {
+            name: null,
+            length: 0.0,
+            elevation: {
+                gain: 0.0,
+                loss: 0.0,
+                max: 0.0,
+                min: Infinity,
+                total: 0,
+                avg: 0,
+                points: []
+            },
+            speed: { max: 0.0, min: Infinity, avg: 0, total: 0, points: [] },
+            hr: { avg: 0, min: Infinity, max: 0, total: 0, points: [] },
+            duration: { start: null, end: null, moving: 0, total: 0 },
+            atemp: { avg: 0, min: Infinity, max: 0, total: 0, points: [] },
+            cad: { avg: 0, min: Infinity, max: 0, total: 0, points: [] }
+        };
+    }
+    _parse(input: string, options: any = this.options, async: boolean = false) {
+        var cb = (gpx: XMLDocument, options: any) => {
+            const layers = this._parse_gpx_data(gpx, options);
+            if (!layers) {
+                throw new Error("No layers found.");
+            }
+            this.layers = layers;
+            this.info.coords = this.layers.map((layer: any) => layer.coords);
+            this.info.styles = this.layers.map((layer: any) => layer.style);
+        };
+        var parser = new DOMParser();
+        if (async) {
+            setTimeout(function () {
+                cb(parser.parseFromString(input, "text/xml"), options);
+            });
+        } else {
+            cb(parser.parseFromString(input, "text/xml"), options);
+        }
+    }
+
+    _parse_gpx_data(xml: XMLDocument, options: any = this.options) {
+        let i,
+            t,
+            l,
+            el,
+            layers: any[] = [];
+
+        const name = xml.getElementsByTagName("name");
+        if (name.length > 0) {
+            this.info.name = name[0].textContent;
+        }
+        const desc = xml.getElementsByTagName("desc");
+        if (desc.length > 0) {
+            this.info.desc = desc[0].textContent;
+        }
+        const author = xml.getElementsByTagName("author");
+        if (author.length > 0) {
+            this.info.author = author[0].textContent;
+        }
+        const copyright = xml.getElementsByTagName("copyright");
+        if (copyright.length > 0) {
+            this.info.copyright = copyright[0].textContent;
+        }
+
+        const parseElements = options.gpx_options.parseElements;
+        if (parseElements.indexOf("route") > -1) {
+            // routes are <rtept> tags inside <rte> sections
+            const routes = xml.getElementsByTagName("rte");
+            for (i = 0; i < routes.length; i++) {
+                layers = layers.concat(
+                    this._parse_segment(routes[i], options, {}, "rtept")
+                );
+            }
+        }
+
+        if (parseElements.indexOf("track") > -1) {
+            // tracks are <trkpt> tags in one or more <trkseg> sections in each <trk>
+            var tracks = xml.getElementsByTagName("trk");
+            for (i = 0; i < tracks.length; i++) {
+                var track = tracks[i];
+                var polyline_options = this._extract_styling(track);
+
+                if (options.gpx_options.joinTrackSegments) {
+                    layers = layers.concat(
+                        this._parse_segment(
+                            track,
+                            options,
+                            polyline_options,
+                            "trkpt"
+                        )
+                    );
+                } else {
+                    var segments = track.getElementsByTagName("trkseg");
+                    for (let j = 0; j < segments.length; j++) {
+                        layers = layers.concat(
+                            this._parse_segment(
+                                segments[j],
+                                options,
+                                polyline_options,
+                                "trkpt"
+                            )
                         );
-
-                        pt.extensions.speed = dist / time;
                     }
                 }
-                if (pt.extensions.cad) {
-                    flags.cad = true;
+            }
+        }
+
+        this.info.hr.avg = Math.round(
+            this.info.hr.total / this.info.hr.points.length
+        );
+        this.info.cad.avg = Math.round(
+            this.info.cad.total / this.info.cad.points.length
+        );
+        this.info.atemp.avg = Math.round(
+            this.info.atemp.total / this.info.atemp.points.length
+        );
+        this.info.speed.avg = Math.round(
+            this.info.speed.total / this.info.speed.points.length
+        );
+        this.info.elevation.avg = Math.round(
+            this.info.elevation.total / this.info.elevation.points.length
+        );
+
+        // parse waypoints and add markers for each of them
+        if (parseElements.indexOf("waypoint") > -1) {
+            this.info.waypoints = [];
+            el = xml.getElementsByTagName("wpt");
+            for (i = 0; i < el.length; i++) {
+                var ll = {
+                    lat: Number(el[i].getAttribute("lat")),
+                    lng: Number(el[i].getAttribute("lon"))
+                };
+
+                const nameEl = el[i].getElementsByTagName("name");
+                const name = nameEl.length > 0 ? nameEl[0].textContent : "";
+
+                const descEl = el[i].getElementsByTagName("desc");
+                const desc = descEl.length > 0 ? descEl[0].textContent : "";
+
+                const symEl = el[i].getElementsByTagName("sym");
+                const symKey = symEl.length > 0 ? symEl[0].textContent : null;
+
+                const typeEl = el[i].getElementsByTagName("type");
+                const typeKey =
+                    typeEl.length > 0 ? typeEl[0].textContent : null;
+
+                this.info.waypoints.push({
+                    ...ll,
+                    name,
+                    desc,
+                    symbol: symKey,
+                    type: typeKey
+                });
+            }
+        }
+        return layers;
+    }
+
+    _parse_segment(
+        line: Element,
+        options: any,
+        polyline_options: any,
+        tag: string
+    ) {
+        var el = line.getElementsByTagName(tag);
+        if (!el.length) return [];
+
+        var coords = [];
+        var markers = [];
+        var layers = [];
+        var last = null;
+
+        for (var i = 0; i < el.length; i++) {
+            var _,
+                ll: Record<any, any> = {
+                    lat: Number(el[i].getAttribute("lat")),
+                    lng: Number(el[i].getAttribute("lon"))
+                };
+            ll.meta = {
+                time: null,
+                elevation: null,
+                hr: null,
+                cad: null,
+                atemp: null,
+                speed: null
+            };
+
+            _ = el[i].getElementsByTagName("time");
+            if (_.length > 0) {
+                ll.meta.time = new Date(Date.parse(_[0].textContent));
+            } else {
+                ll.meta.time = new Date("1970-01-01T00:00:00");
+            }
+            var time_diff =
+                last != null ? Math.abs(ll.meta.time - last.meta.time) : 0;
+
+            _ = el[i].getElementsByTagName("ele");
+            if (_.length > 0) {
+                ll.meta.elevation = parseFloat(_[0].textContent);
+            } else {
+                // If the point doesn't have an <ele> tag, assume it has the same
+                // elevation as the point before it (if it had one).
+                ll.meta.elevation = last.meta.elevation;
+            }
+            var ele_diff =
+                last != null ? ll.meta.elevation - last.meta.elevation : 0;
+            var dist_3d = last != null ? this._dist3d(last, ll) : 0;
+
+            _ = el[i].getElementsByTagName("speed");
+            if (_.length > 0) {
+                ll.meta.speed = parseFloat(_[0].textContent);
+            } else {
+                // speed in meter per second
+                ll.meta.speed =
+                    time_diff > 0 ? (1000.0 * dist_3d) / time_diff : 0;
+            }
+
+            _ = el[i].getElementsByTagName("name");
+            if (_.length > 0) {
+                var name = _[0].textContent;
+                var ptMatchers = options.marker_options.pointMatchers || [];
+
+                for (var j = 0; j < ptMatchers.length; j++) {
+                    if (ptMatchers[j].regex.test(name)) {
+                        markers.push({
+                            label: name,
+                            coords: ll,
+                            icon: ptMatchers[j].icon,
+                            element: el[i]
+                        });
+                        break;
+                    }
                 }
-                if (pt.extensions.temp) {
-                    flags.temp = true;
-                }
             }
-            const hr = keepThis.getElementValue(trkpt, "hr");
-            pt.hr = hr == null ? null : Number(hr);
-            flags.hr = pt.hr !== null;
 
-            trackpoints.push(pt);
-        }
-        track.distance = keepThis.calculDistance(trackpoints);
-        track.elevation = keepThis.calcElevation(trackpoints);
-        track.slopes = keepThis.calculSlope(trackpoints, track.distance.cumul);
-        track.points = trackpoints;
-
-        track.flags = flags;
-        track.maps = {};
-
-        const speed = {
-            raw: trackpoints.map((pt) => pt.extensions.speed),
-            data: trackpoints.map((pt) => [pt.lat, pt.lon, pt.extensions.speed])
-        };
-        speed.min = Math.min(...speed.raw);
-        speed.max = Math.max(...speed.raw);
-        speed.average = speed.raw.reduce((a, c) => a + c, 0) / speed.raw.length;
-
-        track.maps.speed = speed;
-
-        if (flags.cad) {
-            const points = trackpoints.filter(
-                (pt) => !isNaN(pt.extensions.cad)
-            );
-            const cad = {
-                raw: points.map((pt) => pt.extensions.cad),
-                data: points.map((pt) => [pt.lat, pt.lon, pt.extensions.cad])
-            };
-            cad.min = Math.min(...cad.raw);
-            cad.max = Math.max(...cad.raw);
-            cad.average = cad.raw.reduce((a, c) => a + c, 0) / cad.raw.length;
-
-            track.maps.cad = cad;
-        }
-        if (flags.ele) {
-            const points = trackpoints.filter((pt) => !isNaN(pt.ele));
-            const ele = {
-                raw: points.map((pt) => pt.ele),
-                data: points.map((pt) => [pt.lat, pt.lon, pt.ele])
-            };
-            ele.min = Math.min(...ele.raw);
-            ele.max = Math.max(...ele.raw);
-            ele.average = ele.raw.reduce((a, c) => a + c, 0) / ele.raw.length;
-
-            track.maps.ele = ele;
-        }
-        if (flags.hr) {
-            const points = trackpoints.filter((pt) => !isNaN(pt.hr));
-            const hr = {
-                raw: points.map((pt) => pt.hr),
-                data: points.map((pt) => [pt.lat, pt.lon, pt.hr])
-            };
-            hr.min = Math.min(...hr.raw);
-            hr.max = Math.max(...hr.raw);
-            hr.average = hr.raw.reduce((a, c) => a + c, 0) / hr.raw.length;
-
-            track.maps.hr = hr;
-        }
-
-        track.flags = {
-            speed: true,
-            ...flags
-        };
-
-        keepThis.tracks.push(track);
-    }
-
-    return {
-        metadata: this.metadata,
-        waypoints: this.waypoints,
-        tracks: this.tracks,
-        routes: this.routes
-    };
-};
-
-/**
- * Get value from a XML DOM element
- *
- * @param  {Element} parent - Parent DOM Element
- * @param  {string} needle - Name of the searched element
- *
- * @return {} The element value
- */
-gpxParser.prototype.getElementValue = function (parent, needle) {
-    let elem = this.querySelector(parent, needle);
-    if (elem != null) {
-        return elem.innerHTML != undefined
-            ? elem.innerHTML
-            : elem.childNodes[0].data;
-    }
-    return elem;
-};
-
-/**
- * Search the value of a direct child XML DOM element
- *
- * @param  {Element} parent - Parent DOM Element
- * @param  {string} needle - Name of the searched element
- *
- * @return {} The element value
- */
-gpxParser.prototype.queryDirectSelector = function (parent, needle) {
-    let elements = this.querySelectorAll(parent, needle);
-    let finalElem = elements[0];
-
-    if (elements.length > 1) {
-        let directChilds = parent.childNodes;
-
-        for (idx in directChilds) {
-            elem = directChilds[idx];
-            if (elem.tagName === needle) {
-                finalElem = elem;
+            _ = el[i].getElementsByTagNameNS("*", "hr");
+            if (_.length > 0) {
+                ll.meta.hr = parseInt(_[0].textContent);
+                this.info.hr.points.push([ll.lat, ll.lng, ll.meta.hr]);
+                this.info.hr.total += ll.meta.hr;
             }
-        }
-    }
 
-    return finalElem;
-};
-
-/**
- * Calcul the Distance Object from an array of points
- *
- * @param  {} points - An array of points with lat and lon properties
- *
- * @return {DistanceObject} An object with total distance and Cumulative distances
- */
-gpxParser.prototype.calculDistance = function (points) {
-    let distance = {};
-    let totalDistance = 0;
-    let cumulDistance = [];
-    for (var i = 0; i < points.length - 1; i++) {
-        totalDistance += this.calcDistanceBetween(points[i], points[i + 1]);
-        cumulDistance[i] = totalDistance;
-    }
-    cumulDistance[points.length - 1] = totalDistance;
-
-    distance.total = totalDistance;
-    distance.cumul = cumulDistance;
-
-    return distance;
-};
-
-/**
- * Calcul Distance between two points with lat and lon
- *
- * @param  {} wpt1 - A geographic point with lat and lon properties
- * @param  {} wpt2 - A geographic point with lat and lon properties
- *
- * @returns {float} The distance between the two points
- */
-gpxParser.prototype.calcDistanceBetween = function (wpt1, wpt2) {
-    let latlng1 = {};
-    latlng1.lat = wpt1.lat;
-    latlng1.lon = wpt1.lon;
-    let latlng2 = {};
-    latlng2.lat = wpt2.lat;
-    latlng2.lon = wpt2.lon;
-    var rad = Math.PI / 180,
-        lat1 = latlng1.lat * rad,
-        lat2 = latlng2.lat * rad,
-        sinDLat = Math.sin(((latlng2.lat - latlng1.lat) * rad) / 2),
-        sinDLon = Math.sin(((latlng2.lon - latlng1.lon) * rad) / 2),
-        a =
-            sinDLat * sinDLat +
-            Math.cos(lat1) * Math.cos(lat2) * sinDLon * sinDLon,
-        c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return 6371000 * c;
-};
-
-/**
- * Generate Elevation Object from an array of points
- *
- * @param  {} points - An array of points with ele property
- *
- * @returns {ElevationObject} An object with negative and positive height difference and average, max and min altitude data
- */
-gpxParser.prototype.calcElevation = function (points) {
-    var dp = 0,
-        dm = 0,
-        ret = {};
-
-    for (var i = 0; i < points.length - 1; i++) {
-        let rawNextElevation = points[i + 1].ele;
-        let rawElevation = points[i].ele;
-
-        if (rawNextElevation !== null && rawElevation !== null) {
-            let diff = parseFloat(rawNextElevation) - parseFloat(rawElevation);
-
-            if (diff < 0) {
-                dm += diff;
-            } else if (diff > 0) {
-                dp += diff;
+            _ = el[i].getElementsByTagNameNS("*", "cad");
+            if (_.length > 0) {
+                ll.meta.cad = parseInt(_[0].textContent);
+                this.info.cad.points.push([ll.lat, ll.lng, ll.meta.cad]);
+                this.info.cad.total += ll.meta.cad;
             }
+            if (ll.meta.cad > this.info.cad.max) {
+                this.info.cad.max = ll.meta.cad;
+            }
+            if (ll.meta.cad < this.info.cad.min) {
+                this.info.cad.min = ll.meta.cad;
+            }
+
+            _ = el[i].getElementsByTagNameNS("*", "atemp");
+            if (_.length > 0) {
+                ll.meta.atemp = parseInt(_[0].textContent);
+                this.info.atemp.points.push([ll.lat, ll.lng, ll.meta.atemp]);
+                this.info.atemp.total += ll.meta.atemp;
+            }
+
+            if (ll.meta.elevation > this.info.elevation.max) {
+                this.info.elevation.max = ll.meta.elevation;
+            }
+            if (ll.meta.elevation < this.info.elevation.min) {
+                this.info.elevation.min = ll.meta.elevation;
+            }
+            this.info.elevation.total += ll.meta.elevation;
+            this.info.elevation.points.push([
+                ll.lat,
+                ll.lng,
+                ll.meta.elevation
+            ]);
+
+            if (ll.meta.speed > this.info.speed.max) {
+                this.info.speed.max = ll.meta.speed;
+            }
+            if (ll.meta.speed < this.info.speed.min) {
+                this.info.speed.min = ll.meta.speed;
+            }
+            this.info.speed.total += ll.meta.speed;
+            this.info.speed.points.push([ll.lat, ll.lng, ll.meta.speed]);
+
+            if (last == null && this.info.duration.start == null) {
+                this.info.duration.start = ll.meta.time;
+            }
+            this.info.duration.end = ll.meta.time;
+            this.info.duration.total += time_diff;
+            if (time_diff < options.max_point_interval) {
+                this.info.duration.moving += time_diff;
+            }
+
+            this.info.length += dist_3d;
+
+            if (ele_diff > 0) {
+                this.info.elevation.gain += ele_diff;
+            } else {
+                this.info.elevation.loss += Math.abs(ele_diff);
+            }
+
+            last = ll;
+            coords.push(ll);
         }
-    }
 
-    var elevation = [];
-    var sum = 0;
-
-    for (var i = 0, len = points.length; i < len; i++) {
-        let rawElevation = points[i].ele;
-
-        if (rawElevation !== null) {
-            var ele = parseFloat(points[i].ele);
-            elevation.push(ele);
-            sum += ele;
-        }
-    }
-
-    ret.max = Math.max.apply(null, elevation) || null;
-    ret.min = Math.min.apply(null, elevation) || null;
-    ret.pos = Math.abs(dp) || null;
-    ret.neg = Math.abs(dm) || null;
-    ret.avg = sum / elevation.length || null;
-
-    return ret;
-};
-
-/**
- * Generate slopes Object from an array of Points and an array of Cumulative distance
- *
- * @param  {} points - An array of points with ele property
- * @param  {} cumul - An array of cumulative distance
- *
- * @returns {SlopeObject} An array of slopes
- */
-gpxParser.prototype.calculSlope = function (points, cumul) {
-    let slopes = [];
-
-    for (var i = 0; i < points.length - 1; i++) {
-        let point = points[i];
-        let nextPoint = points[i + 1];
-        let elevationDiff = nextPoint.ele - point.ele;
-        let distance = cumul[i + 1] - cumul[i];
-
-        let slope = (elevationDiff * 100) / distance;
-        slopes.push(slope);
-    }
-
-    return slopes;
-};
-
-/**
- * Export the GPX object to a GeoJSON formatted Object
- *
- * @returns {} a GeoJSON formatted Object
- */
-gpxParser.prototype.toGeoJSON = function () {
-    var GeoJSON = {
-        type: "FeatureCollection",
-        features: [],
-        properties: {
-            name: this.metadata.name,
-            desc: this.metadata.desc,
-            time: this.metadata.time,
-            author: this.metadata.author,
-            link: this.metadata.link
-        }
-    };
-
-    for (idx in this.tracks) {
-        let track = this.tracks[idx];
-
-        var feature = {
-            type: "Feature",
-            geometry: {
-                type: "LineString",
-                coordinates: []
-            },
-            properties: {}
+        // add track
+        var l = {
+            coords,
+            style: this._extract_styling(
+                line,
+                polyline_options,
+                options.polyline_options
+            )
         };
 
-        feature.properties.name = track.name;
-        feature.properties.cmt = track.cmt;
-        feature.properties.desc = track.desc;
-        feature.properties.src = track.src;
-        feature.properties.number = track.number;
-        feature.properties.link = track.link;
-        feature.properties.type = track.type;
+        layers.push(l);
 
-        for (idx in track.points) {
-            let pt = track.points[idx];
+        return layers;
+    }
 
-            var geoPt = [];
-            geoPt.push(pt.lon);
-            geoPt.push(pt.lat);
-            geoPt.push(pt.ele);
-
-            feature.geometry.coordinates.push(geoPt);
+    _extract_styling(el: Element, base?: any, overrides?: any) {
+        var style = this._merge_objs(_DEFAULT_POLYLINE_OPTS, base);
+        var e = el.getElementsByTagNameNS(_GPX_STYLE_NS, "line");
+        if (e.length > 0) {
+            var _ = e[0].getElementsByTagName("color");
+            if (_.length > 0) style.color = "#" + _[0].textContent;
+            var _ = e[0].getElementsByTagName("opacity");
+            if (_.length > 0) style.opacity = _[0].textContent;
+            var _ = e[0].getElementsByTagName("weight");
+            if (_.length > 0) style.weight = _[0].textContent;
+            var _ = e[0].getElementsByTagName("linecap");
+            if (_.length > 0) style.lineCap = _[0].textContent;
+            var _ = e[0].getElementsByTagName("linejoin");
+            if (_.length > 0) style.lineJoin = _[0].textContent;
+            var _ = e[0].getElementsByTagName("dasharray");
+            if (_.length > 0) style.dashArray = _[0].textContent;
+            var _ = e[0].getElementsByTagName("dashoffset");
+            if (_.length > 0) style.dashOffset = _[0].textContent;
         }
-
-        GeoJSON.features.push(feature);
+        return this._merge_objs(style, overrides);
     }
 
-    for (idx in this.routes) {
-        let track = this.routes[idx];
-
-        var feature = {
-            type: "Feature",
-            geometry: {
-                type: "LineString",
-                coordinates: []
-            },
-            properties: {}
-        };
-
-        feature.properties.name = track.name;
-        feature.properties.cmt = track.cmt;
-        feature.properties.desc = track.desc;
-        feature.properties.src = track.src;
-        feature.properties.number = track.number;
-        feature.properties.link = track.link;
-        feature.properties.type = track.type;
-
-        for (idx in track.points) {
-            let pt = track.points[idx];
-
-            var geoPt = [];
-            geoPt.push(pt.lon);
-            geoPt.push(pt.lat);
-            geoPt.push(pt.ele);
-
-            feature.geometry.coordinates.push(geoPt);
-        }
-
-        GeoJSON.features.push(feature);
+    _dist2d(a: any, b: any) {
+        var R = 6371000;
+        var dLat = this._deg2rad(b.lat - a.lat);
+        var dLon = this._deg2rad(b.lng - a.lng);
+        var r =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(this._deg2rad(a.lat)) *
+                Math.cos(this._deg2rad(b.lat)) *
+                Math.sin(dLon / 2) *
+                Math.sin(dLon / 2);
+        var c = 2 * Math.atan2(Math.sqrt(r), Math.sqrt(1 - r));
+        var d = R * c;
+        return d;
     }
 
-    for (idx in this.waypoints) {
-        let pt = this.waypoints[idx];
-
-        var feature = {
-            type: "Feature",
-            geometry: {
-                type: "Point",
-                coordinates: []
-            },
-            properties: {}
-        };
-
-        feature.properties.name = pt.name;
-        feature.properties.sym = pt.sym;
-        feature.properties.cmt = pt.cmt;
-        feature.properties.desc = pt.desc;
-
-        feature.geometry.coordinates = [pt.lon, pt.lat, pt.ele];
-
-        GeoJSON.features.push(feature);
+    _dist3d(a: any, b: any) {
+        var planar = this._dist2d(a, b);
+        var height = Math.abs(b.meta.elevation - a.meta.elevation);
+        return Math.sqrt(Math.pow(planar, 2) + Math.pow(height, 2));
     }
 
-    return GeoJSON;
-};
+    _deg2rad(deg: number) {
+        return (deg * Math.PI) / 180;
+    }
+}

@@ -4,12 +4,12 @@ import { Layer } from "../layer/layer";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { gpx as gpxtoGeoJSON } from "@tmcw/togeojson";
 
-import { gpxControl } from "src/controls/gpx";
-
 import gpxWorker from "../worker/gpx.worker";
 import type { HotlineOptions } from "leaflet";
 import { popup } from "src/map/popup";
 import { GPXPoint } from "src/@types/layers";
+
+import { GeoJSON } from "./geojson";
 
 let L = window[LeafletSymbol];
 
@@ -33,7 +33,10 @@ const HOTLINE_OPTIONS: HotlineOptions = {
 };
 
 export class GPX extends Layer<L.GeoJSON> {
-    leafletInstance: L.GeoJSON;
+    geojson: GeoJSON;
+    get leafletInstance() {
+        return this.geojson.leafletInstance;
+    }
     style: { opacity: string; color: string };
     hotline: L.Polyline;
     popup = popup(this.map, this, { permanent: true });
@@ -77,11 +80,13 @@ export class GPX extends Layer<L.GeoJSON> {
             };
         }
 
+        this.map.log("Parsing GPX Data.");
         this.worker = new gpxWorker();
 
         this.worker.postMessage({ string: gpx });
 
         this.worker.onmessage = (event) => {
+            this.map.log("GPX Data parsed.");
             this.data = event.data.data;
             this.parsed = true;
             this.worker.terminate();
@@ -92,23 +97,41 @@ export class GPX extends Layer<L.GeoJSON> {
         this.gpx = gpxtoGeoJSON(
             new DOMParser().parseFromString(gpx, "text/xml")
         );
-        this.leafletInstance = L.geoJSON(this.gpx, {
-            pane: "gpx",
-            interactive: true
-        });
+        this.geojson = new GeoJSON(
+            this.map,
+            this.group,
+            { color: this.map.options.gpxColor, pane: "gpx" },
+            this.gpx
+        );
 
         this.leafletInstance.on("mouseover", (evt: L.LeafletMouseEvent) => {
-            (evt.originalEvent.target as SVGPathElement).addClass(
-                "leaflet-gpx-targeted"
-            );
+            if (!this.map.leafletInstance.hasLayer(this.hotline)) {
+                (evt.originalEvent.target as SVGPathElement).addClass(
+                    "leaflet-gpx-targeted"
+                );
+            }
         });
         this.leafletInstance.on("mouseout", (evt: L.LeafletMouseEvent) => {
-            (evt.originalEvent.target as SVGPathElement).removeClass(
-                "leaflet-gpx-targeted"
-            );
+            if (this.map.leafletInstance.hasLayer(this.hotline)) {
+                this.popup.close();
+            } else {
+                (evt.originalEvent.target as SVGPathElement).removeClass(
+                    "leaflet-gpx-targeted"
+                );
+            }
         });
         this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) => {
             this.map.gpxControl.setTarget(this);
+        });
+        this.leafletInstance.on("mousemove", (evt: L.LeafletMouseEvent) => {
+            if (this.map.leafletInstance.hasLayer(this.hotline)) {
+                const closest = this.findClosestPoint(evt.latlng);
+                const content = `Lat: ${closest.lat}, Lng: ${closest.lng}
+    Elevation: ${closest.meta.elevation} m,
+    Speed: ${closest.meta.speed} m/s
+    `;
+                this.popup.setTarget(evt.latlng).open(content);
+            }
         });
     }
     switch(which: "cad" | "ele" | "hr" | "speed" | "default") {
@@ -117,55 +140,49 @@ export class GPX extends Layer<L.GeoJSON> {
         this.displaying = which;
         switch (which) {
             case "cad": {
-                this.hotline = L.hotline(this.cad.data, {
+                this.hotline = L.hotline(this.cad.points, {
                     min: this.cad.min,
                     max: this.cad.max,
-                    ...HOTLINE_OPTIONS
+                    ...HOTLINE_OPTIONS,
+                    renderer: this.renderer
                 }).addTo(this.map.leafletInstance);
                 break;
             }
             case "ele": {
-                this.hotline = L.hotline(this.ele.data, {
-                    min: this.ele.min,
-                    max: this.ele.max,
-                    ...HOTLINE_OPTIONS
+                this.hotline = L.hotline(this.elevation.points, {
+                    min: this.elevation.min,
+                    max: this.elevation.max,
+                    ...HOTLINE_OPTIONS,
+                    renderer: this.renderer
                 }).addTo(this.map.leafletInstance);
                 break;
             }
             case "hr": {
-                this.hotline = L.hotline(this.hr.data, {
+                this.hotline = L.hotline(this.hr.points, {
                     min: this.hr.min,
                     max: this.hr.max,
-                    ...HOTLINE_OPTIONS
+                    ...HOTLINE_OPTIONS,
+                    renderer: this.renderer
                 }).addTo(this.map.leafletInstance);
                 break;
             }
             case "speed": {
-                this.hotline = L.hotline(this.speed.data, {
+                this.hotline = L.hotline(this.speed.points, {
                     min: this.speed.min,
                     max: this.speed.max,
-                    ...HOTLINE_OPTIONS
+                    ...HOTLINE_OPTIONS,
+                    renderer: this.renderer
                 }).addTo(this.map.leafletInstance);
                 break;
             }
         }
-        this.bindHotlineEvents();
+        this.leafletInstance.setStyle({ color: "transparent", weight: 7 });
     }
-    bindHotlineEvents() {
+    /*     bindHotlineEvents() {
         if (this.map.leafletInstance.hasLayer(this.hotline)) {
-            this.hotline.on("mousemove", (evt: L.LeafletMouseEvent) => {
-                const closest = this.findClosestPoint(evt.latlng);
-                const content = `Lat: ${closest.lat}, Lng: ${closest.lng}
-Elevation: ${closest.ele} m,
-Speed: ${closest.extensions.speed} m/s
-`;
-                this.popup.setTarget(evt.latlng).open(content);
-            });
-            this.hotline.on("mouseout", (evt) => {
-                this.popup.close();
-            });
+
         }
-    }
+    } */
     findClosestPoint(latlng: L.LatLng): GPXPoint {
         const sort = [...this.points];
         sort.sort(
@@ -179,40 +196,45 @@ Speed: ${closest.extensions.speed} m/s
         return this.data.tracks[0].flags;
     }
     get points(): GPXPoint[] {
-        return this.data.tracks[0].points;
+        return this.data.coords.flat();
     }
     get speed(): {
-        raw: number[];
-        data: L.LatLng[];
+        points: L.LatLng[];
         min: number;
         max: number;
-        average: number;
+        avg: number;
     } {
-        return this.data.tracks[0].maps.speed;
+        return this.data.speed;
     }
     get cad(): {
-        raw: number[];
-        data: L.LatLng[];
+        points: L.LatLng[];
         min: number;
         max: number;
+        avg: number;
     } {
-        return this.data.tracks[0].maps.cad;
+        return this.data.cad;
     }
-    get ele(): {
-        raw: number[];
-        data: L.LatLng[];
-        min: number;
+    get elevation(): {
+        gain: number;
+        loss: number;
         max: number;
+        min: number;
+        total: number;
+        avg: number;
+        points: L.LatLng[];
     } {
-        return this.data.tracks[0].maps.ele;
+        return this.data.elevation;
     }
     get hr(): {
-        raw: number[];
-        data: L.LatLng[];
+        points: L.LatLng[];
         min: number;
         max: number;
+        avg: number;
     } {
-        return this.data.tracks[0].maps.hr;
+        return this.data.hr;
+    }
+    get atemp(): { points: L.LatLng[]; min: number; max: number; avg: number } {
+        return this.data.atemp;
     }
     hide() {
         if (this.polyline) {

@@ -32,6 +32,7 @@ export const DEFAULT_BLOCK_PARAMETERS: BlockParameters = {
     linksTo: [],
     geojson: [],
     geojsonColor: "#3388ff",
+    gpxColor: "#3388ff",
     zoomFeatures: false,
     verbose: false,
     gpx: []

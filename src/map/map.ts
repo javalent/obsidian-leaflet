@@ -49,7 +49,7 @@ let L = window[LeafletSymbol];
 declare module "leaflet" {
     function hotline(data: L.LatLng[], options: HotlineOptions): L.Polyline;
     interface Hotline extends L.Canvas {}
-    interface HotlineOptions {
+    interface HotlineOptions extends L.PolylineOptions {
         weight?: number;
         outlineWidth?: number;
         outlineColor?: string;
@@ -149,9 +149,10 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.leafletInstance.createPane("base-layer");
         this.leafletInstance.createPane("geojson");
         this.leafletInstance.createPane("gpx");
+        this.leafletInstance.createPane("gpx-canvas");
 
         //@ts-expect-error
-        this.canvas = L.Hotline.renderer({ pane: "gpx" }).addTo(
+        this.canvas = L.Hotline.renderer({ pane: "gpx-canvas" }).addTo(
             this.leafletInstance
         );
 
@@ -177,11 +178,6 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.on("first-layer-ready", () => {
             this.addFeatures();
             /** Move to supplied coordinates */
-
-            console.log(
-                "🚀 ~ file: map.ts ~ line 163 ~ this.renderOptions",
-                this.renderOptions
-            );
             this.log(
                 `Moving to supplied coordinates: ${this.renderOptions.coords}`
             );
@@ -465,10 +461,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             this.geojsonLayer = L.featureGroup().addTo(this.featureLayer);
 
             added = 0;
-            console.log(
-                "🚀 ~ file: map.ts ~ line 464 ~ this.options.geojsonColor",
-                this.options.geojsonColor
-            );
+
             this.geojsonData.forEach((geoJSON) => {
                 try {
                     const geo = new GeoJSON(

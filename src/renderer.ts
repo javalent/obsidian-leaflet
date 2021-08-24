@@ -26,7 +26,8 @@ import {
     OVERLAY_TAG_REGEX,
     DEFAULT_BLOCK_PARAMETERS,
     parseLink,
-    getHeight
+    getHeight,
+    getHex
 } from "./utils";
 import convert from "convert";
 
@@ -77,7 +78,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
             darkMode: `${this.params.darkMode}` === "true",
             defaultZoom: +this.params.defaultZoom,
             distanceMultiplier: this.params.distanceMultiplier,
-            geojsonColor: this.params.geojsonColor,
+            geojsonColor: getHex(this.params.geojsonColor),
+            gpxColor: getHex(this.params.gpxColor),
             hasAdditional: this.params.layers.length > 1,
             height: getHeight(this.parentEl, this.params.height),
             id: this.params.id,

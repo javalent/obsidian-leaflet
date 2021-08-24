@@ -1,7 +1,6 @@
 import { MarkdownPostProcessorContext, Platform, Plugin } from "obsidian";
 import { BaseMapType, Icon, MarkerIcon, ObsidianAppData } from ".";
 
-
 export interface MapInterface {
     map: BaseMapType;
     source: string;
@@ -46,6 +45,7 @@ export interface BlockParameters {
         waypoint?: string;
     };
     geojsonColor?: string;
+    gpxColor?: string;
     zoomFeatures?: boolean;
     verbose?: boolean;
 }

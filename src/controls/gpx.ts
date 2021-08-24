@@ -18,6 +18,7 @@ class GPXControl extends FontAwesomeControl {
     added() {
         //add hidden filter objects
 
+        this.controlEl.addClass("leaflet-control-gpx");
         this.section = this.controlEl.createEl("section", {
             cls: this.cls + "-list"
         });
@@ -27,10 +28,10 @@ class GPXControl extends FontAwesomeControl {
 
         this.link.dataset["draggable"] = "false";
 
-        this.map.on("click", () => this.collapse(), this);
+        /*         this.map.on("click", () => this.collapse(), this); */
 
         L.DomEvent.on(this.controlEl, "mouseenter", () => this.expand());
-        L.DomEvent.on(this.controlEl, "mouseleave", () => this.collapse());
+        /*         L.DomEvent.on(this.controlEl, "mouseleave", () => this.collapse()); */
 
         if (Platform.isMobile) {
             L.DomEvent.on(this.controlEl, "click", this.expand, this);
@@ -40,10 +41,11 @@ class GPXControl extends FontAwesomeControl {
     }
     setTarget(gpx: GPX) {
         this.target = gpx;
-        this.map.leafletInstance.fitBounds(
+/*         this.map.leafletInstance.fitBounds(
             this.target.leafletInstance.getBounds()
-        );
+        ); */
         this.removeTooltip();
+        this.expand();
     }
     removeTarget() {
         this.target = null;
@@ -79,7 +81,6 @@ class GPXControl extends FontAwesomeControl {
         return this;
     }
     private collapse() {
-        /* return; */
         L.DomUtil.removeClass(this.controlEl, "expanded");
         this.expanded = false;
         return this;
@@ -87,11 +88,11 @@ class GPXControl extends FontAwesomeControl {
     private draw() {
         this.section.empty();
 
-        
+        const data = this.section.createDiv("gpx-data");
 
         const ul = this.section.createEl("div", "input-container");
 
-        if (this.target.flags.speed) {
+        if (!isNaN(this.target.speed.avg)) {
             const li = ul.createDiv("input-item");
             const input = li.createEl("input", {
                 attr: {
@@ -112,7 +113,7 @@ class GPXControl extends FontAwesomeControl {
                 this.target.switch("speed");
             };
         }
-        if (this.target.flags.cad) {
+        if (!isNaN(this.target.cad.avg)) {
             const li = ul.createDiv("input-item");
             const input = li.createEl("input", {
                 attr: {
@@ -133,7 +134,7 @@ class GPXControl extends FontAwesomeControl {
                 this.target.switch("cad");
             };
         }
-        if (this.target.flags.ele) {
+        if (!isNaN(this.target.elevation.avg)) {
             const li = ul.createDiv("input-item");
             const input = li.createEl("input", {
                 attr: {
@@ -154,7 +155,7 @@ class GPXControl extends FontAwesomeControl {
                 this.target.switch("ele");
             };
         }
-        if (this.target.flags.hr) {
+        if (!isNaN(this.target.hr.avg)) {
             const li = ul.createDiv("input-item");
             const input = li.createEl("input", {
                 attr: {

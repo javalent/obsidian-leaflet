@@ -58,6 +58,7 @@ export interface LeafletMapOptions {
     distanceMultiplier?: number;
 
     geojsonColor?: string;
+    gpxColor?: string;
 
     hasAdditional?: boolean;
     height?: string;

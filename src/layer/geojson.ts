@@ -28,12 +28,13 @@ export class GeoJSON extends Layer<L.GeoJSON> {
         public parent: L.LayerGroup,
         public options: {
             color: string;
+            pane?: string;
         },
         data: geojson.GeoJsonObject
     ) {
         super();
         this.leafletInstance = L.geoJSON(data, {
-            pane: "geojson",
+            pane: this.options.pane ?? "geojson",
             pointToLayer: (geojsonPoint, latlng) => {
                 return new GeoJSONMarker(this, geojsonPoint, latlng)
                     .leafletInstance;

@@ -22,10 +22,13 @@ export abstract class Layer<T extends L.Layer> {
 }
 
 export interface GPXPoint extends L.LatLng {
-    ele: number;
-    speed: number;
-    extensions: {
+    meta: {
+        atemp: number;
+        cad: number;
+        elevation: number;
+        hr: number;
         speed: number;
+        time: Date;
     };
 }
 
@@ -51,34 +54,37 @@ export class GPX extends Layer<L.GeoJSON> {
         icons: any
     );
     switch(which: "cad" | "ele" | "hr" | "speed" | "default"): void;
-    bindHotlineEvents(): void;
+/*     bindHotlineEvents(): void; */
     findClosestPoint(latlng: L.LatLng): GPXPoint;
     get points(): GPXPoint[];
     get speed(): {
-        raw: number[];
-        data: L.LatLng[];
+        points: L.LatLng[];
         min: number;
         max: number;
-        average: number;
+        avg: number;
     };
     get cad(): {
-        raw: number[];
-        data: L.LatLng[];
+        points: L.LatLng[];
         min: number;
         max: number;
+        avg: number;
     };
-    get ele(): {
-        raw: number[];
-        data: L.LatLng[];
-        min: number;
+    get elevation(): {
+        gain: number;
+        loss: number;
         max: number;
+        min: number;
+        total: number;
+        avg: number;
+        points: L.LatLng[];
     };
     get hr(): {
-        raw: number[];
-        data: L.LatLng[];
+        points: L.LatLng[];
         min: number;
         max: number;
+        avg: number;
     };
+    get atemp(): { points: L.LatLng[]; min: number; max: number; avg: number };
 
     featureGroup: L.FeatureGroup;
 }
