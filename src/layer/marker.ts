@@ -272,7 +272,6 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                             this.hide();
                         }
 
-                        
                         if (this.tooltip === "always") {
                             this.popup.open(this.target.display);
                         } else {

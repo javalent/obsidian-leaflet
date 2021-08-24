@@ -32,38 +32,41 @@ darkMode: true
 
 ## Options
 
-| Option        | Description                                                                          | Default                                    |
-| ------------- | ------------------------------------------------------------------------------------ | ------------------------------------------ |
-| id            | Unique identifier (can be anything). **Required.**                                   |                                            |
-| image         | Direct URL/file path to an image file to be used as the map layer.                   | OpenStreetMap map                          |
-| lat           | Default latitude to display when rendering.                                          | 50% (image) / 39.983334 (open street map)  |
-| long          | Default longitude to display when rendering.                                         | 50% (image) / -82.983330 (open street map) |
-| height        | Height of the map element. Can be provided in pixels or percentage of window height. | 500px                                      |
-| minZoom       | Minimum allowable zoom level of the map.                                             | 1                                          |
-| maxZoom       | Maximum allowable zoom level of the map.                                             | 10                                         |
-| defaultZoom   | Map will load zoomed to this level.                                                  | 5                                          |
-| zoomDelta     | Zoom level will change by this amount when zooming.                                  | 1                                          |
-| unit          | Unit to display distances in                                                         | meters                                     |
-| scale         | Scale factor for image map distance calculation.                                     | 1                                          |
-| marker        | Create immutable markers on the map                                                  |                                            |
-| commandMarker | Create immutable markers that execute commands                                       |                                            |
-| markerFile    | Create immutable marker from a note's frontmatter                                    |                                            |
-| markerFolder  | Create immutable markers from _all_ of the notes in a given folder                   |                                            |
-| markerTag\*   | Create immutable markers from _all_ of the notes with the given tags.                |                                            |
-| linksTo\*     | Create immutable markers from _all_ of the notes linking **TO** a note               |                                            |
-| linksFrom\*   | Create immutable markers from _all_ of the notes linking **FROM** a note             |                                            |
-| darkMode      | Invert map colors                                                                    | false                                      |
-| overlay       | Add a circle overlay to the map                                                      |                                            |
-| overlayTag    | Define a YAML tag to search for in specified marker notes                            |                                            |
-| overlayColor  | Change default overlay color                                                         | blue                                       |
-| bounds        | Set image map bounds to specified coordinates instead of default                     |                                            |
-| coordinates   | Read location data from a note and use it as initial coordinates                     |                                            |
-| zoomTag       | Read distance-to-zoom data from a note and use it as default initial zoom            |                                            |
-| geojson       | Load GeoJSON files onto maps.                                                        |                                            |
-| geojsonColor  | Change the default color of the GeoJSON features.                                    | #3388ff                                    |
-| gpx           | Load GPX files onto maps.                                                            |                                            |
-| gpxMarkers    | Set default start, stop and waypoint markers                                         |                                            |
-| imageOverlay  | Add an image overlay to the map.                                                     |                                            |
+| Option        | Description                                                                                  | Default                                    |
+| ------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| id            | Unique identifier (can be anything). **Required.**                                           |                                            |
+| image         | Direct URL/file path to an image file to be used as the map layer.                           | OpenStreetMap map                          |
+| tileServer    | Add additional tile servers as different layers                                              |                                            |
+| osmLayer      | Turn off the OpenStreetMap layer (only usable if additional Tile Servers have been provided) |                                            |
+| lat           | Default latitude to display when rendering.                                                  | 50% (image) / 39.983334 (open street map)  |
+| long          | Default longitude to display when rendering.                                                 | 50% (image) / -82.983330 (open street map) |
+| height        | Height of the map element. Can be provided in pixels or percentage of window height.         | 500px                                      |
+| minZoom       | Minimum allowable zoom level of the map.                                                     | 1                                          |
+| maxZoom       | Maximum allowable zoom level of the map.                                                     | 10                                         |
+| defaultZoom   | Map will load zoomed to this level.                                                          | 5                                          |
+| zoomDelta     | Zoom level will change by this amount when zooming.                                          | 1                                          |
+| unit          | Unit to display distances in                                                                 | meters                                     |
+| scale         | Scale factor for image map distance calculation.                                             | 1                                          |
+| marker        | Create immutable markers on the map                                                          |                                            |
+| commandMarker | Create immutable markers that execute commands                                               |                                            |
+| markerFile    | Create immutable marker from a note's frontmatter                                            |                                            |
+| markerFolder  | Create immutable markers from _all_ of the notes in a given folder                           |                                            |
+| markerTag\*   | Create immutable markers from _all_ of the notes with the given tags.                        |                                            |
+| linksTo\*     | Create immutable markers from _all_ of the notes linking **TO** a note                       |                                            |
+| linksFrom\*   | Create immutable markers from _all_ of the notes linking **FROM** a note                     |                                            |
+| darkMode      | Invert map colors                                                                            | false                                      |
+| overlay       | Add a circle overlay to the map                                                              |                                            |
+| overlayTag    | Define a YAML tag to search for in specified marker notes                                    |                                            |
+| overlayColor  | Change default overlay color                                                                 | blue                                       |
+| bounds        | Set image map bounds to specified coordinates instead of default                             |                                            |
+| coordinates   | Read location data from a note and use it as initial coordinates                             |                                            |
+| zoomTag       | Read distance-to-zoom data from a note and use it as default initial zoom                    |                                            |
+| geojson       | Load GeoJSON files onto maps.                                                                |                                            |
+| geojsonColor  | Change the default color of the GeoJSON features.                                            | #3388ff                                    |
+| gpx           | Load GPX files onto maps.                                                                    |                                            |
+| gpxMarkers    | Set default start, stop and waypoint markers                                                 |                                            |
+| gpxColor      | Control default GPX color                                                                    |                                            |
+| imageOverlay  | Add an image overlay to the map.                                                             |                                            |
 
 > \*: Requires the [DataView plugin](https://github.com/blacksmithgu/obsidian-dataview).
 
@@ -136,6 +139,16 @@ zoomTag: nearby
 ```
 
 Then the map will read the `nearby` tag, recognize it is `100 miles`, and set the map's initial zoom to the closest level that will display 100 miles (this depends on `minZoom`, `maxZoom`, and `zoomDelta`).
+
+## Real World Maps
+
+Real world maps are created if the `image` parameter is not provided. These maps by default will load the `OpenStreetMap` map, but additional tile servers can be provided using the `tileServer` parameter.
+
+**It is up to you to ensure that the tile servers you use are publically usable.**
+
+At this time, tile servers requiring API access are not usable.
+
+If additional tile servers are provided, the `OpenStreetMap` layer can be turned off using the `osmLayer: false` parameter.
 
 ## Image Maps
 

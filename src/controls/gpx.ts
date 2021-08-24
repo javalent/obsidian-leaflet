@@ -2,7 +2,7 @@ import { BaseMapType } from "src/@types";
 import { GPX } from "src/layer";
 import { FontAwesomeControl, FontAwesomeControlOptions } from "./controls";
 import { LeafletSymbol } from "src/utils/leaflet-import";
-import { ExtraButtonComponent, Platform } from "obsidian";
+import { ExtraButtonComponent } from "obsidian";
 import { BULLSEYE } from "src/utils";
 const L = window[LeafletSymbol];
 class GPXControl extends FontAwesomeControl {

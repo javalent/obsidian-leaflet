@@ -72,6 +72,17 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         this.parentEl = ctx.containerEl;
 
+        let hasAdditional = false;
+        if (this.params.image != "real") {
+            hasAdditional = this.params.layers.length > 1;
+        } else {
+            hasAdditional =
+                [
+                    this.params.osmLayer,
+                    ...[this.params.tileServer].flat()
+                ].filter((v) => v).length > 1;
+        }
+
         this.options = {
             bounds: this.params.bounds,
             context: ctx.sourcePath,
@@ -80,16 +91,21 @@ export class LeafletRenderer extends MarkdownRenderChild {
             distanceMultiplier: this.params.distanceMultiplier,
             geojsonColor: getHex(this.params.geojsonColor),
             gpxColor: getHex(this.params.gpxColor),
-            hasAdditional: this.params.layers.length > 1,
+            hasAdditional,
             height: getHeight(this.parentEl, this.params.height),
             id: this.params.id,
             imageOverlays: [],
             layers: this.params.layers,
             maxZoom: +this.params.maxZoom,
             minZoom: +this.params.minZoom,
+            osmLayer: this.params.osmLayer,
             overlayTag: this.params.overlayTag,
             overlayColor: this.params.overlayColor,
             scale: this.params.scale,
+            tileLayer:
+                this.params.tileServer instanceof Array
+                    ? this.params.tileServer
+                    : [this.params.tileServer],
             type: this.params.image != "real" ? "image" : "real",
             unit: this.params.unit,
             verbose: this.params.verbose,

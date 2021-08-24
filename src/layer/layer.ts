@@ -38,7 +38,9 @@ export abstract class Layer<T extends L.Layer> {
             this.map.on(
                 `layer-ready-for-features`,
                 (layer: LayerGroup<L.TileLayer | L.ImageOverlay>) => {
-                    if (layer.id === this.layer) this.show();
+                    if (layer === this.mapLayer) {
+                        this.show();
+                    }
                 }
             );
         } else {
