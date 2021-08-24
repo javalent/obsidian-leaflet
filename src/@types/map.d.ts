@@ -81,6 +81,9 @@ export interface LeafletMapOptions {
     overlayTag?: string;
     scale?: number;
     unit?: string;
+
+    tileLayer?: string[];
+
     type?: "image" | "real";
     verbose?: boolean;
     zoomDelta?: number;

@@ -33,15 +33,23 @@ export abstract class Layer<T extends L.Layer> {
 
     checkAndAddToMap() {
         if (this.map.isLayerRendered(this.layer)) {
+            console.log(
+                "🚀 ~ file: layer.ts ~ line 36 ~ this.map.isLayerRendered(this.layer)",
+                this.map.isLayerRendered(this.layer),
+                this.layer
+            );
             this.show();
         } else if (this.layer) {
             this.map.on(
                 `layer-ready-for-features`,
                 (layer: LayerGroup<L.TileLayer | L.ImageOverlay>) => {
-                    if (layer.id === this.layer) this.show();
+                    if (layer === this.mapLayer) {
+                        this.show();
+                    }
                 }
             );
         } else {
+            console.log("🚀 ~ file: layer.ts ~ line 54 ~ first-layer-ready");
             this.map.on(
                 "first-layer-ready",
                 (layer: LayerGroup<L.TileLayer | L.ImageOverlay>) => {

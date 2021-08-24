@@ -210,6 +210,20 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             this.currentGroup.group.addTo(this.leafletInstance);
         });
 
+        this.leafletInstance.on(
+            "baselayerchange",
+            ({ layer }: L.LayersControlEvent) => {
+                // need to do this to prevent panning animation for some reason
+                this.leafletInstance.setMaxBounds([undefined, undefined]);
+
+                this.currentLayer = (layer as L.LayerGroup).getLayers()[0] as
+                    | L.ImageOverlay
+                    | L.TileLayer;
+
+                this.resetZoom();
+            }
+        );
+
         this.buildControls();
     }
 
@@ -442,6 +456,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     addLayerControl() {
         if (this.layerControlAdded) return;
         this.layerControl = L.control.layers({}, {});
+
         this.layerControlAdded = true;
         const layerIcon = icon({ iconName: "layer-group", prefix: "fas" })
             .node[0];
@@ -1068,15 +1083,12 @@ export class RealMap extends BaseMap {
         this.initialCoords = coords;
     }
 
-    async buildLayer() {
-        const layer = L.tileLayer(
-            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            {
-                attribution:
-                    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                className: this.options.darkMode ? "dark-mode" : ""
-            }
-        );
+    async buildLayer(layer: { data: string; id: string; alias?: string }) {
+        const tileLayer = L.tileLayer(layer.data, {
+            attribution:
+                '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            className: this.options.darkMode ? "dark-mode" : ""
+        });
 
         const markerGroups = Object.fromEntries(
             this.markerTypes.map((type) => [type, L.layerGroup()])
@@ -1088,33 +1100,32 @@ export class RealMap extends BaseMap {
             )
         };
         const group = L.layerGroup([
-            layer,
+            tileLayer,
             ...Object.values(markerGroups),
             ...Object.values(overlayGroups)
         ]);
 
-        this.mapLayers = [
-            {
-                group: group,
-                layer: layer,
-                id: "real",
-                markers: markerGroups,
-                overlays: overlayGroups
-            }
-        ];
-        this.trigger(`layer-ready-for-features`, this.mapLayers[0]);
-
-        this.mapLayers[0].layer.once("load", () => {
-            this.rendered = true;
-
-            this.log(
-                `Initial map layer rendered in ${
-                    (Date.now() - this.start) / 1000
-                } seconds.`
-            );
-            this.trigger("rendered");
+        this.mapLayers.push({
+            group: group,
+            layer: tileLayer,
+            id: layer.id ?? "real",
+            markers: markerGroups,
+            overlays: overlayGroups
         });
-        return layer;
+
+        if (this.layerControlAdded) {
+            this.layerControl.addBaseLayer(
+                group,
+                layer.alias ?? `Layer ${this.mapLayers.length}`
+            );
+        }
+
+        this.trigger(
+            `layer-ready-for-features`,
+            this.mapLayers[this.mapLayers.length - 1]
+        );
+
+        return tileLayer;
     }
 
     async render(options: {
@@ -1136,9 +1147,59 @@ export class RealMap extends BaseMap {
         this.start = Date.now();
 
         this.log("Building initial map layer.");
-        this.currentLayer = await this.buildLayer();
 
+        let osmLayer = {
+            id: "real",
+            data: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            alias: "OpenStreetMap"
+        };
+
+        const layers: {
+            id: string;
+            data: string;
+            alias?: string;
+        }[] = [];
+        for (let tileLayer of this.options.tileLayer) {
+            const [id, alias] = tileLayer.split("|");
+            if (!id) {
+                new Notice(
+                    `There was an issue parsing the tile layer: ${tileLayer}`
+                );
+                continue;
+            }
+
+            layers.push({ id, data: id, alias });
+        }
+
+        if (this.options.osmLayer || !layers.length) {
+            if (!this.options.osmLayer) {
+                new Notice(
+                    "OpenStreetMap cannot be turned off without specifying additional tile servers."
+                );
+            }
+            layers.unshift(osmLayer);
+        }
+
+        this.currentLayer = await this.buildLayer(layers[0]);
+
+        this.mapLayers[0].layer.once("load", () => {
+            this.rendered = true;
+
+            this.log(
+                `Initial map layer rendered in ${
+                    (Date.now() - this.start) / 1000
+                } seconds.`
+            );
+            this.trigger("rendered");
+        });
         this.trigger("first-layer-ready", this.mapLayers[0]);
+
+        if (layers.length > 1) {
+            this.log("Building additional layers in the background.");
+            for (let layer of layers.slice(1)) {
+                await this.buildLayer(layer);
+            }
+        }
     }
 }
 export class ImageMap extends BaseMap {

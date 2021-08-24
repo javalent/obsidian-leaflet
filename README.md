@@ -140,6 +140,16 @@ zoomTag: nearby
 
 Then the map will read the `nearby` tag, recognize it is `100 miles`, and set the map's initial zoom to the closest level that will display 100 miles (this depends on `minZoom`, `maxZoom`, and `zoomDelta`).
 
+## Real World Maps
+
+Real world maps are created if the `image` parameter is not provided. These maps by default will load the `OpenStreetMap` map, but additional tile servers can be provided using the `tileServer` parameter.
+
+**It is up to you to ensure that the tile servers you use are publically usable.**
+
+At this time, tile servers requiring API access are not usable.
+
+If additional tile servers are provided, the `OpenStreetMap` layer can be turned off using the `osmLayer: false` parameter.
+
 ## Image Maps
 
 ### Image Map URL / file path

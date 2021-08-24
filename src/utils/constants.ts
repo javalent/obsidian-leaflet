@@ -34,6 +34,7 @@ export const DEFAULT_BLOCK_PARAMETERS: BlockParameters = {
     overlayColor: "blue",
     scale: 1,
     unit: "m",
+    tileServer: [],
     verbose: false,
     zoomDelta: 1,
     zoomFeatures: false
@@ -49,7 +50,8 @@ export const DEFAULT_MAP_OPTIONS: LeafletMapOptions = {
     scale: 1,
     distanceMultiplier: 1,
     darkMode: false,
-    overlayColor: "blue"
+    overlayColor: "blue",
+    osmLayer: true
 };
 export const DEFAULT_SETTINGS: ObsidianAppData = {
     mapMarkers: [],
