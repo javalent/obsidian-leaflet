@@ -45,6 +45,8 @@ import {
 
 import { LeafletSymbol } from "../utils/leaflet-import";
 import { gpxControl } from "src/controls/gpx";
+import { LeafletRenderer } from "src/renderer";
+import { mapViewControl, saveMapParametersControl } from "src/controls/mapview";
 let L = window[LeafletSymbol];
 declare module "leaflet" {
     function hotline(data: L.LatLng[], options: HotlineOptions): L.Polyline;
@@ -113,8 +115,12 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
     type: string;
 
+    get plugin() {
+        return this.renderer.plugin;
+    }
+
     constructor(
-        public plugin: ObsidianLeaflet,
+        public renderer: LeafletRenderer,
         public options: LeafletMapOptions
     ) {
         super();
@@ -611,6 +617,22 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             },
             this
         ).addTo(this.leafletInstance);
+
+        if (this.options.isMapView) {
+            mapViewControl(
+                {
+                    position: "bottomright"
+                },
+                this
+            ).addTo(this.leafletInstance);
+        } else {
+            saveMapParametersControl(
+                {
+                    position: "bottomright"
+                },
+                this
+            ).addTo(this.leafletInstance);
+        }
     }
 
     abstract buildLayer(layer?: {
@@ -1063,11 +1085,15 @@ export class RealMap extends BaseMap {
 
     type: "real" = "real";
 
+    get plugin() {
+        return this.renderer.plugin;
+    }
+
     constructor(
-        public plugin: ObsidianLeaflet,
+        public renderer: LeafletRenderer,
         public options: LeafletMapOptions
     ) {
-        super(plugin, options);
+        super(renderer, options);
         this.createMap();
     }
 
@@ -1209,11 +1235,15 @@ export class ImageMap extends BaseMap {
     mapLayers: LayerGroup<L.ImageOverlay>[] = [];
     type: "image" = "image";
     readyToRender: boolean;
+    get plugin() {
+        return this.renderer.plugin;
+    }
+
     constructor(
-        public plugin: ObsidianLeaflet,
+        public renderer: LeafletRenderer,
         public options: LeafletMapOptions
     ) {
-        super(plugin, options);
+        super(renderer, options);
         this.createMap();
     }
 

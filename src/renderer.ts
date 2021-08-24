@@ -59,18 +59,18 @@ export class LeafletRenderer extends MarkdownRenderChild {
     options: LeafletMapOptions;
     constructor(
         public plugin: ObsidianLeaflet,
-        private ctx: MarkdownPostProcessorContext,
-        container: HTMLElement,
-        private params: BlockParameters
+        private sourcePath: string,
+        containerEl: HTMLElement,
+        public params: BlockParameters
     ) {
-        super(container);
+        super(containerEl);
 
         this.params = {
             ...DEFAULT_BLOCK_PARAMETERS,
             ...params
         };
 
-        this.parentEl = ctx.containerEl;
+        this.parentEl = containerEl;
 
         let hasAdditional = false;
         if (this.params.image != "real") {
@@ -85,16 +85,17 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         this.options = {
             bounds: this.params.bounds,
-            context: ctx.sourcePath,
+            context: this.sourcePath,
             darkMode: `${this.params.darkMode}` === "true",
             defaultZoom: +this.params.defaultZoom,
             distanceMultiplier: this.params.distanceMultiplier,
             geojsonColor: getHex(this.params.geojsonColor),
             gpxColor: getHex(this.params.gpxColor),
             hasAdditional,
-            height: getHeight(this.parentEl, this.params.height),
+            height: getHeight(this.containerEl, this.params.height),
             id: this.params.id,
             imageOverlays: [],
+            isMapView: this.params.isMapView,
             layers: this.params.layers,
             maxZoom: +this.params.maxZoom,
             minZoom: +this.params.minZoom,
@@ -131,9 +132,9 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
     async buildMap() {
         if (this.options.type === "real") {
-            this.map = new RealMap(this.plugin, this.options);
+            this.map = new RealMap(this, this.options);
         } else {
-            this.map = new ImageMap(this.plugin, this.options);
+            this.map = new ImageMap(this, this.options);
 
             let additionalLayers = this.options.layers.length > 1;
             this.loader.on(
@@ -243,9 +244,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             this.map.remove();
         } catch (e) {}
 
-        let file = this.plugin.app.vault.getAbstractFileByPath(
-            this.ctx.sourcePath
-        );
+        let file = this.plugin.app.vault.getAbstractFileByPath(this.sourcePath);
         if (!file || !(file instanceof TFile)) {
             return;
         }
@@ -263,7 +262,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             //Block was deleted or id was changed
 
             let mapFile = this.plugin.mapFiles.find(
-                ({ file: f }) => f === this.ctx.sourcePath
+                ({ file: f }) => f === this.sourcePath
             );
             mapFile.maps = mapFile.maps.filter((mapId) => mapId != this.map.id);
         }
@@ -287,7 +286,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             for (let link of geojson.flat(Infinity)) {
                 const file = this.plugin.app.metadataCache.getFirstLinkpathDest(
                     parseLink(link),
-                    this.ctx.sourcePath
+                    this.sourcePath
                 );
                 if (file && file instanceof TFile) {
                     let data = await this.plugin.app.vault.read(file);
@@ -324,7 +323,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             for (let link of gpx.flat(Infinity)) {
                 const file = this.plugin.app.metadataCache.getFirstLinkpathDest(
                     parseLink(link),
-                    this.ctx.sourcePath
+                    this.sourcePath
                 );
                 if (file && file instanceof TFile) {
                     let data = await this.plugin.app.vault.read(file);
@@ -483,7 +482,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
         if (typeof coordinates == "string" && coordinates.length) {
             file = this.plugin.app.metadataCache.getFirstLinkpathDest(
                 parseLink(coordinates),
-                this.ctx.sourcePath
+                this.sourcePath
             );
             if (file && file instanceof TFile) {
                 //internal, try to read note yaml for coords

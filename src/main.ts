@@ -8,7 +8,8 @@ import {
     Plugin,
     TFile,
     addIcon,
-    Platform
+    Platform,
+    WorkspaceLeaf
 } from "obsidian";
 
 //Local Imports
@@ -24,7 +25,11 @@ import {
     DESCRIPTION_ICON_SVG,
     log,
     BULLSEYE,
-    BULLSEYE_ICON_SVG
+    BULLSEYE_ICON_SVG,
+    VIEW_ICON_SVG,
+    VIEW_ICON,
+    VIEW_TYPE,
+    MODIFIER_KEY
 } from "./utils";
 import {
     MapInterface,
@@ -38,6 +43,7 @@ import {
 
 import { LeafletRenderer } from "./renderer";
 import { markerDivIcon } from "./map";
+import { LeafletMapView } from "./map/view";
 
 //add commands to app interface
 declare module "obsidian" {
@@ -87,6 +93,19 @@ export default class ObsidianLeaflet
 
         addIcon(DESCRIPTION_ICON, DESCRIPTION_ICON_SVG);
         addIcon(BULLSEYE, BULLSEYE_ICON_SVG);
+        addIcon(VIEW_ICON, VIEW_ICON_SVG);
+
+        if (this.data.mapViewEnabled) {
+            this.addRibbonIcon(VIEW_ICON, "Open Leaflet Map", (evt) => {
+                this.app.workspace
+                    .getLeaf(evt.getModifierState(MODIFIER_KEY))
+                    .setViewState({ type: VIEW_TYPE });
+            });
+
+            this.registerView(VIEW_TYPE, (leaf: WorkspaceLeaf) => {
+                return new LeafletMapView(leaf, this);
+            });
+        }
 
         this.markerIcons = this.generateMarkerMarkup(this.data.markerIcons);
 
@@ -153,7 +172,7 @@ export default class ObsidianLeaflet
         }
         log(params.verbose, params.id, "Beginning Markdown Postprocessor.");
 
-        const renderer = new LeafletRenderer(this, ctx, el, params);
+        const renderer = new LeafletRenderer(this, ctx.sourcePath, el, params);
         const map = renderer.map;
 
         this.registerMapEvents(map);
