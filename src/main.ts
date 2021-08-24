@@ -42,7 +42,7 @@ import {
 } from "./@types";
 
 import { LeafletRenderer } from "./renderer";
-import { markerDivIcon } from "./map";
+import { markerDivIcon } from "./map/divicon";
 import { LeafletMapView } from "./map/view";
 
 //add commands to app interface
