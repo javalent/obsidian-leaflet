@@ -4,11 +4,9 @@ import "./assets/main.css";
 
 import {
     Notice,
-    MarkdownView,
     MarkdownPostProcessorContext,
     Plugin,
     TFile,
-    CachedMetadata,
     addIcon,
     Platform
 } from "obsidian";
@@ -20,37 +18,26 @@ import { ObsidianLeafletSettingTab } from "./settings/settings";
 import {
     getIcon,
     DEFAULT_SETTINGS,
-    getHeight,
     getParamsFromSource,
-    getImmutableItems,
     getMarkerIcon,
-    OVERLAY_TAG_REGEX,
-    getId,
     DESCRIPTION_ICON,
     DESCRIPTION_ICON_SVG,
-    parseLink,
     log,
     BULLSEYE,
     BULLSEYE_ICON_SVG
 } from "./utils";
 import {
     MapInterface,
-    SavedMarkerProperties,
     MarkerIcon,
     ObsidianAppData,
     Icon,
     Marker,
-    SavedOverlayData,
     ObsidianLeaflet as ObsidianLeafletImplementation,
-    BaseMapType,
-    BlockParameters
+    BaseMapType
 } from "./@types";
 
 import { LeafletRenderer } from "./renderer";
 import { markerDivIcon } from "./map";
-import convert from "convert";
-
-import { Length } from "convert/dist/types/units";
 
 //add commands to app interface
 declare module "obsidian" {

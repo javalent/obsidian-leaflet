@@ -69,9 +69,14 @@ export interface LeafletMapOptions {
         data: string;
         id: string;
     }[];
+
     layers?: string[];
+
     maxZoom?: number;
     minZoom?: number;
+
+    osmLayer?: boolean;
+
     overlayColor?: string;
     overlayTag?: string;
     scale?: number;

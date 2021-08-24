@@ -12,6 +12,8 @@ export interface BlockParameters {
     id?: string;
     image?: string | string[];
     layers?: string[];
+    tileServer?: string | string[];
+    osmLayer?: boolean;
     marker?: string | string[];
     commandMarker?: string | string[];
     markerFolder?: string | string[];

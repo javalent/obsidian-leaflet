@@ -14,28 +14,29 @@ export const LAT_LONG_DECIMALS = 4;
 export const DISTANCE_DECIMALS = 1;
 
 export const DEFAULT_BLOCK_PARAMETERS: BlockParameters = {
-    height: "500px",
-    minZoom: 1,
-    maxZoom: 10,
-    defaultZoom: 5,
-    zoomDelta: 1,
-    scale: 1,
-    unit: "m",
-    distanceMultiplier: 1,
     darkMode: "false",
-    image: "real",
-    layers: [],
-    imageOverlay: [],
-    overlay: [],
-    overlayColor: "blue",
-    linksFrom: [],
-    linksTo: [],
+    defaultZoom: 5,
+    distanceMultiplier: 1,
     geojson: [],
     geojsonColor: "#3388ff",
+    gpx: [],
     gpxColor: "#3388ff",
-    zoomFeatures: false,
+    height: "500px",
+    image: "real",
+    imageOverlay: [],
+    layers: [],
+    linksFrom: [],
+    linksTo: [],
+    maxZoom: 10,
+    minZoom: 1,
+    osmLayer: true,
+    overlay: [],
+    overlayColor: "blue",
+    scale: 1,
+    unit: "m",
     verbose: false,
-    gpx: []
+    zoomDelta: 1,
+    zoomFeatures: false
 };
 
 export const DEFAULT_MAP_OPTIONS: LeafletMapOptions = {
