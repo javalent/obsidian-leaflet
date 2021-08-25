@@ -1,4 +1,5 @@
 import { BaseMapType } from "src/@types";
+import t from "src/l10n/locale";
 import { EditParametersModal } from "src/modals/mapview";
 import { FontAwesomeControl, FontAwesomeControlOptions } from "./controls";
 
@@ -20,7 +21,7 @@ export function mapViewControl(opts: L.ControlOptions, map: BaseMapType) {
         ...opts,
         icon: "edit",
         cls: "leaflet-control-edit-parameters",
-        tooltip: "Edit View Parameters"
+        tooltip: t("Edit View Parameters")
     };
     return new MapViewControl(options, map);
 }
@@ -45,7 +46,7 @@ export function saveMapParametersControl(
         ...opts,
         icon: "save",
         cls: "leaflet-control-save-param",
-        tooltip: "Save Parameters to View"
+        tooltip: t("Save Parameters to View")
     };
     return new SaveMapParametersControl(options, map);
 }

@@ -2,6 +2,7 @@ import { BaseMapType } from "src/@types";
 import { FontAwesomeControl, FontAwesomeControlOptions } from "./controls";
 
 import { LeafletSymbol } from "src/utils/leaflet-import";
+import t from "src/l10n/locale";
 const L = window[LeafletSymbol];
 
 class ZoomControl extends FontAwesomeControl {
@@ -50,7 +51,7 @@ export function zoomControl(opts: L.ControlOptions, map: BaseMapType) {
         ...opts,
         icon: "map-marked-alt",
         cls: "leaflet-control-zoom-markers",
-        tooltip: "Show All Markers"
+        tooltip: t("Show All Markers")
     };
     return new ZoomControl(options, map);
 }

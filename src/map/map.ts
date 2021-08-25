@@ -47,6 +47,7 @@ import { LeafletSymbol } from "../utils/leaflet-import";
 import { gpxControl } from "src/controls/gpx";
 import { LeafletRenderer } from "src/renderer";
 import { mapViewControl, saveMapParametersControl } from "src/controls/mapview";
+import t from "src/l10n/locale";
 let L = window[LeafletSymbol];
 declare module "leaflet" {
     function hotline(data: L.LatLng[], options: HotlineOptions): L.Polyline;
@@ -314,7 +315,10 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         for (const marker of markers) {
             if (!this.markerTypes.includes(marker.type)) {
                 new Notice(
-                    `Marker type "${marker.type}" does not exist, using default.`
+                    t(
+                        `Marker type "%1" does not exist, using default.`,
+                        marker.type
+                    )
                 );
                 marker.type = "default";
             }
@@ -498,7 +502,8 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 } catch (e) {
                     console.error(e);
                     new Notice(
-                        "There was an error adding GeoJSON to map " + this.id
+                        t("There was an error adding GeoJSON to map") +
+                            ` ${this.id}`
                     );
                     return;
                 }
@@ -815,8 +820,9 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
                         await this.plugin.saveSettings();
                     } catch (e) {
-                        console.error(
-                            "There was an error saving the overlay.\n\n" + e
+                        new Notice(
+                            t("There was an error saving the overlay.") +
+                                `\n\n${e.message}`
                         );
                     }
                 };

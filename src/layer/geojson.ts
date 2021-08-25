@@ -107,6 +107,7 @@ class GeoJSONMarker {
             id: getId(),
             type: type,
             loc: latlng,
+            //TODO: What is this?
             link: "display.outerHTML",
             icon: icon.icon,
             layer: this.map.currentGroup?.id,

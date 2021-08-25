@@ -18,6 +18,7 @@ import { MODIFIER_KEY } from "src/utils";
 import { copyToClipboard, formatLatLng } from "src/utils";
 
 import { LeafletSymbol } from "../utils/leaflet-import";
+import t from "src/l10n/locale";
 let L = window[LeafletSymbol];
 
 abstract class MarkerTarget {
@@ -125,7 +126,7 @@ class Command extends MarkerTarget {
                 }),
                 "cross"
             );
-            div.createSpan({ text: "No command found!" });
+            div.createSpan({ text: t("No command found!") });
         }
         return div;
     }
@@ -227,7 +228,9 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                 }
                 if (!this.mutable) {
                     new Notice(
-                        "This marker cannot be edited because it was defined in the code block."
+                        t(
+                            "This marker cannot be edited because it was defined in the code block."
+                        )
                     );
                     return;
                 }

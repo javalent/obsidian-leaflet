@@ -30,6 +30,7 @@ import {
     getHex
 } from "./utils";
 import convert from "convert";
+import t from "./l10n/locale";
 
 declare module "leaflet" {
     interface Map {
@@ -294,8 +295,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
                         data = JSON.parse(data);
                     } catch (e) {
                         new Notice(
-                            "Could not parse GeoJSON file " +
-                                link +
+                            t("Could not parse GeoJSON file") +
+                                ` ${link}` +
                                 "\n\n" +
                                 e.message
                         );
@@ -416,7 +417,9 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
             if (!match || isNaN(Number(match[1]))) {
                 throw new Error(
-                    "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`."
+                    t(
+                        "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`."
+                    )
                 );
             }
             const [, radius, unit] = match ?? [];
@@ -516,7 +519,9 @@ export class LeafletRenderer extends MarkdownRenderChild {
             (err || isNaN(coords[0]) || isNaN(coords[1]))
         ) {
             new Notice(
-                "There was an error with the provided latitude and longitude. Using defaults."
+                t(
+                    "There was an error with the provided latitude and longitude. Using defaults."
+                )
             );
         }
         if (map.type != "real") {

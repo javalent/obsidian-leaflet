@@ -6,6 +6,7 @@ import { getId } from "src/utils";
 import { FontAwesomeControl, FontAwesomeControlOptions } from "./controls";
 
 import { LeafletSymbol } from "src/utils/leaflet-import";
+import t from "src/l10n/locale";
 const L = window[LeafletSymbol];
 
 class SimpleLeafletMap extends Events {
@@ -208,7 +209,7 @@ class EditMarkerControl extends FontAwesomeControl {
         if (this.isOpen) return;
         const modal = new Modal(this.plugin.app);
         modal.contentEl.empty();
-        modal.titleEl.setText("Bulk Edit Markers");
+        modal.titleEl.setText(t("Bulk Edit Markers"));
 
         const mapEl = modal.contentEl.createDiv({
             cls: "bulk-edit-map block-language-leaflet",
@@ -245,7 +246,7 @@ class EditMarkerControl extends FontAwesomeControl {
                     });
             });
         const deleteAll = new Setting(createDiv()).addButton((button) => {
-            button.setButtonText("Delete All").onClick(() => {
+            button.setButtonText(t("Delete All")).onClick(() => {
                 this.simple.markers.forEach((marker) => marker.remove());
                 this.simple.markers = [];
                 this.display(internalMarkersEl);
@@ -275,13 +276,13 @@ class EditMarkerControl extends FontAwesomeControl {
         markersEl.empty();
         new Setting(markersEl)
             .setName(
-                `${this.simple.markers.length} marker${
-                    this.simple.markers.length != 1 ? "s" : ""
+                `${this.simple.markers.length} ${
+                    this.simple.markers.length != 1 ? t("markers") : t("marker")
                 }`
             )
             .addButton((b) => {
                 b.setIcon("plus-with-circle")
-                    .setTooltip("Add New")
+                    .setTooltip(t("Add New"))
                     .onClick(() => {
                         this.simple.createMarker(
                             "default",
@@ -321,61 +322,67 @@ class EditMarkerControl extends FontAwesomeControl {
                         marker.icon = this.map.markerIcons.get(value);
                     });
                 })
-                .addText((t) => {
-                    lat = t;
-                    t.setValue(`${marker.loc.lat}`);
-                    t.inputEl.onblur = (v) => {
+                .addText((text) => {
+                    lat = text;
+                    text.setValue(`${marker.loc.lat}`);
+                    text.inputEl.onblur = (v) => {
                         try {
-                            let lat = Number(t.getValue());
+                            let lat = Number(text.getValue());
                             marker.setLatLng(L.latLng(lat, marker.loc.lng));
                         } catch (e) {
-                            t.setValue(`${marker.loc.lat}`);
+                            text.setValue(`${marker.loc.lat}`);
                             new Notice(
-                                "There was an issue with the provided longitude."
+                                t(
+                                    "There was an issue with the provided latitude."
+                                )
                             );
                         }
                     };
                 })
-                .addText((t) => {
-                    long = t;
-                    t.setValue(`${marker.loc.lng}`);
-                    t.inputEl.onblur = (v) => {
+                .addText((text) => {
+                    long = text;
+                    text.setValue(`${marker.loc.lng}`);
+                    text.inputEl.onblur = (v) => {
                         try {
-                            let lng = Number(t.getValue());
+                            let lng = Number(text.getValue());
                             marker.setLatLng(L.latLng(marker.loc.lat, lng));
                         } catch (e) {
-                            t.setValue(`${marker.loc.lng}`);
+                            text.setValue(`${marker.loc.lng}`);
                             new Notice(
-                                "There was an issue with the provided longitude."
+                                t(
+                                    "There was an issue with the provided longitude."
+                                )
                             );
                         }
                     };
                 })
-                .addText((t) => {
-                    t.setPlaceholder("Path");
+                .addText((text) => {
+                    text.setPlaceholder(t("Path"));
                     let modal;
                     if (marker.command) {
                         const commands =
                             this.plugin.app.commands.listCommands();
-                        t.setValue(
+                        text.setValue(
                             this.plugin.app.commands.findCommand(marker.link)
-                                ?.name ?? "Command not found!"
+                                ?.name ?? t("No command found!")
                         );
-                        modal = new CommandSuggestionModal(this.plugin.app, t, [
-                            ...commands
-                        ]);
+                        modal = new CommandSuggestionModal(
+                            this.plugin.app,
+                            text,
+                            [...commands]
+                        );
                     } else {
-                        t.setValue(marker.link);
+                        text.setValue(marker.link);
                         const files = this.plugin.app.vault.getFiles();
-                        modal = new PathSuggestionModal(this.plugin.app, t, [
+                        modal = new PathSuggestionModal(this.plugin.app, text, [
                             ...files
                         ]);
                     }
                     modal.onClose = () => {
-                        marker.link = t.getValue();
+                        marker.link = text.getValue();
                     };
-                    t.inputEl.onblur = () => {
-                        marker.link = t.getValue();
+                    text.inputEl.onblur = () => {
+                        marker.link = text.getValue();
                     };
                 })
                 .addExtraButton((b) =>
@@ -427,7 +434,7 @@ export function editMarkers(
         ...opts,
         icon: "map-marker",
         cls: "leaflet-control-edit-markers",
-        tooltip: "Bulk Edit Markers"
+        tooltip: t("Bulk Edit Markers")
     };
     return new EditMarkerControl(options, map, plugin);
 }

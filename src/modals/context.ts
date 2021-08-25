@@ -21,6 +21,7 @@ import { UNIT_NAME_ALIASES } from "src/utils";
 import { Overlay } from "src/layer";
 
 import { formatNumber } from "src/utils";
+import t from "src/l10n/locale";
 
 const locale = window.moment.locale;
 
@@ -43,8 +44,8 @@ export class MarkerContextModal extends Modal {
     async display() {
         this.contentEl.empty();
         new Setting(this.contentEl)
-            .setName("Execute Command")
-            .setDesc("The marker will execute an Obsidian command on click")
+            .setName(t("Execute Command"))
+            .setDesc(t("The marker will execute an Obsidian command on click"))
             .addToggle((t) => {
                 t.setValue(this.tempMarker.command || false).onChange((v) => {
                     this.tempMarker.command = v;
@@ -55,8 +56,8 @@ export class MarkerContextModal extends Modal {
 
         if (this.tempMarker.command) {
             new Setting(this.contentEl)
-                .setName("Command to Execute")
-                .setDesc("Name of Obsidian Command to execute")
+                .setName(t("Command to Execute"))
+                .setDesc(t("Name of Obsidian Command to execute"))
                 .addText((text) => {
                     let commands = this.app.commands.listCommands();
 
@@ -64,7 +65,7 @@ export class MarkerContextModal extends Modal {
                         commands.find(({ id }) => id == this.marker.link)
                             ?.name ?? this.marker.link;
 
-                    text.setPlaceholder("Command").setValue(value);
+                    text.setPlaceholder(t("Command")).setValue(value);
                     this.modal = new CommandSuggestionModal(this.app, text, [
                         ...commands
                     ]);
@@ -84,12 +85,12 @@ export class MarkerContextModal extends Modal {
                 });
         } else {
             new Setting(this.contentEl)
-                .setName("Note to Open")
-                .setDesc("Path of note to open")
+                .setName(t("Note to Open"))
+                .setDesc(t("Path of note to open"))
                 .addText((text) => {
                     let files = this.app.vault.getFiles();
 
-                    text.setPlaceholder("Path").setValue(this.marker.link);
+                    text.setPlaceholder(t("Path")).setValue(this.marker.link);
                     this.modal = new PathSuggestionModal(this.app, text, [
                         ...files
                     ]);
@@ -104,9 +105,9 @@ export class MarkerContextModal extends Modal {
                 });
         }
         new Setting(this.contentEl)
-            .setName("Marker Type")
+            .setName(t("Marker Type"))
             .addDropdown((drop) => {
-                drop.addOption("default", "Default");
+                drop.addOption("default", t("Default"));
                 this.map.markerIcons.forEach((marker) => {
                     drop.addOption(
                         marker.type,
@@ -125,11 +126,11 @@ export class MarkerContextModal extends Modal {
                 });
             });
         new Setting(this.contentEl)
-            .setName("Display Tooltip")
+            .setName(t("Display Tooltip"))
             .addDropdown((drop) => {
-                drop.addOption("hover", "Hover");
-                drop.addOption("always", "Always");
-                drop.addOption("never", "Never");
+                drop.addOption("hover", t("Hover"));
+                drop.addOption("always", t("Always"));
+                drop.addOption("never", t("Never"));
                 drop.setValue(this.tempMarker.tooltip ?? "hover").onChange(
                     async (value: TooltipDisplay) => {
                         this.tempMarker.tooltip = value;
@@ -138,9 +139,10 @@ export class MarkerContextModal extends Modal {
             });
 
         new Setting(this.contentEl)
-            .setName("Min Zoom")
+            .setName(t("Min Zoom"))
             .setDesc(
-                "Only display above this zoom. Current map minimum: " +
+                t("Only display above this zoom. Current map minimum") +
+                    ": " +
                     this.map.zoom.min
             )
             .addText((text) => {
@@ -153,7 +155,7 @@ export class MarkerContextModal extends Modal {
                     ) {
                         if (!warned) {
                             warned = true;
-                            new Notice("Minimum zoom must be a number.");
+                            new Notice(t("Minimum zoom must be a number."));
                         }
                         evt.preventDefault();
                         return false;
@@ -166,9 +168,10 @@ export class MarkerContextModal extends Modal {
                 });
             });
         new Setting(this.contentEl)
-            .setName("Max Zoom")
+            .setName(t("Max Zoom"))
             .setDesc(
-                "Only display below this zoom. Current map maximum: " +
+                t("Only display below this zoom. Current map maximum") +
+                    ": " +
                     this.map.zoom.max
             )
             .addText((text) => {
@@ -181,7 +184,7 @@ export class MarkerContextModal extends Modal {
                     ) {
                         if (!warned) {
                             warned = true;
-                            new Notice("Maximum zoom must be a number.");
+                            new Notice(t("Maximum zoom must be a number."));
                         }
                         evt.preventDefault();
                         return false;
@@ -197,7 +200,7 @@ export class MarkerContextModal extends Modal {
         new Setting(this.contentEl).addButton((b) => {
             b.setIcon("trash")
                 .setWarning()
-                .setTooltip("Delete Marker")
+                .setTooltip(t("Delete Marker"))
                 .onClick(() => {
                     this.deleted = true;
                     this.close();
@@ -231,50 +234,50 @@ export class OverlayContextModal extends Modal {
             radius = radius * this.map.scale;
         }
         new Setting(this.contentEl)
-            .setName("Overlay Radius")
+            .setName(t("Overlay Radius"))
             .setDesc(
-                `Circle radius in ${
-                    UNIT_NAME_ALIASES[this.tempOverlay.unit] ?? "meters"
+                `${t("Circle radius in")} ${
+                    UNIT_NAME_ALIASES[this.tempOverlay.unit] ?? t("meters")
                 }.`
             )
-            .addText((t) => {
-                radiusInput = t;
+            .addText((text) => {
+                radiusInput = text;
                 const regex = new RegExp(
                     `\\${getGroupSeparator(locale()) ?? ","}`,
                     "g"
                 );
-                t.setValue(
+                text.setValue(
                     `${formatNumber(radius, DISTANCE_DECIMALS)
                         .toString()
                         .replace(regex, "")}`
                 );
-                t.inputEl.onblur = () => {
+                text.inputEl.onblur = () => {
                     if (
-                        isNaN(Number(t.inputEl.value)) &&
-                        Number(t.inputEl.value) > 0
+                        isNaN(Number(text.inputEl.value)) &&
+                        Number(text.inputEl.value) > 0
                     ) {
                         setValidationError(
                             radiusInput,
-                            "Radius must be greater than 0."
+                            t("Radius must be greater than 0.")
                         );
-                        t.inputEl.value = `${radius}`;
+                        text.inputEl.value = `${radius}`;
                         return;
                     }
                     removeValidationError(radiusInput);
 
-                    this.tempOverlay.radius = Number(t.inputEl.value);
+                    this.tempOverlay.radius = Number(text.inputEl.value);
                 };
             });
 
         const desc = new Setting(this.contentEl)
-            .setName("Overlay Description")
+            .setName(t("Overlay Description"))
             .addText((t) => {
                 t.setValue(this.tempOverlay.desc).onChange((v) => {
                     this.tempOverlay.desc = v;
                 });
             });
 
-        const color = new Setting(this.contentEl).setName("Overlay Color");
+        const color = new Setting(this.contentEl).setName(t("Overlay Color"));
         /** convert color to hex */
         let colorOfOverlay = this.tempOverlay.color;
         if (!/#\w{3,6}/.test(colorOfOverlay)) {
@@ -299,7 +302,7 @@ export class OverlayContextModal extends Modal {
         };
 
         new Setting(this.contentEl)
-            .setName("Display Tooltip")
+            .setName(t("Display Tooltip"))
             .addDropdown((drop) => {
                 drop.addOption("hover", "Hover");
                 drop.addOption("never", "Never");
@@ -313,7 +316,7 @@ export class OverlayContextModal extends Modal {
         new Setting(this.contentEl).addButton((b) => {
             b.setIcon("trash")
                 .setWarning()
-                .setTooltip("Remove Overlay")
+                .setTooltip(t("Delete Overlay"))
                 .onClick(() => {
                     this.deleted = true;
 

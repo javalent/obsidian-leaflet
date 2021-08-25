@@ -17,6 +17,7 @@ import { OVERLAY_TAG_REGEX } from ".";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { marker } from "leaflet";
 import { LeafletRenderer } from "src/renderer";
+import t from "src/l10n/locale";
 const L = window[LeafletSymbol];
 export default class Watcher extends Events {
     frontmatter: FrontMatterCache;
@@ -91,7 +92,10 @@ export default class Watcher extends Events {
                 }
             } catch (e) {
                 new Notice(
-                    `There was an error updating the marker for ${file.name}.`
+                    t(
+                        `There was an error updating the marker for %1.`,
+                        file.name
+                    )
                 );
             }
         }
@@ -113,7 +117,10 @@ export default class Watcher extends Events {
                 }
             } catch (e) {
                 new Notice(
-                    `There was an error updating the marker type for ${file.name}.`
+                    t(
+                        `There was an error updating the marker type for %1.`,
+                        file.name
+                    )
                 );
             }
         }
@@ -154,7 +161,10 @@ export default class Watcher extends Events {
                 );
             } catch (e) {
                 new Notice(
-                    `There was an error updating the markers for ${file.name}.`
+                    t(
+                        `There was an error updating the markers for %1.`,
+                        
+                    )
                 );
             }
         }

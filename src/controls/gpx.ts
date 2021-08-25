@@ -4,6 +4,7 @@ import { FontAwesomeControl, FontAwesomeControlOptions } from "./controls";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { ExtraButtonComponent } from "obsidian";
 import { BULLSEYE } from "src/utils";
+import t from "src/l10n/locale";
 const L = window[LeafletSymbol];
 class GPXControl extends FontAwesomeControl {
     target: GPX;
@@ -52,9 +53,11 @@ class GPXControl extends FontAwesomeControl {
         this.target = null;
         this.collapse();
         this.setTooltip(
-            `Zoom to ${this.map.gpxData.length} GPX Track${
+            t(
+                `Zoom to %1 GPX Track%2`,
+                `${this.map.gpxData.length}`,
                 this.map.gpxData.length == 1 ? "" : "s"
-            }`
+            )
         );
     }
     expand() {
@@ -95,18 +98,22 @@ class GPXControl extends FontAwesomeControl {
 
         let heatLines = false;
 
-        if (!isNaN(this.target.speed.avg)) {
-            if (!heatLines) {
-                heatLines = true;
-                data = this.section.createDiv("gpx-data");
+        const addHeatlineDiv = () => {
+            if (heatLines) return;
+            heatLines = true;
+            data = this.section.createDiv("gpx-data");
 
-                ul = this.section.createEl("div", "input-container");
-                ul.createSpan({
-                    text: "Heatlines"
-                });
-            }
+            ul = this.section.createEl("div", "input-container");
+            ul.createSpan({
+                text: t("Heatlines")
+            });
+        };
+
+        if (!isNaN(this.target.speed.avg)) {
+            addHeatlineDiv();
+
             data.createDiv("data-item").createSpan({
-                text: `Speed: ${this.target.speed.avg} m/s`
+                text: `${t("Speed")}: ${this.target.speed.avg} m/s`
             });
 
             const li = ul.createDiv("input-item");
@@ -123,7 +130,7 @@ class GPXControl extends FontAwesomeControl {
             });
             li.createEl("label", {
                 attr: { for: "leaflet-gpx-control-speed" },
-                text: "Speed"
+                text: t("Speed")
             });
 
             input.onclick = (evt) => {
@@ -131,17 +138,10 @@ class GPXControl extends FontAwesomeControl {
             };
         }
         if (!isNaN(this.target.cad.avg)) {
-            if (!heatLines) {
-                heatLines = true;
-                data = this.section.createDiv("gpx-data");
+            addHeatlineDiv();
 
-                ul = this.section.createEl("div", "input-container");
-                ul.createSpan({
-                    text: "Heatlines"
-                });
-            }
             data.createDiv("data-item").createSpan({
-                text: `Cadence: ${this.target.cad.avg} steps/s`
+                text: `${t("Cadence")}: ${this.target.cad.avg} ${t("steps/s")}`
             });
             const li = ul.createDiv("input-item");
             const input = li.createEl("input", {
@@ -157,7 +157,7 @@ class GPXControl extends FontAwesomeControl {
             });
             li.createEl("label", {
                 attr: { for: "leaflet-gpx-control-cad" },
-                text: "Cadence"
+                text: t("Cadence")
             });
 
             input.onclick = (evt) => {
@@ -165,17 +165,12 @@ class GPXControl extends FontAwesomeControl {
             };
         }
         if (!isNaN(this.target.elevation.avg)) {
-            if (!heatLines) {
-                heatLines = true;
-                data = this.section.createDiv("gpx-data");
+            addHeatlineDiv();
 
-                ul = this.section.createEl("div", "input-container");
-                ul.createSpan({
-                    text: "Heatlines"
-                });
-            }
             data.createDiv("data-item").createSpan({
-                text: `Elevation: ${this.target.elevation.avg} meters`
+                text: `${t("Elevation")}: ${this.target.elevation.avg} ${t(
+                    "meters"
+                )}`
             });
             const li = ul.createDiv("input-item");
             const input = li.createEl("input", {
@@ -191,7 +186,7 @@ class GPXControl extends FontAwesomeControl {
             });
             li.createEl("label", {
                 attr: { for: "leaflet-gpx-control-ele" },
-                text: "Elevation"
+                text: t("Elevation")
             });
 
             input.onclick = (evt) => {
@@ -200,16 +195,9 @@ class GPXControl extends FontAwesomeControl {
         }
         if (!isNaN(this.target.hr.avg)) {
             if (!heatLines) {
-                heatLines = true;
-                data = this.section.createDiv("gpx-data");
-
-                ul = this.section.createEl("div", "input-container");
-                ul.createSpan({
-                    text: "Heatlines"
-                });
             }
             data.createDiv("data-item").createSpan({
-                text: `Heart Rate: ${this.target.hr.avg}`
+                text: `${t("Heart Rate")}: ${this.target.hr.avg}`
             });
             const li = ul.createDiv("input-item");
             const input = li.createEl("input", {
@@ -223,7 +211,7 @@ class GPXControl extends FontAwesomeControl {
             });
             li.createEl("label", {
                 attr: { for: "leaflet-gpx-control-hr" },
-                text: "Heart Rate"
+                text: t("Heart Rate")
             });
 
             input.onclick = (evt) => {
@@ -234,7 +222,7 @@ class GPXControl extends FontAwesomeControl {
         const buttons = this.section.createDiv("control-buttons");
         new ExtraButtonComponent(buttons)
             .setIcon(BULLSEYE)
-            .setTooltip("Zoom to GPX")
+            .setTooltip(t("Zoom to GPX"))
             .onClick(() => {
                 this.map.leafletInstance.fitBounds(
                     this.target.leafletInstance.getBounds()
@@ -242,7 +230,7 @@ class GPXControl extends FontAwesomeControl {
             });
         new ExtraButtonComponent(buttons)
             .setIcon("cross-in-box")
-            .setTooltip("Deselect")
+            .setTooltip(t("Deselect"))
             .onClick(() => {
                 this.removeTarget();
             });
@@ -262,9 +250,11 @@ export function gpxControl(opts: L.ControlOptions, map: BaseMapType) {
         ...opts,
         icon: "running",
         cls: "leaflet-control-expandable",
-        tooltip: `Zoom to ${map.gpxData.length} GPX Track${
-            map.gpxData.length === 1 ? "" : "s"
-        }`
+        tooltip: t(
+            `Zoom to %1 GPX Track%2`,
+            `${map.gpxData.length}`,
+            map.gpxData.length == 1 ? "" : "s"
+        )
     };
     return new GPXControl(options, map);
 }

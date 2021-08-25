@@ -11,6 +11,7 @@ import { GPXPoint } from "src/@types/layers";
 
 import { GeoJSON } from "./geojson";
 import { formatLatLng } from "src/utils";
+import t from "src/l10n/locale";
 
 let L = window[LeafletSymbol];
 
@@ -273,28 +274,32 @@ export class GPX extends Layer<L.GeoJSON> {
         const { lat, lng } = formatLatLng(point);
 
         const el = createDiv("gpx-popup");
-        el.createSpan({ text: `Lat: ${lat}, Lng: ${lng}` });
-        el.createSpan({ text: `Time: ${point.meta.time.toLocaleString(locale())}` });
+        el.createSpan({ text: `${t("Lat")}: ${lat}, ${t("Lng")}: ${lng}` });
+        el.createSpan({
+            text: `${t("Time")}: ${point.meta.time.toLocaleString(locale())}`
+        });
 
         if (point.meta.elevation && !isNaN(point.meta.elevation))
             el.createSpan({
-                text: `Elevation: ${point.meta.elevation.toFixed(2)} m`
+                text: `${t("Elevation")}: ${point.meta.elevation.toFixed(2)} m`
             });
         if (point.meta.speed && !isNaN(point.meta.speed))
             el.createSpan({
-                text: `Speed: ${point.meta.speed.toFixed(2)} m/s`
+                text: `${t("Speed")}: ${point.meta.speed.toFixed(2)} m/s`
             });
         if (point.meta.atemp && !isNaN(point.meta.atemp))
             el.createSpan({
-                text: `Temperature: ${point.meta.atemp.toFixed(2)} °C`
+                text: `${t("Temperature")}: ${point.meta.atemp.toFixed(2)} °C`
             });
         if (point.meta.hr && !isNaN(point.meta.hr))
             el.createSpan({
-                text: `Heart Rate: ${point.meta.hr.toFixed(2)}`
+                text: `${t("Heart Rate")}: ${point.meta.hr.toFixed(2)}`
             });
         if (point.meta.cad && !isNaN(point.meta.cad))
             el.createSpan({
-                text: `Cadence: ${point.meta.cad.toFixed(2)} step/s`
+                text: `${t("Cadence")}: ${point.meta.cad.toFixed(2)} ${t(
+                    "steps/s"
+                )}`
             });
         return el;
     }

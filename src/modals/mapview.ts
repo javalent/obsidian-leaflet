@@ -7,6 +7,8 @@ import {
 } from "obsidian";
 import { ObsidianLeaflet } from "src/@types";
 
+import t from "src/l10n/locale";
+
 export class EditParametersModal extends Modal {
     constructor(private plugin: ObsidianLeaflet) {
         super(plugin.app);
@@ -14,18 +16,20 @@ export class EditParametersModal extends Modal {
 
     onOpen() {
         this.containerEl.addClass("leaflet-edit-parameters");
-        const t = new TextAreaComponent(this.contentEl);
-        t.setValue(JSON.stringify(this.plugin.data.mapViewParameters, null, 4));
-        t.inputEl.setAttr("style", "width: 100%; min-height: 500px;");
+        const text = new TextAreaComponent(this.contentEl);
+        text.setValue(
+            JSON.stringify(this.plugin.data.mapViewParameters, null, 4)
+        );
+        text.inputEl.setAttr("style", "width: 100%; min-height: 500px;");
 
         const buttons = this.contentEl.createDiv("context-buttons");
         new ButtonComponent(buttons)
             .setIcon("checkmark")
-            .setTooltip("Save")
+            .setTooltip(t("Save"))
             .onClick(async () => {
                 try {
                     this.plugin.data.mapViewParameters = JSON.parse(
-                        t.inputEl.value
+                        text.inputEl.value
                     );
                     await this.plugin.saveSettings();
 
@@ -35,13 +39,14 @@ export class EditParametersModal extends Modal {
                     this.close();
                 } catch (e) {
                     new Notice(
-                        `There was an error parsing the JSON.\n\n${e.message}`
+                        t(`There was an error parsing the JSON.`) +
+                            `\n\n${e.message}`
                     );
                 }
             });
         new ExtraButtonComponent(buttons)
             .setIcon("cross")
-            .setTooltip("Cancel")
+            .setTooltip(t("Cancel"))
             .onClick(() => this.close());
     }
     onClose() {}

@@ -44,6 +44,7 @@ import {
 import { LeafletRenderer } from "./renderer";
 import { markerDivIcon } from "./map/divicon";
 import { LeafletMapView } from "./map/view";
+import t from "./l10n/locale";
 
 //add commands to app interface
 declare module "obsidian" {
@@ -92,8 +93,7 @@ export default class ObsidianLeaflet
             return leaf.view;
     }
     async onload(): Promise<void> {
-        console.log("Loading Obsidian Leaflet v" + this.manifest.version);
-
+        console.log(t("Loading Obsidian Leaflet v%1", this.manifest.version));
         await this.loadSettings();
 
         addIcon(DESCRIPTION_ICON, DESCRIPTION_ICON_SVG);
@@ -101,7 +101,7 @@ export default class ObsidianLeaflet
         addIcon(VIEW_ICON, VIEW_ICON_SVG);
 
         if (this.data.mapViewEnabled) {
-            this.addRibbonIcon(VIEW_ICON, "Open Leaflet Map", (evt) => {
+            this.addRibbonIcon(VIEW_ICON, t("Open Leaflet Map"), (evt) => {
                 this.app.workspace
                     .getLeaf(evt.getModifierState(MODIFIER_KEY))
                     .setViewState({ type: VIEW_TYPE });
@@ -148,7 +148,7 @@ export default class ObsidianLeaflet
     }
 
     async onunload(): Promise<void> {
-        console.log("Unloading Obsidian Leaflet");
+        console.log(t("Unloading Obsidian Leaflet"));
 
         this.maps.forEach((map) => {
             map?.map?.remove();
@@ -172,8 +172,8 @@ export default class ObsidianLeaflet
         let params = getParamsFromSource(source);
 
         if (!params.id) {
-            new Notice("Obsidian Leaflet maps must have an ID.");
-            throw new Error("ID required");
+            new Notice(t("Obsidian Leaflet maps must have an ID."));
+            throw new Error(t("ID required"));
         }
         log(params.verbose, params.id, "Beginning Markdown Postprocessor.");
 
@@ -294,7 +294,9 @@ export default class ObsidianLeaflet
             } catch (e) {
                 console.error(e);
                 new Notice(
-                    "There was an error saving into the configured directory."
+                    t(
+                        "There was an error saving into the configured directory."
+                    )
                 );
             }
         }

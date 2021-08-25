@@ -6,6 +6,7 @@ import { getBlob, getId } from "../utils";
 
 import ImageWorker from "./image.worker";
 import { ImageLayerData } from "src/@types";
+import t from "src/l10n/locale";
 
 export default class Loader extends Events {
     workers: Map<string, Worker> = new Map();
@@ -124,7 +125,9 @@ export default class Loader extends Events {
                 resolved({ w: width, h: height });
             };
             i.onerror = () => {
-                new Notice("There was an issue getting the image dimensions.");
+                new Notice(
+                    t("There was an issue getting the image dimensions.")
+                );
                 reject();
             };
 

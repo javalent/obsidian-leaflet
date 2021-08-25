@@ -1,4 +1,5 @@
 import { App, ButtonComponent, Modal, Setting, TextComponent } from "obsidian";
+import t from "src/l10n/locale";
 import { Icon, ObsidianLeaflet } from "../@types";
 import {
     findIconDefinition,
@@ -8,7 +9,7 @@ import {
     IconName,
     iconNames,
     removeValidationError,
-    setValidationError,
+    setValidationError
 } from "../utils";
 import { IconSuggestionModal } from "./icon";
 
@@ -45,10 +46,10 @@ export class CreateMarkerModal extends Modal {
         let markerName = new Setting(
             this.tempMarker.isImage ? createNewMarker : iconSettings
         )
-            .setName("Marker Name")
+            .setName(t("Marker Name"))
             .addText((text) => {
                 typeTextInput = text
-                    .setPlaceholder("Marker Name")
+                    .setPlaceholder(t("Marker Name"))
                     .setValue(this.tempMarker.type);
                 typeTextInput.onChange((new_value) => {
                     if (
@@ -59,7 +60,7 @@ export class CreateMarkerModal extends Modal {
                     ) {
                         setValidationError(
                             typeTextInput,
-                            "Marker name already exists."
+                            t("Marker name already exists.")
                         );
                         return;
                     }
@@ -67,7 +68,7 @@ export class CreateMarkerModal extends Modal {
                     if (new_value.length == 0) {
                         setValidationError(
                             typeTextInput,
-                            "Marker name cannot be empty."
+                            t("Marker name cannot be empty.")
                         );
                         return;
                     }
@@ -82,10 +83,10 @@ export class CreateMarkerModal extends Modal {
         let iconName = new Setting(
             this.tempMarker.isImage ? createNewMarker : iconSettings
         )
-            .setName("Marker Icon")
-            .setDesc("Font Awesome icon name (e.g. map-marker).")
+            .setName(t("Icon Name"))
+            .setDesc(t("Font Awesome icon name (e.g. map-marker)."))
             .addText((text) => {
-                text.setPlaceholder("Icon Name").setValue(
+                text.setPlaceholder(t("Icon Name")).setValue(
                     !this.tempMarker.isImage ? this.tempMarker.iconName : ""
                 );
 
@@ -95,7 +96,7 @@ export class CreateMarkerModal extends Modal {
                     if (!new_value.length) {
                         setValidationError(
                             text,
-                            "A default marker must be defined."
+                            t("A default marker must be defined.")
                         );
                         return;
                     }
@@ -107,7 +108,9 @@ export class CreateMarkerModal extends Modal {
                     ) {
                         setValidationError(
                             text,
-                            "The selected icon does not exist in Font Awesome Free."
+                            t(
+                                "The selected icon does not exist in Font Awesome Free."
+                            )
                         );
                         return;
                     }
@@ -143,9 +146,11 @@ export class CreateMarkerModal extends Modal {
             }
         });
         new Setting(this.tempMarker.isImage ? createNewMarker : iconSettings)
-            .setName("Use Image for Icon")
+            .setName(t("Use Image for Icon"))
             .addButton((b) => {
-                b.setButtonText("Upload Image").setTooltip("Upload Image");
+                b.setButtonText(t("Upload Image")).setTooltip(
+                    t("Upload Image")
+                );
                 b.buttonEl.addClass("leaflet-file-upload");
                 b.buttonEl.appendChild(input);
                 b.onClick(() => input.click());
@@ -198,7 +203,6 @@ export class CreateMarkerModal extends Modal {
 
         if (!this.tempMarker.isImage) {
             if (this.tempMarker.iconName) {
-                
                 const params =
                     this.tempMarker.layer && !this.data.defaultMarker.isImage
                         ? {
@@ -357,24 +361,17 @@ export class CreateMarkerModal extends Modal {
             }
 
             new Setting(createNewMarker)
-                .setName("Layer Icon")
-                .setDesc("The icon will be layered on the base icon, if any.")
+                .setName(t("Layer Icon"))
+                .setDesc(t("The icon will be layered on the base icon."))
                 .addToggle((toggle) => {
                     toggle.setValue(this.tempMarker.layer).onChange((v) => {
                         this.tempMarker.layer = v;
                         this.display();
                     });
-                    if (this.data.defaultMarker.iconName == null) {
-                        toggle
-                            .setDisabled(true)
-                            .setTooltip(
-                                "Add a base marker to layer this icon."
-                            );
-                    }
                 });
             let colorInput = new Setting(createNewMarker)
-                .setName("Icon Color")
-                .setDesc("Override default icon color.");
+                .setName(t("Marker Color"))
+                .setDesc(t("Override default icon color."));
             let colorInputNode = colorInput.controlEl.createEl("input", {
                 attr: {
                     type: "color",
@@ -413,7 +410,7 @@ export class CreateMarkerModal extends Modal {
         }
 
         add.addButton((button: ButtonComponent): ButtonComponent => {
-            let b = button.setTooltip("Save").onClick(async () => {
+            let b = button.setTooltip(t("Save")).onClick(async () => {
                 // Force refresh
                 let error = false;
                 if (
@@ -424,7 +421,7 @@ export class CreateMarkerModal extends Modal {
                 ) {
                     setValidationError(
                         typeTextInput,
-                        "Marker type already exists."
+                        t("Marker type already exists.")
                     );
                     error = true;
                 }
@@ -432,7 +429,7 @@ export class CreateMarkerModal extends Modal {
                 if (this.tempMarker.type.length == 0) {
                     setValidationError(
                         typeTextInput,
-                        "Marker name cannot be empty."
+                        t("Marker name cannot be empty.")
                     );
                     error = true;
                 }
@@ -443,12 +440,15 @@ export class CreateMarkerModal extends Modal {
                     }) &&
                     !this.tempMarker.isImage
                 ) {
-                    setValidationError(iconTextInput, "Invalid icon name.");
+                    setValidationError(iconTextInput, t("Invalid icon name."));
                     error = true;
                 }
 
                 if (!this.tempMarker.iconName && !this.tempMarker.isImage) {
-                    setValidationError(iconTextInput, "Icon cannot be empty.");
+                    setValidationError(
+                        iconTextInput,
+                        t("Icon cannot be empty.")
+                    );
                     error = true;
                 }
 
@@ -478,7 +478,7 @@ export class CreateMarkerModal extends Modal {
         });
         add.addExtraButton((b) => {
             b.setIcon("cross")
-                .setTooltip("Cancel")
+                .setTooltip(t("Cancel"))
                 .onClick(() => {
                     this.close();
                 });

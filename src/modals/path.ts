@@ -7,8 +7,9 @@ import {
     CachedMetadata,
     TextComponent,
     App,
-    TFolder,
+    TFolder
 } from "obsidian";
+import t from "src/l10n/locale";
 
 export class PathSuggestionModal extends SuggestionModal<
     TFile | BlockCache | HeadingCache
@@ -31,24 +32,24 @@ export class PathSuggestionModal extends SuggestionModal<
         this.createPrompt([
             createSpan({
                 cls: "prompt-instruction-command",
-                text: "Type #"
+                text: t("Type") + " #"
             }),
             createSpan({ text: "to link heading" })
         ]);
         this.createPrompt([
             createSpan({
                 cls: "prompt-instruction-command",
-                text: "Type ^"
+                text: t("Type") + " ^"
             }),
             createSpan({ text: "to link blocks" })
         ]);
         this.createPrompt([
             createSpan({
                 cls: "prompt-instruction-command",
-                text: "Note: "
+                text: t("Note") + ": "
             }),
             createSpan({
-                text: "Blocks must have been created already"
+                text: t("Blocks must have been created already")
             })
         ]);
     }

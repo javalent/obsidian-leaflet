@@ -1,5 +1,6 @@
 import { ItemView, MarkdownRenderChild, WorkspaceLeaf } from "obsidian";
 import { BaseMapType, BlockParameters, ObsidianLeaflet } from "src/@types";
+import t from "src/l10n/locale";
 import { LeafletRenderer } from "src/renderer";
 import { DEFAULT_BLOCK_PARAMETERS, VIEW_TYPE } from "src/utils";
 
@@ -51,7 +52,7 @@ export class LeafletMapView extends ItemView {
     }
 
     getDisplayText() {
-        return "Leaflet Map";
+        return t("Leaflet Map");
     }
     getViewType() {
         return VIEW_TYPE;

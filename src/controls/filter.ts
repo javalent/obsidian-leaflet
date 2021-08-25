@@ -3,6 +3,7 @@ import { getId } from "src/utils";
 import { FontAwesomeControl, FontAwesomeControlOptions } from "./controls";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { Platform } from "obsidian";
+import t from "src/l10n/locale";
 
 const L = window[LeafletSymbol];
 class FilterMarkers extends FontAwesomeControl {
@@ -90,14 +91,14 @@ class FilterMarkers extends FontAwesomeControl {
         const buttons = this.section.createDiv(
             "leaflet-control-expandable-button-group"
         );
-        buttons.createEl("button", { text: "All" }).onclick = (evt) => {
+        buttons.createEl("button", { text: t("All") }).onclick = (evt) => {
             evt.stopPropagation();
             this.map.markerIcons.forEach(({ type }) => {
                 this.show(type);
             });
             this.update();
         };
-        buttons.createEl("button", { text: "None" }).onclick = (evt) => {
+        buttons.createEl("button", { text: t("None") }).onclick = (evt) => {
             evt.stopPropagation();
             this.map.markerIcons.forEach(({ type }) => {
                 this.hide(type);
@@ -181,7 +182,7 @@ export function filterMarkerControl(opts: L.ControlOptions, map: BaseMapType) {
         ...opts,
         icon: "filter",
         cls: "leaflet-control-expandable",
-        tooltip: "Filter Markers"
+        tooltip: t("Filter Markers")
     };
     return new FilterMarkers(options, map);
 }

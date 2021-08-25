@@ -1,4 +1,5 @@
 import { BaseMapType } from "src/@types";
+import t from "src/l10n/locale";
 import { FontAwesomeControl, FontAwesomeControlOptions } from "./controls";
 
 class ResetZoomControl extends FontAwesomeControl {
@@ -17,7 +18,7 @@ export function resetZoomControl(opts: L.ControlOptions, map: BaseMapType) {
         ...opts,
         icon: "bullseye",
         cls: "leaflet-control-reset-zoom",
-        tooltip: "Reset View"
+        tooltip: t("Reset View")
     };
     return new ResetZoomControl(options, map);
 }

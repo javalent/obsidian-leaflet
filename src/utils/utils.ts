@@ -16,6 +16,7 @@ import { parse as parseCSV } from "papaparse";
 import { BaseMapType, BlockParameters } from "src/@types";
 import { LAT_LONG_DECIMALS, OVERLAY_TAG_REGEX } from "./constants";
 import { DESCRIPTION_ICON } from ".";
+import t from "src/l10n/locale";
 
 const locale = window.moment.locale;
 
@@ -43,12 +44,14 @@ export async function copyToClipboard(loc: L.LatLng): Promise<void> {
                 )}`
             )
             .then(() => {
-                new Notice("Coordinates copied to clipboard.");
+                new Notice(t("Coordinates copied to clipboard."));
                 resolve();
             })
             .catch(() => {
                 new Notice(
-                    "There was an error trying to copy coordinates to clipboard."
+                    t(
+                        "There was an error trying to copy coordinates to clipboard."
+                    )
                 );
                 reject();
             });
@@ -58,7 +61,7 @@ export async function copyToClipboard(loc: L.LatLng): Promise<void> {
 export function renderError(el: HTMLElement, error: string): void {
     let pre = createEl("pre", { attr: { id: "leaflet-error" } });
     pre.setText(`\`\`\`leaflet
-There was an error rendering the map:
+${t("There was an error rendering the map")}:
 
 ${error}
 \`\`\``);
@@ -83,7 +86,7 @@ export function getImageDimensions(url: string): Promise<any> {
             resolved({ w: width, h: height });
         };
         i.onerror = () => {
-            new Notice("There was an issue getting the image dimensions.");
+            new Notice(t("There was an issue getting the image dimensions."));
             reject();
         };
 
@@ -145,7 +148,7 @@ export const removeValidationError = function (textInput: TextComponent) {
 export function getHeight(el: HTMLElement, height: string): string {
     try {
         if (!/\d+(px|%)/.test(height))
-            throw new Error("Unparseable height provided.");
+            throw new Error(t("Unparseable height provided."));
         if (/\d+%/.test(height)) {
             const element = el.closest(".markdown-preview-view");
             let [, perc] = height.match(/(\d+)%/);
@@ -162,7 +165,7 @@ export function getHeight(el: HTMLElement, height: string): string {
         }
     } catch (e) {
         new Notice(
-            "There was a problem with the provided height. Using 500px."
+            t("There was a problem with the provided height. Using 500px.")
         );
         height = "500px";
     } finally {
@@ -283,11 +286,11 @@ export async function getImmutableItems(
                 type = "default";
             }
             if (!lat || !lat.length || isNaN(Number(lat))) {
-                new Notice("Could not parse latitude");
+                new Notice(t("Could not parse latitude"));
                 continue;
             }
             if (!long || !long.length || isNaN(Number(long))) {
-                new Notice("Could not parse longitude");
+                new Notice(t("Could not parse longitude"));
                 continue;
             }
             let min, max;
@@ -330,7 +333,7 @@ export async function getImmutableItems(
             /* type, lat, long, link, layer, */
             const { data } = parseCSV<string>(marker);
             if (!data.length) {
-                new Notice("No data");
+                new Notice(t("No data"));
                 continue;
             }
 
@@ -485,23 +488,25 @@ export async function getImmutableItems(
                 }
                 if (errors.length)
                     new Notice(
-                        `The \`${errors.reduce((res, k, i) =>
-                            [res, k].join(
-                                i ===
-                                    errors.reduce((res, k, i) =>
-                                        [res, k].join(
-                                            i === errors.length - 1
-                                                ? " and "
-                                                : ", "
-                                        )
-                                    ).length -
-                                        1
-                                    ? " and "
-                                    : ", "
-                            )
-                        )}\` field${
+                        t(
+                            "The `%1` field%2 can only be used with the Dataview plugin installed.",
+                            errors.reduce((res, k, i) =>
+                                [res, k].join(
+                                    i ===
+                                        errors.reduce((res, k, i) =>
+                                            [res, k].join(
+                                                i === errors.length - 1
+                                                    ? " and "
+                                                    : ", "
+                                            )
+                                        ).length -
+                                            1
+                                        ? " and "
+                                        : ", "
+                                )
+                            ),
                             errors.length > 2 ? "s" : ""
-                        } can only be used with the Dataview plugin installed.`
+                        )
                     );
             }
 
@@ -560,7 +565,10 @@ export async function getImmutableItems(
 
                         if (err || isNaN(lat) || isNaN(long)) {
                             new Notice(
-                                "Could not parse location in " + file.basename
+                                t(
+                                    "Could not parse location in %1",
+                                    file.basename
+                                )
                             );
                             continue;
                         }
@@ -655,7 +663,10 @@ export async function getImmutableItems(
                             const match = length.match(OVERLAY_TAG_REGEX);
                             if (!match) {
                                 new Notice(
-                                    `Could not parse map overlay length in ${file.name}. Please ensure it is in the format: <distance> <unit>`
+                                    t(
+                                        `Could not parse map overlay length in %1. Please ensure it is in the format: <distance> <unit>`,
+                                        file.name
+                                    )
                                 );
                                 return;
                             }
@@ -663,7 +674,7 @@ export async function getImmutableItems(
                                 color,
                                 loc as [number, number],
                                 length,
-                                desc ?? `${file.basename} overlay`,
+                                desc ?? t(`%1 overlay`, file.basename),
                                 id
                             ]);
                         }
@@ -676,7 +687,11 @@ export async function getImmutableItems(
                         frontmatter[overlayTag].match(OVERLAY_TAG_REGEX);
                     if (!match) {
                         new Notice(
-                            `Could not parse ${overlayTag} in ${file.name}. Please ensure it is in the format: <distance> <unit>`
+                            t(
+                                `Could not parse %1 in %2. Please ensure it is in the format: <distance> <unit>`,
+                                overlayTag,
+                                file.name
+                            )
                         );
                         continue;
                     }

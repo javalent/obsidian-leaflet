@@ -29,6 +29,7 @@ import type {
     ObsidianLeaflet
 } from "src/@types";
 import { FolderSuggestionModal } from "src/modals/path";
+import t from "src/l10n/locale";
 
 export class ObsidianLeafletSettingTab extends PluginSettingTab {
     plugin: ObsidianLeaflet;
@@ -60,7 +61,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 
         containerEl.addClass("obsidian-leaflet-settings");
 
-        containerEl.createEl("h2", { text: "Obsidian Leaflet Settings" });
+        containerEl.createEl("h2", { text: t("Obsidian Leaflet Settings") });
 
         this.createCSVSetting(containerEl);
 
@@ -91,8 +92,8 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
     createDefaultMarkerSettings(defaultMarker: HTMLDivElement) {
         let defaultSetting = new Setting(defaultMarker)
             .setHeading()
-            .setName("Default Map Marker")
-            .setDesc("This marker is always available.");
+            .setName(t("Default Map Marker"))
+            .setDesc(t("This marker is always available."));
         let iconDisplay = defaultSetting.settingEl.createDiv({
             attr: {
                 style: `align-self: start; margin: 0 18px; font-size: 24px; color: ${this.data.defaultMarker.color};`
@@ -112,9 +113,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             }
         });
         const defaultMarkerIconSetting = new Setting(settings)
-            .setName("Marker Icon")
+            .setName(t("Marker Icon"))
             .addText((text) => {
-                text.setPlaceholder("Icon Name").setValue(
+                text.setPlaceholder(t("Icon Name")).setValue(
                     !this.data.defaultMarker.isImage
                         ? this.data.defaultMarker.iconName
                         : ""
@@ -126,7 +127,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     if (!new_value.length) {
                         setValidationError(
                             text,
-                            "A default marker must be defined."
+                            t("A default marker must be defined.")
                         );
                         return;
                     }
@@ -138,7 +139,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     ) {
                         setValidationError(
                             text,
-                            "The selected icon does not exist in Font Awesome Free."
+                            t(
+                                "The selected icon does not exist in Font Awesome Free."
+                            )
                         );
                         return;
                     }
@@ -163,7 +166,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                 text.inputEl.onblur = validate;
             })
             .addButton((b) => {
-                b.setButtonText("Upload Image").setTooltip("Upload Image");
+                b.setButtonText(t("Upload Image")).setTooltip(
+                    t("Upload Image")
+                );
                 b.buttonEl.addClass("leaflet-file-upload");
                 b.buttonEl.appendChild(input);
                 b.onClick(() => input.click());
@@ -217,7 +222,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             input.value = null;
         };
         if (!this.data.defaultMarker.isImage) {
-            let colorInput = new Setting(settings).setName("Marker Color");
+            let colorInput = new Setting(settings).setName(t("Marker Color"));
 
             let colorInputNode = colorInput.controlEl.createEl("input", {
                 attr: {
@@ -243,8 +248,10 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             };
 
             new Setting(settings)
-                .setName("Layer Base Marker")
-                .setDesc("Use as base layer for additional markers by default.")
+                .setName(t("Layer Base Marker"))
+                .setDesc(
+                    t("Use as base layer for additional markers by default.")
+                )
                 .addToggle((t) => {
                     t.setValue(this.data.layerMarkers);
                     t.onChange(async (v) => {
@@ -264,13 +271,15 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
     createAdditionalMarkerSettings(additionalMarkers: HTMLDivElement) {
         new Setting(additionalMarkers)
             .setHeading()
-            .setName("Additional Map Markers")
+            .setName(t("Additional Map Markers"))
             .setDesc(
-                "These markers will be available in the right-click menu on the map."
+                t(
+                    "These markers will be available in the right-click menu on the map."
+                )
             )
             .addButton((button: ButtonComponent): ButtonComponent => {
                 let b = button
-                    .setTooltip("Add Additional")
+                    .setTooltip(t("Add Additional"))
                     .onClick(async () => {
                         let newMarkerModal = new CreateMarkerModal(
                             this.app,
@@ -381,15 +390,20 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
     }
     createLatLongSetting(containerEl: HTMLElement) {
         new Setting(containerEl)
-            .setName("Default Latitude")
+            .setName(t("Default Latitude"))
             .setDesc(
-                "Real-world maps will open to this latitude if not specified."
+                t(
+                    "Real-world maps will open to this latitude if not specified."
+                )
             )
             .addText((text) => {
                 text.setValue(`${this.data.lat}`);
                 text.onChange((v) => {
                     if (isNaN(Number(v))) {
-                        setValidationError(text, "Latitude must be a number.");
+                        setValidationError(
+                            text,
+                            t("Latitude must be a number.")
+                        );
                         return;
                     }
                     removeValidationError(text);
@@ -400,15 +414,20 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                 });
             });
         new Setting(containerEl)
-            .setName("Default Longitude")
+            .setName(t("Default Longitude"))
             .setDesc(
-                "Real-world maps will open to this longitude if not specified."
+                t(
+                    "Real-world maps will open to this longitude if not specified."
+                )
             )
             .addText((text) => {
                 text.setValue(`${this.data.long}`);
                 text.onChange((v) => {
                     if (isNaN(Number(v))) {
-                        setValidationError(text, "Longitude must be a number.");
+                        setValidationError(
+                            text,
+                            t("Longitude must be a number.")
+                        );
                         return;
                     }
                     removeValidationError(text);
@@ -466,7 +485,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                 };
             })
             .addExtraButton((b) => {
-                b.setTooltip("Reset to Default")
+                b.setTooltip(t("Reset to Default"))
                     .setIcon("undo-glyph")
                     .onClick(async () => {
                         this.data.configDirectory = null;
@@ -475,11 +494,11 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     });
             });
         configSetting.descEl.createSpan({
-            text: "Please back up your data before changing this setting."
+            text: t("Please back up your data before changing this setting.")
         });
         configSetting.descEl.createEl("br");
         configSetting.descEl.createSpan({
-            text: "Current directory: "
+            text: `${t("Current directory")}: `
         });
         const configDirectory =
             this.data.configDirectory ?? this.app.vault.configDir;
@@ -496,16 +515,18 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                 })
             ).node[0]
         );
-        name.appendChild(createSpan({ text: "Default Config Directory" }));
+        name.appendChild(createSpan({ text: t("Default Config Directory") }));
         new Setting(containerEl)
-            .setName("Default Marker Tooltip Behavior")
+            .setName(t("Default Marker Tooltip Behavior"))
             .setDesc(
-                "New markers will be created to this setting by default. Can be overridden per-marker."
+                t(
+                    "New markers will be created to this setting by default. Can be overridden per-marker."
+                )
             )
             .addDropdown((drop) => {
-                drop.addOption("always", "Always");
-                drop.addOption("hover", "Hover");
-                drop.addOption("never", "Never");
+                drop.addOption("always", t("Always"));
+                drop.addOption("hover", t("Hover"));
+                drop.addOption("never", t("Never"));
                 drop.setValue(
                     this.plugin.data.displayMarkerTooltips ?? "hover"
                 ).onChange((value: TooltipDisplay) => {
@@ -530,9 +551,11 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     })
             ); */
         new Setting(containerEl)
-            .setName("Display Note Preview")
+            .setName(t("Display Note Preview"))
             .setDesc(
-                "Markers linked to notes will show a note preview when hovered."
+                t(
+                    "Markers linked to notes will show a note preview when hovered."
+                )
             )
             .addToggle((toggle) =>
                 toggle.setValue(this.data.notePreview).onChange(async (v) => {
@@ -544,8 +567,8 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                 })
             );
         new Setting(containerEl)
-            .setName("Display Overlay Tooltips")
-            .setDesc("Overlay tooltips will display when hovered.")
+            .setName(t("Display Overlay Tooltips"))
+            .setDesc(t("Overlay tooltips will display when hovered."))
             .addToggle((toggle) =>
                 toggle
                     .setValue(this.data.displayOverlayTooltips)
@@ -557,9 +580,11 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     })
             );
         new Setting(containerEl)
-            .setName("Copy Coordinates on Shift-Click")
+            .setName(t("Copy Coordinates on Shift-Click"))
             .setDesc(
-                "Map coordinates will be copied to the clipboard when shift-clicking."
+                t(
+                    "Map coordinates will be copied to the clipboard when shift-clicking."
+                )
             )
             .addToggle((toggle) =>
                 toggle.setValue(this.data.copyOnClick).onChange(async (v) => {
@@ -572,7 +597,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
     }
     createCSVSetting(containerEl: HTMLElement) {
         const importSetting = new Setting(containerEl).setDesc(
-            "This setting is experimental and could cause marker data issues. Use at your own risk."
+            t(
+                "This setting is experimental and could cause marker data issues. Use at your own risk."
+            )
         );
         let name = importSetting.nameEl.createDiv();
         name.appendChild(
@@ -583,7 +610,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                 })
             ).node[0]
         );
-        name.appendChild(createSpan({ text: "Import Marker CSV File" }));
+        name.appendChild(createSpan({ text: t("Import Marker CSV File") }));
         const input = createEl("input", {
             attr: {
                 type: "file",
@@ -592,7 +619,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             }
         });
         importSetting.addButton((b) => {
-            b.setButtonText("Choose File").setTooltip("Upload CSV File");
+            b.setButtonText(t("Choose File")).setTooltip(t("Upload CSV File"));
             b.buttonEl.addClass("leaflet-file-upload");
             b.buttonEl.appendChild(input);
             b.onClick(() => input.click());
@@ -615,7 +642,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                             (l) => l.replace(/"/g, "")
                         );
                         if (!map || !map.length || map === "undefined") {
-                            new Notice("Map not specified for line " + i + 1);
+                            new Notice(
+                                t("Map not specified for line %1", `${i + 1}`)
+                            );
                             continue;
                         }
                         if (
@@ -631,13 +660,19 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                         }
                         if (!lat || !lat.length || isNaN(Number(lat))) {
                             new Notice(
-                                "Could not parse latitude for line " + i + 1
+                                t(
+                                    "Could not parse latitude for line %1",
+                                    `${i + 1}`
+                                )
                             );
                             continue;
                         }
                         if (!long || !long.length || isNaN(Number(long))) {
                             new Notice(
-                                "Could not parse longitude for line " + i + 1
+                                t(
+                                    "Could not parse longitude for line %1",
+                                    `${i + 1}`
+                                )
                             );
                             continue;
                         }
@@ -728,10 +763,10 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 
         let exportSetting = new Setting(containerEl);
         exportSetting
-            .setName("Export Marker Data")
-            .setDesc("Export all marker data to a CSV file.")
+            .setName(t("Export Marker Data"))
+            .setDesc(t("Export all marker data to a CSV file."))
             .addButton((b) => {
-                b.setButtonText("Export").onClick(() => {
+                b.setButtonText(t("Export")).onClick(() => {
                     let csv = [];
                     for (let { id: mapId, markers } of this.data.mapMarkers) {
                         for (let { type, loc, link, layer, id } of markers) {
