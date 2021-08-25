@@ -1,5 +1,6 @@
 import "leaflet";
 import "../node_modules/leaflet/dist/leaflet.css";
+import "../node_modules/@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css"
 import "./assets/main.css";
 
 import {

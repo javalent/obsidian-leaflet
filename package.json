@@ -47,6 +47,7 @@
         "xmldom": "^0.6.0"
     },
     "dependencies": {
+        "@geoman-io/leaflet-geoman-free": "^2.11.2",
         "leaflet-hotline": "^0.4.0"
     }
 }

@@ -621,6 +621,10 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             },
             this
         ).addTo(this.leafletInstance);
+        console.log(
+            "🚀 ~ file: map.ts ~ line 619 ~ this.distanceDisplay",
+            this.distanceDisplay
+        );
 
         if (this.options.isMapView) {
             mapViewControl(
@@ -637,6 +641,18 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 this
             ).addTo(this.leafletInstance);
         }
+        this.leafletInstance.pm.setGlobalOptions({
+            tooltips: false,
+            snappingOrder: [],
+            panes: {
+                vertexPane: "gpx",
+                layerPane: "gpx",
+                markerPane: "gpx"
+            }
+        });
+        this.leafletInstance.pm.addControls({
+            position: "bottomright"
+        });
     }
 
     abstract buildLayer(layer?: {
