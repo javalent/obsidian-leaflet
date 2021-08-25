@@ -1,5 +1,11 @@
 import { MarkdownPostProcessorContext, Platform, Plugin } from "obsidian";
-import { BaseMapType, Icon, MarkerIcon, ObsidianAppData } from ".";
+import {
+    BaseMapType,
+    Icon,
+    LeafletMapView,
+    MarkerIcon,
+    ObsidianAppData
+} from ".";
 
 export interface MapInterface {
     map: BaseMapType;
@@ -63,6 +69,7 @@ declare class ObsidianLeaflet extends Plugin {
     isDesktop: boolean;
     isMobile: boolean;
     isMacOS: boolean;
+    view: LeafletMapView | null;
     /* escapeScope: Scope; */
     onload(): Promise<void>;
     onunload(): Promise<void>;

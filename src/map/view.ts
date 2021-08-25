@@ -7,33 +7,47 @@ export class LeafletMapView extends ItemView {
     map: BaseMapType;
     mapEl: HTMLDivElement;
     innerContentEl: HTMLDivElement;
-    constructor(public leaf: WorkspaceLeaf, private plugin: ObsidianLeaflet) {
-        super(leaf);
-    }
-
-    async onOpen() {
-        const params: BlockParameters = {
+    context: MarkdownRenderChild;
+    renderer: LeafletRenderer;
+    get params() {
+        return {
             ...DEFAULT_BLOCK_PARAMETERS,
             ...(this.plugin.data.mapViewParameters ?? {}),
             height: "100%",
             isMapView: true
         };
+    }
+    constructor(public leaf: WorkspaceLeaf, private plugin: ObsidianLeaflet) {
+        super(leaf);
         this.innerContentEl = this.contentEl.createDiv({
             cls: "markdown-preview-view",
             attr: { style: "height: 100%;" }
         });
         this.mapEl = this.innerContentEl.createDiv("block-language-leaflet");
-        const renderer = new LeafletRenderer(
+
+        this.context = new MarkdownRenderChild(this.mapEl);
+        this.context.load();
+    }
+    async onOpen() {
+        this.renderer = new LeafletRenderer(
             this.plugin,
             "",
             this.mapEl,
-            params
+            this.params
         );
 
-        const context = new MarkdownRenderChild(this.mapEl);
-        context.load();
+        this.context.addChild(this.renderer);
+    }
+    update() {
+        this.renderer.unload();
 
-        context.addChild(renderer);
+        this.renderer = new LeafletRenderer(
+            this.plugin,
+            "",
+            this.mapEl,
+            this.params
+        );
+        this.context.addChild(this.renderer);
     }
 
     getDisplayText() {

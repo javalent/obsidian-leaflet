@@ -85,7 +85,12 @@ export default class ObsidianLeaflet
         return this.isMacOS ? "Meta" : "Control";
     }
     /* escapeScope: Scope; */
-
+    get view() {
+        const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE);
+        const leaf = leaves.length ? leaves[0] : null;
+        if (leaf && leaf.view && leaf.view instanceof LeafletMapView)
+            return leaf.view;
+    }
     async onload(): Promise<void> {
         console.log("Loading Obsidian Leaflet v" + this.manifest.version);
 

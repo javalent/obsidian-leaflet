@@ -938,6 +938,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     remove() {
         this.stopDrawingContext();
         this.leafletInstance.remove();
+        this.contentEl.detach();
         this.rendered = false;
         this.trigger("removed");
     }

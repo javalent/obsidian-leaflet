@@ -456,3 +456,9 @@ input.is-invalid {
 .leaflet-gpx-targeted {
     filter: drop-shadow(0 0 3px green);
 }
+
+.leaflet-edit-parameters .context-buttons {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}

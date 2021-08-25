@@ -1,22 +1,6 @@
-import { Modal, Setting, TextAreaComponent } from "obsidian";
-import { BaseMapType, ObsidianLeaflet } from "src/@types";
+import { BaseMapType } from "src/@types";
+import { EditParametersModal } from "src/modals/mapview";
 import { FontAwesomeControl, FontAwesomeControlOptions } from "./controls";
-
-class EditParametersModal extends Modal {
-    constructor(private plugin: ObsidianLeaflet) {
-        super(plugin.app);
-    }
-
-    onOpen() {
-        const t = new TextAreaComponent(this.contentEl);
-        t.setValue(JSON.stringify(this.plugin.data.mapViewParameters, null, 4));
-        t.inputEl.setAttr("style", "width: 100%; min-height: 500px;");
-    }
-    onClose() {}
-    close() {
-        super.close();
-    }
-}
 
 class MapViewControl extends FontAwesomeControl {
     map: BaseMapType;
