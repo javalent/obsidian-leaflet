@@ -42,10 +42,10 @@ export default {
     "No data": "No data",
     "The `%1` field%2 can only be used with the Dataview plugin installed.":
         "The `%1` field%2 can only be used with the Dataview plugin installed.", //parameter name, plural
-    "Could not parse location in %1": "Could not parse location in %1",
+    "Could not parse location in %1": "Could not parse location in %1", //file name
     "Could not parse map overlay length in %1. Please ensure it is in the format: <distance> <unit>":
-        "Could not parse map overlay length in %1. Please ensure it is in the format: <distance> <unit>",
-    "%1 overlay": "%1 overlay",
+        "Could not parse map overlay length in %1. Please ensure it is in the format: <distance> <unit>", //file name
+    "%1 overlay": "%1 overlay", //file name
     "Could not parse %1 in %2. Please ensure it is in the format: <distance> <unit>":
         "Could not parse %1 in %2. Please ensure it is in the format: <distance> <unit>", //overlayTag, file name
 
