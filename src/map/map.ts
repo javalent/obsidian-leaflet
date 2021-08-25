@@ -6,7 +6,6 @@ import {
     LayerGroup,
     LeafletMapOptions,
     MarkerIcon,
-    ObsidianLeaflet,
     Popup,
     SavedMarkerProperties,
     SavedOverlayData,
@@ -846,10 +845,22 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                         openOverlayContext(overlay);
                     });
                     item.dom.onmouseenter = () => {
-                        this.leafletInstance.fitBounds(
-                            overlay.leafletInstance.getBounds()
-                        );
+                        overlay.leafletInstance
+                            .getElement()
+                            .addClass("leaflet-layer-targeted");
                     };
+                    item.dom.onmouseleave = () => {
+                        overlay.leafletInstance
+                            .getElement()
+                            .removeClass("leaflet-layer-targeted");
+                    };
+                });
+            });
+            contextMenu.onHide(() => {
+                under.forEach((overlay) => {
+                    overlay.leafletInstance
+                        .getElement()
+                        .removeClass("leaflet-layer-targeted");
                 });
             });
 

@@ -114,7 +114,7 @@ export class GPX extends Layer<L.GeoJSON> {
                 !this.targeted
             ) {
                 (evt.originalEvent.target as SVGPathElement).addClass(
-                    "leaflet-gpx-targeted"
+                    "leaflet-layer-targeted"
                 );
             }
         });
@@ -126,7 +126,7 @@ export class GPX extends Layer<L.GeoJSON> {
                 this.popup.close();
             } else {
                 (evt.originalEvent.target as SVGPathElement).removeClass(
-                    "leaflet-gpx-targeted"
+                    "leaflet-layer-targeted"
                 );
             }
         });

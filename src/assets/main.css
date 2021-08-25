@@ -453,7 +453,7 @@ input.is-invalid {
     background-image: unset !important;
 }
 
-.leaflet-gpx-targeted {
+.leaflet-layer-targeted {
     filter: drop-shadow(0 0 3px green);
 }
 
