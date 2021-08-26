@@ -119,16 +119,15 @@ export class LeafletRenderer extends MarkdownRenderChild {
         this.containerEl.style.width = "100%";
         this.containerEl.style.backgroundColor = "var(--background-secondary)";
 
-        this.buildMap();
         this.resize = new ResizeObserver(() => {
             if (this.map && this.map.rendered) {
                 this.map.leafletInstance.invalidateSize();
             }
         });
+        
+        this.buildMap();
 
         this.resize.observe(this.containerEl);
-
-        this.map.on("removed", () => this.resize.disconnect());
     }
 
     async buildMap() {
@@ -160,6 +159,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
             this.map.log(`Loading layer data for ${this.map.id}.`);
             this.loader.loadImage(this.map.id, [this.options.layers[0]]);
         }
+
+        this.map.on("removed", () => this.resize.disconnect());
 
         await this.loadImmutableData();
         await this.loadFeatureData();

@@ -48,8 +48,7 @@ class GPXControl extends FontAwesomeControl {
         this.expand();
     }
     removeTarget() {
-        this.target.switch("default");
-        this.target.targeted = false;
+        this.target.deselect();
         this.target = null;
         this.collapse();
         this.setTooltip(
@@ -62,6 +61,7 @@ class GPXControl extends FontAwesomeControl {
     }
     expand() {
         if (!this.target) return;
+        if (!this.target.parsed) return;
         this.expanded = true;
         L.DomUtil.addClass(this.controlEl, "expanded");
         this.draw();
@@ -108,63 +108,7 @@ class GPXControl extends FontAwesomeControl {
                 text: t("Heatlines")
             });
         };
-
-        if (!isNaN(this.target.speed.avg)) {
-            addHeatlineDiv();
-
-            data.createDiv("data-item").createSpan({
-                text: `${t("Speed")}: ${this.target.speed.avg} m/s`
-            });
-
-            const li = ul.createDiv("input-item");
-            const input = li.createEl("input", {
-                attr: {
-                    id: "leaflet-gpx-control-speed",
-                    "data-which": "speed",
-                    name: "leaflet-gpx-control-checkbox-group",
-                    ...(this.target.displaying == "speed"
-                        ? { checked: true }
-                        : {})
-                },
-                type: "checkbox"
-            });
-            li.createEl("label", {
-                attr: { for: "leaflet-gpx-control-speed" },
-                text: t("Speed")
-            });
-
-            input.onclick = (evt) => {
-                this.trySwitch("speed");
-            };
-        }
-        if (!isNaN(this.target.cad.avg)) {
-            addHeatlineDiv();
-
-            data.createDiv("data-item").createSpan({
-                text: `${t("Cadence")}: ${this.target.cad.avg} ${t("steps/s")}`
-            });
-            const li = ul.createDiv("input-item");
-            const input = li.createEl("input", {
-                attr: {
-                    id: "leaflet-gpx-control-cad",
-                    "data-which": "cad",
-                    name: "leaflet-gpx-control-checkbox-group",
-                    ...(this.target.displaying == "cad"
-                        ? { checked: true }
-                        : {})
-                },
-                type: "checkbox"
-            });
-            li.createEl("label", {
-                attr: { for: "leaflet-gpx-control-cad" },
-                text: t("Cadence")
-            });
-
-            input.onclick = (evt) => {
-                this.trySwitch("cad");
-            };
-        }
-        if (!isNaN(this.target.elevation.avg)) {
+        if (this.target.flags.elevation) {
             addHeatlineDiv();
 
             data.createDiv("data-item").createSpan({
@@ -193,7 +137,63 @@ class GPXControl extends FontAwesomeControl {
                 this.trySwitch("ele");
             };
         }
-        if (!isNaN(this.target.hr.avg)) {
+        if (this.target.data.flags.speed) {
+            addHeatlineDiv();
+
+            data.createDiv("data-item").createSpan({
+                text: `${t("Speed")}: ${this.target.speed.avg} m/s`
+            });
+
+            const li = ul.createDiv("input-item");
+            const input = li.createEl("input", {
+                attr: {
+                    id: "leaflet-gpx-control-speed",
+                    "data-which": "speed",
+                    name: "leaflet-gpx-control-checkbox-group",
+                    ...(this.target.displaying == "speed"
+                        ? { checked: true }
+                        : {})
+                },
+                type: "checkbox"
+            });
+            li.createEl("label", {
+                attr: { for: "leaflet-gpx-control-speed" },
+                text: t("Speed")
+            });
+
+            input.onclick = (evt) => {
+                this.trySwitch("speed");
+            };
+        }
+        if (this.target.flags.cad) {
+            addHeatlineDiv();
+
+            data.createDiv("data-item").createSpan({
+                text: `${t("Cadence")}: ${this.target.cad.avg} ${t("steps/s")}`
+            });
+            const li = ul.createDiv("input-item");
+            const input = li.createEl("input", {
+                attr: {
+                    id: "leaflet-gpx-control-cad",
+                    "data-which": "cad",
+                    name: "leaflet-gpx-control-checkbox-group",
+                    ...(this.target.displaying == "cad"
+                        ? { checked: true }
+                        : {})
+                },
+                type: "checkbox"
+            });
+            li.createEl("label", {
+                attr: { for: "leaflet-gpx-control-cad" },
+                text: t("Cadence")
+            });
+
+            input.onclick = (evt) => {
+                this.trySwitch("cad");
+            };
+        }
+
+        if (this.target.flags.hr) {
             if (!heatLines) {
             }
             data.createDiv("data-item").createSpan({

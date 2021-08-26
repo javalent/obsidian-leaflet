@@ -113,7 +113,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             }
         });
         const defaultMarkerIconSetting = new Setting(settings)
-            .setName(t("Marker Icon"))
+            .setName(t("Icon Name"))
             .addText((text) => {
                 text.setPlaceholder(t("Icon Name")).setValue(
                     !this.data.defaultMarker.isImage
@@ -209,7 +209,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 
                     this.data.defaultMarker.isImage = true;
                     this.data.defaultMarker.imageUrl =
-                        canvas.toDataURL("image/jpeg");
+                        canvas.toDataURL("image/png");
 
                     this.display();
 

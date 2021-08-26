@@ -95,7 +95,7 @@ class DistanceDisplay extends L.Control {
         /* this.map = map; */
         this.controlEl = L.DomUtil.create(
             "div",
-            "leaflet-bar leaflet-distance-control hidden"
+            "leaflet-bar leaflet-distance-control"
         );
         this.textEl = this.controlEl.createSpan();
         this.textEl.setText(`0 ${this.map.unit}`);

@@ -250,5 +250,9 @@ export default {
     "There was an issue with the provided latitude.":
         "There was an issue with the provided latitude.",
     "There was an issue with the provided longitude.":
-        "There was an issue with the provided longitude."
-};
+        "There was an issue with the provided longitude.",
+
+        //control/draw.ts
+        "Draw": "Draw"
+
+    };

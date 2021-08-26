@@ -462,3 +462,7 @@ input.is-invalid {
     justify-content: flex-end;
     align-items: center;
 }
+
+.block-language-leaflet .leaflet-pm-toolbar .button-container {
+    margin-top: unset;
+}

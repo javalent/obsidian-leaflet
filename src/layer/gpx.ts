@@ -12,6 +12,8 @@ import { GPXPoint } from "src/@types/layers";
 import { GeoJSON } from "./geojson";
 import { formatLatLng } from "src/utils";
 import t from "src/l10n/locale";
+import { Constructor, MarkdownView, Notice, View } from "obsidian";
+import { GPX_Data } from "src/@types/gpx";
 
 let L = window[LeafletSymbol];
 
@@ -46,7 +48,16 @@ export class GPX extends Layer<L.GeoJSON> {
     popup = popup(this.map, this, { permanent: true });
     gpx: GeoJSON.FeatureCollection;
     domObject: Record<any, any>;
-    data: any;
+    data: GPX_Data = {
+        flags: {
+            elevation: false,
+            speed: false,
+            hr: false,
+            duration: false,
+            atemp: false,
+            cad: false
+        }
+    };
     worker: Worker;
 
     parsed: boolean;
@@ -92,10 +103,14 @@ export class GPX extends Layer<L.GeoJSON> {
         this.worker.postMessage({ string: gpx });
 
         this.worker.onmessage = (event) => {
+            this.worker.terminate();
+            if (event.data.error) {
+                this.map.log("There was an error parsing GPX Data.");
+                return;
+            }
             this.map.log("GPX Data parsed.");
             this.data = event.data.data;
             this.parsed = true;
-            this.worker.terminate();
         };
 
         this.gpx = gpxtoGeoJSON(
@@ -113,9 +128,11 @@ export class GPX extends Layer<L.GeoJSON> {
                 !this.map.leafletInstance.hasLayer(this.hotline) &&
                 !this.targeted
             ) {
-                (evt.originalEvent.target as SVGPathElement).addClass(
-                    "leaflet-layer-targeted"
-                );
+                this.leafletInstance
+                    .getLayers()[0]
+                    //@ts-expect-error
+                    .getElement()
+                    .addClass("leaflet-layer-targeted");
             }
         });
         this.leafletInstance.on("mouseout", (evt: L.LeafletMouseEvent) => {
@@ -125,15 +142,15 @@ export class GPX extends Layer<L.GeoJSON> {
             ) {
                 this.popup.close();
             } else {
-                (evt.originalEvent.target as SVGPathElement).removeClass(
-                    "leaflet-layer-targeted"
-                );
+                this.deselect();
             }
         });
         this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) => {
+            if (!this.parsed) return;
             this.map.gpxControl.setTarget(this);
         });
         this.leafletInstance.on("mousemove", (evt: L.LeafletMouseEvent) => {
+            if (!this.parsed) return;
             if (
                 this.map.leafletInstance.hasLayer(this.hotline) ||
                 this.targeted
@@ -201,48 +218,37 @@ export class GPX extends Layer<L.GeoJSON> {
         return sort[0];
     }
     get flags(): Record<string, boolean> {
-        return this.data.tracks[0].flags;
+        return this.data.flags;
     }
     get points(): GPXPoint[] {
-        return this.data.coords.flat();
+        return this.data?.coords.flat();
     }
-    get speed(): {
-        points: L.LatLng[];
-        min: number;
-        max: number;
-        avg: number;
-    } {
+    get duration() {
+        return this.data.duration;
+    }
+    get speed() {
         return this.data.speed;
     }
-    get cad(): {
-        points: L.LatLng[];
-        min: number;
-        max: number;
-        avg: number;
-    } {
+    get cad() {
         return this.data.cad;
     }
-    get elevation(): {
-        gain: number;
-        loss: number;
-        max: number;
-        min: number;
-        total: number;
-        avg: number;
-        points: L.LatLng[];
-    } {
+    get elevation() {
         return this.data.elevation;
     }
-    get hr(): {
-        points: L.LatLng[];
-        min: number;
-        max: number;
-        avg: number;
-    } {
+    get hr() {
         return this.data.hr;
     }
-    get atemp(): { points: L.LatLng[]; min: number; max: number; avg: number } {
+    get atemp() {
         return this.data.atemp;
+    }
+    deselect() {
+        this.switch("default");
+        this.leafletInstance
+            .getLayers()[0]
+            //@ts-expect-error
+            .getElement()
+            .removeClass("leaflet-layer-targeted");
+        this.targeted = false;
     }
     hide() {
         if (this.leafletInstance) {
@@ -275,9 +281,13 @@ export class GPX extends Layer<L.GeoJSON> {
 
         const el = createDiv("gpx-popup");
         el.createSpan({ text: `${t("Lat")}: ${lat}, ${t("Lng")}: ${lng}` });
-        el.createSpan({
-            text: `${t("Time")}: ${point.meta.time.toLocaleString(locale())}`
-        });
+        if (point.meta.time) {
+            el.createSpan({
+                text: `${t("Time")}: ${point.meta.time.toLocaleString(
+                    locale()
+                )}`
+            });
+        }
 
         if (point.meta.elevation && !isNaN(point.meta.elevation))
             el.createSpan({
