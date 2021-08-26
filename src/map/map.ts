@@ -47,7 +47,9 @@ import { gpxControl } from "src/controls/gpx";
 import { LeafletRenderer } from "src/renderer";
 import { mapViewControl, saveMapParametersControl } from "src/controls/mapview";
 import t from "src/l10n/locale";
+
 import { drawControl } from "src/controls/draw";
+
 let L = window[LeafletSymbol];
 declare module "leaflet" {
     function hotline(data: L.LatLng[], options: HotlineOptions): L.Polyline;
@@ -145,6 +147,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     createMap() {
         this.leafletInstance = L.map(this.contentEl, {
             crs: this.CRS,
+            editable: true,
             maxZoom: this.zoom.max,
             minZoom: this.zoom.min,
             zoomDelta: this.zoom.delta,
@@ -157,6 +160,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.leafletInstance.createPane("geojson");
         this.leafletInstance.createPane("gpx");
         this.leafletInstance.createPane("gpx-canvas");
+        this.leafletInstance.createPane("drawing");
 
         //@ts-expect-error
         this.canvas = L.Hotline.renderer({ pane: "gpx-canvas" }).addTo(
@@ -648,9 +652,9 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             }
         }); */
 
-        /* drawControl({ position: "bottomright" }, this).addTo(
+        drawControl({ position: "bottomright" }, this).addTo(
             this.leafletInstance
-        ); */
+        );
 
         /* this.leafletInstance.pm.addControls({
             position: "bottomright"
