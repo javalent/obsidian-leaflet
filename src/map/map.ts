@@ -622,10 +622,6 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             },
             this
         ).addTo(this.leafletInstance);
-        console.log(
-            "🚀 ~ file: map.ts ~ line 619 ~ this.distanceDisplay",
-            this.distanceDisplay
-        );
 
         if (this.options.isMapView) {
             mapViewControl(
@@ -652,9 +648,9 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             }
         }); */
 
-        drawControl({ position: "bottomright" }, this).addTo(
+        /* drawControl({ position: "bottomright" }, this).addTo(
             this.leafletInstance
-        );
+        ); */
 
         /* this.leafletInstance.pm.addControls({
             position: "bottomright"

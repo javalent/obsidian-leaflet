@@ -15,7 +15,7 @@ const WindowL = window.L;
 require("leaflet");
 require("leaflet-fullscreen");
 require("leaflet-hotline");
-require("@geoman-io/leaflet-geoman-free");
+/* require("@geoman-io/leaflet-geoman-free"); */
 
 /* window.L.PM.setOptIn(true); */
 
