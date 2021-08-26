@@ -47,6 +47,7 @@ import { gpxControl } from "src/controls/gpx";
 import { LeafletRenderer } from "src/renderer";
 import { mapViewControl, saveMapParametersControl } from "src/controls/mapview";
 import t from "src/l10n/locale";
+import { drawControl } from "src/controls/draw";
 let L = window[LeafletSymbol];
 declare module "leaflet" {
     function hotline(data: L.LatLng[], options: HotlineOptions): L.Polyline;
@@ -641,7 +642,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 this
             ).addTo(this.leafletInstance);
         }
-        this.leafletInstance.pm.setGlobalOptions({
+        /* this.leafletInstance.pm.setGlobalOptions({
             tooltips: false,
             snappingOrder: [],
             panes: {
@@ -649,10 +650,15 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 layerPane: "gpx",
                 markerPane: "gpx"
             }
-        });
-        this.leafletInstance.pm.addControls({
+        }); */
+
+        drawControl({ position: "bottomright" }, this).addTo(
+            this.leafletInstance
+        );
+
+        /* this.leafletInstance.pm.addControls({
             position: "bottomright"
-        });
+        }); */
     }
 
     abstract buildLayer(layer?: {
