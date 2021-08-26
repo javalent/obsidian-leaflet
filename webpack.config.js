@@ -2,6 +2,7 @@ const path = require("path");
 const CopyPlugin = require("copy-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const webpack = require("webpack");
+const InjectPlugin = require("webpack-inject-plugin").default;
 
 const isDevMode = process.env.NODE_ENV === "development";
 
@@ -17,6 +18,18 @@ module.exports = {
     ...(isDevMode ? { devtool: "eval" } : {}),
     module: {
         rules: [
+            {
+                test: /leaflet(\.path|-hotline|-freedraw|-fullscreen|-editable)/,
+                loader: "string-replace-loader",
+                options: {
+                    search: /(\.|\s|\()L\./g,
+                    replace: (match, p1) => `${p1}window.OBSIDIAN_LEAFLET_PLUGIN.`
+                }
+                /* options: {
+                    search: "this.dragging = new L.Handler.PathDrag(this);",
+                    replace: "this.dragging = new window['obsidian-leaflet-plugin'].Handler.PathDrag(this)"
+                } */
+            },
             {
                 test: /\.worker\.ts?$/,
                 loader: "worker-loader",
