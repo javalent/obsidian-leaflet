@@ -147,6 +147,8 @@ declare abstract class BaseMap /* <
     displaying: Map<string, boolean>;
     get displayed(): Marker[];
 
+    drawingGroup: L.FeatureGroup;
+
     featureLayer: L.FeatureGroup;
 
     geojsonData: any[];

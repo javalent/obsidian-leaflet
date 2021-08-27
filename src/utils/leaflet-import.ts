@@ -25,8 +25,3 @@ require("leaflet-fullscreen");
 require("leaflet-hotline");
 require("leaflet-editable");
 require("leaflet-freedraw");
-require("leaflet.path.drag");
-
-/* window.L.PM.setOptIn(true); */
-
-

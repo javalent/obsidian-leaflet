@@ -1,6 +1,7 @@
 import { icon } from "../utils/icons";
 import { IconName } from "@fortawesome/free-solid-svg-icons";
 import { LeafletSymbol } from "src/utils/leaflet-import";
+import { Events } from "obsidian";
 
 const L = window[LeafletSymbol];
 
@@ -23,9 +24,6 @@ export abstract class FontAwesomeControl extends L.Control {
         this.icon = opts.icon;
         this.cls = opts.cls;
         this.tooltip = opts.tooltip;
-    }
-    onAdd(leafletMap: L.Map) {
-        this.leafletInstance = leafletMap;
         this.controlEl = L.DomUtil.create(
             "div",
             "leaflet-bar leaflet-control " + this.cls
@@ -42,6 +40,9 @@ export abstract class FontAwesomeControl extends L.Control {
             "aria-label": this.tooltip
         });
         L.DomEvent.on(this.controlEl, "click", this.onClick.bind(this));
+    }
+    onAdd(leafletMap: L.Map) {
+        this.leafletInstance = leafletMap;
 
         L.DomEvent.disableClickPropagation(this.controlEl);
         L.DomEvent.disableScrollPropagation(this.controlEl);

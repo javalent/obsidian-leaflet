@@ -19,16 +19,17 @@ module.exports = {
     module: {
         rules: [
             {
-                test: /leaflet(\.path|-hotline|-freedraw|-fullscreen|-editable)/,
+                test: /leaflet(\.path|-hotline|-freedraw|-fullscreen|-editable|-textbox)/,
                 loader: "string-replace-loader",
                 options: {
-                    search: /(\.|\s|\()L\./g,
-                    replace: (match, p1) => `${p1}window.OBSIDIAN_LEAFLET_PLUGIN.`
+                    multiple: [
+                        {
+                            search: /(\.|\s|\()L\./g,
+                            replace: (match, p1) =>
+                                `${p1}window.OBSIDIAN_LEAFLET_PLUGIN.`
+                        }
+                    ]
                 }
-                /* options: {
-                    search: "this.dragging = new L.Handler.PathDrag(this);",
-                    replace: "this.dragging = new window['obsidian-leaflet-plugin'].Handler.PathDrag(this)"
-                } */
             },
             {
                 test: /\.worker\.ts?$/,

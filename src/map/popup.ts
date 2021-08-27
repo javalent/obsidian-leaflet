@@ -231,7 +231,7 @@ class Popup {
         }
     }
     isOpen() {
-        return this.leafletInstance.isOpen();
+        return this.leafletInstance && this.leafletInstance.isOpen();
     }
     setContent(content: ((source: L.Layer) => L.Content) | L.Content) {
         if (!this.leafletInstance) this.leafletInstance = this.getPopup();

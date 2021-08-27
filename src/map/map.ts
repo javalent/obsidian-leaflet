@@ -64,6 +64,7 @@ declare module "leaflet" {
     }
 }
 export abstract class BaseMap extends Events implements BaseMapDefinition {
+    drawingGroup: L.FeatureGroup<any>;
     abstract get bounds(): L.LatLngBounds;
 
     canvas: L.Canvas;
@@ -147,7 +148,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     createMap() {
         this.leafletInstance = L.map(this.contentEl, {
             crs: this.CRS,
-            editable: true,
+            editable: false,
             maxZoom: this.zoom.max,
             minZoom: this.zoom.min,
             zoomDelta: this.zoom.delta,
@@ -161,6 +162,19 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.leafletInstance.createPane("gpx");
         this.leafletInstance.createPane("gpx-canvas");
         this.leafletInstance.createPane("drawing");
+        this.drawingGroup = new L.FeatureGroup([], { pane: "drawing" }).addTo(
+            this.leafletInstance
+        );
+
+        const featureLayer = new L.LayerGroup([], { pane: "drawing" }).addTo(
+            this.drawingGroup
+        );
+        this.leafletInstance.editTools = new L.Editable(this.leafletInstance, {
+            featuresLayer: featureLayer,
+            editLayer: featureLayer
+        });
+        /* this.leafletInstance.editTools.options.featuresLayer = drawingLayer;
+        this.leafletInstance.editTools.options.editLayer = drawingLayer; */
 
         //@ts-expect-error
         this.canvas = L.Hotline.renderer({ pane: "gpx-canvas" }).addTo(
@@ -642,23 +656,10 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 this
             ).addTo(this.leafletInstance);
         }
-        /* this.leafletInstance.pm.setGlobalOptions({
-            tooltips: false,
-            snappingOrder: [],
-            panes: {
-                vertexPane: "gpx",
-                layerPane: "gpx",
-                markerPane: "gpx"
-            }
-        }); */
 
         drawControl({ position: "bottomright" }, this).addTo(
             this.leafletInstance
         );
-
-        /* this.leafletInstance.pm.addControls({
-            position: "bottomright"
-        }); */
     }
 
     abstract buildLayer(layer?: {

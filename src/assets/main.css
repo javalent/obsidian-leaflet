@@ -384,6 +384,7 @@ input.is-invalid {
     .leaflet-control-expandable-list
     .leaflet-control-expandable-button-group {
     margin-bottom: 6px;
+    padding: 6px 10px 0px 6px;
 }
 .block-language-leaflet
     .leaflet-control-expandable-list
@@ -416,6 +417,51 @@ input.is-invalid {
     flex-flow: column;
     justify-content: flex-start;
     align-items: flex-start;
+}
+.block-language-leaflet
+    .leaflet-control-expandable.leaflet-control-draw.expanded
+    .leaflet-control-expandable-list {
+    display: flex;
+    flex-flow: column nowrap;
+}
+
+.block-language-leaflet
+    .leaflet-control-expandable.leaflet-control-draw.expanded
+    .leaflet-control-expandable-list
+    .leaflet-control {
+    margin: 0;
+    border: 0;
+}
+.block-language-leaflet
+    .leaflet-control-expandable.leaflet-control-draw.expanded
+    a {
+    margin-right: 0;
+}
+
+.block-language-leaflet
+    .leaflet-control-expandable.leaflet-control-draw.expanded
+    .leaflet-control-expandable-list
+    .leaflet-control.leaflet-control-draw-trash {
+    border-top: 2px solid rgba(0, 0, 0, 0.2);
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+.block-language-leaflet .leaflet-text-entry {
+    position: relative;
+    width: max-content;
+}
+.block-language-leaflet .leaflet-text-entry input {
+    outline: none;
+    position: absolute;
+    transform: translate(-50%, 0%);
+    left: 50%;
+    text-align: center;
+    background-color: transparent;
+    border: 0;
+}
+.block-language-leaflet .leaflet-text-entry span {
+    width: fit-content;
 }
 
 .block-language-leaflet .leaflet-pane.leaflet-geojson-pane {
