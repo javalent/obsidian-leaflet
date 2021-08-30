@@ -1,10 +1,12 @@
+import { TextComponent } from "obsidian";
 import { BaseMapType } from "src/@types";
-import t from "src/l10n/locale";
-import { FontAwesomeControl, FontAwesomeControlOptions } from "./controls";
 import type edit from "leaflet-editable";
+import type { VertexMarker } from "leaflet";
+
 import FreeDraw from "leaflet-freedraw";
+import { FontAwesomeControl, FontAwesomeControlOptions } from "./controls";
+import t from "src/l10n/locale";
 import { LeafletSymbol } from "src/utils/leaflet-import";
-import { Platform, TextComponent } from "obsidian";
 
 const L = window[LeafletSymbol];
 
@@ -18,20 +20,30 @@ declare module "leaflet" {
     interface Rectangle {
         setText(str: string): void;
     }
+    interface Path {
+        editor: PathEditor;
+    }
 }
 
 class DrawControl extends FontAwesomeControl {
     map: BaseMapType;
+
+    //draw tools
     section: HTMLElement;
-    polygon: Polygon;
-    expanded: boolean;
-    rectangle: Rectangle;
-    free: Free;
-    polyline: Polyline;
-    text: Text;
+    //context tools
     context: HTMLElement;
-    delete: Delete;
-    done: Done;
+
+    //Controls
+    polygon: PolygonControl;
+    rectangle: RectangleControl;
+    free: FreeControl;
+    polyline: PolylineControl;
+    text: TextControl;
+    delete: DeleteControl;
+    done: DoneControl;
+
+    expanded: boolean;
+    layers: L.Path[];
 
     constructor(opts: FontAwesomeControlOptions, map: BaseMapType) {
         super(opts, map.leafletInstance);
@@ -61,12 +73,21 @@ class DrawControl extends FontAwesomeControl {
 
         L.DomEvent.on(this.controlEl, "click", () => this.expand());
     }
+    complete() {
+        this.stopDrawingContext();
+        this.collapse();
+    }
+    private collapse() {
+        L.DomUtil.removeClass(this.controlEl, "expanded");
+        this.enabled = false;
+        return this;
+    }
     draw() {
-        this.polygon = new Polygon(this);
-        this.rectangle = new Rectangle(this);
-        this.polyline = new Polyline(this);
+        this.polygon = new PolygonControl(this);
+        this.rectangle = new RectangleControl(this);
+        this.polyline = new PolylineControl(this);
 
-        this.text = new Text(this);
+        this.text = new TextControl(this);
 
         this.section.appendChild(this.polygon.controlEl);
         this.section.appendChild(this.rectangle.controlEl);
@@ -74,9 +95,9 @@ class DrawControl extends FontAwesomeControl {
 
         this.section.appendChild(this.text.controlEl);
 
-        this.delete = new Delete(this);
+        this.delete = new DeleteControl(this);
         this.section.appendChild(this.delete.controlEl);
-        this.done = new Done(this);
+        this.done = new DoneControl(this);
         this.section.appendChild(this.done.controlEl);
     }
     private expand() {
@@ -102,19 +123,67 @@ class DrawControl extends FontAwesomeControl {
 
         return this;
     }
-    complete() {
+    startDrawingContext() {
+        this.layers = [];
+    }
+    stopDrawingContext() {
         this.map.leafletInstance.editTools.stopDrawing();
         this.text.disableTextContext();
-        this.collapse();
-    }
-    private collapse() {
-        L.DomUtil.removeClass(this.controlEl, "expanded");
-        this.enabled = false;
-        return this;
+
+        this.polygon.closeActions();
+        this.rectangle.closeActions();
+        this.polyline.closeActions();
     }
 }
 
-class Delete extends FontAwesomeControl {
+abstract class BaseDrawControl extends FontAwesomeControl {
+    complete = new CompleteControl(this);
+    undo = new UndoControl(this);
+    cancel = new CancelControl(this);
+    abstract controller: L.Path;
+    vertexes: VertexMarker[] = [];
+    get editor() {
+        return this.controller.editor;
+    }
+    get map() {
+        return this.parent.map;
+    }
+    constructor(opts: FontAwesomeControlOptions, public parent: DrawControl) {
+        super(opts, parent.map.leafletInstance);
+        this.draw();
+    }
+
+    actionsEl = this.controlEl.createDiv("control-actions");
+
+    cancelControl = new CancelControl(this);
+
+    onClick() {
+        this.parent.stopDrawingContext();
+        this.openActions();
+
+        this.map.leafletInstance.on("editable:vertex:new", (evt) => {
+            console.log(evt.vertex);
+            this.vertexes.push(evt.vertex);
+        });
+        this.map.leafletInstance.on("editable:vertex:deleted", (evt) => {
+            console.log(evt.vertex);
+            this.vertexes = this.vertexes.filter(
+                (vertex) => vertex != evt.vertex
+            );
+        });
+    }
+    openActions() {
+        this.actionsEl.addClass("expanded");
+    }
+    closeActions() {
+        this.actionsEl.removeClass("expanded");
+        this.map.leafletInstance.off("editable:vertex:new");
+        this.map.leafletInstance.off("editable:vertex:deleted");
+    }
+    abstract draw(): void;
+}
+
+class DeleteControl extends FontAwesomeControl {
     get map() {
         return this.parent.map;
     }
@@ -129,10 +198,10 @@ class Delete extends FontAwesomeControl {
         );
     }
     onClick() {
-        this.parent.text.disableTextContext();
+        this.parent.stopDrawingContext();
     }
 }
-class Done extends FontAwesomeControl {
+class DoneControl extends FontAwesomeControl {
     get map() {
         return this.parent.map;
     }
@@ -151,72 +220,160 @@ class Done extends FontAwesomeControl {
         this.parent.complete();
     }
 }
-
-class Polygon extends FontAwesomeControl {
-    get map() {
-        return this.parent.map;
+class CompleteControl extends FontAwesomeControl {
+    constructor(public drawControl: BaseDrawControl) {
+        super(
+            {
+                icon: "check",
+                cls: "leaflet-control-complete",
+                tooltip: "Finish"
+            },
+            drawControl.map.leafletInstance
+        );
     }
-    constructor(private parent: DrawControl) {
+    //Complete and save
+    onClick(evt: MouseEvent) {
+        console.log('evt')
+        //propagate;
+        /* evt.stopPropagation();
+        this.drawControl.editor.reset(); */
+        //31166 onDrawingClick is canceled becase _drawing == false
+        evt.stopPropagation();
+        this.drawControl.controller.editor.newShape();
+    }
+}
+class UndoControl extends FontAwesomeControl {
+    constructor(public drawControl: BaseDrawControl) {
+        super(
+            {
+                icon: "undo-alt",
+                cls: "leaflet-control-undo",
+                tooltip: "Undo"
+            },
+            drawControl.map.leafletInstance
+        );
+    }
+    //Undo Last Vertex
+    onClick(evt: MouseEvent) {
+        evt.stopPropagation();
+        console.log(this.drawControl.editor);
+        this.drawControl.editor.pop();
+    }
+}
+class CancelControl extends FontAwesomeControl {
+    constructor(public drawControl: BaseDrawControl) {
+        super(
+            {
+                icon: "times-circle",
+                cls: "leaflet-control-cancel",
+                tooltip: "Cancel"
+            },
+            drawControl.map.leafletInstance
+        );
+    }
+    //Stop and remove from map
+    onClick(evt: MouseEvent) {
+        if (this.drawControl.editor.drawing()) {
+            this.drawControl.controller.remove();
+        }
+
+        evt.stopPropagation();
+        this.drawControl.parent.stopDrawingContext();
+    }
+}
+
+class PolygonControl extends BaseDrawControl {
+    controller: L.Polygon;
+    constructor(public parent: DrawControl) {
         super(
             {
                 icon: "draw-polygon",
-                cls: "leaflet-control-draw-polygon",
+                cls: "leaflet-control-has-actions leaflet-control-draw-polygon",
                 tooltip: t("Polygon")
             },
-            parent.map.leafletInstance
+            parent
         );
+        window.poly = this;
     }
     onClick() {
-        this.parent.text.disableTextContext();
-        this.map.leafletInstance.editTools.startPolygon(null, {
-            pane: "drawing"
-        });
+        super.onClick();
+    }
+    draw() {
+        this.actionsEl.appendChild(this.complete.controlEl);
+        this.actionsEl.appendChild(this.undo.controlEl);
+        this.actionsEl.appendChild(this.cancel.controlEl);
+
+        this.controller = this.map.leafletInstance.editTools.startPolygon(
+            null,
+            {
+                pane: "drawing"
+            }
+        );
     }
 }
-class Rectangle extends FontAwesomeControl {
-    get map() {
-        return this.parent.map;
-    }
-    constructor(private parent: DrawControl) {
+
+class RectangleControl extends BaseDrawControl {
+    undo: UndoControl;
+    cancel: CancelControl;
+    controller: L.Rectangle;
+
+    constructor(public parent: DrawControl) {
         super(
             {
                 icon: "vector-square",
-                cls: "leaflet-control-draw-rectangle",
+                cls: "leaflet-control-draw-rectangle leaflet-control-has-actions",
                 tooltip: t("Rectangle")
             },
-            parent.map.leafletInstance
+            parent
         );
     }
     onClick() {
-        this.parent.text.disableTextContext();
-        this.map.leafletInstance.editTools.startRectangle(null, {
-            pane: "drawing"
-        });
+        super.onClick();
+
+        this.controller = this.map.leafletInstance.editTools.startRectangle(
+            null,
+            {
+                pane: "drawing"
+            }
+        );
+    }
+    draw() {
+        this.actionsEl.appendChild(this.undo.controlEl);
+        this.actionsEl.appendChild(this.cancel.controlEl);
     }
 }
-class Polyline extends FontAwesomeControl {
-    get map() {
-        return this.parent.map;
-    }
-    constructor(private parent: DrawControl) {
+class PolylineControl extends BaseDrawControl {
+    complete: CompleteControl;
+    undo: UndoControl;
+    cancel: CancelControl;
+    controller: L.Polyline;
+    constructor(public parent: DrawControl) {
         super(
             {
                 icon: "project-diagram",
-                cls: "leaflet-control-draw-free",
+                cls: "leaflet-control-draw-polyline leaflet-control-has-actions",
                 tooltip: t("Polyline")
             },
-            parent.map.leafletInstance
+            parent
         );
     }
     onClick() {
-        this.parent.text.disableTextContext();
+        super.onClick();
 
-        this.map.leafletInstance.editTools.startPolyline(null, {
-            pane: "drawing"
-        });
+        this.controller = this.map.leafletInstance.editTools.startPolyline(
+            null,
+            {
+                pane: "drawing"
+            }
+        );
+    }
+    draw() {
+        this.actionsEl.appendChild(this.complete.controlEl);
+        this.actionsEl.appendChild(this.undo.controlEl);
+        this.actionsEl.appendChild(this.cancel.controlEl);
     }
 }
-class Free extends FontAwesomeControl {
+class FreeControl extends FontAwesomeControl {
     get map() {
         return this.parent.map;
     }
@@ -225,7 +382,7 @@ class Free extends FontAwesomeControl {
         super(
             {
                 icon: "pencil-alt",
-                cls: "leaflet-control-draw-free",
+                cls: "leaflet-control-draw-free leaflet-control-has-actions",
                 tooltip: t("Free Draw")
             },
             parent.map.leafletInstance
@@ -237,7 +394,7 @@ class Free extends FontAwesomeControl {
         this.map.drawingGroup.addLayer(this.freeDraw);
     }
 }
-class Text extends FontAwesomeControl {
+class TextControl extends FontAwesomeControl {
     get map() {
         return this.parent.map;
     }
@@ -246,13 +403,14 @@ class Text extends FontAwesomeControl {
         super(
             {
                 icon: "font",
-                cls: "leaflet-control-draw-free",
+                cls: "leaflet-control-draw-text leaflet-control-has-actions",
                 tooltip: t("Text")
             },
             parent.map.leafletInstance
         );
     }
     onClick() {
+        this.parent.stopDrawingContext();
         if (!this.contextEnabled) {
             this.enableTextContext();
         } else {
@@ -262,10 +420,11 @@ class Text extends FontAwesomeControl {
     disableTextContext() {
         this.contextEnabled = false;
         this.map.leafletInstance.off("click", this.createTextComponent, this);
+        this.map.contentEl.removeClass("adding-text");
     }
     enableTextContext() {
         this.contextEnabled = true;
-
+        this.map.contentEl.addClass("adding-text");
         this.map.leafletInstance.on("click", this.createTextComponent, this);
     }
     createTextComponent(e: L.LeafletMouseEvent) {

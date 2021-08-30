@@ -48,7 +48,7 @@ import { LeafletRenderer } from "src/renderer";
 import { mapViewControl, saveMapParametersControl } from "src/controls/mapview";
 import t from "src/l10n/locale";
 
-import { drawControl } from "src/controls/draw";
+import { drawControl/* , PanedMiddle, PanedVertex */ } from "src/controls/draw";
 
 let L = window[LeafletSymbol];
 declare module "leaflet" {
@@ -140,7 +140,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.escapeScope.register(undefined, "Escape", () => {
             if (!this.isFullscreen) {
                 this.stopDrawingContext();
-                this.plugin.app.keymap.popScope(this.escapeScope);
+                /* this.plugin.app.keymap.popScope(this.escapeScope); */
             }
         });
     }
@@ -162,16 +162,22 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.leafletInstance.createPane("gpx");
         this.leafletInstance.createPane("gpx-canvas");
         this.leafletInstance.createPane("drawing");
+        this.leafletInstance.createPane("drawing-markers");
         this.drawingGroup = new L.FeatureGroup([], { pane: "drawing" }).addTo(
             this.leafletInstance
         );
 
-        const featureLayer = new L.LayerGroup([], { pane: "drawing" }).addTo(
+        const featuresLayer = new L.LayerGroup([], { pane: "drawing" }).addTo(
             this.drawingGroup
         );
+        const editLayer = new L.LayerGroup([], {
+            pane: "drawing-markers"
+        }).addTo(this.drawingGroup);
         this.leafletInstance.editTools = new L.Editable(this.leafletInstance, {
-            featuresLayer: featureLayer,
-            editLayer: featureLayer
+            featuresLayer,
+            editLayer/* ,
+            vertexMarkerClass: PanedVertex,
+            middleMarkerClass: PanedMiddle */
         });
         /* this.leafletInstance.editTools.options.featuresLayer = drawingLayer;
         this.leafletInstance.editTools.options.editLayer = drawingLayer; */
@@ -439,10 +445,12 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.addOverlay(overlay);
         this.trigger("markers-updated");
     }
-    beginOverlayDrawingContext(original: L.LeafletMouseEvent, marker?: Marker) {
+    startDrawingContext() {
         this.plugin.app.keymap.pushScope(this.escapeScope);
-
         this.isDrawing = true;
+    }
+    beginOverlayDrawingContext(original: L.LeafletMouseEvent, marker?: Marker) {
+        this.startDrawingContext();
 
         this.tempCircle = L.circle(original.latlng, {
             radius: 1,
@@ -738,8 +746,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             this.log(`Distance measurement context starting.`);
             this.distanceEvent = evt.latlng;
 
-            this.isDrawing = true;
-            this.plugin.app.keymap.pushScope(this.escapeScope);
+            this.startDrawingContext();
 
             this.distanceLine = L.polyline([this.distanceEvent, evt.latlng]);
 
@@ -1048,8 +1055,10 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     stopDrawingContext() {
         this.isDrawing = false;
         this.plugin.app.keymap.popScope(this.escapeScope);
+
         this.leafletInstance.off("mousemove");
         this.leafletInstance.off("mouseout");
+
         if (this.distanceEvent) {
             this.distanceEvent = undefined;
 

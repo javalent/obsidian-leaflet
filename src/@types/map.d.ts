@@ -258,6 +258,7 @@ declare abstract class BaseMap /* <
 
     sortOverlays(): void;
     setZoomByDistance(zoomDistance: number): void;
+    startDrawingContext(): void;
     stopDrawingContext(): void;
     toProperties(): SavedMapData;
     //TODO: REWRITE
