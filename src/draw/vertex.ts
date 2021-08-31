@@ -48,6 +48,8 @@ export class Vertex {
                 this.target.setLatLng(evt.latlng);
             }
             this.parent.redraw();
+
+            this.onDrag();
         });
         this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) => {
             L.DomEvent.stopPropagation(evt);
@@ -61,7 +63,7 @@ export class Vertex {
             );
         }
     }
-
+    onDrag() {}
     hide() {
         this.leafletInstance.remove();
     }

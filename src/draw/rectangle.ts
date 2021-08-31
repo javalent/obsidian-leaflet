@@ -43,6 +43,9 @@ export class Rectangle extends Shape<L.Rectangle> {
                 new Vertex(this.bounds.getSouthEast(), this),
                 new Vertex(this.bounds.getSouthWest(), this)
             );
+
+            this.registerVertexDrags();
+
             this.redraw();
             this.ghost.remove();
             this.ghost = null;
@@ -76,22 +79,40 @@ export class Rectangle extends Shape<L.Rectangle> {
             this.bounds.getSouthWest()
         ];
     }
+    registerVertexDrags() {
+        this.vertexes[0].onDrag = () => {
+            this.vertexes[3].setLatLng(
+                L.latLng([
+                    this.vertexes[3].getLatLng().lat,
+                    this.vertexes[0].getLatLng().lng
+                ])
+            );
+            this.vertexes[1].setLatLng(
+                L.latLng([
+                    this.vertexes[0].getLatLng().lat,
+                    this.vertexes[1].getLatLng().lng
+                ])
+            );
+        };
+        this.vertexes[1].onDrag = () => {
+            this.vertexes[2].setLatLng(
+                L.latLng([
+                    this.vertexes[2].getLatLng().lat,
+                    this.vertexes[1].getLatLng().lng
+                ])
+            );
+            this.vertexes[0].setLatLng(
+                L.latLng([
+                    this.vertexes[1].getLatLng().lat,
+                    this.vertexes[0].getLatLng().lng
+                ])
+            );
+        };
+    }
     updateBounds() {
         if (this.vertexes.length != 4) {
             return;
         }
-
-        const changed = this.latlngs.indexOf(
-            this.latlngs.find(
-                (ll) => !this.boundsArray.find((l) => l.equals(ll))
-            )
-        );
-        const next = (((changed + 1) % 4) + 4) % 4;
-        const previous = (((changed - 1) % 4) + 4) % 4;
-        console.log(changed, next);
-
-        
-
         this.bounds = L.latLngBounds(this.latlngs);
     }
 
