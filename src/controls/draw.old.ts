@@ -1,12 +1,11 @@
 import { TextComponent } from "obsidian";
 import { BaseMapType } from "src/@types";
-import type edit from "leaflet-editable";
-import type { VertexMarker } from "leaflet";
 
 import FreeDraw from "leaflet-freedraw";
 import { FontAwesomeControl, FontAwesomeControlOptions } from "./controls";
 import t from "src/l10n/locale";
 import { LeafletSymbol } from "src/utils/leaflet-import";
+import { Layer } from "src/layer/layer";
 
 const L = window[LeafletSymbol];
 
@@ -19,9 +18,6 @@ declare module "leaflet-freedraw" {
 declare module "leaflet" {
     interface Rectangle {
         setText(str: string): void;
-    }
-    interface Path {
-        editor: PathEditor;
     }
 }
 
@@ -141,10 +137,6 @@ abstract class BaseDrawControl extends FontAwesomeControl {
     undo = new UndoControl(this);
     cancel = new CancelControl(this);
     abstract controller: L.Path;
-    vertexes: VertexMarker[] = [];
-    get editor() {
-        return this.controller.editor;
-    }
     get map() {
         return this.parent.map;
     }
@@ -157,21 +149,7 @@ abstract class BaseDrawControl extends FontAwesomeControl {
 
     cancelControl = new CancelControl(this);
 
-    onClick() {
-        this.parent.stopDrawingContext();
-        this.openActions();
-
-        this.map.leafletInstance.on("editable:vertex:new", (evt) => {
-            console.log(evt.vertex);
-            this.vertexes.push(evt.vertex);
-        });
-        this.map.leafletInstance.on("editable:vertex:deleted", (evt) => {
-            console.log(evt.vertex);
-            this.vertexes = this.vertexes.filter(
-                (vertex) => vertex != evt.vertex
-            );
-        });
-    }
+    onClick() {}
     openActions() {
         this.actionsEl.addClass("expanded");
     }
@@ -233,13 +211,7 @@ class CompleteControl extends FontAwesomeControl {
     }
     //Complete and save
     onClick(evt: MouseEvent) {
-        console.log('evt')
-        //propagate;
-        /* evt.stopPropagation();
-        this.drawControl.editor.reset(); */
-        //31166 onDrawingClick is canceled becase _drawing == false
         evt.stopPropagation();
-        this.drawControl.controller.editor.newShape();
     }
 }
 class UndoControl extends FontAwesomeControl {
@@ -256,8 +228,6 @@ class UndoControl extends FontAwesomeControl {
     //Undo Last Vertex
     onClick(evt: MouseEvent) {
         evt.stopPropagation();
-        console.log(this.drawControl.editor);
-        this.drawControl.editor.pop();
     }
 }
 class CancelControl extends FontAwesomeControl {
@@ -273,12 +243,14 @@ class CancelControl extends FontAwesomeControl {
     }
     //Stop and remove from map
     onClick(evt: MouseEvent) {
-        if (this.drawControl.editor.drawing()) {
-            this.drawControl.controller.remove();
-        }
-
         evt.stopPropagation();
         this.drawControl.parent.stopDrawingContext();
+    }
+}
+
+abstract class DrawingLayer extends Layer<L.Path> {
+    get group() {
+        return this.map.drawingLayer;
     }
 }
 
@@ -293,10 +265,6 @@ class PolygonControl extends BaseDrawControl {
             },
             parent
         );
-        window.poly = this;
-    }
-    onClick() {
-        super.onClick();
     }
     draw() {
         this.actionsEl.appendChild(this.complete.controlEl);
@@ -391,7 +359,7 @@ class FreeControl extends FontAwesomeControl {
         this.freeDraw = new FreeDraw({ pane: "drawing" });
     }
     onClick() {
-        this.map.drawingGroup.addLayer(this.freeDraw);
+        
     }
 }
 class TextControl extends FontAwesomeControl {
@@ -428,7 +396,7 @@ class TextControl extends FontAwesomeControl {
         this.map.leafletInstance.on("click", this.createTextComponent, this);
     }
     createTextComponent(e: L.LeafletMouseEvent) {
-        const editable = new TextMarker(e.latlng).addTo(this.map.drawingGroup);
+        const editable = new TextMarker(e.latlng).addTo(this.map.drawingLayer);
 
         this.disableTextContext();
     }

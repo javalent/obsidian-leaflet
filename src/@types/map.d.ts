@@ -11,6 +11,7 @@ import type { Overlay } from "src/layer";
 import type { Layer } from "src/layer/layer";
 import type { GPXControl } from "./controls";
 import type { LeafletRenderer } from "src/renderer";
+import { DrawingController } from "src/draw/controller";
 
 export interface ImageLayerData {
     data: string;
@@ -137,6 +138,8 @@ declare abstract class BaseMap /* <
 
     canvas: L.Canvas;
 
+    controller: DrawingController;
+
     get currentGroup(): LayerGroup<L.TileLayer | L.ImageOverlay>;
     contentEl: HTMLElement;
     currentLayer: L.ImageOverlay | L.TileLayer;
@@ -147,7 +150,7 @@ declare abstract class BaseMap /* <
     displaying: Map<string, boolean>;
     get displayed(): Marker[];
 
-    drawingGroup: L.FeatureGroup;
+    drawingLayer: L.LayerGroup;
 
     featureLayer: L.FeatureGroup;
 
@@ -251,9 +254,11 @@ declare abstract class BaseMap /* <
     }): void;
 
     log(text: string): void;
+    registerScope(): void;
     remove(): void;
     removeMarker(marker: Marker): void;
     resetZoom(): void;
+    unregisterScope(): void;
     abstract setInitialCoords(coords: [number, number]): void;
 
     sortOverlays(): void;

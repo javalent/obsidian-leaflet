@@ -48,7 +48,8 @@ import { LeafletRenderer } from "src/renderer";
 import { mapViewControl, saveMapParametersControl } from "src/controls/mapview";
 import t from "src/l10n/locale";
 
-import { drawControl/* , PanedMiddle, PanedVertex */ } from "src/controls/draw";
+import { drawControl } from "src/draw/controls";
+import { DrawingController } from "src/draw/controller";
 
 let L = window[LeafletSymbol];
 declare module "leaflet" {
@@ -65,9 +66,13 @@ declare module "leaflet" {
 }
 export abstract class BaseMap extends Events implements BaseMapDefinition {
     drawingGroup: L.FeatureGroup<any>;
+    drawingLayer: any;
     abstract get bounds(): L.LatLngBounds;
 
     canvas: L.Canvas;
+
+    controller: DrawingController = new DrawingController(this);
+
     CRS: L.CRS;
     distanceDisplay: DistanceDisplay;
 
@@ -140,7 +145,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.escapeScope.register(undefined, "Escape", () => {
             if (!this.isFullscreen) {
                 this.stopDrawingContext();
-                /* this.plugin.app.keymap.popScope(this.escapeScope); */
+                this.controller.newShape();
             }
         });
     }
@@ -163,24 +168,10 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.leafletInstance.createPane("gpx-canvas");
         this.leafletInstance.createPane("drawing");
         this.leafletInstance.createPane("drawing-markers");
-        this.drawingGroup = new L.FeatureGroup([], { pane: "drawing" }).addTo(
+
+        this.drawingLayer = new L.LayerGroup([], { pane: "drawing" }).addTo(
             this.leafletInstance
         );
-
-        const featuresLayer = new L.LayerGroup([], { pane: "drawing" }).addTo(
-            this.drawingGroup
-        );
-        const editLayer = new L.LayerGroup([], {
-            pane: "drawing-markers"
-        }).addTo(this.drawingGroup);
-        this.leafletInstance.editTools = new L.Editable(this.leafletInstance, {
-            featuresLayer,
-            editLayer/* ,
-            vertexMarkerClass: PanedVertex,
-            middleMarkerClass: PanedMiddle */
-        });
-        /* this.leafletInstance.editTools.options.featuresLayer = drawingLayer;
-        this.leafletInstance.editTools.options.editLayer = drawingLayer; */
 
         //@ts-expect-error
         this.canvas = L.Hotline.renderer({ pane: "gpx-canvas" }).addTo(
@@ -412,6 +403,11 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     }
 
     onMarkerClick(marker: Marker, evt: L.LeafletMouseEvent) {
+        if (this.controller.isDrawing) {
+            L.DomEvent.stopPropagation(evt);
+            this.controller.shape.onClick(evt, marker);
+            return;
+        }
         this.handleMapDistance(evt);
     }
 
@@ -710,6 +706,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         return this.leafletInstance.getZoom();
     }
     async handleMapClick(evt: L.LeafletMouseEvent) {
+        if (this.controller.isDrawing) return;
         this.handleMapDistance(evt);
         if (
             evt.originalEvent.getModifierState("Shift") ||
@@ -764,8 +761,8 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 (mvEvt: L.LeafletMouseEvent) => {
                     const latlng = mvEvt.latlng;
                     const delta = [
-                        latlng.lat - this.distanceEvent.lat,
-                        latlng.lng - this.distanceEvent.lng
+                        Math.abs(latlng.lat - this.distanceEvent.lat),
+                        Math.abs(latlng.lng - this.distanceEvent.lng)
                     ];
 
                     if (mvEvt.originalEvent.getModifierState("Shift")) {
@@ -810,6 +807,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         }
     }
     handleMapContext(evt: L.LeafletMouseEvent, overlay?: Overlay) {
+        if (this.controller.isDrawing) return;
         if (overlay) {
             const under = this.getOverlaysUnderClick(evt);
             if (!under.length) {
@@ -997,7 +995,9 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
         this.trigger("markers-updated");
     }
-
+    registerScope() {
+        this.plugin.app.keymap.pushScope(this.escapeScope);
+    }
     resetZoom() {
         if (!this.rendered) return;
         this.leafletInstance.invalidateSize();
@@ -1090,6 +1090,9 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 .filter(({ mutable }) => mutable)
                 .map((overlay) => overlay.toProperties())
         };
+    }
+    unregisterScope() {
+        this.plugin.app.keymap.popScope(this.escapeScope);
     }
     //TODO: REWRITE
     updateMarkerIcons() {

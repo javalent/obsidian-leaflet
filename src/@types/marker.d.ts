@@ -44,6 +44,7 @@ declare class Marker {
     loc: L.LatLng;
     percent: [number, number];
     id: string;
+    isBeingHovered: boolean;
     layer: string;
     command: boolean;
     maxZoom: number;

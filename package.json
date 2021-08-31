@@ -35,7 +35,6 @@
         "ignore-loader": "^0.1.2",
         "imports-loader": "^3.0.0",
         "leaflet": "^1.7.1",
-        "leaflet-editable": "^1.2.0",
         "leaflet-freedraw": "^2.13.3",
         "leaflet-fullscreen": "^1.0.2",
         "leaflet-hotline": "^0.4.0",

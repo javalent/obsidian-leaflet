@@ -23,5 +23,4 @@ window.L = WindowL;
 
 require("leaflet-fullscreen");
 require("leaflet-hotline");
-require("leaflet-editable");
 require("leaflet-freedraw");

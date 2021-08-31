@@ -288,7 +288,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                 markerSettingsModal.open();
             })
             .on("click", async (evt: L.LeafletMouseEvent) => {
-                if (this.map.isDrawing) {
+                if (this.map.isDrawing || this.map.controller.isDrawing) {
                     this.map.onMarkerClick(this, evt);
                     return;
                 }
