@@ -44,7 +44,13 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
     abstract get canSave(): boolean;
     abstract newInstance(): Shape<T>;
     abstract _onMousemove(latlng: L.LatLng, modifier: boolean): void;
-    abstract onClick(evt: L.LeafletMouseEvent, target?: Marker): void;
+    abstract onClick(
+        evt: L.LeafletMouseEvent,
+        targets?: {
+            marker?: Marker;
+            vertexes?: Vertex[];
+        }
+    ): void;
     abstract redraw(): void;
     abstract stopDrawing(): void;
     abstract undo(): void;
@@ -53,14 +59,18 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
 
     onMousemove(evt: L.LeafletMouseEvent) {
         let latlng = evt.latlng;
-        if (
-            this.map.markers.find((m) => m.isBeingHovered) &&
-            !evt.originalEvent.getModifierState("Shift")
-        ) {
-            const marker = this.map.markers.find(
-                (m) => m.isBeingHovered
-            ).leafletInstance;
-            latlng = marker.getLatLng();
+        if (!evt.originalEvent.getModifierState("Shift")) {
+            if (this.controller.vertexes.find((v) => v.isBeingHovered)) {
+                const vertex = this.controller.vertexes.find(
+                    (v) => v.isBeingHovered
+                );
+                latlng = vertex.getLatLng();
+            } else if (this.map.markers.find((m) => m.isBeingHovered)) {
+                const marker = this.map.markers.find(
+                    (m) => m.isBeingHovered
+                ).leafletInstance;
+                latlng = marker.getLatLng();
+            }
         }
         this._onMousemove(latlng, evt.originalEvent.getModifierState("Shift"));
     }
@@ -94,5 +104,8 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
 
     remove() {
         this.leafletInstance.remove();
+        this.hideVertexes();
+        this.vertexes.forEach((v) => v.delete());
+        this.vertexes = [];
     }
 }

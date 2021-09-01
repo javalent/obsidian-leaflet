@@ -1,4 +1,5 @@
 import { LatLng } from "leaflet";
+import { Marker } from "src/layer/marker";
 import t from "src/l10n/locale";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { BaseDrawControl } from "./base";
@@ -20,29 +21,58 @@ export class Rectangle extends Shape<L.Rectangle> {
     ).addTo(this.map.leafletInstance);
     bounds: L.LatLngBounds;
     get canSave() {
-        return this.vertexes.length == 2;
+        return this.vertexes.length == 4;
     }
     ghost: L.Rectangle;
 
-    vBounds: Record<string, Vertex> = {
-        nw: null,
-        ne: null,
-        se: null,
-        sw: null
-    };
+    onClick(
+        evt: L.LeafletMouseEvent,
+        targets?: {
+            marker?: Marker;
+            vertexes?: Vertex[];
+        }
+    ) {
+        let vertex = this.controller.getSelectedVertex();
+        if (vertex) {
+            vertex.selected = false;
+            return;
+        }
 
-    onClick(evt: L.LeafletMouseEvent) {
         if (this.vertexes.length == 0) {
-            this.vertexes.push(new Vertex(evt.latlng, this));
+            this.vertexes.push(new Vertex(evt.latlng, this, targets));
             this.bounds = L.latLngBounds(evt.latlng, evt.latlng);
             this.redraw();
         } else if (this.vertexes.length == 1) {
             this.bounds = L.latLngBounds(this.latlngs[0], evt.latlng);
-            this.vertexes.push(
-                new Vertex(this.bounds.getNorthEast(), this),
-                new Vertex(this.bounds.getSouthEast(), this),
-                new Vertex(this.bounds.getSouthWest(), this)
+            console.log(
+                "🚀 ~ file: rectangle.ts ~ line 47 ~ this.bounds",
+                this.bounds.toBBoxString()
             );
+
+            this.vertexes.push(new Vertex(evt.latlng, this, targets));
+
+            //get corners
+            const northWest =
+                this.vertexes.find((v) =>
+                    v.latlng.equals(this.bounds.getNorthWest())
+                ) ?? new Vertex(this.bounds.getNorthWest(), this);
+
+            const northEast =
+                this.vertexes.find((v) =>
+                    v.latlng.equals(this.bounds.getNorthEast())
+                ) ?? new Vertex(this.bounds.getNorthEast(), this);
+
+            const southEast =
+                this.vertexes.find((v) =>
+                    v.latlng.equals(this.bounds.getSouthEast())
+                ) ?? new Vertex(this.bounds.getSouthEast(), this);
+
+            const southWest =
+                this.vertexes.find((v) =>
+                    v.latlng.equals(this.bounds.getSouthWest())
+                ) ?? new Vertex(this.bounds.getSouthWest(), this);
+
+            this.vertexes = [northWest, northEast, southEast, southWest];
 
             this.registerVertexDrags();
 
@@ -108,6 +138,34 @@ export class Rectangle extends Shape<L.Rectangle> {
                 ])
             );
         };
+        this.vertexes[2].onDrag = () => {
+            this.vertexes[1].setLatLng(
+                L.latLng([
+                    this.vertexes[1].getLatLng().lat,
+                    this.vertexes[2].getLatLng().lng
+                ])
+            );
+            this.vertexes[3].setLatLng(
+                L.latLng([
+                    this.vertexes[2].getLatLng().lat,
+                    this.vertexes[3].getLatLng().lng
+                ])
+            );
+        };
+        this.vertexes[3].onDrag = () => {
+            this.vertexes[0].setLatLng(
+                L.latLng([
+                    this.vertexes[0].getLatLng().lat,
+                    this.vertexes[3].getLatLng().lng
+                ])
+            );
+            this.vertexes[2].setLatLng(
+                L.latLng([
+                    this.vertexes[3].getLatLng().lat,
+                    this.vertexes[2].getLatLng().lng
+                ])
+            );
+        };
     }
     updateBounds() {
         if (this.vertexes.length != 4) {
@@ -126,8 +184,7 @@ export class Rectangle extends Shape<L.Rectangle> {
 
     stopDrawing() {
         if (this.vertexes.length === 1) {
-            this.leafletInstance.remove();
-            this.hideVertexes();
+            this.remove();
         }
         if (this.ghost) {
             this.ghost.remove();

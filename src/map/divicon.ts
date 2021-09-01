@@ -2,7 +2,7 @@ import { LeafletSymbol } from "src/utils/leaflet-import";
 import { DivIconMarkerOptions, MarkerDivIconOptions } from "../@types";
 
 const L = window[LeafletSymbol];
-class MarkerDivIcon extends L.DivIcon {
+export class MarkerDivIcon extends L.DivIcon {
     options: MarkerDivIconOptions;
     div: HTMLElement;
     constructor(options: MarkerDivIconOptions) {

@@ -405,7 +405,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     onMarkerClick(marker: Marker, evt: L.LeafletMouseEvent) {
         if (this.controller.isDrawing) {
             L.DomEvent.stopPropagation(evt);
-            this.controller.shape.onClick(evt, marker);
+            this.controller.shape.onClick(evt, { marker });
             return;
         }
         this.handleMapDistance(evt);

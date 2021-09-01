@@ -2,6 +2,15 @@ import { BaseMapType } from "src/@types";
 import { Shape } from "./shape";
 
 export class DrawingController {
+    getSelectedVertex() {
+        const vertexes = Object.values(this.shapes)
+            .flat()
+            .map((shape) => shape.vertexes)
+            .flat();
+        console.log(...vertexes.map((v) => v.selected));
+
+        return vertexes.find((v) => v.selected);
+    }
     removeShape(shape: Shape<L.Path>) {
         this.shapes[shape.type] = this.shapes[shape.type].filter(
             (s) => s != shape
@@ -17,19 +26,21 @@ export class DrawingController {
         polygon: []
     };
 
-    constructor(public map: BaseMapType) {
-        window.shapes = this;
+    get flatShapes() {
+        return Object.values(this.shapes).flat();
     }
 
+    get vertexes() {
+        return this.flatShapes.map((shape) => shape.vertexes).flat();
+    }
+
+    constructor(public map: BaseMapType) {}
+
     hideVertexes() {
-        Object.values(this.shapes)
-            .flat()
-            .forEach((shape) => shape.hideVertexes());
+        this.flatShapes.forEach((shape) => shape.hideVertexes());
     }
     showVertexes() {
-        Object.values(this.shapes)
-            .flat()
-            .forEach((shape) => shape.showVertexes());
+        this.flatShapes.forEach((shape) => shape.showVertexes());
     }
 
     newShape(shape?: Shape<L.Path>) {

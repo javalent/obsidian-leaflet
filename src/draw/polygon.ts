@@ -47,9 +47,20 @@ export class Polygon extends Shape<L.Polygon> {
         this.extensions.backward.added = false;
     }
 
-    onClick(evt: L.LeafletMouseEvent, target?: Marker) {
+    onClick(
+        evt: L.LeafletMouseEvent,
+        targets?: {
+            marker?: Marker;
+            vertexes?: Vertex[];
+        }
+    ) {
+        if (this.vertexes.find((v) => v.selected)) {
+            const v = this.vertexes.find((v) => v.selected);
+            v.selected = false;
+            return;
+        }
         this.vertexes.push(
-            new Vertex(this.mouseLoc ?? evt.latlng, this, target)
+            new Vertex(this.mouseLoc ?? evt.latlng, this, targets)
         );
         this.redraw();
     }
@@ -95,8 +106,7 @@ export class Polygon extends Shape<L.Polygon> {
         this.extensions.forward.line.remove();
         this.extensions.backward.line.remove();
         if (this.vertexes.length < 3) {
-            this.vertexes = [];
-            this.leafletInstance.remove();
+            this.remove();
         }
     }
 
