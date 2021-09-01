@@ -26,13 +26,8 @@ export class Vertex extends Events {
     leafletInstance: L.Marker;
     selected: boolean = false;
     isBeingHovered: boolean = false;
-    targets: { marker: Marker; vertices: Vertex[] };
-    get marker() {
-        return this.targets.marker;
-    }
-    get vertices() {
-        return this.targets.vertices;
-    }
+    marker: Marker;
+    vertices: Set<Vertex> = new Set();
     getLatLng() {
         return this.leafletInstance.getLatLng();
     }
@@ -42,7 +37,7 @@ export class Vertex extends Events {
         if (this.marker) {
             this.marker.leafletInstance.setLatLng(latlng);
         }
-        console.log(this.vertices);
+        console.log(this.marker);
         this.vertices.forEach((v) => v.updateLatLng(latlng));
     }
     updateLatLng(latlng: LatLng): void {
@@ -59,11 +54,8 @@ export class Vertex extends Events {
         }
     ) {
         super();
-        this.targets = {
-            marker: targets?.marker,
-            vertices: []
-        };
 
+        this.marker = targets?.marker;
         this.addVertexTargets(...(targets?.vertices ?? []));
 
         this.leafletInstance = new L.Marker(latlng, {
@@ -74,18 +66,25 @@ export class Vertex extends Events {
 
         this.registerDragEvents();
 
-        if (this.targets.vertices.length) {
-            this.targets.vertices.forEach((v) => v.addVertexTargets(this));
+        if (this.vertices.size) {
+            this.vertices.forEach((v) => {
+                v.addVertexTargets(this);
+                v.marker = this.marker;
+            });
         }
     }
 
     addVertexTargets(...vertices: Vertex[]) {
         for (let vertex of vertices) {
-            this.targets.vertices.push(vertex);
+            this.vertices.add(vertex);
+            console.log(vertex.marker, this.marker);
+            if (vertex.marker) {
+                this.marker = vertex.marker;
+            } else if (this.marker) {
+                vertex.marker = this.marker;
+            }
             vertex.on("delete", () => {
-                this.targets.vertices = this.targets.vertices.filter(
-                    (v) => v != vertex
-                );
+                this.vertices.delete(vertex);
             });
         }
     }
@@ -140,7 +139,7 @@ export class Vertex extends Events {
                     this.parent.controller.shape
                 );
                 this.parent.controller.shape.onClick(evt, {
-                    vertices: [this, ...this.targets.vertices]
+                    vertices: [this, ...this.vertices]
                 });
             }
         });
