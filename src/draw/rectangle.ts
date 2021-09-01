@@ -21,7 +21,7 @@ export class Rectangle extends Shape<L.Rectangle> {
     ).addTo(this.map.leafletInstance);
     bounds: L.LatLngBounds;
     get canSave() {
-        return this.vertexes.length == 4;
+        return this.vertices.length == 4;
     }
     ghost: L.Rectangle;
 
@@ -29,7 +29,7 @@ export class Rectangle extends Shape<L.Rectangle> {
         evt: L.LeafletMouseEvent,
         targets?: {
             marker?: Marker;
-            vertexes?: Vertex[];
+            vertices?: Vertex[];
         }
     ) {
         let vertex = this.controller.getSelectedVertex();
@@ -38,41 +38,41 @@ export class Rectangle extends Shape<L.Rectangle> {
             return;
         }
 
-        if (this.vertexes.length == 0) {
-            this.vertexes.push(new Vertex(evt.latlng, this, targets));
+        if (this.vertices.length == 0) {
+            this.vertices.push(new Vertex(evt.latlng, this, targets));
             this.bounds = L.latLngBounds(evt.latlng, evt.latlng);
             this.redraw();
-        } else if (this.vertexes.length == 1) {
+        } else if (this.vertices.length == 1) {
             this.bounds = L.latLngBounds(this.latlngs[0], evt.latlng);
             console.log(
                 "🚀 ~ file: rectangle.ts ~ line 47 ~ this.bounds",
                 this.bounds.toBBoxString()
             );
 
-            this.vertexes.push(new Vertex(evt.latlng, this, targets));
+            this.vertices.push(new Vertex(evt.latlng, this, targets));
 
             //get corners
             const northWest =
-                this.vertexes.find((v) =>
+                this.vertices.find((v) =>
                     v.latlng.equals(this.bounds.getNorthWest())
                 ) ?? new Vertex(this.bounds.getNorthWest(), this);
 
             const northEast =
-                this.vertexes.find((v) =>
+                this.vertices.find((v) =>
                     v.latlng.equals(this.bounds.getNorthEast())
                 ) ?? new Vertex(this.bounds.getNorthEast(), this);
 
             const southEast =
-                this.vertexes.find((v) =>
+                this.vertices.find((v) =>
                     v.latlng.equals(this.bounds.getSouthEast())
                 ) ?? new Vertex(this.bounds.getSouthEast(), this);
 
             const southWest =
-                this.vertexes.find((v) =>
+                this.vertices.find((v) =>
                     v.latlng.equals(this.bounds.getSouthWest())
                 ) ?? new Vertex(this.bounds.getSouthWest(), this);
 
-            this.vertexes = [northWest, northEast, southEast, southWest];
+            this.vertices = [northWest, northEast, southEast, southWest];
 
             this.registerVertexDrags();
 
@@ -85,12 +85,12 @@ export class Rectangle extends Shape<L.Rectangle> {
     }
 
     _onMousemove(latlng: L.LatLng, modifier: boolean) {
-        if (this.vertexes.length) {
+        if (this.vertices.length) {
             this.showGhost(latlng);
         }
     }
     showGhost(latlng: LatLng) {
-        if (this.vertexes.length == 2) return;
+        if (this.vertices.length == 2) return;
         if (!this.ghost) {
             this.ghost = L.rectangle(L.latLngBounds(this.latlngs[0], latlng), {
                 dashArray: "5,10",
@@ -110,65 +110,65 @@ export class Rectangle extends Shape<L.Rectangle> {
         ];
     }
     registerVertexDrags() {
-        this.vertexes[0].onDrag = () => {
-            this.vertexes[3].setLatLng(
+        this.vertices[0].onDrag = () => {
+            this.vertices[3].setLatLng(
                 L.latLng([
-                    this.vertexes[3].getLatLng().lat,
-                    this.vertexes[0].getLatLng().lng
+                    this.vertices[3].getLatLng().lat,
+                    this.vertices[0].getLatLng().lng
                 ])
             );
-            this.vertexes[1].setLatLng(
+            this.vertices[1].setLatLng(
                 L.latLng([
-                    this.vertexes[0].getLatLng().lat,
-                    this.vertexes[1].getLatLng().lng
-                ])
-            );
-        };
-        this.vertexes[1].onDrag = () => {
-            this.vertexes[2].setLatLng(
-                L.latLng([
-                    this.vertexes[2].getLatLng().lat,
-                    this.vertexes[1].getLatLng().lng
-                ])
-            );
-            this.vertexes[0].setLatLng(
-                L.latLng([
-                    this.vertexes[1].getLatLng().lat,
-                    this.vertexes[0].getLatLng().lng
+                    this.vertices[0].getLatLng().lat,
+                    this.vertices[1].getLatLng().lng
                 ])
             );
         };
-        this.vertexes[2].onDrag = () => {
-            this.vertexes[1].setLatLng(
+        this.vertices[1].onDrag = () => {
+            this.vertices[2].setLatLng(
                 L.latLng([
-                    this.vertexes[1].getLatLng().lat,
-                    this.vertexes[2].getLatLng().lng
+                    this.vertices[2].getLatLng().lat,
+                    this.vertices[1].getLatLng().lng
                 ])
             );
-            this.vertexes[3].setLatLng(
+            this.vertices[0].setLatLng(
                 L.latLng([
-                    this.vertexes[2].getLatLng().lat,
-                    this.vertexes[3].getLatLng().lng
+                    this.vertices[1].getLatLng().lat,
+                    this.vertices[0].getLatLng().lng
                 ])
             );
         };
-        this.vertexes[3].onDrag = () => {
-            this.vertexes[0].setLatLng(
+        this.vertices[2].onDrag = () => {
+            this.vertices[1].setLatLng(
                 L.latLng([
-                    this.vertexes[0].getLatLng().lat,
-                    this.vertexes[3].getLatLng().lng
+                    this.vertices[1].getLatLng().lat,
+                    this.vertices[2].getLatLng().lng
                 ])
             );
-            this.vertexes[2].setLatLng(
+            this.vertices[3].setLatLng(
                 L.latLng([
-                    this.vertexes[3].getLatLng().lat,
-                    this.vertexes[2].getLatLng().lng
+                    this.vertices[2].getLatLng().lat,
+                    this.vertices[3].getLatLng().lng
+                ])
+            );
+        };
+        this.vertices[3].onDrag = () => {
+            this.vertices[0].setLatLng(
+                L.latLng([
+                    this.vertices[0].getLatLng().lat,
+                    this.vertices[3].getLatLng().lng
+                ])
+            );
+            this.vertices[2].setLatLng(
+                L.latLng([
+                    this.vertices[3].getLatLng().lat,
+                    this.vertices[2].getLatLng().lng
                 ])
             );
         };
     }
     updateBounds() {
-        if (this.vertexes.length != 4) {
+        if (this.vertices.length != 4) {
             return;
         }
         this.bounds = L.latLngBounds(this.latlngs);
@@ -183,7 +183,7 @@ export class Rectangle extends Shape<L.Rectangle> {
     showExtensions(latlng: L.LatLng) {}
 
     stopDrawing() {
-        if (this.vertexes.length === 1) {
+        if (this.vertices.length === 1) {
             this.remove();
         }
         if (this.ghost) {

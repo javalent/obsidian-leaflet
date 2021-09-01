@@ -36,7 +36,7 @@ export class Polygon extends Shape<L.Polygon> {
         this.map.leafletInstance
     );
     get canSave() {
-        return this.vertexes.length >= 3;
+        return this.vertices.length >= 3;
     }
     addLatLng(latlng: L.LatLng) {}
 
@@ -51,22 +51,22 @@ export class Polygon extends Shape<L.Polygon> {
         evt: L.LeafletMouseEvent,
         targets?: {
             marker?: Marker;
-            vertexes?: Vertex[];
+            vertices?: Vertex[];
         }
     ) {
-        if (this.vertexes.find((v) => v.selected)) {
-            const v = this.vertexes.find((v) => v.selected);
+        if (this.vertices.find((v) => v.selected)) {
+            const v = this.vertices.find((v) => v.selected);
             v.selected = false;
             return;
         }
-        this.vertexes.push(
+        this.vertices.push(
             new Vertex(this.mouseLoc ?? evt.latlng, this, targets)
         );
         this.redraw();
     }
 
     _onMousemove(latlng: L.LatLng, modifier: boolean) {
-        if (this.vertexes.length) {
+        if (this.vertices.length) {
             this.mouseLoc = this.getMousemoveDelta(latlng, modifier);
             this.showExtensions(this.mouseLoc);
         }
@@ -75,13 +75,13 @@ export class Polygon extends Shape<L.Polygon> {
     redraw() {
         this.leafletInstance.setLatLngs(this.latlngs);
         this.leafletInstance.redraw();
-        this.showExtensions(this.latlngs[this.vertexes.length - 1]);
+        this.showExtensions(this.latlngs[this.vertices.length - 1]);
     }
 
     showExtensions(latlng: L.LatLng) {
-        if (this.vertexes.length >= 1) {
+        if (this.vertices.length >= 1) {
             this.extensions.forward.line.setLatLngs([
-                this.latlngs[this.vertexes.length - 1],
+                this.latlngs[this.vertices.length - 1],
                 latlng
             ]);
             if (this.extensions.forward.added) {
@@ -91,7 +91,7 @@ export class Polygon extends Shape<L.Polygon> {
                 this.extensions.forward.added = true;
             }
         }
-        if (this.vertexes.length > 1) {
+        if (this.vertices.length > 1) {
             this.extensions.backward.line.setLatLngs([this.latlngs[0], latlng]);
             if (this.extensions.backward.added) {
                 this.extensions.backward.line.redraw();
@@ -105,13 +105,13 @@ export class Polygon extends Shape<L.Polygon> {
     stopDrawing() {
         this.extensions.forward.line.remove();
         this.extensions.backward.line.remove();
-        if (this.vertexes.length < 3) {
+        if (this.vertices.length < 3) {
             this.remove();
         }
     }
 
     undo() {
-        this.vertexes.pop();
+        this.vertices.pop();
 
         this.hideExtensions();
         this.redraw();

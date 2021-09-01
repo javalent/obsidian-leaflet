@@ -13,7 +13,7 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
         this.leafletInstance.on("click", () => {
             if (this.controller.isDeleting) {
                 console.log("delete");
-                this.hideVertexes();
+                this.hideVertices();
                 this.controller.removeShape(this);
             }
         });
@@ -27,17 +27,17 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
     ) {
         super();
         this.map = this.controller.map;
-        this.vertexes = latlngs.map((ll) => new Vertex(ll, this));
+        this.vertices = latlngs.map((ll) => new Vertex(ll, this));
     }
 
     get group() {
         return this.map.drawingLayer;
     }
 
-    vertexes: Vertex[] = [];
+    vertices: Vertex[] = [];
 
     get latlngs() {
-        return this.vertexes.map((v) => v.getLatLng());
+        return this.vertices.map((v) => v.getLatLng());
     }
     mouseLoc: L.LatLng;
 
@@ -48,7 +48,7 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
         evt: L.LeafletMouseEvent,
         targets?: {
             marker?: Marker;
-            vertexes?: Vertex[];
+            vertices?: Vertex[];
         }
     ): void;
     abstract redraw(): void;
@@ -60,8 +60,8 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
     onMousemove(evt: L.LeafletMouseEvent) {
         let latlng = evt.latlng;
         if (!evt.originalEvent.getModifierState("Shift")) {
-            if (this.controller.vertexes.find((v) => v.isBeingHovered)) {
-                const vertex = this.controller.vertexes.find(
+            if (this.controller.vertices.find((v) => v.isBeingHovered)) {
+                const vertex = this.controller.vertices.find(
                     (v) => v.isBeingHovered
                 );
                 latlng = vertex.getLatLng();
@@ -75,28 +75,28 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
         this._onMousemove(latlng, evt.originalEvent.getModifierState("Shift"));
     }
 
-    showVertexes() {
-        this.vertexes.forEach((vertex) => {
+    showVertices() {
+        this.vertices.forEach((vertex) => {
             vertex.show();
         });
     }
-    hideVertexes() {
-        this.vertexes.forEach((vertex) => {
+    hideVertices() {
+        this.vertices.forEach((vertex) => {
             vertex.hide();
         });
     }
 
     getMousemoveDelta(latlng: L.LatLng, modifier: boolean) {
         const delta = [
-            Math.abs(latlng.lat - this.latlngs[this.vertexes.length - 1].lat),
-            Math.abs(latlng.lng - this.latlngs[this.vertexes.length - 1].lng)
+            Math.abs(latlng.lat - this.latlngs[this.vertices.length - 1].lat),
+            Math.abs(latlng.lng - this.latlngs[this.vertices.length - 1].lng)
         ];
 
         if (modifier) {
             if (delta[0] > delta[1]) {
-                latlng.lng = this.latlngs[this.vertexes.length - 1].lng;
+                latlng.lng = this.latlngs[this.vertices.length - 1].lng;
             } else {
-                latlng.lat = this.latlngs[this.vertexes.length - 1].lat;
+                latlng.lat = this.latlngs[this.vertices.length - 1].lat;
             }
         }
         return latlng;
@@ -104,8 +104,8 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
 
     remove() {
         this.leafletInstance.remove();
-        this.hideVertexes();
-        this.vertexes.forEach((v) => v.delete());
-        this.vertexes = [];
+        this.hideVertices();
+        this.vertices.forEach((v) => v.delete());
+        this.vertices = [];
     }
 }

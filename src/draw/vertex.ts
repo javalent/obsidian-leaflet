@@ -1,4 +1,5 @@
 import { LatLng } from "leaflet";
+import { Events } from "obsidian";
 import { Marker } from "src/layer";
 import { MarkerDivIcon } from "src/map";
 import { getId } from "src/utils";
@@ -21,16 +22,16 @@ declare module "leaflet" {
     }
 }
 
-export class Vertex {
+export class Vertex extends Events {
     leafletInstance: L.Marker;
     selected: boolean = false;
     isBeingHovered: boolean = false;
-    targets: { marker: Marker; vertexes: Vertex[] };
+    targets: { marker: Marker; vertices: Vertex[] };
     get marker() {
         return this.targets.marker;
     }
-    get vertexes() {
-        return this.targets.vertexes;
+    get vertices() {
+        return this.targets.vertices;
     }
     getLatLng() {
         return this.leafletInstance.getLatLng();
@@ -41,8 +42,8 @@ export class Vertex {
         if (this.marker) {
             this.marker.leafletInstance.setLatLng(latlng);
         }
-        console.log(this.vertexes);
-        this.vertexes.forEach((v) => v.updateLatLng(latlng));
+        console.log(this.vertices);
+        this.vertices.forEach((v) => v.updateLatLng(latlng));
     }
     updateLatLng(latlng: LatLng): void {
         this.leafletInstance.setLatLng(latlng);
@@ -54,14 +55,16 @@ export class Vertex {
         public parent: Shape<L.Path>,
         targets?: {
             marker?: Marker;
-            vertexes?: Vertex[];
+            vertices?: Vertex[];
         }
     ) {
+        super();
         this.targets = {
-            marker: null,
-            vertexes: [],
-            ...targets
+            marker: targets?.marker,
+            vertices: []
         };
+
+        this.addVertexTargets(...(targets?.vertices ?? []));
 
         this.leafletInstance = new L.Marker(latlng, {
             icon: new VertexIcon(),
@@ -71,8 +74,19 @@ export class Vertex {
 
         this.registerDragEvents();
 
-        if (this.targets.vertexes.length) {
-            this.targets.vertexes.forEach((v) => v.targets.vertexes.push(this));
+        if (this.targets.vertices.length) {
+            this.targets.vertices.forEach((v) => v.addVertexTargets(this));
+        }
+    }
+
+    addVertexTargets(...vertices: Vertex[]) {
+        for (let vertex of vertices) {
+            this.targets.vertices.push(vertex);
+            vertex.on("delete", () => {
+                this.targets.vertices = this.targets.vertices.filter(
+                    (v) => v != vertex
+                );
+            });
         }
     }
 
@@ -83,11 +97,11 @@ export class Vertex {
             let latlng = evt.latlng;
             if (!evt.originalEvent.getModifierState("Shift")) {
                 if (
-                    this.parent.controller.vertexes.find(
+                    this.parent.controller.vertices.find(
                         (v) => v.isBeingHovered
                     )
                 ) {
-                    const vertex = this.parent.controller.vertexes.find(
+                    const vertex = this.parent.controller.vertices.find(
                         (v) => v.isBeingHovered
                     );
                     latlng = vertex.getLatLng();
@@ -125,7 +139,9 @@ export class Vertex {
                     this.parent,
                     this.parent.controller.shape
                 );
-                this.parent.controller.shape.onClick(evt, { vertexes: [this] });
+                this.parent.controller.shape.onClick(evt, {
+                    vertices: [this, ...this.targets.vertices]
+                });
             }
         });
         this.registerTargetEvents();
@@ -144,6 +160,7 @@ export class Vertex {
         }
     }
     delete() {
+        this.trigger("delete");
         this.unregisterTargetEvents();
         this.hide();
     }

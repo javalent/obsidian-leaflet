@@ -3,13 +3,13 @@ import { Shape } from "./shape";
 
 export class DrawingController {
     getSelectedVertex() {
-        const vertexes = Object.values(this.shapes)
+        const vertices = Object.values(this.shapes)
             .flat()
-            .map((shape) => shape.vertexes)
+            .map((shape) => shape.vertices)
             .flat();
-        console.log(...vertexes.map((v) => v.selected));
+        console.log(...vertices.map((v) => v.selected));
 
-        return vertexes.find((v) => v.selected);
+        return vertices.find((v) => v.selected);
     }
     removeShape(shape: Shape<L.Path>) {
         this.shapes[shape.type] = this.shapes[shape.type].filter(
@@ -30,17 +30,17 @@ export class DrawingController {
         return Object.values(this.shapes).flat();
     }
 
-    get vertexes() {
-        return this.flatShapes.map((shape) => shape.vertexes).flat();
+    get vertices() {
+        return this.flatShapes.map((shape) => shape.vertices).flat();
     }
 
     constructor(public map: BaseMapType) {}
 
-    hideVertexes() {
-        this.flatShapes.forEach((shape) => shape.hideVertexes());
+    hideVertices() {
+        this.flatShapes.forEach((shape) => shape.hideVertices());
     }
-    showVertexes() {
-        this.flatShapes.forEach((shape) => shape.showVertexes());
+    showVertices() {
+        this.flatShapes.forEach((shape) => shape.showVertices());
     }
 
     newShape(shape?: Shape<L.Path>) {

@@ -27,10 +27,10 @@ export class Polyline extends Shape<L.Polyline> {
     );
     mouseLoc: any;
     get canSave() {
-        return this.vertexes.length >= 1;
+        return this.vertices.length >= 1;
     }
     addLatLng(latlng: L.LatLng) {
-        this.vertexes.push(new Vertex(latlng, this));
+        this.vertices.push(new Vertex(latlng, this));
     }
 
     hideExtensions() {
@@ -42,22 +42,22 @@ export class Polyline extends Shape<L.Polyline> {
         evt: L.LeafletMouseEvent,
         targets?: {
             marker?: Marker;
-            vertexes?: Vertex[];
+            vertices?: Vertex[];
         }
     ) {
-        if (this.vertexes.find((v) => v.selected)) {
-            const v = this.vertexes.find((v) => v.selected);
+        if (this.vertices.find((v) => v.selected)) {
+            const v = this.vertices.find((v) => v.selected);
             v.selected = false;
             return;
         }
-        this.vertexes.push(
+        this.vertices.push(
             new Vertex(this.mouseLoc ?? evt.latlng, this, targets)
         );
         this.redraw();
     }
 
     _onMousemove(latlng: L.LatLng, modifier: boolean) {
-        if (this.vertexes.length) {
+        if (this.vertices.length) {
             this.mouseLoc = this.getMousemoveDelta(latlng, modifier);
             this.showExtensions(this.mouseLoc);
         }
@@ -66,13 +66,13 @@ export class Polyline extends Shape<L.Polyline> {
     redraw() {
         this.leafletInstance.setLatLngs(this.latlngs);
         this.leafletInstance.redraw();
-        this.showExtensions(this.latlngs[this.vertexes.length - 1]);
+        this.showExtensions(this.latlngs[this.vertices.length - 1]);
     }
 
     showExtensions(latlng: L.LatLng) {
-        if (this.vertexes.length >= 1) {
+        if (this.vertices.length >= 1) {
             this.extensions.forward.line.setLatLngs([
-                this.latlngs[this.vertexes.length - 1],
+                this.latlngs[this.vertices.length - 1],
                 latlng
             ]);
             if (this.extensions.forward.added) {
@@ -86,13 +86,13 @@ export class Polyline extends Shape<L.Polyline> {
 
     stopDrawing() {
         this.extensions.forward.line.remove();
-        if (this.vertexes.length === 1) {
+        if (this.vertices.length === 1) {
             this.remove();
         }
     }
 
     undo() {
-        this.vertexes.pop();
+        this.vertices.pop();
 
         this.hideExtensions();
         this.redraw();

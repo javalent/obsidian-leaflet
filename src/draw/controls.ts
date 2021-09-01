@@ -63,7 +63,7 @@ export class DrawControl extends FontAwesomeControl {
     }
     complete() {
         this.stopDrawingContext();
-        this.controller.hideVertexes();
+        this.controller.hideVertices();
         this.collapse();
     }
     private collapse() {
@@ -111,7 +111,7 @@ export class DrawControl extends FontAwesomeControl {
         return this;
     }
     startDrawingContext() {
-        this.controller.showVertexes();
+        this.controller.showVertices();
     }
     stopDrawingContext() {
         this.controller.saveShape();
