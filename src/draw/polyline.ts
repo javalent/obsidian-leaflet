@@ -38,7 +38,7 @@ export class Polyline extends Shape<L.Polyline> {
         this.extensions.forward.added = false;
     }
 
-    onClick(
+    _onClick(
         evt: L.LeafletMouseEvent,
         targets?: {
             marker?: Marker;

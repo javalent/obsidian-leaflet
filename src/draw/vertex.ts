@@ -2,7 +2,6 @@ import { LatLng } from "leaflet";
 import { Events } from "obsidian";
 import { Marker } from "src/layer";
 import { MarkerDivIcon } from "src/map";
-import { getId } from "src/utils";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { Shape } from "./shape";
 const L = window[LeafletSymbol];
@@ -28,6 +27,7 @@ export class Vertex extends Events {
     isBeingHovered: boolean = false;
     marker: Marker;
     vertices: Set<Vertex> = new Set();
+    modifierState: boolean = false;
     getLatLng() {
         return this.leafletInstance.getLatLng();
     }
@@ -37,7 +37,10 @@ export class Vertex extends Events {
         if (this.marker) {
             this.marker.leafletInstance.setLatLng(latlng);
         }
-        console.log(this.marker);
+        console.log(
+            "🚀 ~ file: vertex.ts ~ line 61 ~ this.vertices",
+            this.vertices
+        );
         this.vertices.forEach((v) => v.updateLatLng(latlng));
     }
     updateLatLng(latlng: LatLng): void {
@@ -87,6 +90,7 @@ export class Vertex extends Events {
                 this.vertices.delete(vertex);
             });
         }
+        this.vertices.delete(this);
     }
 
     registerDragEvents() {
@@ -94,7 +98,9 @@ export class Vertex extends Events {
             L.DomEvent.stopPropagation(evt);
 
             let latlng = evt.latlng;
-            if (!evt.originalEvent.getModifierState("Shift")) {
+            this.modifierState = evt.originalEvent.getModifierState("Shift");
+
+            if (!this.modifierState) {
                 if (
                     this.parent.controller.vertices.find(
                         (v) => v.isBeingHovered
@@ -104,9 +110,8 @@ export class Vertex extends Events {
                         (v) => v.isBeingHovered
                     );
                     latlng = vertex.getLatLng();
-                } else if (
-                    this.parent.map.markers.find((m) => m.isBeingHovered)
-                ) {
+                }
+                if (this.parent.map.markers.find((m) => m.isBeingHovered)) {
                     const marker = this.parent.map.markers.find(
                         (m) => m.isBeingHovered
                     ).leafletInstance;
@@ -123,11 +128,42 @@ export class Vertex extends Events {
         this.leafletInstance.on("mouseout", () => {
             this.isBeingHovered = false;
         });
+        this.leafletInstance.on("mousedown", () => {
+            this.selected = true;
+        });
+        this.leafletInstance.on("mouseup", (evt) => {
+            L.DomEvent.stopPropagation(evt);
+            this.selected = false;
+        });
         this.leafletInstance.on("dragstart", () => {
             this.selected = true;
         });
-        this.leafletInstance.on("dragend", () => {
-            this.selected = false;
+        this.leafletInstance.on("dragend", (evt) => {
+            L.DomEvent.stopPropagation(evt);
+            if (!this.modifierState) {
+                if (
+                    this.parent.controller.vertices.find(
+                        (v) => v.isBeingHovered
+                    )
+                ) {
+                    const vertex = this.parent.controller.vertices.find(
+                        (v) => v.isBeingHovered
+                    );
+                    console.log("🚀 ~ file: vertex.ts ~ line 151 ~ vertex", vertex);
+                    this.addVertexTargets(vertex, ...vertex.vertices);
+                }
+                if (
+                    this.parent.map.markers.find(
+                        (marker) => marker.isBeingHovered
+                    )
+                ) {
+                    this.marker = this.parent.map.markers.find(
+                        (marker) => marker.isBeingHovered
+                    ) as Marker;
+                    this.registerTargetEvents();
+                }
+            }
+            this.modifierState = false;
             this.parent.redraw();
         });
         this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) => {
@@ -163,7 +199,9 @@ export class Vertex extends Events {
         this.unregisterTargetEvents();
         this.hide();
     }
-    onDrag() {}
+    onDrag() {
+        this.trigger('drag');
+    }
     hide() {
         this.leafletInstance.remove();
     }

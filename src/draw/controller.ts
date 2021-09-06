@@ -7,7 +7,6 @@ export class DrawingController {
             .flat()
             .map((shape) => shape.vertices)
             .flat();
-        console.log(...vertices.map((v) => v.selected));
 
         return vertices.find((v) => v.selected);
     }

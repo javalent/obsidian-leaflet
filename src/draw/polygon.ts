@@ -47,7 +47,7 @@ export class Polygon extends Shape<L.Polygon> {
         this.extensions.backward.added = false;
     }
 
-    onClick(
+    _onClick(
         evt: L.LeafletMouseEvent,
         targets?: {
             marker?: Marker;

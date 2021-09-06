@@ -44,7 +44,21 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
     abstract get canSave(): boolean;
     abstract newInstance(): Shape<T>;
     abstract _onMousemove(latlng: L.LatLng, modifier: boolean): void;
-    abstract onClick(
+    onClick(
+        evt: L.LeafletMouseEvent,
+        targets?: {
+            marker?: Marker;
+            vertices?: Vertex[];
+        }
+    ) {
+        let vertex = this.controller.getSelectedVertex();
+        if (vertex) {
+            vertex.selected = false;
+            return;
+        }
+        this._onClick(evt, targets);
+    }
+    abstract _onClick(
         evt: L.LeafletMouseEvent,
         targets?: {
             marker?: Marker;

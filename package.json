@@ -6,8 +6,7 @@
     "scripts": {
         "dev": "webpack --config webpack.dev.js -w",
         "build": "webpack",
-        "analyze": "webpack --profile --json > stats.json && webpack-bundle-analyzer ./stats.json",
-        "postinstall": "npx download-cli --out src/leaflet-gpx https://raw.githubusercontent.com/mpetazzoni/leaflet-gpx/main/gpx.js"
+        "analyze": "webpack --profile --json > stats.json && webpack-bundle-analyzer ./stats.json"
     },
     "keywords": [],
     "author": "",

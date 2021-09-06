@@ -25,7 +25,7 @@ export class Rectangle extends Shape<L.Rectangle> {
     }
     ghost: L.Rectangle;
 
-    onClick(
+    _onClick(
         evt: L.LeafletMouseEvent,
         targets?: {
             marker?: Marker;
@@ -110,7 +110,7 @@ export class Rectangle extends Shape<L.Rectangle> {
         ];
     }
     registerVertexDrags() {
-        this.vertices[0].onDrag = () => {
+        this.vertices[0].on('drag', () => {
             this.vertices[3].setLatLng(
                 L.latLng([
                     this.vertices[3].getLatLng().lat,
@@ -123,8 +123,8 @@ export class Rectangle extends Shape<L.Rectangle> {
                     this.vertices[1].getLatLng().lng
                 ])
             );
-        };
-        this.vertices[1].onDrag = () => {
+        });
+        this.vertices[1].on('drag', () => {
             this.vertices[2].setLatLng(
                 L.latLng([
                     this.vertices[2].getLatLng().lat,
@@ -137,8 +137,8 @@ export class Rectangle extends Shape<L.Rectangle> {
                     this.vertices[0].getLatLng().lng
                 ])
             );
-        };
-        this.vertices[2].onDrag = () => {
+        });
+        this.vertices[2].on('drag', () => {
             this.vertices[1].setLatLng(
                 L.latLng([
                     this.vertices[1].getLatLng().lat,
@@ -151,8 +151,8 @@ export class Rectangle extends Shape<L.Rectangle> {
                     this.vertices[3].getLatLng().lng
                 ])
             );
-        };
-        this.vertices[3].onDrag = () => {
+        });
+        this.vertices[3].on('drag', () => {
             this.vertices[0].setLatLng(
                 L.latLng([
                     this.vertices[0].getLatLng().lat,
@@ -165,7 +165,7 @@ export class Rectangle extends Shape<L.Rectangle> {
                     this.vertices[2].getLatLng().lng
                 ])
             );
-        };
+        });
     }
     updateBounds() {
         if (this.vertices.length != 4) {
