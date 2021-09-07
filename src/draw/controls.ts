@@ -6,6 +6,7 @@ import {
 import t from "src/l10n/locale";
 
 import { LeafletSymbol } from "src/utils/leaflet-import";
+import { BaseDrawControl } from "./base";
 import { DrawingController } from "./controller";
 import { PolygonControl } from "./polygon";
 import { PolylineControl } from "./polyline";
@@ -22,6 +23,7 @@ export class DrawControl extends FontAwesomeControl {
     polygon: PolygonControl = new PolygonControl(this);
     rectangle = new RectangleControl(this);
     polyline: PolylineControl = new PolylineControl(this);
+    color: ColorControl = new ColorControl(this);
     delete: DeleteControl;
     done: DoneControl;
 
@@ -78,6 +80,7 @@ export class DrawControl extends FontAwesomeControl {
         this.section.appendChild(this.rectangle.controlEl);
 
         this.section.appendChild(this.polyline.controlEl);
+        this.section.appendChild(this.color.controlEl);
 
         /* this.section.appendChild(this.text.controlEl); */
 
@@ -119,6 +122,35 @@ export class DrawControl extends FontAwesomeControl {
         this.polygon.closeActions();
         this.rectangle.closeActions();
         this.polyline.closeActions();
+    }
+}
+
+class ColorControl extends BaseDrawControl {
+    onClick() {}
+    draw() {}
+    constructor(parent: DrawControl) {
+        super(
+            {
+                icon: "fill-drip",
+                cls: "leaflet-control-has-actions leaflet-control-draw-paint",
+                tooltip: t("Color")
+            },
+            parent
+        );
+    }
+}
+
+class ColorActionControl extends FontAwesomeControl {
+    onClick() {}
+    constructor(public drawControl: BaseDrawControl) {
+        super(
+            {
+                icon: "circle",
+                cls: "leaflet-control-complete",
+                tooltip: "Finish"
+            },
+            drawControl.map.leafletInstance
+        );
     }
 }
 
