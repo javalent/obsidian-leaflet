@@ -261,5 +261,6 @@ export default {
     "Delete Shapes": "Delete Shapes",
     Done: "Done",
     Text: "Text",
-    "Color": "Color"
+    "Color": "Color",
+    "Fill Color": "Fill Color"
 };

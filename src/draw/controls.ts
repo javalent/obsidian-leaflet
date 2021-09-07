@@ -126,28 +126,32 @@ export class DrawControl extends FontAwesomeControl {
 }
 
 class ColorControl extends BaseDrawControl {
-    onClick() {}
+    onClick() {
+        this.openActions();
+    }
     draw() {}
+    fill = new FillControl(this);
     constructor(parent: DrawControl) {
         super(
             {
-                icon: "fill-drip",
+                icon: "circle",
                 cls: "leaflet-control-has-actions leaflet-control-draw-paint",
                 tooltip: t("Color")
             },
             parent
         );
+        this.actionsEl.appendChild(this.fill.controlEl);
     }
 }
 
-class ColorActionControl extends FontAwesomeControl {
+class FillControl extends FontAwesomeControl {
     onClick() {}
     constructor(public drawControl: BaseDrawControl) {
         super(
             {
-                icon: "circle",
+                icon: "fill-drip",
                 cls: "leaflet-control-complete",
-                tooltip: "Finish"
+                tooltip: t("Fill Color")
             },
             drawControl.map.leafletInstance
         );

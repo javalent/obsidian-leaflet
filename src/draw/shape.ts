@@ -18,8 +18,10 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
             }
         });
     }
-    options = {
-        pane: "drawing"
+    options: L.PathOptions = {
+        pane: "drawing",
+        color: this.controller.color,
+        fillColor: this.controller.color
     };
     constructor(
         public controller: DrawingController,

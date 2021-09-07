@@ -54,6 +54,7 @@ export interface BlockParameters {
     };
     geojsonColor?: string;
     gpxColor?: string;
+    drawColor?: string;
     zoomFeatures?: boolean;
     verbose?: boolean;
     isMapView?: boolean;

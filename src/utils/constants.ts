@@ -19,6 +19,7 @@ export const DEFAULT_BLOCK_PARAMETERS: BlockParameters = {
     darkMode: "false",
     defaultZoom: 5,
     distanceMultiplier: 1,
+    drawColor: '#3388ff',
     geojson: [],
     geojsonColor: "#3388ff",
     gpx: [],

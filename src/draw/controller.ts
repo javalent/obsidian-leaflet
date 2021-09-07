@@ -26,6 +26,8 @@ export class DrawingController {
         polygon: []
     };
 
+    color: string = this.map.options.drawColor
+
     get flatShapes() {
         return Object.values(this.shapes).flat();
     }
