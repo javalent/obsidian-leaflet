@@ -45,11 +45,6 @@ export class Polyline extends Shape<L.Polyline> {
             vertices?: Vertex[];
         }
     ) {
-        if (this.vertices.find((v) => v.selected)) {
-            const v = this.vertices.find((v) => v.selected);
-            v.selected = false;
-            return;
-        }
         this.vertices.push(
             new Vertex(this.mouseLoc ?? evt.latlng, this, targets)
         );
@@ -58,7 +53,7 @@ export class Polyline extends Shape<L.Polyline> {
 
     _onMousemove(latlng: L.LatLng, modifier: boolean) {
         if (this.vertices.length) {
-            this.mouseLoc = this.getMousemoveDelta(latlng, modifier);
+            this.mouseLoc = this.getMousemoveDelta(latlng, null, modifier);
             this.showExtensions(this.mouseLoc);
         }
     }

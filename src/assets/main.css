@@ -451,7 +451,11 @@ input.is-invalid {
 .block-language-leaflet
     .leaflet-control-expandable.leaflet-control-draw.expanded
     .leaflet-control-expandable-list
-    .leaflet-control.leaflet-control-draw-trash {
+    .leaflet-control.leaflet-control-draw-trash,
+.block-language-leaflet
+    .leaflet-control-expandable.leaflet-control-draw.expanded
+    .leaflet-control-expandable-list
+    .leaflet-control.leaflet-control-draw-paint {
     border-top: 2px solid rgba(0, 0, 0, 0.2);
     border-top-left-radius: 0;
     border-top-right-radius: 0;

@@ -100,20 +100,37 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
         });
     }
 
-    getMousemoveDelta(latlng: L.LatLng, modifier: boolean) {
-        const delta = [
-            Math.abs(latlng.lat - this.latlngs[this.vertices.length - 1].lat),
-            Math.abs(latlng.lng - this.latlngs[this.vertices.length - 1].lng)
-        ];
-
+    getMousemoveDelta(
+        latlng: L.LatLng,
+        previous?: L.LatLng,
+        modifier?: boolean
+    ) {
         if (modifier) {
+            const delta = [
+                Math.abs(
+                    latlng.lat -
+                        (previous ?? this.latlngs[this.vertices.length - 1]).lat
+                ),
+                Math.abs(
+                    latlng.lng -
+                        (previous ?? this.latlngs[this.vertices.length - 1]).lng
+                )
+            ];
             if (delta[0] > delta[1]) {
-                latlng.lng = this.latlngs[this.vertices.length - 1].lng;
+                latlng.lng = (
+                    previous ?? this.latlngs[this.vertices.length - 1]
+                ).lng;
             } else {
-                latlng.lat = this.latlngs[this.vertices.length - 1].lat;
+                latlng.lat = (
+                    previous ?? this.latlngs[this.vertices.length - 1]
+                ).lat;
             }
         }
         return latlng;
+    }
+
+    setColor(color: string) {
+        this.leafletInstance.setStyle({ fillColor: color, color: color });
     }
 
     remove() {

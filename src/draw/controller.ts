@@ -1,5 +1,6 @@
 import { BaseMapType } from "src/@types";
 import { Shape } from "./shape";
+import { Vertex } from "./vertex";
 
 export class DrawingController {
     getSelectedVertex() {
@@ -69,6 +70,9 @@ export class DrawingController {
             this.unregisterDrawing();
             this.shape = null;
         }
+    }
+    getVertexTargets(vertex: Vertex) {
+        return this.vertices.find(v => v != vertex && v.isBeingHovered);
     }
     private registerDrawing() {
         this.map.registerScope();

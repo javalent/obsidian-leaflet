@@ -260,5 +260,6 @@ export default {
     "Free Draw": "Free Draw",
     "Delete Shapes": "Delete Shapes",
     Done: "Done",
-    Text: "Text"
+    Text: "Text",
+    "Color": "Color"
 };

@@ -59,6 +59,8 @@ export interface LeafletMapOptions {
     defaultZoom?: number;
     distanceMultiplier?: number;
 
+    drawColor?: string;
+
     geojsonColor?: string;
     gpxColor?: string;
 

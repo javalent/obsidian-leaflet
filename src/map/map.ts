@@ -142,12 +142,16 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         });
 
         this.escapeScope = new Scope();
-        this.escapeScope.register(undefined, "Escape", () => {
-            if (!this.isFullscreen) {
-                this.stopDrawingContext();
-                this.controller.newShape();
-            }
-        });
+        this.escapeScope.register(undefined, "Escape", () => this.escapeScopeCallback());
+
+        
+    }
+
+    private escapeScopeCallback() {
+        if (!this.isFullscreen) {
+            this.stopDrawingContext();
+            this.controller.newShape();
+        }
     }
 
     createMap() {
@@ -178,7 +182,11 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             this.leafletInstance
         );
 
+        
         /** Bind Map Events */
+        this.leafletInstance.on("blur", () => {
+            this.unregisterScope();
+        });
         this.leafletInstance.on("contextmenu", (evt: L.LeafletMouseEvent) =>
             this.handleMapContext(evt)
         );

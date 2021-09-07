@@ -32,22 +32,12 @@ export class Rectangle extends Shape<L.Rectangle> {
             vertices?: Vertex[];
         }
     ) {
-        let vertex = this.controller.getSelectedVertex();
-        if (vertex) {
-            vertex.selected = false;
-            return;
-        }
-
         if (this.vertices.length == 0) {
             this.vertices.push(new Vertex(evt.latlng, this, targets));
             this.bounds = L.latLngBounds(evt.latlng, evt.latlng);
             this.redraw();
         } else if (this.vertices.length == 1) {
             this.bounds = L.latLngBounds(this.latlngs[0], evt.latlng);
-            console.log(
-                "🚀 ~ file: rectangle.ts ~ line 47 ~ this.bounds",
-                this.bounds.toBBoxString()
-            );
 
             this.vertices.push(new Vertex(evt.latlng, this, targets));
 
