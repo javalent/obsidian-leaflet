@@ -34,7 +34,7 @@ export class Vertex extends Events {
     setLatLng(latlng: L.LatLng) {
         this.leafletInstance.setLatLng(latlng);
         this.parent.redraw();
-        if (this.marker) {
+        if (this.marker && this.marker.leafletInstance) {
             this.marker.leafletInstance.setLatLng(latlng);
         }
         this.vertices.forEach((v) => v.updateLatLng(latlng));
@@ -54,7 +54,7 @@ export class Vertex extends Events {
     ) {
         super();
 
-        this.marker = targets?.marker;
+        this.addMarkerTarget(targets?.marker);
         this.addVertexTargets(...(targets?.vertices ?? []));
 
         this.leafletInstance = new L.Marker(latlng, {
@@ -72,7 +72,11 @@ export class Vertex extends Events {
             });
         }
     }
-
+    addMarkerTarget(marker: Marker) {
+        if (!marker) return;
+        this.marker = marker;
+        this.registerMarkerEvents();
+    }
     addVertexTargets(...vertices: Vertex[]) {
         for (let vertex of vertices) {
             if (vertex == this) continue;
@@ -83,10 +87,10 @@ export class Vertex extends Events {
             vertex.vertices.add(this);
 
             if (vertex.marker) {
-                this.marker = vertex.marker;
+                this.addMarkerTarget(vertex.marker);
             } else if (this.marker) {
-                vertex.marker = this.marker;
-                vertex.vertices.forEach((v) => (v.marker = this.marker));
+                vertex.addMarkerTarget(this.marker);
+                vertex.vertices.forEach((v) => v.addMarkerTarget(this.marker));
             }
             vertex.on("delete", () => {
                 this.vertices.delete(vertex);
@@ -157,7 +161,7 @@ export class Vertex extends Events {
                     this.marker = this.parent.map.markers.find(
                         (marker) => marker.isBeingHovered
                     ) as Marker;
-                    this.registerTargetEvents();
+                    this.registerMarkerEvents();
                 }
             }
             this.modifierState = false;
@@ -165,15 +169,11 @@ export class Vertex extends Events {
         });
         this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) => {
             L.DomEvent.stopPropagation(evt);
-            if (this.parent.controller.isDrawing) {
-                this.parent.controller.shape.onClick(evt, {
-                    vertices: [this, ...this.vertices]
-                });
-            }
+            this.parent.leafletInstance.fire('click');
         });
-        this.registerTargetEvents();
+        this.registerMarkerEvents();
     }
-    unregisterTargetEvents() {
+    unregisterMarkerEvents() {
         if (this.marker) {
             this.marker.leafletInstance.off("drag", this.onTargetDrag, this);
         }
@@ -181,14 +181,18 @@ export class Vertex extends Events {
     onTargetDrag(evt: L.LeafletMouseEvent) {
         this.leafletInstance.fire("drag", evt);
     }
-    registerTargetEvents() {
+    registerMarkerEvents() {
         if (this.marker) {
             this.marker.leafletInstance.on("drag", this.onTargetDrag, this);
+            this.marker.leafletInstance.on("remove", () => {
+                this.unregisterMarkerEvents();
+                this.marker = null;
+            });
         }
     }
     delete() {
         this.trigger("delete");
-        this.unregisterTargetEvents();
+        this.unregisterMarkerEvents();
         this.hide();
     }
     onDrag() {

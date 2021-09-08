@@ -6,11 +6,12 @@ import {
 import t from "src/l10n/locale";
 
 import { LeafletSymbol } from "src/utils/leaflet-import";
-import { BaseDrawControl } from "./base";
-import { DrawingController } from "./controller";
+import { ColorControl } from "./color";
 import { PolygonControl } from "./polygon";
 import { PolylineControl } from "./polyline";
 import { RectangleControl } from "./rectangle";
+import { TextControl } from "./text";
+
 const L = window[LeafletSymbol];
 
 export class DrawControl extends FontAwesomeControl {
@@ -24,11 +25,11 @@ export class DrawControl extends FontAwesomeControl {
     rectangle = new RectangleControl(this);
     polyline: PolylineControl = new PolylineControl(this);
     color: ColorControl = new ColorControl(this);
-    delete: DeleteControl;
-    done: DoneControl;
+    delete: DeleteControl = new DeleteControl(this);
+    done: DoneControl = new DoneControl(this);
 
     /* free: FreeControl; */
-    /* text: TextControl; */
+    text: TextControl = new TextControl(this);
 
     get controller() {
         return this.map.controller;
@@ -74,19 +75,15 @@ export class DrawControl extends FontAwesomeControl {
         return this;
     }
     draw() {
-        /* this.text = new TextControl(this); */
-
         this.section.appendChild(this.polygon.controlEl);
         this.section.appendChild(this.rectangle.controlEl);
 
         this.section.appendChild(this.polyline.controlEl);
+        this.section.appendChild(this.text.controlEl);
+
         this.section.appendChild(this.color.controlEl);
 
-        /* this.section.appendChild(this.text.controlEl); */
-
-        this.delete = new DeleteControl(this);
         this.section.appendChild(this.delete.controlEl);
-        this.done = new DoneControl(this);
         this.section.appendChild(this.done.controlEl);
     }
     private expand() {
@@ -124,76 +121,6 @@ export class DrawControl extends FontAwesomeControl {
         this.polyline.closeActions();
 
         this.color.closeActions();
-        
-    }
-}
-
-class ColorControl extends BaseDrawControl {
-    onClick() {
-        this.openActions();
-        this.parent.stopDrawingContext();
-    }
-    draw() {}
-    fill = new FillControl(this);
-    pick = new ColorPickControl(this);
-    constructor(parent: DrawControl) {
-        super(
-            {
-                icon: "circle",
-                cls: "leaflet-control-has-actions leaflet-control-draw-paint",
-                tooltip: t("Color")
-            },
-            parent
-        );
-        this.iconEl.setAttr("style", `color: ${this.parent.controller.color}`);
-        this.actionsEl.appendChild(this.fill.controlEl);
-        this.actionsEl.appendChild(this.pick.controlEl);
-    }
-    updateColor(color: string) {
-        this.parent.controller.color = color;
-        this.iconEl.setAttr("style", `color: ${this.parent.controller.color}`);
-    }
-}
-
-class ColorPickControl extends FontAwesomeControl {
-    input: HTMLInputElement;
-    onClick() {
-        this.input.click();
-    }
-    constructor(public drawControl: ColorControl) {
-        super(
-            {
-                icon: "palette",
-                cls: "leaflet-control-has-actions leaflet-control-draw-palette",
-                tooltip: t("Color")
-            },
-            drawControl.map.leafletInstance
-        );
-        this.input = this.controlEl.createEl("input", {
-            type: "color"
-        });
-        this.input.oninput = (evt) => {
-            this.drawControl.updateColor(
-                (evt.target as HTMLInputElement).value
-            );
-        };
-    }
-}
-
-class FillControl extends FontAwesomeControl {
-    onClick() {
-        this.drawControl.parent.stopDrawingContext();
-        this.drawControl.controller.isColoring = true;
-    }
-    constructor(public drawControl: ColorControl) {
-        super(
-            {
-                icon: "fill-drip",
-                cls: "leaflet-control-complete",
-                tooltip: t("Fill Color")
-            },
-            drawControl.map.leafletInstance
-        );
     }
 }
 
