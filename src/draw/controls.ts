@@ -57,7 +57,7 @@ export class DrawControl extends FontAwesomeControl {
         L.DomEvent.disableClickPropagation(this.controlEl);
         L.DomEvent.disableScrollPropagation(this.controlEl);
 
-        this.link.dataset["draggable"] = "false";
+        this.iconEl.dataset["draggable"] = "false";
 
         this.map.on("click", this.collapse, this);
 
@@ -122,15 +122,20 @@ export class DrawControl extends FontAwesomeControl {
         this.polygon.closeActions();
         this.rectangle.closeActions();
         this.polyline.closeActions();
+
+        this.color.closeActions();
+        
     }
 }
 
 class ColorControl extends BaseDrawControl {
     onClick() {
         this.openActions();
+        this.parent.stopDrawingContext();
     }
     draw() {}
     fill = new FillControl(this);
+    pick = new ColorPickControl(this);
     constructor(parent: DrawControl) {
         super(
             {
@@ -140,13 +145,47 @@ class ColorControl extends BaseDrawControl {
             },
             parent
         );
+        this.iconEl.setAttr("style", `color: ${this.parent.controller.color}`);
         this.actionsEl.appendChild(this.fill.controlEl);
+        this.actionsEl.appendChild(this.pick.controlEl);
+    }
+    updateColor(color: string) {
+        this.parent.controller.color = color;
+        this.iconEl.setAttr("style", `color: ${this.parent.controller.color}`);
+    }
+}
+
+class ColorPickControl extends FontAwesomeControl {
+    input: HTMLInputElement;
+    onClick() {
+        this.input.click();
+    }
+    constructor(public drawControl: ColorControl) {
+        super(
+            {
+                icon: "palette",
+                cls: "leaflet-control-has-actions leaflet-control-draw-palette",
+                tooltip: t("Color")
+            },
+            drawControl.map.leafletInstance
+        );
+        this.input = this.controlEl.createEl("input", {
+            type: "color"
+        });
+        this.input.oninput = (evt) => {
+            this.drawControl.updateColor(
+                (evt.target as HTMLInputElement).value
+            );
+        };
     }
 }
 
 class FillControl extends FontAwesomeControl {
-    onClick() {}
-    constructor(public drawControl: BaseDrawControl) {
+    onClick() {
+        this.drawControl.parent.stopDrawingContext();
+        this.drawControl.controller.isColoring = true;
+    }
+    constructor(public drawControl: ColorControl) {
         super(
             {
                 icon: "fill-drip",

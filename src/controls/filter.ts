@@ -36,7 +36,7 @@ class FilterMarkers extends FontAwesomeControl {
         L.DomEvent.disableClickPropagation(this.controlEl);
         L.DomEvent.disableScrollPropagation(this.controlEl);
 
-        this.link.dataset["draggable"] = "false";
+        this.iconEl.dataset["draggable"] = "false";
 
         this.map.on("click", this.collapse, this);
 

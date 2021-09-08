@@ -86,7 +86,9 @@ export class Rectangle extends Shape<L.Rectangle> {
                 dashArray: "5,10",
                 weight: 1,
                 interactive: false,
-                fillOpacity: 0.5
+                fillOpacity: 0.5,
+                color: this.controller.color,
+                fillColor: this.controller.color
             }).addTo(this.map.leafletInstance);
         }
         this.ghost.setBounds(L.latLngBounds(this.latlngs[0], latlng));

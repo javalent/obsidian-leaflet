@@ -19,6 +19,7 @@ export class DrawingController {
     }
     isDrawing: boolean = false;
     isDeleting: boolean = false;
+    isColoring: boolean = false;
     shape: Shape<L.Path>;
     shapes: Record<string, Shape<L.Path>[]> = {
         rectangle: [],
@@ -56,7 +57,7 @@ export class DrawingController {
             this.shape.stopDrawing();
             if (this.shape.canSave) {
                 this.shapes[this.shape.type].push(this.shape);
-                this.shape.registerDeleteEvent();
+                this.shape.registerEvents();
             }
         }
         this.stopDrawing();

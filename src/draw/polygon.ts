@@ -18,7 +18,8 @@ export class Polygon extends Shape<L.Polygon> {
                 ...this.options,
                 dashArray: "5,10",
                 weight: 1,
-                interactive: false
+                interactive: false,
+                color: this.controller.color
             }),
             added: false
         },
@@ -27,7 +28,8 @@ export class Polygon extends Shape<L.Polygon> {
                 ...this.options,
                 dashArray: "5,10",
                 weight: 1,
-                interactive: false
+                interactive: false,
+                color: this.controller.color
             }),
             added: false
         }
@@ -38,8 +40,6 @@ export class Polygon extends Shape<L.Polygon> {
     get canSave() {
         return this.vertices.length >= 3;
     }
-    addLatLng(latlng: L.LatLng) {}
-
     hideExtensions() {
         this.extensions.forward.line.remove();
         this.extensions.forward.added = false;

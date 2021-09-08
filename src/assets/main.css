@@ -272,6 +272,19 @@ input.is-invalid {
     cursor: pointer !important;
 }
 
+.block-language-leaflet .leaflet-control-draw-paint-icon > svg {
+    stroke: black;
+    stroke-width: 25;
+}
+.block-language-leaflet .leaflet-control-draw-palette {
+    position: relative;
+}
+.block-language-leaflet .leaflet-control input[type="color"] {
+    visibility: hidden;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
 .leaflet-file-upload > input[type="file"] {
     display: none;
 }

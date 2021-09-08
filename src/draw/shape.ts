@@ -9,12 +9,16 @@ import { Marker } from "src/layer";
 const L = window[LeafletSymbol];
 
 export abstract class Shape<T extends L.Path> extends Layer<T> {
-    registerDeleteEvent() {
+    color: string;
+    registerEvents() {
         this.leafletInstance.on("click", () => {
             if (this.controller.isDeleting) {
                 console.log("delete");
                 this.hideVertices();
                 this.controller.removeShape(this);
+            }
+            if (this.controller.isColoring) {
+                this.setColor(this.controller.color);
             }
         });
     }
@@ -30,6 +34,7 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
         super();
         this.map = this.controller.map;
         this.vertices = latlngs.map((ll) => new Vertex(ll, this));
+        this.color = this.controller.color;
     }
 
     get group() {
@@ -132,6 +137,7 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
     }
 
     setColor(color: string) {
+        this.color = color;
         this.leafletInstance.setStyle({ fillColor: color, color: color });
     }
 

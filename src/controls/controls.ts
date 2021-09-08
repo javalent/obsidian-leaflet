@@ -16,8 +16,8 @@ export abstract class FontAwesomeControl extends L.Control {
     cls: string;
     tooltip: string;
     leafletInstance: L.Map;
-    link: HTMLElement;
     enabled: boolean = true;
+    iconEl: HTMLAnchorElement;
     constructor(opts: FontAwesomeControlOptions, leafletMap: L.Map) {
         super(opts);
         this.leafletInstance = leafletMap;
@@ -29,11 +29,11 @@ export abstract class FontAwesomeControl extends L.Control {
             "leaflet-bar leaflet-control " + this.cls
         );
         this.controlEl.removeAttribute("title");
-        this.link = this.controlEl.createEl("a", {
+        this.iconEl = this.controlEl.createEl("a", {
             cls: this.cls + "-icon",
             href: "#"
         });
-        this.link.appendChild(
+        this.iconEl.appendChild(
             icon({ prefix: "fas", iconName: this.icon }).node[0]
         );
         this.controlEl.children[0].setAttrs({
