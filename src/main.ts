@@ -188,9 +188,9 @@ export default class ObsidianLeaflet
          */
         this.maps = this.maps.filter((m) => m.el != el);
         this.maps.push({
-            map: map,
-            source: source,
-            el: el,
+            map,
+            source,
+            el,
             id: params.id
         });
 

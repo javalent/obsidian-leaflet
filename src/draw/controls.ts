@@ -29,7 +29,7 @@ export class DrawControl extends FontAwesomeControl {
     done: DoneControl = new DoneControl(this);
 
     /* free: FreeControl; */
-    text: TextControl = new TextControl(this);
+    /* text: TextControl = new TextControl(this); */
 
     get controller() {
         return this.map.controller;
@@ -79,7 +79,7 @@ export class DrawControl extends FontAwesomeControl {
         this.section.appendChild(this.rectangle.controlEl);
 
         this.section.appendChild(this.polyline.controlEl);
-        this.section.appendChild(this.text.controlEl);
+        /* this.section.appendChild(this.text.controlEl); */
 
         this.section.appendChild(this.color.controlEl);
 

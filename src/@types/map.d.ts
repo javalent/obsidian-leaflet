@@ -12,6 +12,7 @@ import type { Layer } from "src/layer/layer";
 import type { GPXControl } from "./controls";
 import type { LeafletRenderer } from "src/renderer";
 import { DrawingController } from "src/draw/controller";
+import { ShapeProperties } from "src/draw/shape";
 
 export interface ImageLayerData {
     data: string;
@@ -189,6 +190,8 @@ declare abstract class BaseMap /* <
     popup: Popup;
     previousDistanceLine: L.Polyline;
 
+    readyForDrawings: boolean;
+
     renderer: LeafletRenderer;
     rendered: boolean;
 
@@ -237,6 +240,7 @@ declare abstract class BaseMap /* <
     ): void;
 
     /** Other Methods */
+    addShapes(...shapes: ShapeProperties[]): void;
     closePopup(popup: L.Popup): void;
     distance(latlng1: L.LatLng, latlng2: L.LatLng): string;
     getMarkersById(id: string): Marker[];
@@ -326,6 +330,7 @@ export interface SavedMapData {
     lastAccessed: number;
     markers: SavedMarkerProperties[];
     overlays: SavedOverlayData[];
+    shapes: ShapeProperties[];
 }
 
 declare class MarkerDivIcon extends DivIcon {

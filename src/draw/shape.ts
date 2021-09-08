@@ -1,15 +1,23 @@
 import { Layer } from "src/layer/layer";
-import { BaseMapType } from "src/@types/map";
-
-import { LeafletSymbol } from "src/utils/leaflet-import";
 import { DrawingController } from "./controller";
-import { Vertex } from "./vertex";
+import { Vertex, VertexProperties } from "./vertex";
 import { Marker } from "src/layer";
 
-const L = window[LeafletSymbol];
+export interface ShapeProperties {
+    type: string;
+    color: string;
+    vertices: VertexProperties[];
+}
 
 export abstract class Shape<T extends L.Path> extends Layer<T> {
-    color: string;
+    layer = "INTERNAL_SHAPE_LAYER";
+    toProperties(): ShapeProperties {
+        return {
+            type: this.type,
+            color: this.color,
+            vertices: this.vertices.map((v) => v.toProperties())
+        };
+    }
     registerEvents() {
         this.leafletInstance.on("click", () => {
             if (this.controller.isDeleting) {
@@ -29,12 +37,15 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
     };
     constructor(
         public controller: DrawingController,
-        latlngs: L.LatLng[] = []
+        vertices: VertexProperties[] = [],
+        public color: string = controller.color
     ) {
         super();
         this.map = this.controller.map;
-        this.vertices = latlngs.map((ll) => new Vertex(ll, this));
-        this.color = this.controller.color;
+        this.vertices = vertices.map((props) =>
+            Vertex.fromProperties(props, this)
+        );
+        this.hideVertices();
     }
 
     get group() {
@@ -94,6 +105,23 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
             }
         }
         this._onMousemove(latlng, evt.originalEvent.getModifierState("Shift"));
+    }
+
+    checkAndAddToMap() {
+        if (this.map.readyForDrawings) {
+            this.show();
+        } else {
+            this.map.on("ready-for-drawings", () => this.show());
+        }
+    }
+
+    abstract initialize(): void;
+
+    show() {
+        if (this.vertices.length) {
+            this.initialize();
+            this.registerEvents();
+        }
     }
 
     showVertices() {

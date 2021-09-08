@@ -125,7 +125,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 this.map.leafletInstance.invalidateSize();
             }
         });
-        
+
         this.buildMap();
 
         this.resize.observe(this.containerEl);
@@ -163,6 +163,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         this.map.on("removed", () => this.resize.disconnect());
 
+        await this.loadSavedData();
         await this.loadImmutableData();
         await this.loadFeatureData();
 
@@ -337,6 +338,25 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         this.map.loadFeatureData({ geojsonData, gpxData, gpxIcons });
     }
+    async loadSavedData() {
+        let mapData = this.plugin.data.mapMarkers.find(
+            ({ id: mapId }) => mapId == this.params.id
+        );
+
+        this.map.addMarker(
+            ...(mapData?.markers.map((m) => {
+                const layer =
+                    decodeURIComponent(m.layer) === m.layer
+                        ? encodeURIComponent(m.layer)
+                        : m.layer;
+                return { ...m, mutable: true, layer };
+            }) ?? [])
+        );
+
+        this.map.addOverlay(...new Set(mapData?.overlays ?? []));
+
+        this.map.addShapes(...mapData.shapes);
+    }
     async loadImmutableData() {
         if (
             (this.params.marker ?? []).length ||
@@ -440,25 +460,9 @@ export class LeafletRenderer extends MarkdownRenderChild {
         /** Register File Watcher to Update Markers/Overlays */
         this.registerWatchers(watchers);
 
-        let mapData = this.plugin.data.mapMarkers.find(
-            ({ id: mapId }) => mapId == this.params.id
-        );
+        this.map.addMarker(...markerArray);
 
-        this.map.addMarker(
-            ...markerArray,
-            ...(mapData?.markers.map((m) => {
-                const layer =
-                    decodeURIComponent(m.layer) === m.layer
-                        ? encodeURIComponent(m.layer)
-                        : m.layer;
-                return { ...m, mutable: true, layer };
-            }) ?? [])
-        );
-
-        this.map.addOverlay(
-            ...immutableOverlayArray,
-            ...new Set(mapData?.overlays ?? [])
-        );
+        this.map.addOverlay(...immutableOverlayArray);
     }
 
     registerWatchers(watchers: Map<TFile, Map<string, string>>) {

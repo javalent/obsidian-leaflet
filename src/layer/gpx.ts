@@ -313,4 +313,5 @@ export class GPX extends Layer<L.GeoJSON> {
             });
         return el;
     }
+    toProperties() {}
 }

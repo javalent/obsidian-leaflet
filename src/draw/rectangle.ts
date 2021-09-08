@@ -42,27 +42,7 @@ export class Rectangle extends Shape<L.Rectangle> {
             this.vertices.push(new Vertex(evt.latlng, this, targets));
 
             //get corners
-            const northWest =
-                this.vertices.find((v) =>
-                    v.latlng.equals(this.bounds.getNorthWest())
-                ) ?? new Vertex(this.bounds.getNorthWest(), this);
-
-            const northEast =
-                this.vertices.find((v) =>
-                    v.latlng.equals(this.bounds.getNorthEast())
-                ) ?? new Vertex(this.bounds.getNorthEast(), this);
-
-            const southEast =
-                this.vertices.find((v) =>
-                    v.latlng.equals(this.bounds.getSouthEast())
-                ) ?? new Vertex(this.bounds.getSouthEast(), this);
-
-            const southWest =
-                this.vertices.find((v) =>
-                    v.latlng.equals(this.bounds.getSouthWest())
-                ) ?? new Vertex(this.bounds.getSouthWest(), this);
-
-            this.vertices = [northWest, northEast, southEast, southWest];
+            this.syncVerticesToCorners();
 
             this.registerVertexDrags();
 
@@ -72,6 +52,29 @@ export class Rectangle extends Shape<L.Rectangle> {
             this.controller.newShape(this.newInstance());
             return;
         }
+    }
+    syncVerticesToCorners() {
+        const northWest =
+            this.vertices.find((v) =>
+                v.latlng.equals(this.bounds.getNorthWest())
+            ) ?? new Vertex(this.bounds.getNorthWest(), this);
+
+        const northEast =
+            this.vertices.find((v) =>
+                v.latlng.equals(this.bounds.getNorthEast())
+            ) ?? new Vertex(this.bounds.getNorthEast(), this);
+
+        const southEast =
+            this.vertices.find((v) =>
+                v.latlng.equals(this.bounds.getSouthEast())
+            ) ?? new Vertex(this.bounds.getSouthEast(), this);
+
+        const southWest =
+            this.vertices.find((v) =>
+                v.latlng.equals(this.bounds.getSouthWest())
+            ) ?? new Vertex(this.bounds.getSouthWest(), this);
+
+        this.vertices = [northWest, northEast, southEast, southWest];
     }
 
     _onMousemove(latlng: L.LatLng, modifier: boolean) {
@@ -102,7 +105,12 @@ export class Rectangle extends Shape<L.Rectangle> {
         ];
     }
     registerVertexDrags() {
-        this.vertices[0].on('drag', () => {
+        console.log(
+            "🚀 ~ file: rectangle.ts ~ line 107 ~ this.vertices.length",
+            this.vertices.length
+        );
+        this.vertices[0].on("drag", () => {
+            console.log("northwest drag");
             this.vertices[3].setLatLng(
                 L.latLng([
                     this.vertices[3].getLatLng().lat,
@@ -116,7 +124,8 @@ export class Rectangle extends Shape<L.Rectangle> {
                 ])
             );
         });
-        this.vertices[1].on('drag', () => {
+        this.vertices[1].on("drag", () => {
+            console.log("northeast drag");
             this.vertices[2].setLatLng(
                 L.latLng([
                     this.vertices[2].getLatLng().lat,
@@ -130,7 +139,8 @@ export class Rectangle extends Shape<L.Rectangle> {
                 ])
             );
         });
-        this.vertices[2].on('drag', () => {
+        this.vertices[2].on("drag", () => {
+            console.log("southeast drag");
             this.vertices[1].setLatLng(
                 L.latLng([
                     this.vertices[1].getLatLng().lat,
@@ -144,7 +154,8 @@ export class Rectangle extends Shape<L.Rectangle> {
                 ])
             );
         });
-        this.vertices[3].on('drag', () => {
+        this.vertices[3].on("drag", () => {
+            console.log("southwest drag");
             this.vertices[0].setLatLng(
                 L.latLng([
                     this.vertices[0].getLatLng().lat,
@@ -192,6 +203,14 @@ export class Rectangle extends Shape<L.Rectangle> {
     newInstance() {
         this.stopDrawing();
         return new Rectangle(this.controller);
+    }
+
+    initialize() {
+        console.log("initializing");
+        this.redraw();
+        this.hideVertices();
+        this.syncVerticesToCorners();
+        this.registerVertexDrags();
     }
 
     type = "rectangle";

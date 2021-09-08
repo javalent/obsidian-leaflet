@@ -2,6 +2,7 @@ import { LatLng } from "leaflet";
 import { Events } from "obsidian";
 import { Marker } from "src/layer";
 import { MarkerDivIcon } from "src/map";
+import { getId } from "src/utils";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { Shape } from "./shape";
 const L = window[LeafletSymbol];
@@ -19,6 +20,13 @@ declare module "leaflet" {
     interface Marker {
         _icon: HTMLElement;
     }
+}
+
+export class VertexProperties {
+    lat: number;
+    lng: number;
+    id: string;
+    marker?: string;
 }
 
 export class Vertex extends Events {
@@ -41,7 +49,9 @@ export class Vertex extends Events {
     }
     updateLatLng(latlng: LatLng): void {
         this.leafletInstance.setLatLng(latlng);
-        this.onDrag();
+
+        this.trigger("drag");
+
         this.parent.redraw();
     }
     constructor(
@@ -50,7 +60,8 @@ export class Vertex extends Events {
         targets?: {
             marker?: Marker;
             vertices?: Vertex[];
-        }
+        },
+        public id = getId()
     ) {
         super();
 
@@ -125,7 +136,9 @@ export class Vertex extends Events {
             }
 
             this.setLatLng(latlng);
-            this.onDrag();
+
+            this.trigger("drag");
+            
         });
         this.leafletInstance.on("mouseover", () => {
             this.isBeingHovered = true;
@@ -169,7 +182,7 @@ export class Vertex extends Events {
         });
         this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) => {
             L.DomEvent.stopPropagation(evt);
-            this.parent.leafletInstance.fire('click');
+            this.parent.leafletInstance.fire("click");
         });
         this.registerMarkerEvents();
     }
@@ -195,14 +208,32 @@ export class Vertex extends Events {
         this.unregisterMarkerEvents();
         this.hide();
     }
-    onDrag() {
-        this.trigger("drag");
-    }
     hide() {
         this.leafletInstance.remove();
     }
     show() {
         this.leafletInstance.addTo(this.parent.map.leafletInstance);
+    }
+    toProperties(): VertexProperties {
+        return {
+            lat: this.latlng.lat,
+            lng: this.latlng.lng,
+            id: this.id,
+            ...(this.marker ? { marker: this.marker.id } : {})
+        };
+    }
+    static fromProperties(properties: VertexProperties, shape: Shape<L.Path>) {
+        const marker =
+            (properties.marker &&
+                (shape.map.getMarkersById(properties.marker)[0] as Marker)) ??
+            null;
+
+        return new Vertex(
+            L.latLng(properties.lat, properties.lng),
+            shape,
+            marker && { marker },
+            properties.id
+        );
     }
 }
 class MidIcon extends L.DivIcon {

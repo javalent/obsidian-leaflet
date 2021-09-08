@@ -50,6 +50,7 @@ import t from "src/l10n/locale";
 
 import { drawControl } from "src/draw/controls";
 import { DrawingController } from "src/draw/controller";
+import { ShapeProperties } from "src/draw/shape";
 
 let L = window[LeafletSymbol];
 declare module "leaflet" {
@@ -67,6 +68,7 @@ declare module "leaflet" {
 export abstract class BaseMap extends Events implements BaseMapDefinition {
     drawingGroup: L.FeatureGroup<any>;
     drawingLayer: any;
+    readyForDrawings: boolean = false;
     abstract get bounds(): L.LatLngBounds;
 
     canvas: L.Canvas;
@@ -142,9 +144,9 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         });
 
         this.escapeScope = new Scope();
-        this.escapeScope.register(undefined, "Escape", () => this.escapeScopeCallback());
-
-        
+        this.escapeScope.register(undefined, "Escape", () =>
+            this.escapeScopeCallback()
+        );
     }
 
     private escapeScopeCallback() {
@@ -176,13 +178,14 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.drawingLayer = new L.LayerGroup([], { pane: "drawing" }).addTo(
             this.leafletInstance
         );
+        this.readyForDrawings = true;
+        this.trigger('ready-for-drawings');
 
         //@ts-expect-error
         this.canvas = L.Hotline.renderer({ pane: "gpx-canvas" }).addTo(
             this.leafletInstance
         );
 
-        
         /** Bind Map Events */
         this.leafletInstance.on("blur", () => {
             this.unregisterScope();
@@ -610,6 +613,12 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                     }
                 });
             }
+        }
+    }
+
+    addShapes(...shapes: ShapeProperties[]) {
+        for (const shape of shapes) {
+            this.controller.addShape(shape);
         }
     }
     buildControls() {
@@ -1096,7 +1105,8 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 .map((marker) => marker.toProperties()),
             overlays: this.overlays
                 .filter(({ mutable }) => mutable)
-                .map((overlay) => overlay.toProperties())
+                .map((overlay) => overlay.toProperties()),
+            shapes: this.controller.toProperties()
         };
     }
     unregisterScope() {

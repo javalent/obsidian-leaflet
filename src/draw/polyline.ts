@@ -93,6 +93,11 @@ export class Polyline extends Shape<L.Polyline> {
         this.redraw();
     }
 
+    initialize() {
+        this.hideVertices();
+        this.redraw();
+    }
+
     newInstance() {
         this.stopDrawing();
         return new Polyline(this.controller);

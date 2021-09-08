@@ -22,7 +22,7 @@ export abstract class FontAwesomeControl extends L.Control {
     cls: string;
     tooltip: string;
     leafletInstance: L.Map;
-    link: HTMLElement;
+    iconEl: HTMLElement;
     enabled: boolean;
     constructor(opts: FontAwesomeControlOptions, leafletMap: L.Map);
     onAdd(leafletMap: L.Map): HTMLElement;

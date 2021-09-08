@@ -1,5 +1,8 @@
 import { BaseMapType } from "src/@types";
-import { Shape } from "./shape";
+import { Polygon } from "./polygon";
+import { Polyline } from "./polyline";
+import { Rectangle } from "./rectangle";
+import { Shape, ShapeProperties } from "./shape";
 import { Vertex } from "./vertex";
 
 export class DrawingController {
@@ -27,7 +30,7 @@ export class DrawingController {
         polygon: []
     };
 
-    color: string = this.map.options.drawColor
+    color: string = this.map.options.drawColor;
 
     get flatShapes() {
         return Object.values(this.shapes).flat();
@@ -37,13 +40,33 @@ export class DrawingController {
         return this.flatShapes.map((shape) => shape.vertices).flat();
     }
 
-    constructor(public map: BaseMapType) {}
+    constructor(public map: BaseMapType, shapes?: any[]) {}
 
     hideVertices() {
         this.flatShapes.forEach((shape) => shape.hideVertices());
     }
     showVertices() {
         this.flatShapes.forEach((shape) => shape.showVertices());
+    }
+
+    addShape(shape: ShapeProperties) {
+        let newShape: Shape<L.Path>;
+        switch (shape.type) {
+            case "polygon": {
+                newShape = new Polygon(this, shape.vertices, shape.color);
+                break;
+            }
+            case "polyline": {
+                newShape = new Polyline(this, shape.vertices, shape.color);
+                break;
+            }
+            case "rectangle": {
+                newShape = new Rectangle(this, shape.vertices, shape.color);
+                break;
+            }
+        }
+        newShape.checkAndAddToMap();
+        this.shapes[shape.type].push(newShape);
     }
 
     newShape(shape?: Shape<L.Path>) {
@@ -75,7 +98,7 @@ export class DrawingController {
         }
     }
     getVertexTargets(vertex: Vertex) {
-        return this.vertices.find(v => v != vertex && v.isBeingHovered);
+        return this.vertices.find((v) => v != vertex && v.isBeingHovered);
     }
     private registerDrawing() {
         this.map.registerScope();
@@ -96,5 +119,8 @@ export class DrawingController {
             this.shape
         );
         this.map.leafletInstance.off("click", this.shape.onClick, this.shape);
+    }
+    toProperties() {
+        return this.flatShapes.map((shape) => shape.toProperties());
     }
 }

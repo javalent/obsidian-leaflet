@@ -71,6 +71,8 @@ export class GeoJSON extends Layer<L.GeoJSON> {
         }
         return this._display;
     }
+
+    toProperties() {}
 }
 
 class GeoJSONMarker {

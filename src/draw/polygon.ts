@@ -115,6 +115,11 @@ export class Polygon extends Shape<L.Polygon> {
     newInstance() {
         this.stopDrawing();
         return new Polygon(this.controller);
+    }  
+
+    initialize() {
+        this.hideVertices();
+        this.redraw();
     }
 
     type = "polygon";

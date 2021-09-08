@@ -5,8 +5,8 @@ import { DrawControl } from "./controls";
 
 export class ColorControl extends BaseDrawControl {
     onClick() {
-        this.openActions();
         this.parent.stopDrawingContext();
+        this.openActions();
     }
     draw() {}
     fill = new ColorFillControl(this);

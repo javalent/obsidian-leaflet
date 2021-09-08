@@ -1,4 +1,5 @@
 /** Settings Interfaces */
+import { ShapeProperties } from "src/draw/shape";
 import { BlockParameters, SavedMarkerProperties, SavedOverlayData } from ".";
 
 export type TooltipDisplay = "always" | "hover" | "never";
@@ -20,6 +21,7 @@ export interface MapMarkerData {
     id: string;
     markers: SavedMarkerProperties[];
     overlays: SavedOverlayData[];
+    shapes: ShapeProperties[];
 }
 
 export interface ObsidianAppData {
