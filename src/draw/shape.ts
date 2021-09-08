@@ -32,8 +32,8 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
     }
     options: L.PathOptions = {
         pane: "drawing",
-        color: this.controller.color,
-        fillColor: this.controller.color
+        color: this.color,
+        fillColor: this.color
     };
     constructor(
         public controller: DrawingController,

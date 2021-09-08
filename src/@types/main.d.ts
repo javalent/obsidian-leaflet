@@ -1,4 +1,9 @@
-import { MarkdownPostProcessorContext, Platform, Plugin } from "obsidian";
+import {
+    Debouncer,
+    MarkdownPostProcessorContext,
+    Platform,
+    Plugin
+} from "obsidian";
 import {
     BaseMapType,
     Icon,
@@ -81,7 +86,7 @@ declare class ObsidianLeaflet extends Plugin {
     ): Promise<void>;
 
     loadSettings(): Promise<void>;
-    saveSettings(): Promise<void>;
+    saveSettings: Debouncer<Promise<void>[]>;
 
     generateMarkerMarkup(markers: Icon[]): MarkerIcon[];
 

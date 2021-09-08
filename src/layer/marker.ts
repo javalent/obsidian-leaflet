@@ -444,6 +444,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                 y / this.map.currentGroup.dimensions[1]
             ];
         }
+        this.leafletInstance.fire("drag", { latlng });
         this.leafletInstance.setLatLng(latlng);
     }
 
@@ -503,7 +504,10 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         return {
             id: this.id,
             type: this.type,
-            loc: [this.loc.lat, this.loc.lng],
+            loc: [
+                this.leafletInstance.getLatLng().lat,
+                this.leafletInstance.getLatLng().lng
+            ],
             link: this.link,
             layer: this.layer,
             mutable: this.mutable,

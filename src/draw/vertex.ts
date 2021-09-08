@@ -26,7 +26,10 @@ export class VertexProperties {
     lat: number;
     lng: number;
     id: string;
-    marker?: string;
+    targets: {
+        vertexIds?: string[];
+        markerId?: string;
+    };
 }
 
 export class Vertex extends Events {
@@ -54,12 +57,17 @@ export class Vertex extends Events {
 
         this.parent.redraw();
     }
+    get latlng() {
+        return this.getLatLng();
+    }
     constructor(
-        public latlng: L.LatLng,
+        latlng: L.LatLng,
         public parent: Shape<L.Path>,
-        targets?: {
+        public targets?: {
             marker?: Marker;
             vertices?: Vertex[];
+            markerId?: string;
+            vertexIds?: string[];
         },
         public id = getId()
     ) {
@@ -67,6 +75,8 @@ export class Vertex extends Events {
 
         this.addMarkerTarget(targets?.marker);
         this.addVertexTargets(...(targets?.vertices ?? []));
+
+        this.addTargetsById();
 
         this.leafletInstance = new L.Marker(latlng, {
             icon: new VertexIcon(),
@@ -83,9 +93,31 @@ export class Vertex extends Events {
             });
         }
     }
-    addMarkerTarget(marker: Marker) {
+
+    addTargetsById() {
+        if (this.targets && this.targets.vertexIds) {
+            let vertices = this.parent.controller.vertices;
+
+            for (let id of this.targets.vertexIds) {
+                let vertex = vertices.find((v) => v.id == id);
+                if (!vertex) continue;
+                this.addVertexTargets(vertex);
+            }
+        }
+        if (this.targets && this.targets.markerId) {
+            const marker = this.parent.map.markers.find(
+                (m) => m.id == this.targets.markerId
+            );
+            if (!marker) return;
+            this.addMarkerTarget(marker as Marker);
+        }
+    }
+
+    addMarkerTarget(marker: Marker, propagate: boolean = true) {
         if (!marker) return;
         this.marker = marker;
+        if (propagate)
+            this.vertices.forEach((v) => v.addMarkerTarget(this.marker, false));
         this.registerMarkerEvents();
     }
     addVertexTargets(...vertices: Vertex[]) {
@@ -111,35 +143,38 @@ export class Vertex extends Events {
     }
 
     registerDragEvents() {
-        this.leafletInstance.on("drag", (evt: L.LeafletMouseEvent) => {
-            L.DomEvent.stopPropagation(evt);
+        this.leafletInstance.on(
+            "drag",
+            (evt: L.LeafletMouseEvent, data?: any) => {
+                L.DomEvent.stopPropagation(evt);
 
-            this.modifierState = evt.originalEvent.getModifierState("Shift");
-            let latlng = this.parent.getMousemoveDelta(
-                evt.latlng,
-                this.latlng,
-                this.modifierState
-            );
+                this.modifierState =
+                    evt.originalEvent?.getModifierState("Shift") ?? false;
+                let latlng = this.parent.getMousemoveDelta(
+                    evt.latlng,
+                    this.latlng,
+                    this.modifierState
+                );
 
-            if (!this.modifierState) {
-                if (this.parent.controller.getVertexTargets(this)) {
-                    const vertex =
-                        this.parent.controller.getVertexTargets(this);
-                    latlng = vertex.getLatLng();
+                if (!this.modifierState) {
+                    if (this.parent.controller.getVertexTargets(this)) {
+                        const vertex =
+                            this.parent.controller.getVertexTargets(this);
+                        latlng = vertex.getLatLng();
+                    }
+                    if (this.parent.map.markers.find((m) => m.isBeingHovered)) {
+                        const marker = this.parent.map.markers.find(
+                            (m) => m.isBeingHovered
+                        ).leafletInstance;
+                        latlng = marker.getLatLng();
+                    }
                 }
-                if (this.parent.map.markers.find((m) => m.isBeingHovered)) {
-                    const marker = this.parent.map.markers.find(
-                        (m) => m.isBeingHovered
-                    ).leafletInstance;
-                    latlng = marker.getLatLng();
-                }
+
+                this.setLatLng(latlng);
+
+                this.trigger("drag");
             }
-
-            this.setLatLng(latlng);
-
-            this.trigger("drag");
-            
-        });
+        );
         this.leafletInstance.on("mouseover", () => {
             this.isBeingHovered = true;
         });
@@ -179,6 +214,7 @@ export class Vertex extends Events {
             }
             this.modifierState = false;
             this.parent.redraw();
+            this.parent.map.plugin.saveSettings();
         });
         this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) => {
             L.DomEvent.stopPropagation(evt);
@@ -192,6 +228,7 @@ export class Vertex extends Events {
         }
     }
     onTargetDrag(evt: L.LeafletMouseEvent) {
+        console.log("🚀 ~ file: vertex.ts ~ line 233 ~ evt", evt);
         this.leafletInstance.fire("drag", evt);
     }
     registerMarkerEvents() {
@@ -219,21 +256,21 @@ export class Vertex extends Events {
             lat: this.latlng.lat,
             lng: this.latlng.lng,
             id: this.id,
-            ...(this.marker ? { marker: this.marker.id } : {})
+            targets: {
+                vertexIds: Array.from(this.vertices).map((v) => v.id),
+                markerId: this.marker?.id
+            }
         };
     }
     static fromProperties(properties: VertexProperties, shape: Shape<L.Path>) {
-        const marker =
-            (properties.marker &&
-                (shape.map.getMarkersById(properties.marker)[0] as Marker)) ??
-            null;
-
-        return new Vertex(
+        const vertex = new Vertex(
             L.latLng(properties.lat, properties.lng),
             shape,
-            marker && { marker },
+            properties.targets,
             properties.id
         );
+        vertex.registerDragEvents();
+        return vertex;
     }
 }
 class MidIcon extends L.DivIcon {
