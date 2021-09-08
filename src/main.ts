@@ -9,7 +9,8 @@ import {
     TFile,
     addIcon,
     Platform,
-    WorkspaceLeaf
+    WorkspaceLeaf,
+    debounce
 } from "obsidian";
 
 //Local Imports
@@ -246,39 +247,45 @@ export default class ObsidianLeaflet
         }
         await this.saveSettings();
     }
-    async saveSettings() {
-        this.maps.forEach((map) => {
+    saveSettings = debounce(
+        async () => {
+            console.log('saving');
+            this.maps.forEach((map) => {
+                this.data.mapMarkers = this.data.mapMarkers.filter(
+                    ({ id }) => id != map.id
+                );
+
+                this.data.mapMarkers.push({
+                    ...map.map.toProperties(),
+                    files: this.mapFiles
+                        .filter(({ maps }) => maps.indexOf(map.id) > -1)
+                        .map(({ file }) => file)
+                });
+            });
+
+            /** Only need to save maps with defined marker data */
             this.data.mapMarkers = this.data.mapMarkers.filter(
-                ({ id }) => id != map.id
+                ({ markers, overlays }) =>
+                    markers.length > 0 || overlays.length > 0
             );
 
-            this.data.mapMarkers.push({
-                ...map.map.toProperties(),
-                files: this.mapFiles
-                    .filter(({ maps }) => maps.indexOf(map.id) > -1)
-                    .map(({ file }) => file)
+            /** Remove maps that haven't been accessed in more than 1 week that are not associated with a file */
+            this.data.mapMarkers = this.data.mapMarkers.filter(
+                ({ id, files, lastAccessed = Date.now() }) =>
+                    !id || files.length || Date.now() - lastAccessed <= 6.048e8
+            );
+
+            await this.saveData(this.data);
+
+            this.markerIcons = this.generateMarkerMarkup(this.data.markerIcons);
+
+            this.maps.forEach((map) => {
+                map.map.updateMarkerIcons();
             });
-        });
-
-        /** Only need to save maps with defined marker data */
-        this.data.mapMarkers = this.data.mapMarkers.filter(
-            ({ markers, overlays }) => markers.length > 0 || overlays.length > 0
-        );
-
-        /** Remove maps that haven't been accessed in more than 1 week that are not associated with a file */
-        this.data.mapMarkers = this.data.mapMarkers.filter(
-            ({ id, files, lastAccessed = Date.now() }) =>
-                !id || files.length || Date.now() - lastAccessed <= 6.048e8
-        );
-
-        await this.saveData(this.data);
-
-        this.markerIcons = this.generateMarkerMarkup(this.data.markerIcons);
-
-        this.maps.forEach((map) => {
-            map.map.updateMarkerIcons();
-        });
-    }
+        },
+        100,
+        false
+    );
     async saveData(data: Record<any, any>) {
         if (this.configDirectory) {
             try {
