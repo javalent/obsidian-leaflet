@@ -217,6 +217,7 @@ export class Vertex extends Events {
             this.parent.map.plugin.saveSettings();
         });
         this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) => {
+            //todo this isn't firing when loading from data?
             L.DomEvent.stopPropagation(evt);
             this.parent.leafletInstance.fire("click");
         });
