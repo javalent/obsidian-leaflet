@@ -60,6 +60,7 @@ export interface LeafletMapOptions {
     defaultZoom?: number;
     distanceMultiplier?: number;
 
+    draw?: boolean;
     drawColor?: string;
 
     geojsonColor?: string;

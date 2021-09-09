@@ -533,23 +533,25 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     this.plugin.data.displayMarkerTooltips = value;
                 });
             });
-        /* new Setting(containerEl)
-            .setName("Display Marker Tooltips")
+        new Setting(containerEl)
+            .setName(t("Enable Draw Mode by Default"))
             .setDesc(
-                "Marker tooltips will display when hovered. Note previews will still be displayed."
+                t(
+                    "The draw control will be added to maps by default. Can be overridden with the draw map block parameter."
+                )
             )
             .addToggle((toggle) =>
                 toggle
-                    .setValue(this.data.displayMarkerTooltips)
+                    .setValue(this.data.enableDraw)
 
                     .onChange(async (v) => {
-                        this.data.displayMarkerTooltips = v;
+                        this.data.enableDraw = v;
 
                         await this.plugin.saveSettings();
 
                         this.display();
                     })
-            ); */
+            );
         new Setting(containerEl)
             .setName(t("Display Note Preview"))
             .setDesc(
@@ -714,7 +716,8 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                                 files: [],
                                 lastAccessed: Date.now(),
                                 markers: [],
-                                overlays: []
+                                overlays: [],
+                                shapes: []
                             };
                             this.data.mapMarkers.push(map);
                         }

@@ -67,6 +67,8 @@ darkMode: true
 | gpxMarkers    | Set default start, stop and waypoint markers                                                 |                                            |
 | gpxColor      | Control default GPX color                                                                    |                                            |
 | imageOverlay  | Add an image overlay to the map.                                                             |                                            |
+| draw          | Enable the draw controller on the map.                                                       | true                                       |
+| drawColor     | Default color that new shapes will be drawn with                                             | #3388ff                                    |
 
 > \*: Requires the [DataView plugin](https://github.com/blacksmithgu/obsidian-dataview).
 
@@ -644,6 +646,10 @@ Marker data in this format can then be re-imported. This feature is still under 
 Setting this will cause marker tooltips to default to this behavior.
 
 You can override this behavior in the right-click context menu of a marker.
+
+### Enable Draw Mode by Default
+
+If disabled, the draw controller will not be added to the map unless the `draw` parameter is set to true in the map block.
 
 ### Display Note Preview
 

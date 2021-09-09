@@ -133,6 +133,8 @@ export default {
     "Export all marker data to a CSV file.":
         "Export all marker data to a CSV file.",
     Export: "Export",
+    "Enable Draw Mode by Default": "Enable Draw Mode by Default",
+    "The draw control will be added to maps by default. Can be overridden with the draw map block parameter.": "The draw control will be added to maps by default. Can be overridden with the draw map block parameter.",
 
     //modals/settings.ts
     "Marker Name": "Marker Name",

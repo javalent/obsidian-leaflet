@@ -110,7 +110,6 @@ export class GPX extends Layer<L.GeoJSON> {
         this.gpx = gpxtoGeoJSON(
             new DOMParser().parseFromString(gpx, "text/xml")
         );
-        console.log("🚀 ~ file: gpx.ts ~ line 102 ~ this.gpx", this.gpx);
 
         //add point types
         const coords: Position[] = [];
@@ -165,8 +164,6 @@ export class GPX extends Layer<L.GeoJSON> {
             },
             this.gpx
         );
-
-        console.log(this.geojson.features[0].getLatLngs());
 
         this.leafletInstance.on("mouseover", (evt: L.LeafletMouseEvent) => {
             L.DomEvent.stop(evt);

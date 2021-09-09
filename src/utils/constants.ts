@@ -19,7 +19,7 @@ export const DEFAULT_BLOCK_PARAMETERS: BlockParameters = {
     darkMode: "false",
     defaultZoom: 5,
     distanceMultiplier: 1,
-    drawColor: '#3388ff',
+    drawColor: "#3388ff",
     geojson: [],
     geojsonColor: "#3388ff",
     gpx: [],
@@ -79,7 +79,8 @@ export const DEFAULT_SETTINGS: ObsidianAppData = {
     displayOverlayTooltips: true,
     configDirectory: null,
     mapViewEnabled: true,
-    mapViewParameters: {}
+    mapViewParameters: {},
+    enableDraw: true
 };
 export const BASE_POPUP_OPTIONS = {
     className: "leaflet-marker-link-popup",

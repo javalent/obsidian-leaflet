@@ -179,7 +179,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             this.leafletInstance
         );
         this.readyForDrawings = true;
-        this.trigger('ready-for-drawings');
+        this.trigger("ready-for-drawings");
 
         //@ts-expect-error
         this.canvas = L.Hotline.renderer({ pane: "gpx-canvas" }).addTo(
@@ -678,9 +678,11 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             ).addTo(this.leafletInstance);
         }
 
-        drawControl({ position: "bottomright" }, this).addTo(
-            this.leafletInstance
-        );
+        if (this.options.draw) {
+            drawControl({ position: "bottomright" }, this).addTo(
+                this.leafletInstance
+            );
+        }
     }
 
     abstract buildLayer(layer?: {

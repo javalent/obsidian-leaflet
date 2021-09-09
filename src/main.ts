@@ -178,6 +178,8 @@ export default class ObsidianLeaflet
         }
         log(params.verbose, params.id, "Beginning Markdown Postprocessor.");
 
+        
+
         const renderer = new LeafletRenderer(this, ctx.sourcePath, el, params);
         const map = renderer.map;
 

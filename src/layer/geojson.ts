@@ -38,10 +38,6 @@ export class GeoJSON extends Layer<L.GeoJSON> {
         this.leafletInstance = L.geoJSON(data, {
             pane: this.options.pane ?? "geojson",
             pointToLayer: (geojsonPoint, latlng) => {
-                console.log(
-                    "🚀 ~ file: geojson.ts ~ line 46 ~ geojsonPoint",
-                    geojsonPoint
-                );
                 const marker = new GeoJSONMarker(this, geojsonPoint, latlng, {
                     /* icon: "default", */
                     pane: this.options.pane ?? "geojson"

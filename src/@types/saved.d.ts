@@ -41,4 +41,5 @@ export interface ObsidianAppData {
     configDirectory: string;
     mapViewParameters: BlockParameters;
     mapViewEnabled: boolean;
+    enableDraw: boolean;
 }

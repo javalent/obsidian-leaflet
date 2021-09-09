@@ -63,6 +63,7 @@ export interface BlockParameters {
     zoomFeatures?: boolean;
     verbose?: boolean;
     isMapView?: boolean;
+    draw?: boolean;
 }
 
 declare class ObsidianLeaflet extends Plugin {

@@ -90,6 +90,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             darkMode: `${this.params.darkMode}` === "true",
             defaultZoom: +this.params.defaultZoom,
             distanceMultiplier: this.params.distanceMultiplier,
+            draw: this.params.draw ?? this.plugin.data.enableDraw,
             drawColor: getHex(this.params.drawColor),
             geojsonColor: getHex(this.params.geojsonColor),
             gpxColor: getHex(this.params.gpxColor),
