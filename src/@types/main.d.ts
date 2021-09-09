@@ -92,4 +92,10 @@ declare class ObsidianLeaflet extends Plugin {
     generateMarkerMarkup(markers: Icon[]): MarkerIcon[];
 
     registerMapEvents(map: BaseMapType): void;
+    createNewMarkerType(options?: {
+        original?: Icon;
+        layer?: boolean;
+        name?: string;
+    }): Promise<Icon | void>;
+    openInitiativeView(): void;
 }

@@ -16,7 +16,7 @@ import { OVERLAY_TAG_REGEX } from ".";
 
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { marker } from "leaflet";
-import { LeafletRenderer } from "src/renderer";
+import { LeafletRenderer } from "src/renderer/renderer";
 import t from "src/l10n/locale";
 const L = window[LeafletSymbol];
 export default class Watcher extends Events {

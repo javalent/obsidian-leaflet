@@ -1,8 +1,9 @@
 import { ItemView, MarkdownRenderChild, WorkspaceLeaf } from "obsidian";
 import { BaseMapType, BlockParameters, ObsidianLeaflet } from "src/@types";
 import t from "src/l10n/locale";
-import { LeafletRenderer } from "src/renderer";
+import { LeafletRenderer } from "src/renderer/renderer";
 import { DEFAULT_BLOCK_PARAMETERS, VIEW_TYPE } from "src/utils";
+import { HomebrewCreature } from "../../../obsidian-initiative-tracker/@types";
 
 export class LeafletMapView extends ItemView {
     map: BaseMapType;
@@ -18,7 +19,7 @@ export class LeafletMapView extends ItemView {
             isMapView: true
         };
     }
-    constructor(public leaf: WorkspaceLeaf, private plugin: ObsidianLeaflet) {
+    constructor(public leaf: WorkspaceLeaf, public plugin: ObsidianLeaflet) {
         super(leaf);
         this.innerContentEl = this.contentEl.createDiv({
             cls: "markdown-preview-view",
@@ -58,6 +59,31 @@ export class LeafletMapView extends ItemView {
         return VIEW_TYPE;
     }
     onResize() {
-        if (this.map) this.map.leafletInstance.invalidateSize();
+        if (!this.renderer) return;
+        this.renderer.setHeight(
+            `${
+                this.contentEl.firstElementChild.getBoundingClientRect().height
+            }px`
+        );
+    }
+}
+
+export class InitiativeMapView extends LeafletMapView {
+    constructor(
+        public leaf: WorkspaceLeaf,
+        public plugin: ObsidianLeaflet,
+        public players?: any,
+        public creatures?: any
+    ) {
+        super(leaf, plugin);
+    }
+    getDisplayText() {
+        return "Initiative Tracker Map";
+    }
+    getViewType() {
+        return "INITIATIVE_TRACKER_MAP_VIEW";
+    }
+    addCreatures(...creatures: HomebrewCreature[]) {
+        console.log(...creatures);
     }
 }

@@ -1,7 +1,7 @@
 import "leaflet";
 import "../node_modules/leaflet/dist/leaflet.css";
 import "./assets/main.css";
-
+import type InitiativeTracker from "../../obsidian-initiative-tracker/src/main";
 import {
     Notice,
     MarkdownPostProcessorContext,
@@ -10,7 +10,8 @@ import {
     addIcon,
     Platform,
     WorkspaceLeaf,
-    debounce
+    debounce,
+    MarkdownView
 } from "obsidian";
 
 //Local Imports
@@ -42,10 +43,12 @@ import {
     BaseMapType
 } from "./@types";
 
-import { LeafletRenderer } from "./renderer";
+import { LeafletRenderer } from "./renderer/renderer";
 import { markerDivIcon } from "./map/divicon";
-import { LeafletMapView } from "./map/view";
+import { InitiativeMapView, LeafletMapView } from "./map/view";
 import t from "./l10n/locale";
+import { CreateMarkerModal } from "./modals";
+import { HomebrewCreature } from "../../obsidian-initiative-tracker/@types";
 
 //add commands to app interface
 declare module "obsidian" {
@@ -59,6 +62,11 @@ declare module "obsidian" {
         keymap: {
             pushScope(scope: Scope): void;
             popScope(scope: Scope): void;
+        };
+        plugins: {
+            plugins: {
+                "initiative-tracker": InitiativeTracker;
+            };
         };
     }
     interface MarkdownPostProcessorContext {
@@ -93,6 +101,14 @@ export default class ObsidianLeaflet
         if (leaf && leaf.view && leaf.view instanceof LeafletMapView)
             return leaf.view;
     }
+    get initiativeView() {
+        const leaves = this.app.workspace.getLeavesOfType(
+            "INITIATIVE_TRACKER_MAP_VIEW"
+        );
+        const leaf = leaves.length ? leaves[0] : null;
+        if (leaf && leaf.view && leaf.view instanceof InitiativeMapView)
+            return leaf.view;
+    }
     async onload(): Promise<void> {
         console.log(t("Loading Obsidian Leaflet v%1", this.manifest.version));
         await this.loadSettings();
@@ -111,6 +127,15 @@ export default class ObsidianLeaflet
             this.registerView(VIEW_TYPE, (leaf: WorkspaceLeaf) => {
                 return new LeafletMapView(leaf, this);
             });
+        }
+
+        if (this.app.plugins.plugins["initiative-tracker"]) {
+            this.registerView(
+                "INITIATIVE_TRACKER_MAP_VIEW",
+                (leaf: WorkspaceLeaf) => {
+                    return new InitiativeMapView(leaf, this);
+                }
+            );
         }
 
         this.markerIcons = this.generateMarkerMarkup(this.data.markerIcons);
@@ -177,8 +202,6 @@ export default class ObsidianLeaflet
             throw new Error(t("ID required"));
         }
         log(params.verbose, params.id, "Beginning Markdown Postprocessor.");
-
-        
 
         const renderer = new LeafletRenderer(this, ctx.sourcePath, el, params);
         const map = renderer.map;
@@ -310,57 +333,6 @@ export default class ObsidianLeaflet
         }
         await super.saveData(data);
     }
-    generateMarkerMarkup(
-        markers: Icon[] = this.data.markerIcons
-    ): MarkerIcon[] {
-        let ret: MarkerIcon[] = markers.map((marker): MarkerIcon => {
-            if (!marker.transform) {
-                marker.transform = this.data.defaultMarker.transform;
-            }
-            if (!marker.iconName) {
-                marker.iconName = this.data.defaultMarker.iconName;
-            }
-            const params =
-                marker.layer && !this.data.defaultMarker.isImage
-                    ? {
-                          transform: marker.transform,
-                          mask: getIcon(this.data.defaultMarker.iconName)
-                      }
-                    : {};
-            let node = getMarkerIcon(marker, {
-                ...params,
-                classes: ["full-width-height"]
-            }).node as HTMLElement;
-            node.style.color = marker.color
-                ? marker.color
-                : this.data.defaultMarker.color;
-
-            return {
-                type: marker.type,
-                html: node.outerHTML,
-                icon: markerDivIcon({
-                    html: node.outerHTML,
-                    className: `leaflet-div-icon`
-                })
-            };
-        });
-        const defaultHtml = getMarkerIcon(this.data.defaultMarker, {
-            classes: ["full-width-height"],
-            styles: {
-                color: this.data.defaultMarker.color
-            }
-        }).html;
-        ret.unshift({
-            type: "default",
-            html: defaultHtml,
-            icon: markerDivIcon({
-                html: defaultHtml,
-                className: `leaflet-div-icon`
-            })
-        });
-
-        return ret;
-    }
 
     registerMapEvents(map: BaseMapType) {
         this.registerDomEvent(map.contentEl, "dragover", (evt) => {
@@ -454,5 +426,108 @@ export default class ObsidianLeaflet
                 map.updateMarker(marker);
             }
         });
+    }
+
+    public generateMarkerMarkup(
+        markers: Icon[] = this.data.markerIcons
+    ): MarkerIcon[] {
+        let ret: MarkerIcon[] = markers.map((marker): MarkerIcon => {
+            if (!marker.transform) {
+                marker.transform = this.data.defaultMarker.transform;
+            }
+            if (!marker.iconName) {
+                marker.iconName = this.data.defaultMarker.iconName;
+            }
+            const params =
+                marker.layer && !this.data.defaultMarker.isImage
+                    ? {
+                          transform: marker.transform,
+                          mask: getIcon(this.data.defaultMarker.iconName)
+                      }
+                    : {};
+            let node = getMarkerIcon(marker, {
+                ...params,
+                classes: ["full-width-height"]
+            }).node as HTMLElement;
+            node.style.color = marker.color
+                ? marker.color
+                : this.data.defaultMarker.color;
+
+            return {
+                type: marker.type,
+                html: node.outerHTML,
+                icon: markerDivIcon({
+                    html: node.outerHTML,
+                    className: `leaflet-div-icon`
+                })
+            };
+        });
+        const defaultHtml = getMarkerIcon(this.data.defaultMarker, {
+            classes: ["full-width-height"],
+            styles: {
+                color: this.data.defaultMarker.color
+            }
+        }).html;
+        ret.unshift({
+            type: "default",
+            html: defaultHtml,
+            icon: markerDivIcon({
+                html: defaultHtml,
+                className: `leaflet-div-icon`
+            })
+        });
+
+        return ret;
+    }
+
+    public createNewMarkerType(options?: {
+        original?: Icon;
+        layer?: boolean;
+        name?: string;
+    }): Promise<Icon | void> {
+        return new Promise((resolve) => {
+            let newMarker: Icon = options.original ?? {
+                type: options?.name ?? "",
+                iconName: null,
+                color:
+                    options?.layer ?? this.data.layerMarkers
+                        ? this.data.defaultMarker.color
+                        : this.data.color,
+                layer: options?.layer ?? this.data.layerMarkers,
+                transform: this.data.defaultMarker.transform,
+                isImage: false,
+                imageUrl: ""
+            };
+            let newMarkerModal = new CreateMarkerModal(
+                this.app,
+                this,
+                newMarker
+            );
+            newMarkerModal.open();
+            newMarkerModal.onClose = async () => {
+                if (newMarkerModal.saved) resolve(newMarker);
+                resolve();
+            };
+        });
+    }
+
+    public async openInitiativeView(creatures?: HomebrewCreature[]) {
+        const tracker = this.app.plugins.plugins["initiative-tracker"];
+        if (!this.initiativeView) {
+            const bool = this.app.workspace
+                .getLayout()
+                .main.children.filter((c: any) => c?.state?.type != "empty");
+
+            const leaf = this.app.workspace.getLeaf(bool.length > 0);
+
+            await leaf.open(new InitiativeMapView(leaf, this));
+        }
+
+        if (!this.initiativeView) {
+            new Notice("There was an error opening the initiative map view.");
+            return;
+        }
+
+        this.initiativeView.addCreatures(...creatures);
     }
 }

@@ -44,7 +44,7 @@ import {
 
 import { LeafletSymbol } from "../utils/leaflet-import";
 import { gpxControl } from "src/controls/gpx";
-import { LeafletRenderer } from "src/renderer";
+import { LeafletRenderer } from "src/renderer/renderer";
 import { mapViewControl, saveMapParametersControl } from "src/controls/mapview";
 import t from "src/l10n/locale";
 

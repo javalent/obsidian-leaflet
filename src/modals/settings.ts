@@ -18,6 +18,7 @@ export class CreateMarkerModal extends Modal {
     tempMarker: Icon;
     plugin: ObsidianLeaflet;
     canvas: HTMLCanvasElement;
+    saved: boolean = false;
     constructor(app: App, plugin: ObsidianLeaflet, marker: Icon) {
         super(app);
         this.marker = marker;
@@ -463,6 +464,8 @@ export class CreateMarkerModal extends Modal {
                 this.marker.transform = this.tempMarker.transform;
                 this.marker.isImage = this.tempMarker.isImage;
                 this.marker.imageUrl = this.tempMarker.imageUrl;
+
+                this.saved = true;
 
                 this.close();
             });

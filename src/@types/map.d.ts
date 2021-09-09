@@ -10,7 +10,7 @@ import type { ObsidianAppData, TooltipDisplay } from "./saved";
 import type { Overlay } from "src/layer";
 import type { Layer } from "src/layer/layer";
 import type { GPXControl } from "./controls";
-import type { LeafletRenderer } from "src/renderer";
+import type { LeafletRenderer } from "src/renderer/renderer";
 import { DrawingController } from "src/draw/controller";
 import { ShapeProperties } from "src/draw/shape";
 

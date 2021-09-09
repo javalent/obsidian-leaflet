@@ -33,23 +33,10 @@ import t from "src/l10n/locale";
 
 export class ObsidianLeafletSettingTab extends PluginSettingTab {
     plugin: ObsidianLeaflet;
-    newMarker: Icon;
 
     constructor(app: App, plugin: ObsidianLeaflet) {
         super(app, plugin);
         this.plugin = plugin;
-
-        this.newMarker = {
-            type: "",
-            iconName: null,
-            color: this.data.layerMarkers
-                ? this.data.defaultMarker.color
-                : this.data.color,
-            layer: this.data.layerMarkers,
-            transform: this.data.defaultMarker.transform,
-            isImage: false,
-            imageUrl: ""
-        };
     }
     get data() {
         return this.plugin.data;
@@ -281,36 +268,13 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                 let b = button
                     .setTooltip(t("Add Additional"))
                     .onClick(async () => {
-                        let newMarkerModal = new CreateMarkerModal(
-                            this.app,
-                            this.plugin,
-                            this.newMarker
-                        );
-                        newMarkerModal.open();
-                        newMarkerModal.onClose = async () => {
-                            if (
-                                !this.newMarker.type ||
-                                (!this.newMarker.iconName &&
-                                    !this.newMarker.isImage)
-                            ) {
-                                return;
-                            }
-                            this.data.markerIcons.push(this.newMarker);
-                            this.newMarker = {
-                                type: "",
-                                iconName: null,
-                                color: this.data.layerMarkers
-                                    ? this.data.defaultMarker.color
-                                    : this.data.color,
-                                layer: true,
-                                transform: this.data.defaultMarker.transform,
-                                isImage: false,
-                                imageUrl: ""
-                            };
-                            await this.plugin.saveSettings();
+                        const newMarker =
+                            await this.plugin.createNewMarkerType();
+                        if (!newMarker) return;
+                        this.data.markerIcons.push(newMarker);
+                        await this.plugin.saveSettings();
 
-                            this.display();
-                        };
+                        this.display();
                     });
                 b.buttonEl.appendChild(
                     icon(
@@ -328,8 +292,29 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
         this.data.markerIcons.forEach((marker) => {
             let setting = new Setting(markers)
                 .addExtraButton((b) =>
-                    b.onClick(() => {
-                        const tempMarker = { ...marker };
+                    b.onClick(async () => {
+                        const edit = await this.plugin.createNewMarkerType({
+                            original: marker
+                        });
+                        if (!edit || !edit.type || !edit.iconName) {
+                            return;
+                        }
+
+                        if (edit.type != marker.type) {
+                            this.data.mapMarkers.forEach(({ markers }) => {
+                                markers = markers.map((m) => {
+                                    if (m.type == marker.type) {
+                                        m.type = edit.type;
+                                    }
+                                    return m;
+                                });
+                            });
+                        }
+
+                        await this.plugin.saveSettings();
+                        this.display();
+                        
+                        /* const tempMarker = { ...marker };
                         let newMarkerModal = new CreateMarkerModal(
                             this.app,
                             this.plugin,
@@ -354,7 +339,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 
                             await this.plugin.saveSettings();
                             this.display();
-                        };
+                        }; */
                     })
                 )
                 .addExtraButton((b) =>

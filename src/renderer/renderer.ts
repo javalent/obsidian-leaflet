@@ -12,12 +12,12 @@ import type {
     ObsidianLeaflet,
     SavedMarkerProperties,
     SavedOverlayData
-} from "./@types";
-import type { BaseMapType, ImageLayerData, MarkerDivIcon } from "./@types/map";
+} from "../@types";
+import type { BaseMapType, ImageLayerData, MarkerDivIcon } from "../@types/map";
 
-import Watcher from "./utils/watcher";
-import { RealMap, ImageMap } from "./map/map";
-import Loader from "./worker/loader";
+import Watcher from "../utils/watcher";
+import { RealMap, ImageMap } from "../map/map";
+import Loader from "../worker/loader";
 
 import { Length } from "convert/dist/types/units";
 import {
@@ -28,24 +28,13 @@ import {
     parseLink,
     getHeight,
     getHex
-} from "./utils";
+} from "../utils";
 import convert from "convert";
-import t from "./l10n/locale";
+import t from "../l10n/locale";
 
 declare module "leaflet" {
     interface Map {
         isFullscreen(): boolean;
-    }
-    interface MarkerOptions {
-        startIcon?: MarkerDivIcon;
-        endIcon?: MarkerDivIcon;
-        wptIcons?: { [key: string]: MarkerDivIcon };
-        startIconUrl?: null;
-        endIconUrl?: null;
-        shadowUrl?: null;
-        wptIconUrls?: {
-            "": null;
-        };
     }
 }
 
@@ -130,6 +119,13 @@ export class LeafletRenderer extends MarkdownRenderChild {
         this.buildMap();
 
         this.resize.observe(this.containerEl);
+    }
+
+    setHeight(height: string) {
+        this.containerEl.style.height = height;
+        if (!this.map) return;
+        this.map.contentEl.style.height = height;
+        this.map.leafletInstance.invalidateSize();
     }
 
     async buildMap() {
@@ -339,6 +335,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         this.map.loadFeatureData({ geojsonData, gpxData, gpxIcons });
     }
+
     loadSavedData() {
         let mapData = this.plugin.data.mapMarkers.find(
             ({ id: mapId }) => mapId == this.params.id
@@ -360,6 +357,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         this.map.addShapes(...mapData.shapes);
     }
+
     async loadImmutableData() {
         if (
             (this.params.marker ?? []).length ||
@@ -551,6 +549,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         return { coords, zoomDistance, file };
     }
+
     private _getCoordsFromCache(
         cache: CachedMetadata,
         zoomTag: string
