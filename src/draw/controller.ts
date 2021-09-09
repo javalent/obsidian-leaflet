@@ -1,11 +1,15 @@
 import { BaseMapType } from "src/@types";
+import { LeafletSymbol } from "src/utils/leaflet-import";
 import { Polygon } from "./polygon";
 import { Polyline } from "./polyline";
 import { Rectangle } from "./rectangle";
 import { Shape, ShapeProperties } from "./shape";
 import { Vertex } from "./vertex";
 
+const L = window[LeafletSymbol];
+
 export class DrawingController {
+    draggingShape: Shape<L.Path>;
     getSelectedVertex() {
         const vertices = Object.values(this.shapes)
             .flat()
@@ -23,6 +27,7 @@ export class DrawingController {
     isDrawing: boolean = false;
     isDeleting: boolean = false;
     isColoring: boolean = false;
+    isDragging: boolean = false;
     shape: Shape<L.Path>;
     shapes: Record<string, Shape<L.Path>[]> = {
         rectangle: [],
@@ -86,6 +91,24 @@ export class DrawingController {
         }
         this.stopDrawing();
     }
+    startDragging() {
+        this.stopDrawing();
+        this.isDragging = true;
+        this.map.contentEl.addClass("shape-dragging");
+        this.map.leafletInstance.on("mousemove touchmove", this.onDrag, this);
+        
+    }
+    stopDragging() {
+        this.isDragging = false;
+        this.map.contentEl.removeClass("shape-dragging");
+        this.map.leafletInstance.off("mousemove touchmove", this.onDrag, this);
+    }
+    onDrag(evt: L.LeafletMouseEvent) {
+        L.DomEvent.stop(evt);
+        if (this.draggingShape) {
+            this.draggingShape.onDrag(evt);
+        }
+    }
     startDrawing() {
         this.isDrawing = true;
         this.registerDrawing();
@@ -121,6 +144,7 @@ export class DrawingController {
         );
         this.map.leafletInstance.off("click", this.shape.onClick, this.shape);
     }
+
     toProperties() {
         return this.flatShapes.map((shape) => shape.toProperties());
     }

@@ -339,6 +339,9 @@ input.is-invalid {
 .block-language-leaflet .leaflet-container.drawing {
     cursor: crosshair;
 }
+.block-language-leaflet .leaflet-container.shape-dragging .leaflet-drawing-pane path {
+    cursor: move;
+}
 
 /** Filter Control */
 .block-language-leaflet .leaflet-control-expandable {

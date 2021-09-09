@@ -249,8 +249,6 @@ export default class ObsidianLeaflet
     }
     saveSettings = debounce(
         async () => {
-            
-            console.log("saving");
             this.maps.forEach((map) => {
                 this.data.mapMarkers = this.data.mapMarkers.filter(
                     ({ id }) => id != map.id

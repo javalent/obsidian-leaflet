@@ -105,12 +105,7 @@ export class Rectangle extends Shape<L.Rectangle> {
         ];
     }
     registerVertexDrags() {
-        console.log(
-            "🚀 ~ file: rectangle.ts ~ line 107 ~ this.vertices.length",
-            this.vertices.length
-        );
         this.vertices[0].on("drag", () => {
-            console.log("northwest drag");
             this.vertices[3].setLatLng(
                 L.latLng([
                     this.vertices[3].getLatLng().lat,
@@ -125,7 +120,6 @@ export class Rectangle extends Shape<L.Rectangle> {
             );
         });
         this.vertices[1].on("drag", () => {
-            console.log("northeast drag");
             this.vertices[2].setLatLng(
                 L.latLng([
                     this.vertices[2].getLatLng().lat,
@@ -140,7 +134,6 @@ export class Rectangle extends Shape<L.Rectangle> {
             );
         });
         this.vertices[2].on("drag", () => {
-            console.log("southeast drag");
             this.vertices[1].setLatLng(
                 L.latLng([
                     this.vertices[1].getLatLng().lat,
@@ -155,7 +148,6 @@ export class Rectangle extends Shape<L.Rectangle> {
             );
         });
         this.vertices[3].on("drag", () => {
-            console.log("southwest drag");
             this.vertices[0].setLatLng(
                 L.latLng([
                     this.vertices[0].getLatLng().lat,
@@ -206,7 +198,6 @@ export class Rectangle extends Shape<L.Rectangle> {
     }
 
     initialize() {
-        console.log("initializing");
         this.redraw();
         this.hideVertices();
         this.syncVerticesToCorners();

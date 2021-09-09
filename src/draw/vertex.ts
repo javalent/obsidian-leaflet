@@ -33,6 +33,12 @@ export class VertexProperties {
 }
 
 export class Vertex extends Events {
+    incrementLatLng(delta: LatLng): void {
+        const lat = this.latlng.lat + delta.lat;
+        const lng = this.latlng.lng + delta.lng;
+
+        this.leafletInstance.setLatLng(L.latLng(lat, lng));
+    }
     leafletInstance: L.Marker;
     selected: boolean = false;
     isBeingHovered: boolean = false;
@@ -181,7 +187,8 @@ export class Vertex extends Events {
         this.leafletInstance.on("mouseout", () => {
             this.isBeingHovered = false;
         });
-        this.leafletInstance.on("mousedown", () => {
+        this.leafletInstance.on("mousedown", (evt: L.LeafletMouseEvent) => {
+            L.DomEvent.stopPropagation(evt);
             this.selected = true;
         });
         this.leafletInstance.on("mouseup", (evt) => {
@@ -217,9 +224,11 @@ export class Vertex extends Events {
             this.parent.map.plugin.saveSettings();
         });
         this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) => {
-            //todo this isn't firing when loading from data?
             L.DomEvent.stopPropagation(evt);
-            this.parent.leafletInstance.fire("click");
+            if (this.parent.controller.isDrawing) {
+                this.selected = false;
+                this.parent.controller.shape.onClick(evt, { vertices: [this] });
+            }
         });
         this.registerMarkerEvents();
     }
@@ -229,7 +238,6 @@ export class Vertex extends Events {
         }
     }
     onTargetDrag(evt: L.LeafletMouseEvent) {
-        console.log("🚀 ~ file: vertex.ts ~ line 233 ~ evt", evt);
         this.leafletInstance.fire("drag", evt);
     }
     registerMarkerEvents() {
@@ -270,7 +278,6 @@ export class Vertex extends Events {
             properties.targets,
             properties.id
         );
-        vertex.registerDragEvents();
         return vertex;
     }
 }

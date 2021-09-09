@@ -3,6 +3,9 @@ import { DrawingController } from "./controller";
 import { Vertex, VertexProperties } from "./vertex";
 import { Marker } from "src/layer";
 
+import { LeafletSymbol } from "src/utils/leaflet-import";
+
+const L = window[LeafletSymbol];
 export interface ShapeProperties {
     type: string;
     color: string;
@@ -11,6 +14,7 @@ export interface ShapeProperties {
 
 export abstract class Shape<T extends L.Path> extends Layer<T> {
     layer = "INTERNAL_SHAPE_LAYER";
+    dragStart: L.LatLng;
     toProperties(): ShapeProperties {
         return {
             type: this.type,
@@ -19,15 +23,32 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
         };
     }
     registerEvents() {
-        this.leafletInstance.on("click", () => {
+        this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) => {
+
             if (this.controller.isDeleting) {
-                console.log("delete");
+
                 this.hideVertices();
                 this.controller.removeShape(this);
             }
             if (this.controller.isColoring) {
                 this.setColor(this.controller.color);
             }
+
+        });
+        this.leafletInstance.on("mousedown", (evt: L.LeafletMouseEvent) => {
+
+            if (!this.controller.isDragging) return;
+            this.map.leafletInstance.dragging.disable();
+            this.dragStart = evt.latlng;
+            this.controller.draggingShape = this;
+        });
+        this.leafletInstance.on("mouseup", (evt: L.LeafletMouseEvent) => {
+
+            if (!this.controller.isDragging) return;
+            this.map.leafletInstance.dragging.enable();
+            this.controller.draggingShape = null;
+
+            this.map.plugin.saveSettings();
         });
     }
     options: L.PathOptions = {
@@ -107,6 +128,37 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
         this._onMousemove(latlng, evt.originalEvent.getModifierState("Shift"));
     }
 
+    onDrag(evt: L.LeafletMouseEvent, propagate: boolean = true) {
+        L.DomEvent.stop(evt);
+        if (!this.dragStart) this.dragStart = evt.latlng;
+        const latlng = this.getMousemoveDelta(
+            evt.latlng,
+            this.dragStart,
+            evt.originalEvent.getModifierState("Shift")
+        );
+        const delta = L.latLng(
+            latlng.lat - this.dragStart.lat,
+            latlng.lng - this.dragStart.lng
+        );
+        this.vertices.forEach((v) => v.incrementLatLng(delta));
+        this.redraw();
+
+        if (propagate) {
+            const otherShapes: Set<Shape<L.Path>> = new Set();
+            this.vertices.forEach((v) =>
+                v.vertices.forEach(
+                    (vertex) => vertex && otherShapes.add(vertex.parent)
+                )
+            );
+
+            otherShapes.forEach((shape) => {
+                shape.dragStart = this.dragStart;
+                shape.onDrag(evt, false);
+            });
+        }
+        this.dragStart = evt.latlng;
+    }
+
     checkAndAddToMap() {
         if (this.map.readyForDrawings) {
             this.show();
@@ -174,5 +226,6 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
         this.hideVertices();
         this.vertices.forEach((v) => v.delete());
         this.vertices = [];
+        this.map.plugin.saveSettings();
     }
 }

@@ -252,7 +252,7 @@ export default {
     "There was an issue with the provided longitude.":
         "There was an issue with the provided longitude.",
 
-    //control/draw.ts
+    //draw
     Draw: "Draw",
     Polygon: "Polygon",
     Polyline: "Polyline",
@@ -261,6 +261,7 @@ export default {
     "Delete Shapes": "Delete Shapes",
     Done: "Done",
     Text: "Text",
-    "Color": "Color",
-    "Fill Color": "Fill Color"
+    Color: "Color",
+    "Fill Color": "Fill Color",
+    "Move Shapes": "Move Shapes"
 };

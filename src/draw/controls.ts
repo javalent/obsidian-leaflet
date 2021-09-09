@@ -6,6 +6,7 @@ import {
 import t from "src/l10n/locale";
 
 import { LeafletSymbol } from "src/utils/leaflet-import";
+import { BaseDrawControl } from "./base";
 import { ColorControl } from "./color";
 import { PolygonControl } from "./polygon";
 import { PolylineControl } from "./polyline";
@@ -21,12 +22,13 @@ export class DrawControl extends FontAwesomeControl {
     context: HTMLElement;
 
     //Controls
-    polygon: PolygonControl = new PolygonControl(this);
+    polygon = new PolygonControl(this);
     rectangle = new RectangleControl(this);
-    polyline: PolylineControl = new PolylineControl(this);
-    color: ColorControl = new ColorControl(this);
-    delete: DeleteControl = new DeleteControl(this);
-    done: DoneControl = new DoneControl(this);
+    polyline = new PolylineControl(this);
+    color = new ColorControl(this);
+    drag = new DragControl(this);
+    delete = new DeleteControl(this);
+    done = new DoneControl(this);
 
     /* free: FreeControl; */
     /* text: TextControl = new TextControl(this); */
@@ -82,6 +84,7 @@ export class DrawControl extends FontAwesomeControl {
         /* this.section.appendChild(this.text.controlEl); */
 
         this.section.appendChild(this.color.controlEl);
+        this.section.appendChild(this.drag.controlEl);
 
         this.section.appendChild(this.delete.controlEl);
         this.section.appendChild(this.done.controlEl);
@@ -121,26 +124,68 @@ export class DrawControl extends FontAwesomeControl {
         this.polyline.closeActions();
 
         this.color.closeActions();
+        this.controller.isColoring = false;
+
+        this.drag.closeActions();
+        this.controller.stopDragging();
+
+        this.delete.closeActions();
+        this.controller.isDeleting = false;
     }
 }
 
-class DeleteControl extends FontAwesomeControl {
+class DragControl extends BaseDrawControl {
     get map() {
         return this.parent.map;
     }
-    constructor(private parent: DrawControl) {
+    constructor(public parent: DrawControl) {
         super(
             {
-                icon: "trash",
-                cls: "leaflet-control-draw-trash",
-                tooltip: t("Delete Shapes")
+                icon: "arrows-alt",
+                cls: "leaflet-control-has-actions leaflet-control-draw-drag",
+                tooltip: t("Move Shapes")
             },
-            parent.map.leafletInstance
+            parent
         );
+        this.complete.onClick = (evt) => {
+            evt.stopPropagation();
+            this.parent.stopDrawingContext();
+        };
     }
     onClick() {
         this.parent.stopDrawingContext();
+        this.openActions();
+        this.parent.controller.startDragging();
+    }
+    draw() {
+        this.actionsEl.appendChild(this.complete.controlEl);
+    }
+}
+class DeleteControl extends BaseDrawControl {
+    get map() {
+        return this.parent.map;
+    }
+    constructor(public parent: DrawControl) {
+        super(
+            {
+                icon: "trash",
+                cls: "leaflet-control-has-actions leaflet-control-draw-trash",
+                tooltip: t("Delete Shapes")
+            },
+            parent
+        );
+        this.complete.onClick = (evt) => {
+            evt.stopPropagation();
+            this.parent.stopDrawingContext();
+        };
+    }
+    onClick() {
+        this.parent.stopDrawingContext();
+        this.openActions();
         this.parent.controller.isDeleting = true;
+    }
+    draw() {
+        this.actionsEl.appendChild(this.complete.controlEl);
     }
 }
 class DoneControl extends FontAwesomeControl {
@@ -160,6 +205,7 @@ class DoneControl extends FontAwesomeControl {
     onClick(evt: MouseEvent) {
         evt.stopPropagation();
         this.parent.complete();
+        this.parent.map.plugin.saveSettings();
     }
 }
 

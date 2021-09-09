@@ -39,7 +39,9 @@ export abstract class FontAwesomeControl extends L.Control {
         this.controlEl.children[0].setAttrs({
             "aria-label": this.tooltip
         });
-        L.DomEvent.on(this.controlEl, "click", this.onClick.bind(this));
+        L.DomEvent.on(this.controlEl, "click", (evt: MouseEvent) =>
+            this.onClick(evt)
+        );
     }
     onAdd(leafletMap: L.Map) {
         this.leafletInstance = leafletMap;

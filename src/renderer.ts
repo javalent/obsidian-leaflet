@@ -163,7 +163,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         this.map.on("removed", () => this.resize.disconnect());
 
-        await this.loadSavedData();
+        this.loadSavedData();
         await this.loadImmutableData();
         await this.loadFeatureData();
 
@@ -338,13 +338,15 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         this.map.loadFeatureData({ geojsonData, gpxData, gpxIcons });
     }
-    async loadSavedData() {
+    loadSavedData() {
         let mapData = this.plugin.data.mapMarkers.find(
             ({ id: mapId }) => mapId == this.params.id
         );
 
+        if (!mapData) return;
+
         this.map.addMarker(
-            ...(mapData?.markers.map((m) => {
+            ...(mapData.markers?.map((m) => {
                 const layer =
                     decodeURIComponent(m.layer) === m.layer
                         ? encodeURIComponent(m.layer)
