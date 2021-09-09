@@ -14,29 +14,24 @@ import { formatLatLng } from "src/utils";
 import t from "src/l10n/locale";
 import { Constructor, MarkdownView, Notice, View } from "obsidian";
 import { GPX_Data } from "src/@types/gpx";
+import { Position } from "geojson";
 
 let L = window[LeafletSymbol];
 
 const locale = window.moment.locale;
 
-const MarkerOptions: L.MarkerOptions = {
-    startIconUrl: null,
-    endIconUrl: null,
-    shadowUrl: null,
-    wptIconUrls: {
-        "": null
-    },
-    startIcon: null,
-    endIcon: null,
-    wptIcons: {
-        "": null
-    }
-};
-
 const HOTLINE_OPTIONS: HotlineOptions = {
     weight: 3,
     outlineWidth: 1
 };
+
+interface NestedArray<T> extends Array<T | NestedArray<T>> {}
+
+function getArrayDepth(value: NestedArray<number>): number {
+    if (!value.length) return 0;
+    if (!(value[0] instanceof Array)) return 0;
+    return 1 + getArrayDepth(value[0]);
+}
 
 export class GPX extends Layer<L.GeoJSON> {
     geojson: GeoJSON;
@@ -75,30 +70,29 @@ export class GPX extends Layer<L.GeoJSON> {
         public map: BaseMapType,
         gpx: string,
         /* options: GPXOptions, */
-        private icons: any
+        private icons: {
+            start?: string;
+            end?: string;
+            waypoint?: string;
+        }
     ) {
         super();
-        if (this.icons.start && this.map.markerIcons.has(this.icons.start)) {
-            MarkerOptions.startIcon = this.map.markerIcons.get(
-                this.icons.start
-            ).icon;
-        }
-        if (this.icons.end && this.map.markerIcons.has(this.icons.end)) {
-            MarkerOptions.endIcon = this.map.markerIcons.get(
-                this.icons.end
-            ).icon;
-        }
-        if (
-            this.icons.waypoint &&
-            this.map.markerIcons.has(this.icons.waypoint)
-        ) {
-            MarkerOptions.wptIcons = {
-                "": this.map.markerIcons.get(this.icons.waypoint).icon
-            };
-        }
 
         this.map.log("Parsing GPX Data.");
         this.worker = new gpxWorker();
+
+        if (this.icons.start && !this.map.markerIcons.has(this.icons.start)) {
+            this.icons.start = "default";
+        }
+        if (this.icons.end && !this.map.markerIcons.has(this.icons.end)) {
+            this.icons.end = "default";
+        }
+        if (
+            this.icons.waypoint &&
+            !this.map.markerIcons.has(this.icons.waypoint)
+        ) {
+            this.icons.waypoint = "default";
+        }
 
         this.worker.postMessage({ string: gpx });
 
@@ -116,14 +110,66 @@ export class GPX extends Layer<L.GeoJSON> {
         this.gpx = gpxtoGeoJSON(
             new DOMParser().parseFromString(gpx, "text/xml")
         );
+        console.log("🚀 ~ file: gpx.ts ~ line 102 ~ this.gpx", this.gpx);
+
+        //add point types
+        const coords: Position[] = [];
+        this.gpx.features = this.gpx.features.map((feature) => {
+            if (feature?.geometry?.type === "Point") {
+                feature.properties = {
+                    ...(feature.properties ?? {}),
+                    "marker-symbol": this.icons.waypoint
+                };
+            } else if (feature?.geometry && "coordinates" in feature.geometry) {
+                const coordinates = feature.geometry.coordinates;
+                coords.push(
+                    ...(coordinates.flat(
+                        getArrayDepth(coordinates) - 1
+                    ) as Position[])
+                );
+            }
+
+            return feature;
+        });
+        if (this.icons.start) {
+            this.gpx.features.push({
+                type: "Feature",
+                geometry: {
+                    type: "Point",
+                    coordinates: coords[0]
+                },
+                properties: {
+                    "marker-symbol": this.icons.start
+                }
+            });
+        }
+        if (this.icons.end) {
+            this.gpx.features.push({
+                type: "Feature",
+                geometry: {
+                    type: "Point",
+                    coordinates: coords[coords.length - 1]
+                },
+                properties: {
+                    "marker-symbol": this.icons.end
+                }
+            });
+        }
+
         this.geojson = new GeoJSON(
             this.map,
             this.group,
-            { color: this.map.options.gpxColor, pane: "gpx" },
+            {
+                color: this.map.options.gpxColor,
+                pane: "gpx"
+            },
             this.gpx
         );
 
+        console.log(this.geojson.features[0].getLatLngs());
+
         this.leafletInstance.on("mouseover", (evt: L.LeafletMouseEvent) => {
+            L.DomEvent.stop(evt);
             if (
                 !this.map.leafletInstance.hasLayer(this.hotline) &&
                 !this.targeted

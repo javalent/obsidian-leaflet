@@ -20,6 +20,8 @@ export class GeoJSON extends Layer<L.GeoJSON> {
     leafletInstance: L.GeoJSON;
     private _display: HTMLDivElement;
     popup = popup(this.map, this);
+    markers: GeoJSONMarker[] = [];
+    features: GeoJSONFeature[] = [];
     get group() {
         return this.map.featureLayer;
     }
@@ -36,8 +38,16 @@ export class GeoJSON extends Layer<L.GeoJSON> {
         this.leafletInstance = L.geoJSON(data, {
             pane: this.options.pane ?? "geojson",
             pointToLayer: (geojsonPoint, latlng) => {
-                return new GeoJSONMarker(this, geojsonPoint, latlng)
-                    .leafletInstance;
+                console.log(
+                    "🚀 ~ file: geojson.ts ~ line 46 ~ geojsonPoint",
+                    geojsonPoint
+                );
+                const marker = new GeoJSONMarker(this, geojsonPoint, latlng, {
+                    /* icon: "default", */
+                    pane: this.options.pane ?? "geojson"
+                });
+                this.markers.push(marker);
+                return marker.leafletInstance;
             },
             style: (feature) => {
                 if (!feature || !feature.properties) return {};
@@ -59,9 +69,11 @@ export class GeoJSON extends Layer<L.GeoJSON> {
             },
             onEachFeature: (feature, layer: L.GeoJSON) => {
                 /** Propogate click */
-                if (feature.geometry?.type == "Point") return;
-
-                new GeoJSONFeature(this, feature, layer);
+                if (feature.geometry?.type == "Point") {
+                    return;
+                }
+                const geo = new GeoJSONFeature(this, feature, layer);
+                this.features.push(geo);
             }
         });
     }
@@ -71,13 +83,19 @@ export class GeoJSON extends Layer<L.GeoJSON> {
         }
         return this._display;
     }
-
+    addMarker(latlng: L.LatLng, icon?: string, pane?: string) {
+        const marker = new GeoJSONMarker(this, null, latlng, {
+            pane: pane ?? this.options.pane
+        });
+        this.markers.push(marker);
+        return marker.leafletInstance;
+    }
     toProperties() {}
 }
 
 class GeoJSONMarker {
     marker: Marker;
-    leafletInstance: DivIconMarker;
+    leafletInstance: L.Marker;
     title: string;
     description: string;
     iconDisplay: HTMLDivElement;
@@ -87,16 +105,17 @@ class GeoJSONMarker {
     }
     constructor(
         private parent: GeoJSON,
-        private feature: geojson.Feature<geojson.Point, any>,
-        latlng: L.LatLng
+        feature: geojson.Feature<geojson.Point, any>,
+        latlng: L.LatLng,
+        options: { pane: string }
     ) {
         const type = feature?.properties["marker-symbol"] ?? "default";
         const icon =
             this.map.markerIcons.get(type) ??
             this.map.markerIcons.get("default");
         this.title =
-            feature.properties.title ?? feature.properties.name ?? null;
-        this.description = feature.properties.description ?? null;
+            feature?.properties.title ?? feature?.properties.name ?? null;
+        this.description = feature?.properties.description ?? null;
         if (this.title) {
             this.iconDisplay = buildTooltip(this.title, {
                 icon: this.description != null
@@ -105,41 +124,35 @@ class GeoJSONMarker {
                 description: this.description
             });
         }
-        this.marker = new Marker(this.map, {
-            id: getId(),
-            type: type,
-            loc: latlng,
-            //TODO: What is this?
-            link: "display.outerHTML",
+
+        this.leafletInstance = L.marker(latlng, {
+            pane: options.pane,
             icon: icon.icon,
-            layer: this.map.currentGroup?.id,
-            mutable: false,
-            command: false,
-            zoom: this.map.zoom.max,
-            percent: undefined,
-            description: undefined
+            draggable: false
         });
 
-        this.leafletInstance = this.marker.leafletInstance;
+        //seems hacky but works :shrug:
+        this.leafletInstance.setZIndexOffset(1000);
 
-        this.leafletInstance.off("mouseover");
-        this.leafletInstance.off("click");
         this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) => {
             if (
                 (!evt.originalEvent.getModifierState("Shift") ||
                     !evt.originalEvent.getModifierState("Alt")) &&
-                this.title
+                this.description
             ) {
+                L.DomEvent.stop(evt);
                 this.parent.popup
-                    .setTarget(this.marker)
+                    .setTarget(this.leafletInstance)
                     .open(this.descriptionDisplay);
                 return;
             }
         });
-        this.leafletInstance.on("mouseover", () => {
-            if (this.map.isDrawing || !this.description) return;
-
-            this.parent.popup.setTarget(this.marker).open(this.iconDisplay);
+        this.leafletInstance.on("mouseover", (evt: L.LeafletMouseEvent) => {
+            if (this.map.isDrawing || !this.title) return;
+            L.DomEvent.stop(evt);
+            this.parent.popup
+                .setTarget(this.leafletInstance)
+                .open(this.iconDisplay);
         });
     }
 }
@@ -151,6 +164,10 @@ class GeoJSONFeature {
     descriptionDisplay: HTMLDivElement;
     get map() {
         return this.parent.map;
+    }
+    getLatLngs() {
+        if (this.leafletInstance instanceof L.Polyline)
+            return this.leafletInstance.getLatLngs().flat(2);
     }
     constructor(
         private parent: GeoJSON,
@@ -168,7 +185,6 @@ class GeoJSONFeature {
                 description: this.description
             });
         }
-
         this.leafletInstance.on("mouseover", () => this.onLayerMouseover());
         this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) =>
             this.onLayerClick(evt)

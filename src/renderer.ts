@@ -285,9 +285,9 @@ export class LeafletRenderer extends MarkdownRenderChild {
         if (!(geojson instanceof Array)) {
             geojson = [geojson];
         }
-        if (geojson.length) {
+        if (geojson.filter((g) => g).length) {
             this.map.log("Loading GeoJSON files.");
-            for (let link of geojson.flat(Infinity)) {
+            for (let link of geojson.flat(Infinity).filter((g) => g)) {
                 const file = this.plugin.app.metadataCache.getFirstLinkpathDest(
                     parseLink(link),
                     this.sourcePath
@@ -322,9 +322,9 @@ export class LeafletRenderer extends MarkdownRenderChild {
         if (!(gpx instanceof Array)) {
             gpx = [gpx];
         }
-        if (gpx.length) {
+        if (gpx.filter((g) => g).length) {
             this.map.log("Loading GPX files.");
-            for (let link of gpx.flat(Infinity)) {
+            for (let link of gpx.flat(Infinity).filter((g) => g)) {
                 const file = this.plugin.app.metadataCache.getFirstLinkpathDest(
                     parseLink(link),
                     this.sourcePath

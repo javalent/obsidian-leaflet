@@ -214,7 +214,7 @@ export async function getBlob(url: string, app: App) {
 }
 
 export function parseLink(link: string) {
-    return link.replace(/(\[|\])/g, "");
+    return link?.replace(/(\[|\])/g, "");
 }
 
 export async function getImmutableItems(

@@ -19,7 +19,7 @@ class Popup {
     }
     constructor(
         private map: BaseMapType,
-        private target: Layer<any> | L.LatLng | L.Polyline,
+        private target: Layer<any> | L.LatLng | L.Marker | L.Polyline,
         options?: Options
     ) {
         this.options = { ...BASE_POPUP_OPTIONS, ...options };
@@ -94,7 +94,7 @@ class Popup {
         clearTimeout(this._timeoutHandler);
     }
 
-    setTarget(target: Layer<any> | L.Polyline | L.LatLng) {
+    setTarget(target: Layer<any> | L.Marker | L.LatLng | L.Polyline) {
         this.target = target;
         this.leafletInstance = this.getPopup();
         return this;
@@ -104,7 +104,6 @@ class Popup {
         content: ((source: L.Layer) => L.Content) | L.Content,
         handler?: L.Layer
     ) {
-        
         if ("tooltip" in this.target && !this.canShowTooltip(this.target))
             return;
 
@@ -203,6 +202,17 @@ class Popup {
             return L.popup(this.options).setLatLng(
                 this.target.getLatLngs()[1] as L.LatLng
             );
+        } else if (this.target instanceof L.Marker) {
+            return L.popup({
+                ...this.options,
+                offset: new L.Point(
+                    0,
+                    (-1 *
+                        this.target.getElement().getBoundingClientRect()
+                            .height) /
+                        2
+                )
+            }).setLatLng(this.target.getLatLng() as L.LatLng);
         } else if (this.target instanceof Overlay) {
             return L.popup({
                 ...this.options,
