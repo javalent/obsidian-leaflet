@@ -100,7 +100,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     }[] = [];
 
     isDrawing: boolean = false;
-    layerControl: L.Control.Layers;
+    layerControl = L.control.layers({}, {});
     layerControlAdded = false;
 
     abstract render(options: {
@@ -152,7 +152,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     private escapeScopeCallback() {
         if (!this.isFullscreen) {
             this.stopDrawingContext();
-            this.controller.newShape();
+            if (this.controller.isDrawing) this.controller.newShape();
         }
     }
 
@@ -498,8 +498,6 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     /** Other Methods */
     addLayerControl() {
         if (this.layerControlAdded) return;
-        this.layerControl = L.control.layers({}, {});
-
         this.layerControlAdded = true;
         const layerIcon = icon({ iconName: "layer-group", prefix: "fas" })
             .node[0];
@@ -669,7 +667,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 },
                 this
             ).addTo(this.leafletInstance);
-        } else {
+        } else if (!this.options.isInitiativeView) {
             saveMapParametersControl(
                 {
                     position: "bottomright"

@@ -62,11 +62,13 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         this.parentEl = containerEl;
 
-        let hasAdditional = false;
+        let hasAdditional = this.params.imageOverlay?.length > 0 ?? false;
+
         if (this.params.image != "real") {
-            hasAdditional = this.params.layers.length > 1;
+            hasAdditional = hasAdditional || this.params.layers.length > 1;
         } else {
             hasAdditional =
+                hasAdditional ||
                 [
                     this.params.osmLayer,
                     ...[this.params.tileServer].flat()
@@ -87,6 +89,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             height: getHeight(this.containerEl, this.params.height),
             id: this.params.id,
             imageOverlays: [],
+            isInitiativeView: this.params.isInitiativeView,
             isMapView: this.params.isMapView,
             layers: this.params.layers,
             maxZoom: +this.params.maxZoom,
@@ -166,7 +169,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         /** Get initial coordinates and zoom level */
         this.map.log("Getting initiatial coordinates.");
-        const { coords, zoomDistance, file } = await this._getCoordinates(
+        const { coords, zoomDistance, file } = await this.getCoordinates(
             this.params.lat,
             this.params.long,
             this.params.coordinates,
@@ -182,7 +185,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
         //TODO: Move image overlays to web worker
         //maybe? may need this immediately otherwise they could flicker on
         let imageOverlayData;
-        if (this.params.imageOverlay.length) {
+        if (this.params.imageOverlay?.length) {
             imageOverlayData = await Promise.all(
                 this.params.imageOverlay.map(async ([img, ...bounds]) => {
                     return {
@@ -237,9 +240,9 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         super.onunload();
 
-        this.loader.unload();
+        this.loader?.unload();
 
-        this.resize.disconnect();
+        this.resize?.disconnect();
 
         try {
             this.map.remove();
@@ -474,7 +477,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
         }
     }
     //TODO: Move to renderer
-    private async _getCoordinates(
+    async getCoordinates(
         lat: string,
         long: string,
         coordinates: [string, string] | string,

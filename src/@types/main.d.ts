@@ -63,6 +63,7 @@ export interface BlockParameters {
     zoomFeatures?: boolean;
     verbose?: boolean;
     isMapView?: boolean;
+    isInitiativeView?: boolean;
     draw?: boolean;
 }
 

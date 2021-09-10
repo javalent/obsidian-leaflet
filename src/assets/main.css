@@ -339,8 +339,27 @@ input.is-invalid {
 .block-language-leaflet .leaflet-container.drawing {
     cursor: crosshair;
 }
-.block-language-leaflet .leaflet-container.shape-dragging .leaflet-drawing-pane path {
+.block-language-leaflet
+    .leaflet-container.shape-dragging
+    .leaflet-drawing-pane
+    path {
     cursor: move;
+}
+
+.block-language-leaflet .leaflet-div-icon.initiative-marker-disabled {
+    opacity: 50%;
+}
+.block-language-leaflet .leaflet-div-icon .hp {
+    position: relative;
+    height: 100%;
+    width: 100%;
+}
+.block-language-leaflet .leaflet-div-icon progress {
+    width: 100%;
+    top: 95%;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 /** Filter Control */

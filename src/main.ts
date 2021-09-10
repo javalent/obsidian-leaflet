@@ -45,10 +45,12 @@ import {
 
 import { LeafletRenderer } from "./renderer/renderer";
 import { markerDivIcon } from "./map/divicon";
-import { InitiativeMapView, LeafletMapView } from "./map/view";
+import { InitiativeMapView } from "./initiative/initiative";
 import t from "./l10n/locale";
 import { CreateMarkerModal } from "./modals";
 import { HomebrewCreature } from "../../obsidian-initiative-tracker/@types";
+import { LeafletMapView } from "./map/view";
+import { Creature } from "../../obsidian-initiative-tracker/src/utils/creature";
 
 //add commands to app interface
 declare module "obsidian" {
@@ -486,7 +488,7 @@ export default class ObsidianLeaflet
         name?: string;
     }): Promise<Icon | void> {
         return new Promise((resolve) => {
-            let newMarker: Icon = options.original ?? {
+            let newMarker: Icon = options?.original ?? {
                 type: options?.name ?? "",
                 iconName: null,
                 color:
@@ -511,7 +513,10 @@ export default class ObsidianLeaflet
         });
     }
 
-    public async openInitiativeView(creatures?: HomebrewCreature[]) {
+    public async openInitiativeView(
+        players?: Creature[],
+        creatures?: Creature[]
+    ) {
         const tracker = this.app.plugins.plugins["initiative-tracker"];
         if (!this.initiativeView) {
             const bool = this.app.workspace
@@ -520,14 +525,17 @@ export default class ObsidianLeaflet
 
             const leaf = this.app.workspace.getLeaf(bool.length > 0);
 
-            await leaf.open(new InitiativeMapView(leaf, this));
+            await leaf.open(
+                new InitiativeMapView(leaf, this, players, creatures)
+            );
+        } else {
+            this.initiativeView.addPlayers(...players);
+            this.initiativeView.addCreatures(...creatures);
         }
 
         if (!this.initiativeView) {
             new Notice("There was an error opening the initiative map view.");
             return;
         }
-
-        this.initiativeView.addCreatures(...creatures);
     }
 }

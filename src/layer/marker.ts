@@ -27,6 +27,16 @@ abstract class MarkerTarget {
     abstract run(evt: L.LeafletMouseEvent): void;
 }
 
+class Text extends MarkerTarget {
+    constructor(public text: string) {
+        super();
+    }
+    get display() {
+        return createSpan({ text: this.text });
+    }
+    async run() {}
+}
+
 class Link extends MarkerTarget {
     display: HTMLElement;
     get isInternal() {
@@ -136,7 +146,7 @@ class Command extends MarkerTarget {
 }
 
 export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
-    private target: MarkerTarget;
+    target: MarkerTarget;
     private _mutable: boolean;
     private _type: string;
     private _command: boolean;
@@ -187,24 +197,21 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                 type: type
             }
         );
-        if (link) {
-            if (command) {
-                this.target = new Command(link, this.map.plugin.app);
-            } else {
-                this.target = new Link(link, this.map.plugin.app);
-            }
+        if (command) {
+            this.target = new Command(link, this.map.plugin.app);
+        } else {
+            this.target = new Link(link, this.map.plugin.app);
         }
-
         this.id = id;
         this.type = type;
         this.loc = loc;
+        this.description = description;
         this.link = link;
         this.layer = layer;
         this.mutable = mutable;
         this.command = command;
         this.divIcon = icon;
         this.percent = percent;
-        this.description = description;
         this.tooltip = tooltip;
 
         this.minZoom = minZoom;
@@ -376,7 +383,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                 this.target = new Link(x, this.map.plugin.app);
             }
         }
-        this.target.text = x;
+        if (this.target) this.target.text = x;
     }
     get command() {
         return this._command;
@@ -458,11 +465,14 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             this.displayed = true;
             if (this.tooltip === "always" && this.target) {
                 this.leafletInstance.on("add", () => {
+                    console.log("add");
                     this.popup.open(this.target.display);
                 });
             }
         }
+        this.onShow();
     }
+    onShow() {}
     shouldShow(zoom: number) {
         if (this.minZoom == this.maxZoom && this.minZoom == null) return true;
         if (!this.displayed) {

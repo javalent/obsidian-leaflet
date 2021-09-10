@@ -1,5 +1,5 @@
 import { ItemView, MarkdownRenderChild, WorkspaceLeaf } from "obsidian";
-import { BaseMapType, BlockParameters, ObsidianLeaflet } from "src/@types";
+import { BaseMapType, ObsidianLeaflet } from "src/@types";
 import t from "src/l10n/locale";
 import { LeafletRenderer } from "src/renderer/renderer";
 import { DEFAULT_BLOCK_PARAMETERS, VIEW_TYPE } from "src/utils";
@@ -65,25 +65,5 @@ export class LeafletMapView extends ItemView {
                 this.contentEl.firstElementChild.getBoundingClientRect().height
             }px`
         );
-    }
-}
-
-export class InitiativeMapView extends LeafletMapView {
-    constructor(
-        public leaf: WorkspaceLeaf,
-        public plugin: ObsidianLeaflet,
-        public players?: any,
-        public creatures?: any
-    ) {
-        super(leaf, plugin);
-    }
-    getDisplayText() {
-        return "Initiative Tracker Map";
-    }
-    getViewType() {
-        return "INITIATIVE_TRACKER_MAP_VIEW";
-    }
-    addCreatures(...creatures: HomebrewCreature[]) {
-        console.log(...creatures);
     }
 }
