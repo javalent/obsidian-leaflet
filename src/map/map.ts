@@ -909,10 +909,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 });
             });
 
-            contextMenu.showAtPosition({
-                x: evt.originalEvent.clientX,
-                y: evt.originalEvent.clientY
-            });
+            contextMenu.showAtMouseEvent(evt.originalEvent);
             return;
         }
 
@@ -961,10 +958,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             });
         });
 
-        contextMenu.showAtPosition({
-            x: evt.originalEvent.clientX,
-            y: evt.originalEvent.clientY
-        } as Point);
+        contextMenu.showAtMouseEvent(evt.originalEvent);
     }
     isLayerRendered(layer: string) {
         return this.mapLayers.find(({ id }) => id === layer) ? true : false;

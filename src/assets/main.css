@@ -349,17 +349,38 @@ input.is-invalid {
 .block-language-leaflet .leaflet-div-icon.initiative-marker-disabled {
     opacity: 50%;
 }
-.block-language-leaflet .leaflet-div-icon .hp {
-    position: relative;
-    height: 100%;
-    width: 100%;
-}
 .block-language-leaflet .leaflet-div-icon progress {
     width: 100%;
     top: 95%;
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
+}
+
+.block-language-leaflet .leaflet-div-icon .initiative-marker-status-container {
+    position: absolute;
+    top: -6px;
+    right: -15px;
+    display: flex;
+    flex-flow: column wrap;
+    justify-content: center;
+    align-items: center;
+    height: 46px;
+    gap: 2px;
+}
+.block-language-leaflet
+    .leaflet-div-icon
+    .initiative-marker-status-container
+    svg {
+    height: 10px;
+}
+.block-language-leaflet
+    .leaflet-div-icon
+    .initiative-marker-status-container
+    svg
+    > * {
+    stroke-width: 20px;
+    stroke: white;
 }
 
 /** Filter Control */

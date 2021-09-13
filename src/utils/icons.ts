@@ -4,7 +4,8 @@ import {
     findIconDefinition,
     icon,
     library,
-    IconParams
+    IconParams,
+    Layer
 } from "@fortawesome/fontawesome-svg-core";
 import type {
     IconDefinition,
@@ -30,6 +31,57 @@ export function getIcon(iconName: string): IconDefinition {
         prefix: "fas"
     });
 }
+
+import {
+    faEyeSlash,
+    faHeart,
+    faMagic,
+    faDeaf,
+    faSpider,
+    faHandsHelping,
+    faGhost,
+    faSlash,
+    faWalking,
+    faMountain,
+    faSkullCrossbones,
+    faBed,
+    faBolt,
+    faLink,
+    faDizzy,
+    faSkull
+} from "@fortawesome/free-solid-svg-icons";
+
+import { layer } from "@fortawesome/fontawesome-svg-core";
+const paralyzed = layer((push) => {
+    push(icon(faWalking));
+    push(icon(faSlash));
+}).node[0];
+export const StatusMap: Map<string, Element> = new Map([
+    [
+        "Blinded",
+        icon(faEyeSlash, { attributes: { stroke: "coral", "stroke-width": 1 } })
+            .node[0]
+    ],
+    [
+        "Charmed",
+        icon(faHeart, { attributes: { stroke: "coral", "stroke-width": 1 } })
+            .node[0]
+    ],
+    ["Concentrating", icon(faMagic).node[0]],
+    ["Deafened", icon(faDeaf).node[0]],
+    ["Frightened", icon(faSpider).node[0]],
+    ["Grappled", icon(faHandsHelping).node[0]],
+    ["Incapacitated", icon(faSkull).node[0]],
+    ["Invisible", icon(faGhost).node[0]],
+    ["Paralyzed", paralyzed],
+    ["Petrified", icon(faMountain).node[0]],
+    ["Poisoned", icon(faSkullCrossbones).node[0]],
+    ["Prone", icon(faBed).node[0]],
+    ["Reacted", icon(faBolt).node[0]],
+    ["Restrained", icon(faLink).node[0]],
+    ["Stunned", icon(faDizzy).node[0]],
+    ["Unconscious", icon(faSkull).node[0]]
+]);
 
 interface InternalMarkerIcon {
     html: string;

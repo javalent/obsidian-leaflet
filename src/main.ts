@@ -2,6 +2,8 @@ import "leaflet";
 import "../node_modules/leaflet/dist/leaflet.css";
 import "./assets/main.css";
 import type InitiativeTracker from "../../obsidian-initiative-tracker/src/main";
+import { Creature } from "../../obsidian-initiative-tracker/src/utils/creature";
+
 import {
     Notice,
     MarkdownPostProcessorContext,
@@ -11,7 +13,7 @@ import {
     Platform,
     WorkspaceLeaf,
     debounce,
-    MarkdownView
+    FuzzySuggestModal
 } from "obsidian";
 
 //Local Imports
@@ -48,9 +50,8 @@ import { markerDivIcon } from "./map/divicon";
 import { InitiativeMapView } from "./initiative/initiative";
 import t from "./l10n/locale";
 import { CreateMarkerModal } from "./modals";
-import { HomebrewCreature } from "../../obsidian-initiative-tracker/@types";
 import { LeafletMapView } from "./map/view";
-import { Creature } from "../../obsidian-initiative-tracker/src/utils/creature";
+import { SRDMonster } from "../../obsidian-initiative-tracker/@types";
 
 //add commands to app interface
 declare module "obsidian" {
@@ -67,6 +68,13 @@ declare module "obsidian" {
         };
         plugins: {
             plugins: {
+                "obsidian-5e-statblocks": {
+                    data: Map<string, SRDMonster>;
+                };
+                "obsidian-dice-roller": {
+                    parseDice(text: string): Promise<{ result: number }>;
+                };
+                "obsidian-leaflet-plugin": ObsidianLeaflet;
                 "initiative-tracker": InitiativeTracker;
             };
         };
@@ -103,6 +111,7 @@ export default class ObsidianLeaflet
         if (leaf && leaf.view && leaf.view instanceof LeafletMapView)
             return leaf.view;
     }
+
     get initiativeView() {
         const leaves = this.app.workspace.getLeavesOfType(
             "INITIATIVE_TRACKER_MAP_VIEW"
@@ -139,6 +148,14 @@ export default class ObsidianLeaflet
                 }
             );
         }
+
+        this.registerEvent(
+            this.app.workspace.on("initiative-tracker:unload", () => {
+                if (this.initiativeView) {
+                    this.initiativeView.leaf.detach();
+                }
+            })
+        );
 
         this.markerIcons = this.generateMarkerMarkup(this.data.markerIcons);
 
@@ -186,6 +203,14 @@ export default class ObsidianLeaflet
                 map.el.parentElement.replaceChild(newPre, map.el);
             });
         });
+
+        if (this.view) {
+            this.view.leaf.detach();
+        }
+
+        if (this.initiativeView) {
+            this.initiativeView.leaf.detach();
+        }
 
         this.maps = [];
     }

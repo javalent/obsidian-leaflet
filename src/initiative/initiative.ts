@@ -1,16 +1,18 @@
 import { Menu, Notice, WorkspaceLeaf } from "obsidian";
-import { BaseMapType, ObsidianLeaflet } from "src/@types";
+import {
+    BaseMapType,
+    ImageLayerData,
+    LayerGroup,
+    MarkerDivIconOptions,
+    ObsidianLeaflet
+} from "src/@types";
+import { FontAwesomeControl } from "src/controls/controls";
 import t from "src/l10n/locale";
 import { Marker } from "src/layer";
 import { MarkerDivIcon } from "src/map";
 import { LeafletRenderer } from "src/renderer/renderer";
-import { DEFAULT_BLOCK_PARAMETERS } from "src/utils";
+import { DEFAULT_BLOCK_PARAMETERS, StatusMap } from "src/utils";
 import { LeafletSymbol } from "src/utils/leaflet-import";
-import {
-    EventsOnArgs,
-    TrackerEvents,
-    TrackerViewState
-} from "../../../obsidian-initiative-tracker/@types";
 import { Creature } from "../../../obsidian-initiative-tracker/src/utils/creature";
 import { ImageMap } from "../map/map";
 import { LeafletMapView } from "../map/view";
@@ -18,12 +20,6 @@ import { LeafletMapView } from "../map/view";
 const L = window[LeafletSymbol];
 
 import GridImage from "./1-Inch-Grid-Paper-Template.png";
-
-declare module "obsidian" {
-    interface Workspace {
-        on(...args: EventsOnArgs): EventRef;
-    }
-}
 
 export class InitiativeMapView extends LeafletMapView {
     constructor(
@@ -86,13 +82,14 @@ export class InitiativeRenderer extends LeafletRenderer {
     async buildMap() {
         this.map = new InitiativeMap(this, this.options);
         const { h, w } = await this.loader.getImageDimensions(GridImage);
-        this.map.registerLayerToBuild({
+        this.map.gridLayer = {
             data: GridImage,
             h,
             w,
             id: "grid-layer",
             alias: null
-        });
+        };
+        this.map.registerLayerToBuild(this.map.gridLayer);
 
         this.map.on("removed", () => this.resize.disconnect());
 
@@ -108,6 +105,7 @@ export class InitiativeRenderer extends LeafletRenderer {
         let center = this.map.leafletInstance.getCenter();
         let index = -1 * (this.view.players.length / 2) + 0.5;
         for (let player of this.view.players) {
+            console.log("🚀 ~ file: initiative.ts ~ line 112 ~ player", player);
             let latlng = L.latLng(center.lat - 1, center.lng + index);
             this.map.addCreature({ latlng, creature: player });
             index++;
@@ -122,17 +120,76 @@ export class InitiativeRenderer extends LeafletRenderer {
     }
 }
 
+class ImageControl extends FontAwesomeControl {
+    constructor(public map: InitiativeMap) {
+        super(
+            {
+                tooltip: "Replace Image",
+                cls: "leaflet-image-control",
+                icon: "image"
+            },
+            map.leafletInstance
+        );
+    }
+    input = this.controlEl.createEl("input", {
+        attr: {
+            type: "file",
+            name: "image",
+            accept: "image/*",
+            style: "display: none;"
+        }
+    });
+    onClick() {
+        this.input.onchange = async () => {
+            const { files } = this.input;
+
+            if (!files.length) return;
+
+            const image = files[0];
+            const reader = new FileReader();
+            reader.onloadend = (evt) => {
+                var image = new Image();
+                image.onload = () => {
+                    const { width: w, height: h } = image;
+                    this.map.replaceLayer(0, {
+                        data: evt.target.result.toString(),
+                        h,
+                        w,
+                        id: "grid-layer",
+                        alias: null
+                    });
+                    this.map.removeCreature(
+                        ...this.map.renderer.view.players,
+                        ...this.map.renderer.view.creatures
+                    );
+                    this.map.renderer.loadSavedData();
+                };
+                image.src = evt.target.result.toString();
+            };
+            reader.readAsDataURL(image);
+
+            this.input.value = null;
+        };
+        this.input.click();
+    }
+}
+
 class InitiativeMap extends ImageMap {
+    renderer: InitiativeRenderer;
     currentLayer: L.ImageOverlay;
-    creatureMap: Map<Creature, InitiativeMarker> = new Map();
+    markerMap: Map<string, InitiativeMarker> = new Map();
+    creatureMap: Map<string, Creature> = new Map();
+    gridLayer: ImageLayerData;
     /** Register an event to the Renderer that will be removed when the renderer unloads. */
-    addEvent(
-        name: EventsOnArgs[0],
-        callback: (...args: TrackerEvents[1]) => any
-    ) {
+    addEvent(name: any, callback: (...args: any[]) => any) {
         this.renderer.registerEvent(
             this.plugin.app.workspace.on(name, callback)
         );
+    }
+    replaceLayer(index: number, layer: ImageLayerData) {
+        this.mapLayers[index].group.remove();
+        this.mapLayers = [];
+        this.registerLayerToBuild(layer);
     }
     isLayerRendered() {
         return true;
@@ -153,15 +210,13 @@ class InitiativeMap extends ImageMap {
                     );
                 });
             });
-            context.showAtPosition({
-                x: evt.originalEvent.clientX,
-                y: evt.originalEvent.clientY
-            });
+            context.showAtMouseEvent(evt.originalEvent);
         });
 
-        this.on("first-layer-ready", () =>
-            this.leafletInstance.fitBounds(this.currentLayer.getBounds())
-        );
+        this.on("first-layer-ready", () => {
+            console.log("layer-ready");
+            this.leafletInstance.fitBounds(this.currentLayer.getBounds());
+        });
 
         this.addEvent(
             "initiative-tracker:creature-added-at-location",
@@ -190,17 +245,24 @@ class InitiativeMap extends ImageMap {
         this.addEvent(
             "initiative-tracker:creature-updated",
             (creature: Creature) => {
-                if (!this.creatureMap.has(creature)) {
+                console.log(
+                    "🚀 ~ file: initiative.ts ~ line 191 ~ creature",
+                    creature.id,
+                    this.markerMap.keys()
+                );
+                if (!this.markerMap.has(creature.id)) {
                     this.addCreature({ creature });
                 }
-                const marker = this.creatureMap.get(creature);
-                if (!creature.enabled) {
-                    marker.setDisabled();
-                } else {
-                    marker.setEnabled();
-                }
+                const marker = this.markerMap.get(creature.id);
+
+                marker.updateCreature();
             }
         );
+    }
+    buildControls() {
+        super.buildControls();
+
+        this.leafletInstance.addControl(new ImageControl(this));
     }
     addCreature(...creatures: { latlng?: L.LatLng; creature: Creature }[]) {
         let toReturn: Marker[] = [];
@@ -212,16 +274,16 @@ class InitiativeMap extends ImageMap {
             );
             toReturn.push(marker);
 
-            this.creatureMap.set(creature, marker);
+            this.markerMap.set(creature.id, marker);
         }
         return toReturn;
     }
     removeCreature(...creatures: Creature[]) {
         for (const creature of creatures) {
-            if (this.creatureMap.has(creature)) {
-                const marker = this.creatureMap.get(creature);
+            if (this.markerMap.has(creature.id)) {
+                const marker = this.markerMap.get(creature.id);
                 marker.remove();
-                this.creatureMap.delete(creature);
+                this.markerMap.delete(creature.id);
             }
         }
     }
@@ -230,24 +292,22 @@ class InitiativeMap extends ImageMap {
 class InitiativeMarker extends Marker {
     creature: Creature;
     initIcon: InitiativeDivIcon;
+    enabled: boolean;
+    hp: number;
+    status: Set<any>;
     constructor(map: BaseMapType, latlng: L.LatLng, creature: Creature) {
         if (!map.markerTypes.includes(creature.marker)) {
-            new Notice(
-                t(
-                    `Marker type "%1" does not exist, using default.`,
-                    creature.marker
-                )
-            );
             creature.marker = "default";
         }
         const markerIcon = map.markerIcons.get(creature.marker);
 
-        const mapIcon = markerIcon?.icon ?? map.defaultIcon.icon;
-
-        const initIcon = new InitiativeDivIcon({
-            html: (markerIcon ?? map.defaultIcon).html,
-            className: "leaflet-div-icon"
-        });
+        const initIcon = new InitiativeDivIcon(
+            {
+                html: (markerIcon ?? map.defaultIcon).html,
+                className: "leaflet-div-icon"
+            },
+            creature
+        );
 
         super(map, {
             id: creature.name,
@@ -270,12 +330,9 @@ class InitiativeMarker extends Marker {
             this.setDisabled();
         }
 
-        this.initIcon = initIcon;
+        this.status = this.creature.status;
 
-        if (this.creature.hp) {
-            this.initIcon.addHPBar();
-            this.initIcon.updateHP(this.creature.hp);
-        }
+        this.initIcon = initIcon;
 
         this.leafletInstance.off("contextmenu");
         this.leafletInstance.off("click");
@@ -291,29 +348,111 @@ class InitiativeMarker extends Marker {
     }
     onShow() {
         if (this.tooltip === "always" && this.target) {
-            console.log("add");
             this.popup.open(this.target.display);
         }
     }
+
+    updateCreature() {
+        if (this.enabled != this.creature.enabled) {
+            if (!this.creature.enabled) {
+                this.setDisabled();
+            } else {
+                this.setEnabled();
+            }
+        }
+        if (!isNaN(Number(this.creature.hp)) && this.creature.hp != this.hp) {
+            this.updateHP(this.creature.hp);
+        }
+        if (this.link != this.creature.name) {
+            this.link = this.creature.name;
+        }
+
+        if (this.creature.marker != this.type) {
+            if (!this.map.markerTypes.includes(this.creature.marker)) {
+                new Notice(
+                    t(
+                        `Marker type "%1" does not exist, using default.`,
+                        this.creature.marker
+                    )
+                );
+                this.creature.marker = "default";
+            }
+            const markerIcon = this.map.markerIcons.get(this.creature.marker);
+
+            const initIcon = new InitiativeDivIcon(
+                {
+                    html: (markerIcon ?? this.map.defaultIcon).html,
+                    className: "leaflet-div-icon"
+                },
+                this.creature
+            );
+
+            this.icon = markerIcon;
+            this.divIcon = initIcon;
+        }
+
+        this.initIcon.syncStatuses();
+
+        this.creature = this.creature;
+    }
+
     setDisabled() {
+        this.enabled = false;
         this.leafletInstance
             ?.getElement()
             ?.addClass("initiative-marker-disabled");
     }
     setEnabled() {
+        this.enabled = true;
         this.leafletInstance
             ?.getElement()
             ?.removeClass("initiative-marker-disabled");
+    }
+    updateHP(hp: number) {
+        this.hp = hp;
+        this.initIcon.updateHP(hp);
     }
 }
 
 class InitiativeDivIcon extends MarkerDivIcon {
     progress: HTMLProgressElement;
-    hp: HTMLDivElement;
+    status: HTMLDivElement;
+    constructor(options: MarkerDivIconOptions, public creature: Creature) {
+        super(options);
+    }
+    createIcon(oldIcon: HTMLElement) {
+        const div = super.createIcon(oldIcon);
+        if (this.creature.hp) {
+            this.addHPBar();
+            this.updateHP(this.creature.hp);
+
+            this.status = this.div.createDiv(
+                "initiative-marker-status-container"
+            );
+            this.syncStatuses();
+        }
+        return div;
+    }
     addHPBar() {
-        this.progress = this.div.createEl("progress");
+        this.progress = this.div.createEl("progress", {
+            attr: {
+                min: 0,
+                max: this.creature.max
+            }
+        });
     }
     updateHP(hp: number) {
         this.progress.setAttr("value", hp);
+    }
+    syncStatuses() {
+        this.status.empty();
+        for (let status of this.creature.status) {
+            if (StatusMap.has(status.name)) {
+                const node = StatusMap.get(status.name);
+                node.setAttr("aria-label", status.name);
+                node.setAttr("aria-label-position", "top");
+                this.status.appendChild(node);
+            }
+        }
     }
 }

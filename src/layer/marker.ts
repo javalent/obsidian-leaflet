@@ -532,5 +532,8 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
 
     remove() {
         this.group && this.group.removeLayer(this.leafletInstance);
+        if (this.tooltip == "always") {
+            this.popup.leafletInstance.remove();
+        }
     }
 }
