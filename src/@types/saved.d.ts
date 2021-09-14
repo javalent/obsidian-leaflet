@@ -34,6 +34,11 @@ export interface ObsidianAppData {
     notePreview: boolean;
     layerMarkers: boolean;
     previousVersion: string;
+    version: {
+        major: number;
+        minor: number;
+        patch: number;
+    }
     warnedAboutMapMarker: boolean;
     copyOnClick: boolean;
     displayOverlayTooltips: boolean;

@@ -2,7 +2,6 @@ import { Menu, Notice, WorkspaceLeaf } from "obsidian";
 import {
     BaseMapType,
     ImageLayerData,
-    LayerGroup,
     MarkerDivIconOptions,
     ObsidianLeaflet
 } from "src/@types";
@@ -77,6 +76,28 @@ export class InitiativeRenderer extends LeafletRenderer {
 
     constructor(public view: InitiativeMapView) {
         super(view.plugin, "", view.mapEl, view.params);
+
+        this.registerEvent(
+            this.plugin.app.workspace.on(
+                "initiative-tracker:new-encounter",
+                () => {
+                    this.map.removeCreature(
+                        ...this.view.players,
+                        ...this.view.creatures
+                    );
+                    this.loadSavedData();
+                }
+            )
+        );
+        /* this.registerEvent(
+            this.plugin.app.workspace.on(
+                'initiative-tracker:reset-encounter', () => {
+                    this.view.players.forEach(p => {
+                        this.map.
+                    })
+                }
+            )
+        ) */
     }
 
     async buildMap() {
@@ -105,7 +126,6 @@ export class InitiativeRenderer extends LeafletRenderer {
         let center = this.map.leafletInstance.getCenter();
         let index = -1 * (this.view.players.length / 2) + 0.5;
         for (let player of this.view.players) {
-            console.log("🚀 ~ file: initiative.ts ~ line 112 ~ player", player);
             let latlng = L.latLng(center.lat - 1, center.lng + index);
             this.map.addCreature({ latlng, creature: player });
             index++;
@@ -330,6 +350,16 @@ class InitiativeMarker extends Marker {
             this.setDisabled();
         }
 
+        this.map.renderer.registerEvent(
+            this.map.plugin.app.workspace.on("initiative-tracker:active-change", (creature: Creature) => {
+                if (creature === this.creature) {
+                    this.setActive();
+                } else {
+                    this.setInactive();
+                }
+            })
+        )
+
         this.status = this.creature.status;
 
         this.initIcon = initIcon;
@@ -345,6 +375,9 @@ class InitiativeMarker extends Marker {
         });
 
         this.leafletInstance.on("contextmenu", () => {});
+        this.leafletInstance.on('mouseover', () => {
+            this.popup.leafletInstance.bringToFront();
+        })
     }
     onShow() {
         if (this.tooltip === "always" && this.target) {
@@ -411,6 +444,16 @@ class InitiativeMarker extends Marker {
     updateHP(hp: number) {
         this.hp = hp;
         this.initIcon.updateHP(hp);
+    }
+    setActive() {
+        this.leafletInstance
+            ?.getElement()
+            ?.addClass("initiative-marker-active");
+    }
+    setInactive() {
+        this.leafletInstance
+            ?.getElement()
+            ?.removeClass("initiative-marker-active");
     }
 }
 

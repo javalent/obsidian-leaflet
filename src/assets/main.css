@@ -349,6 +349,9 @@ input.is-invalid {
 .block-language-leaflet .leaflet-div-icon.initiative-marker-disabled {
     opacity: 50%;
 }
+.block-language-leaflet .leaflet-div-icon.initiative-marker-active svg {
+    filter: drop-shadow(0 0 3px green);
+}
 .block-language-leaflet .leaflet-div-icon progress {
     width: 100%;
     top: 95%;

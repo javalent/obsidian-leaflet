@@ -76,7 +76,7 @@ export interface LeafletMapOptions {
         id: string;
     }[];
 
-    isInitiativeView: boolean;
+    isInitiativeView?: boolean;
     isMapView: boolean;
 
     layers?: string[];

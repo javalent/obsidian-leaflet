@@ -73,6 +73,11 @@ export const DEFAULT_SETTINGS: ObsidianAppData = {
     notePreview: false,
     layerMarkers: true,
     previousVersion: null,
+    version: {
+        major: null,
+        minor: null,
+        patch: null
+    },
     warnedAboutMapMarker: false,
     copyOnClick: false,
     displayMarkerTooltips: "hover",

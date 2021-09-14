@@ -288,6 +288,12 @@ export default class ObsidianLeaflet
             );
         }
         this.data.previousVersion = this.manifest.version;
+        const splitVersion = this.data.previousVersion.split(".");
+        this.data.version = {
+            major: Number(splitVersion[0]),
+            minor: Number(splitVersion[1]),
+            patch: Number(splitVersion[2])
+        };
         if (typeof this.data.displayMarkerTooltips === "boolean") {
             this.data.displayMarkerTooltips = this.data.displayMarkerTooltips
                 ? "hover"
