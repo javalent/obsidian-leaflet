@@ -38,6 +38,9 @@ export class Vertex extends Events {
         const lng = this.latlng.lng + delta.lng;
 
         this.leafletInstance.setLatLng(L.latLng(lat, lng));
+        if (this.marker) {
+            this.marker.setLatLng(L.latLng(lat, lng))
+        }
     }
     leafletInstance: L.Marker;
     selected: boolean = false;
@@ -221,7 +224,7 @@ export class Vertex extends Events {
             }
             this.modifierState = false;
             this.parent.redraw();
-            this.parent.map.plugin.saveSettings();
+            this.parent.map.trigger("should-save");
         });
         this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) => {
             L.DomEvent.stopPropagation(evt);

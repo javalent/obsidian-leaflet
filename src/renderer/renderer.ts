@@ -162,6 +162,10 @@ export class LeafletRenderer extends MarkdownRenderChild {
         }
 
         this.map.on("removed", () => this.resize.disconnect());
+        this.map.on(
+            "should-save",
+            async () => await this.plugin.saveSettings()
+        );
 
         this.loadSavedData();
         await this.loadImmutableData();

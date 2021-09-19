@@ -289,7 +289,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                         }
 
                         this.map.trigger("marker-updated", this);
-                        await this.map.plugin.saveSettings();
+                        this.map.trigger("should-save");
                     }
                 };
                 markerSettingsModal.open();

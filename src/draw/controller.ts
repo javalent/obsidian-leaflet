@@ -86,7 +86,7 @@ export class DrawingController {
             if (this.shape.canSave) {
                 this.shapes[this.shape.type].push(this.shape);
                 this.shape.registerEvents();
-                this.map.plugin.saveSettings();
+                this.map.trigger('should-save');
             }
         }
         this.stopDrawing();

@@ -48,7 +48,7 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
             this.map.leafletInstance.dragging.enable();
             this.controller.draggingShape = null;
 
-            this.map.plugin.saveSettings();
+            this.map.trigger("should-save");
         });
     }
     options: L.PathOptions = {
@@ -142,7 +142,7 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
         );
         this.vertices.forEach((v) => v.incrementLatLng(delta));
         this.redraw();
-
+        
         if (propagate) {
             const otherShapes: Set<Shape<L.Path>> = new Set();
             this.vertices.forEach((v) =>
@@ -219,6 +219,7 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
     setColor(color: string) {
         this.color = color;
         this.leafletInstance.setStyle({ fillColor: color, color: color });
+        this.map.trigger('should-save');
     }
 
     remove() {
@@ -226,6 +227,6 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
         this.hideVertices();
         this.vertices.forEach((v) => v.delete());
         this.vertices = [];
-        this.map.plugin.saveSettings();
+        this.map.trigger("should-save");
     }
 }

@@ -482,7 +482,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                     marker: marker?.id ?? null
                 });
 
-                await this.plugin.saveSettings();
+                this.trigger("should-save");
                 this.leafletInstance.off("mousemove");
             }
         });
@@ -862,7 +862,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                             color: overlay.data.color
                         });
 
-                        await this.plugin.saveSettings();
+                        this.trigger("should-save");
                     } catch (e) {
                         new Notice(
                             t("There was an error saving the overlay.") +
@@ -953,7 +953,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                         [evt.latlng.lat, evt.latlng.lng],
                         undefined
                     );
-                    await this.plugin.saveSettings();
+                    this.trigger("should-save");
                 });
             });
         });

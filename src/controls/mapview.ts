@@ -34,7 +34,7 @@ class SaveMapParametersControl extends FontAwesomeControl {
     async onClick(evt: MouseEvent) {
         this.map.plugin.data.mapViewParameters = this.map.renderer.params;
 
-        await this.map.plugin.saveSettings();
+        this.map.trigger('should-save');
     }
 }
 

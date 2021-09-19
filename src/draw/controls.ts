@@ -205,7 +205,7 @@ class DoneControl extends FontAwesomeControl {
     onClick(evt: MouseEvent) {
         evt.stopPropagation();
         this.parent.complete();
-        this.parent.map.plugin.saveSettings();
+        this.parent.map.trigger('should-save');
     }
 }
 

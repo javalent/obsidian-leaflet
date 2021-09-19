@@ -56,8 +56,8 @@ class ColorPickControl extends FontAwesomeControl {
 }
 
 class ColorFillControl extends FontAwesomeControl {
-    onClick() {
-        this.drawControl.parent.stopDrawingContext();
+    onClick(evt: MouseEvent) {
+        evt.stopPropagation();
         this.drawControl.controller.isColoring = true;
     }
     constructor(public drawControl: ColorControl) {
