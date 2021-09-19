@@ -50,7 +50,9 @@ export interface BlockParameters {
     zoomTag?: string;
     linksTo?: string[];
     linksFrom?: string[];
+    geojsonFolder?: string[];
     geojson?: string[];
+    gpxFolder?: string[];
     gpx?: string[];
     gpxMarkers?: {
         start?: string;
