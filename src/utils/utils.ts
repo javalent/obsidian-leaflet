@@ -1,6 +1,5 @@
 import {
     App,
-    MarkdownView,
     Notice,
     parseYaml,
     setIcon,
@@ -13,7 +12,7 @@ import Color from "color";
 
 import { parse as parseCSV } from "papaparse";
 
-import { BaseMapType, BlockParameters } from "src/@types";
+import { BaseMapType, BlockParameters, ObsidianLeaflet } from "src/@types";
 import { LAT_LONG_DECIMALS, OVERLAY_TAG_REGEX } from "./constants";
 import { DESCRIPTION_ICON } from ".";
 import t from "src/l10n/locale";
@@ -217,519 +216,13 @@ export function parseLink(link: string) {
     return link?.replace(/(\[|\])/g, "");
 }
 
-export async function getImmutableItems(
-    /* source: string */
-    app: App,
-    markers: string[] = [],
-    commandMarkers: string[] = [],
-    markerTags: string[][] = [],
-    markerFiles: string[] = [],
-    markerFolders: string[] = [],
-    linksTo: string[] = [],
-    linksFrom: string[] = [],
-    overlayTag: string,
-    overlayColor: string
-): Promise<{
-    markers: [
-        type: string,
-        lat: number,
-        long: number,
-        link: string,
-        layer: string,
-        command: boolean,
-        id: string,
-        desc: string,
-        minZoom: number,
-        maxZoom: number
-    ][];
-    overlays: [
-        color: string,
-        loc: [number, number],
-        length: string,
-        desc: string,
-        id: string
-    ][];
-    files: Map<TFile, Map<string, string>>;
-}> {
-    return new Promise(async (resolve, reject) => {
-        let markersToReturn: [
-                type: string,
-                lat: number,
-                long: number,
-                link: string,
-                layer: string,
-                command: boolean,
-                id: string,
-                desc: string,
-                minZoom: number,
-                maxZoom: number
-            ][] = [],
-            overlaysToReturn: [
-                color: string,
-                loc: [number, number],
-                length: string,
-                desc: string,
-                id: string
-            ][] = [];
-
-        for (let marker of markers) {
-            /* type, lat, long, link, layer, */
-            const { data } = parseCSV<string>(marker);
-            if (!data.length) {
-                new Notice("No data");
-                continue;
-            }
-
-            let [type, lat, long, link, layer, minZoom, maxZoom] = data[0];
-
-            if (!type || !type.length || type === "undefined") {
-                type = "default";
-            }
-            if (!lat || !lat.length || isNaN(Number(lat))) {
-                new Notice(t("Could not parse latitude"));
-                continue;
-            }
-            if (!long || !long.length || isNaN(Number(long))) {
-                new Notice(t("Could not parse longitude"));
-                continue;
-            }
-            let min, max;
-            if (isNaN(Number(minZoom))) {
-                min = undefined;
-            } else {
-                min = Number(minZoom);
-            }
-            if (isNaN(Number(maxZoom))) {
-                max = undefined;
-            } else {
-                max = Number(maxZoom);
-            }
-
-            if (!link || !link.length || link === "undefined") {
-                link = undefined;
-            } else if (/\[\[[\s\S]+\]\]/.test(link)) {
-                //obsidian wiki-link
-                link = parseLink(link);
-            }
-
-            if (!layer || !layer.length || layer === "undefined") {
-                layer = undefined;
-            }
-            markersToReturn.push([
-                type,
-                Number(lat),
-                Number(long),
-                link,
-                layer,
-                false,
-                null,
-                null,
-                min,
-                max
-            ]);
-        }
-
-        for (let marker of commandMarkers) {
-            /* type, lat, long, link, layer, */
-            const { data } = parseCSV<string>(marker);
-            if (!data.length) {
-                new Notice(t("No data"));
-                continue;
-            }
-
-            let [type, lat, long, link, layer, minZoom, maxZoom] = data[0];
-
-            if (!type || !type.length || type === "undefined") {
-                type = "default";
-            }
-            if (!lat || !lat.length || isNaN(Number(lat))) {
-                new Notice("Could not parse latitude");
-                continue;
-            }
-            if (!long || !long.length || isNaN(Number(long))) {
-                new Notice("Could not parse longitude");
-                continue;
-            }
-            let min, max;
-            if (isNaN(Number(minZoom))) {
-                min = undefined;
-            } else {
-                min = Number(minZoom);
-            }
-            if (isNaN(Number(maxZoom))) {
-                max = undefined;
-            } else {
-                max = Number(maxZoom);
-            }
-
-            if (!link || !link.length || link === "undefined") {
-                link = undefined;
-            } else if (/\[\[[\s\S]+\]\]/.test(link)) {
-                //obsidian wiki-link
-                link = parseLink(link);
-            }
-
-            //find command id
-            const commands = app.commands.listCommands();
-            const { id } = commands.find(
-                ({ name: n, id }) => n == link || id == link
-            );
-
-            if (!layer || !layer.length || layer === "undefined") {
-                layer = undefined;
-            }
-            markersToReturn.push([
-                type,
-                Number(lat),
-                Number(long),
-                id,
-                layer,
-                true,
-                null,
-                null,
-                min,
-                max
-            ]);
-        }
-        let watchers = new Map<TFile, Map<string, string>>();
-        if (
-            markerFiles.length ||
-            markerFolders.length ||
-            markerTags.length ||
-            linksTo.length ||
-            linksFrom
-        ) {
-            let files = new Set(markerFiles);
-
-            for (let path of markerFolders) {
-                let abstractFile = app.vault.getAbstractFileByPath(path);
-                if (!abstractFile) continue;
-                if (abstractFile instanceof TFile) files.add(path);
-                if (abstractFile instanceof TFolder) {
-                    Vault.recurseChildren(abstractFile, (file) => {
-                        if (file instanceof TFile) files.add(file.path);
-                    });
-                }
-            }
-            //get cache
-            //error is thrown here because plugins isn't exposed on Obsidian App
-            //@ts-expect-error
-            const cache = app.plugins.plugins.dataview?.index;
-            if (cache) {
-                if (markerTags.length > 0) {
-                    const tagSet = new Set();
-                    for (let tags of markerTags) {
-                        const filtered = tags
-                            .filter((tag) => tag)
-                            .map((tag) => {
-                                if (!tag.includes("#")) {
-                                    tag = `#${tag}`;
-                                }
-                                return cache.tags.getInverse(tag.trim());
-                            });
-                        if (!filtered.length) continue;
-                        filtered
-                            .reduce(
-                                (a, b) =>
-                                    new Set(
-                                        [...b].filter(
-                                            Set.prototype.has,
-                                            new Set(a)
-                                        )
-                                    )
-                            )
-                            .forEach(tagSet.add, tagSet);
-                    }
-
-                    if (files.size) {
-                        files = new Set([...files].filter(tagSet.has, tagSet));
-                    } else {
-                        tagSet.forEach(files.add, files);
-                    }
-                }
-                for (let link of linksTo) {
-                    //invMap -> linksTo
-                    const file = app.metadataCache.getFirstLinkpathDest(
-                        parseLink(link),
-                        ""
-                    );
-                    if (!file) continue;
-
-                    const links = cache.links.invMap.get(file.path);
-
-                    if (!links) continue;
-
-                    links.forEach(files.add, files);
-                }
-                for (let link of linksFrom) {
-                    //map -> linksFrom
-                    const file = app.metadataCache.getFirstLinkpathDest(
-                        parseLink(link),
-                        ""
-                    );
-                    if (!file) continue;
-
-                    const links = cache.links.map.get(file.path);
-
-                    if (!links) continue;
-
-                    links.forEach(files.add, files);
-                }
-            } else {
-                const errors: string[] = [];
-                if (markerTags.length) {
-                    errors.push("markerTags");
-                }
-                if (linksTo.length) {
-                    errors.push("linksTo");
-                }
-                if (linksFrom.length) {
-                    errors.push("linksFrom");
-                }
-                if (errors.length)
-                    new Notice(
-                        t(
-                            "The `%1` field%2 can only be used with the Dataview plugin installed.",
-                            errors.reduce((res, k, i) =>
-                                [res, k].join(
-                                    i ===
-                                        errors.reduce((res, k, i) =>
-                                            [res, k].join(
-                                                i === errors.length - 1
-                                                    ? " and "
-                                                    : ", "
-                                            )
-                                        ).length -
-                                            1
-                                        ? " and "
-                                        : ", "
-                                )
-                            ),
-                            errors.length > 2 ? "s" : ""
-                        )
-                    );
-            }
-
-            for (let path of files) {
-                const file = app.metadataCache.getFirstLinkpathDest(
-                    parseLink(path),
-                    ""
-                );
-                const linkText = app.metadataCache.fileToLinktext(
-                    file,
-                    "",
-                    true
-                );
-
-                const idMap = new Map<string, string>();
-                if (
-                    !file ||
-                    !(file instanceof TFile) ||
-                    file.extension !== "md"
-                )
-                    continue;
-                let { frontmatter } =
-                    app.metadataCache.getFileCache(file) ?? {};
-
-                if (
-                    !frontmatter ||
-                    (!frontmatter.location &&
-                        !frontmatter.mapoverlay &&
-                        !frontmatter.mapmarkers)
-                )
-                    continue;
-
-                const id = getId();
-
-                if (frontmatter.location) {
-                    let locations = frontmatter.location;
-                    if (locations.length && !(locations[0] instanceof Array)) {
-                        locations = [locations];
-                    }
-                    for (const location of locations) {
-                        let err = false,
-                            [lat, long] = location;
-
-                        try {
-                            lat =
-                                typeof lat === "number"
-                                    ? lat
-                                    : Number(lat?.split("%").shift());
-                            long =
-                                typeof long === "number"
-                                    ? long
-                                    : Number(long?.split("%").shift());
-                        } catch (e) {
-                            err = true;
-                        }
-
-                        if (err || isNaN(lat) || isNaN(long)) {
-                            new Notice(
-                                t(
-                                    "Could not parse location in %1",
-                                    file.basename
-                                )
-                            );
-                            continue;
-                        }
-
-                        let min, max;
-                        if (frontmatter.mapzoom) {
-                            let [minZoom, maxZoom] = frontmatter.mapzoom;
-                            if (isNaN(Number(minZoom))) {
-                                min = undefined;
-                            } else {
-                                min = Number(minZoom);
-                            }
-                            if (isNaN(Number(maxZoom))) {
-                                max = undefined;
-                            } else {
-                                max = Number(maxZoom);
-                            }
-                        }
-
-                        markersToReturn.push([
-                            frontmatter.mapmarker || "default",
-                            lat,
-                            long,
-                            linkText,
-                            undefined,
-                            false,
-                            id,
-                            null,
-                            min,
-                            max
-                        ]);
-                    }
-                    /* watchers.set(file, watchers.get(file).add(id)); */
-                    idMap.set("marker", id);
-                }
-
-                if (frontmatter.mapmarkers) {
-                    const id = getId();
-                    frontmatter.mapmarkers.forEach(
-                        ([type, location, description, minZoom, maxZoom]: [
-                            type: string,
-                            location: number[],
-                            description: string,
-                            minZoom: number,
-                            maxZoom: number
-                        ]) => {
-                            let min, max;
-                            if (isNaN(Number(minZoom))) {
-                                min = undefined;
-                            } else {
-                                min = Number(minZoom);
-                            }
-                            if (isNaN(Number(maxZoom))) {
-                                max = undefined;
-                            } else {
-                                max = Number(maxZoom);
-                            }
-                            markersToReturn.push([
-                                type || "default",
-                                location[0],
-                                location[1],
-                                linkText,
-                                undefined,
-                                false,
-                                id,
-                                description,
-                                min,
-                                max
-                            ]);
-                        }
-                    );
-                    idMap.set("mapmarkers", id);
-                }
-
-                if (frontmatter.mapoverlay) {
-                    const arr =
-                        frontmatter.mapoverlay[0] instanceof Array
-                            ? frontmatter.mapoverlay
-                            : [frontmatter.mapoverlay];
-                    arr.forEach(
-                        ([
-                            color = overlayColor ?? "blue",
-                            loc = [0, 0],
-                            length = "1 m",
-                            desc
-                        ]: [
-                            color: string,
-                            loc: number[],
-                            length: string,
-                            desc: string
-                        ]) => {
-                            const match = length.match(OVERLAY_TAG_REGEX);
-                            if (!match) {
-                                new Notice(
-                                    t(
-                                        `Could not parse map overlay length in %1. Please ensure it is in the format: <distance> <unit>`,
-                                        file.name
-                                    )
-                                );
-                                return;
-                            }
-                            overlaysToReturn.push([
-                                color,
-                                loc as [number, number],
-                                length,
-                                desc ?? t(`%1 overlay`, file.basename),
-                                id
-                            ]);
-                        }
-                    );
-                    idMap.set("overlay", id);
-                }
-
-                if (overlayTag in frontmatter) {
-                    const match =
-                        frontmatter[overlayTag].match(OVERLAY_TAG_REGEX);
-                    if (!match) {
-                        new Notice(
-                            t(
-                                `Could not parse %1 in %2. Please ensure it is in the format: <distance> <unit>`,
-                                overlayTag,
-                                file.name
-                            )
-                        );
-                        continue;
-                    }
-
-                    let location = frontmatter.location;
-                    if (!location) continue;
-                    if (
-                        location instanceof Array &&
-                        !(location[0] instanceof Array)
-                    ) {
-                        location = [location];
-                    }
-                    overlaysToReturn.push([
-                        overlayColor,
-                        location[0],
-                        frontmatter[overlayTag],
-                        `${file.basename}: ${overlayTag}`,
-                        id
-                    ]);
-
-                    idMap.set("overlayTag", id);
-                }
-                watchers.set(file, idMap);
-            }
-        }
-        resolve({
-            markers: markersToReturn,
-            overlays: overlaysToReturn,
-            files: watchers
-        });
-    });
-}
 type MarkerType =
     | "marker"
     | "markerFile"
     | "markerFolder"
     | "markerTag"
-    | "commandMarker";
+    | "commandMarker"
+    | "filterTag";
 
 /** Parses source block and returns an object of block parameters
  * 1. First, it tries to parse the source as YAML. If the YAML parser fails, it tries to parse it manually.
@@ -802,6 +295,7 @@ export function getParamsFromSource(source: string): BlockParameters {
             markerFile: string[];
             markerFolder: string[];
             markerTag: string[][];
+            filterTag: string[][];
             commandMarker: string[];
             geojson: string[];
             linksTo: string[];
@@ -811,6 +305,7 @@ export function getParamsFromSource(source: string): BlockParameters {
             markerFile: [],
             markerFolder: [],
             markerTag: [],
+            filterTag: [],
             commandMarker: [],
             geojson: [],
             linksTo: [],
@@ -830,6 +325,7 @@ export function getParamsFromSource(source: string): BlockParameters {
                 let r = new RegExp(`^\\b${type}\\b:\\s?([\\s\\S]*?)$`, "gm");
 
                 switch (type) {
+                    case "filterTag":
                     case "markerTag": {
                         if ((source.match(r) || []).length > 1) {
                             //defined separately
@@ -840,14 +336,12 @@ export function getParamsFromSource(source: string): BlockParameters {
                                     .split(/,\s?/)
                             );
                         } else if (params[type] instanceof Array) {
-                            obj[type] = (
-                                params[type] as string[] | string[][]
-                            ).map((param: string | string[]) => {
+                            obj[type] = params[type].map((param) => {
                                 if (param instanceof Array) return param;
                                 return [param];
                             });
-                        } else if (params[type] !== undefined) {
-                            obj[type] = [[params[type] as string]];
+                        } else if (params[type] !== undefined && params) {
+                            obj[type] = [[params[type] as unknown as string]];
                         }
                         break;
                     }
@@ -860,11 +354,9 @@ export function getParamsFromSource(source: string): BlockParameters {
                                     ?.trim()
                             );
                         } else if (params[type] instanceof Array) {
-                            obj[type] = (params[type] as string[]).flat(
-                                2
-                            ) as string[];
+                            obj[type] = params[type].flat(2) as string[];
                         } else if (params[type] !== undefined) {
-                            obj[type] = [params[type] as string];
+                            obj[type] = [params[type] as unknown as string];
                         }
                         break;
                     }
@@ -877,9 +369,9 @@ export function getParamsFromSource(source: string): BlockParameters {
                                     ?.trim()
                             );
                         } else if (params[type] instanceof Array) {
-                            obj[type] = params[type] as string[];
+                            obj[type] = params[type];
                         } else if (params[type] !== undefined) {
-                            obj[type] = [params[type] as string];
+                            obj[type] = [params[type] as unknown as string];
                         }
                     }
                 }

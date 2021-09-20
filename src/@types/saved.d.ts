@@ -12,6 +12,7 @@ export interface Icon {
     color?: string;
     layer?: boolean;
     transform?: { size: number; x: number; y: number };
+    tags?: string[];
 }
 
 export interface MapMarkerData {
@@ -38,7 +39,7 @@ export interface ObsidianAppData {
         major: number;
         minor: number;
         patch: number;
-    }
+    };
     warnedAboutMapMarker: boolean;
     copyOnClick: boolean;
     displayOverlayTooltips: boolean;

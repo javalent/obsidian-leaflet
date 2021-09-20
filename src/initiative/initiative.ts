@@ -234,7 +234,6 @@ class InitiativeMap extends ImageMap {
         });
 
         this.on("first-layer-ready", () => {
-            console.log("layer-ready");
             this.leafletInstance.fitBounds(this.currentLayer.getBounds());
         });
 
@@ -265,11 +264,6 @@ class InitiativeMap extends ImageMap {
         this.addEvent(
             "initiative-tracker:creature-updated",
             (creature: Creature) => {
-                console.log(
-                    "🚀 ~ file: initiative.ts ~ line 191 ~ creature",
-                    creature.id,
-                    this.markerMap.keys()
-                );
                 if (!this.markerMap.has(creature.id)) {
                     this.addCreature({ creature });
                 }

@@ -39,7 +39,7 @@ export default {
         "There was a problem with the provided height. Using 500px.",
     "Could not parse latitude": "Could not parse latitude",
     "Could not parse longitude": "Could not parse longitude",
-    "No data": "No data",
+    "No data for marker %1.": "No data for marker %1.", //marker code block definition
     "The `%1` field%2 can only be used with the Dataview plugin installed.":
         "The `%1` field%2 can only be used with the Dataview plugin installed.", //parameter name, plural
     "Could not parse location in %1": "Could not parse location in %1", //file name
