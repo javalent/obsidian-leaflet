@@ -64,9 +64,11 @@ darkMode: true
 | zoomTag       | Read distance-to-zoom data from a note and use it as default initial zoom                    |                                            |
 | geojson       | Load GeoJSON files onto maps.                                                                |                                            |
 | geojsonColor  | Change the default color of the GeoJSON features.                                            | #3388ff                                    |
+| geojsonFolder | Parse a folder for `.geojson` or `.json` files to load to the map.                           |                                            |
 | gpx           | Load GPX files onto maps.                                                                    |                                            |
 | gpxMarkers    | Set default start, stop and waypoint markers                                                 |                                            |
-| gpxColor      | Control default GPX color                                                                    |                                            |
+| gpxColor      | Control default GPX color                                                                    | #3388ff                                    |
+| gpxFolder     | Parse a folder for `.gpx` files to load to the map.                                          |                                            |
 | imageOverlay  | Add an image overlay to the map.                                                             |                                            |
 | draw          | Enable the draw controller on the map.                                                       | true                                       |
 | drawColor     | Default color that new shapes will be drawn with                                             | #3388ff                                    |
@@ -446,9 +448,18 @@ gpxMarkers:
 ```
 ````
 
-### GPX Styling
+### GPX Data
 
-At the moment, GPX can only be displayed and not styled. Styling will be coming in a future update, including heatlines by heartrate, speed, elevation, etc.
+GPX files are parsed for datapoints which can be displayed on the map as heatlines. Clicking on a GPX route will open a control box where these datapoints can be selected. Hovering over a point on the track will display information for that specific point.
+
+Currently, the data parsed out of a GPX file is:
+
+1. Cadence
+2. Elevation
+3. Heartrate
+4. Speed
+
+If any of these are missing from the file, it will not be an option.
 
 ## Objects Defined in the Code Block
 
@@ -743,6 +754,14 @@ Associate a tag with a marker type.
 If a note is found using `markerFile`, `markerFolder`, or `markerTag`, the plugin will first use the frontmatter `mapmarker` parameter to determine marker type. If that is not set, it will then use the note's tags to find a marker type associated with one of the tags.
 
 The tags are searched in order of definition on the marker type.
+
+# Initiative Tracker Plugin Integration
+
+If the [Initiative Tracker](https://github.com/valentine195/obsidian-initiative-tracker) plugin is installed, a battlemap can be opened from the Initiative Tracker view.
+
+This battlemap will pre-load any active creatures in the loaded combat as markers. Default marker types can be set for both PCs and NPCs, and you can further set which marker type each individual creature will use.
+
+The battlemap will sync its state to the Initiative Tracker combat - as creatures are added, removed, etc, their state will update on the map.
 
 # Version History
 
