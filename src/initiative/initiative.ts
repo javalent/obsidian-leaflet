@@ -18,7 +18,7 @@ import { LeafletMapView } from "../map/view";
 
 const L = window[LeafletSymbol];
 
-import GridImage from "./1-Inch-Grid-Paper-Template.png";
+import GridImage from "./dawbulg-8ce3e4cd-e97c-458f-a1ed-50a7c4ad58e3.png";
 
 export class InitiativeMapView extends LeafletMapView {
     constructor(
@@ -35,7 +35,9 @@ export class InitiativeMapView extends LeafletMapView {
             id: "initiative-tracker-map",
             height: "100%",
             isMapView: false,
-            isInitiativeView: true
+            isInitiativeView: true,
+            scale: 25.7,
+            unit: "ft"
         };
     }
 
@@ -89,6 +91,7 @@ export class InitiativeRenderer extends LeafletRenderer {
                 }
             )
         );
+        console.log(this.options.scale);
         /* this.registerEvent(
             this.plugin.app.workspace.on(
                 'initiative-tracker:reset-encounter', () => {
@@ -101,7 +104,9 @@ export class InitiativeRenderer extends LeafletRenderer {
     }
 
     async buildMap() {
+        console.log(this.options.scale);
         this.map = new InitiativeMap(this, this.options);
+
         const { h, w } = await this.loader.getImageDimensions(GridImage);
         this.map.gridLayer = {
             data: GridImage,
@@ -200,6 +205,7 @@ class InitiativeMap extends ImageMap {
     markerMap: Map<string, InitiativeMarker> = new Map();
     creatureMap: Map<string, Creature> = new Map();
     gridLayer: ImageLayerData;
+    GridLayer: L.GridLayer;
     /** Register an event to the Renderer that will be removed when the renderer unloads. */
     addEvent(name: any, callback: (...args: any[]) => any) {
         this.renderer.registerEvent(
@@ -216,6 +222,9 @@ class InitiativeMap extends ImageMap {
     }
     createMap() {
         super.createMap();
+
+        console.log(this.scale, this.unit);
+
         this.leafletInstance.off("contextmenu");
 
         this.leafletInstance.on("contextmenu", (evt: L.LeafletMouseEvent) => {
@@ -345,14 +354,17 @@ class InitiativeMarker extends Marker {
         }
 
         this.map.renderer.registerEvent(
-            this.map.plugin.app.workspace.on("initiative-tracker:active-change", (creature: Creature) => {
-                if (creature === this.creature) {
-                    this.setActive();
-                } else {
-                    this.setInactive();
+            this.map.plugin.app.workspace.on(
+                "initiative-tracker:active-change",
+                (creature: Creature) => {
+                    if (creature === this.creature) {
+                        this.setActive();
+                    } else {
+                        this.setInactive();
+                    }
                 }
-            })
-        )
+            )
+        );
 
         this.status = this.creature.status;
 
@@ -368,10 +380,52 @@ class InitiativeMarker extends Marker {
             }
         });
 
-        this.leafletInstance.on("contextmenu", () => {});
-        this.leafletInstance.on('mouseover', () => {
+        this.leafletInstance.on("contextmenu", (evt: L.LeafletMouseEvent) => {
+            L.DomEvent.stopPropagation(evt);
+
+            const menu = new Menu(this.map.plugin.app);
+
+            menu.setNoIcon();
+            menu.addItem((item) => {
+                item.setTitle("Apply Damage/Healing").onClick(() => {
+                    this.map.plugin.app.workspace.trigger(
+                        "initiative-tracker:apply-damage",
+                        this.creature
+                    );
+                });
+            });
+            menu.addItem((item) => {
+                item.setTitle("Add Status").onClick(() => {
+                    this.map.plugin.app.workspace.trigger(
+                        "initiative-tracker:add-status",
+                        this.creature
+                    );
+                });
+            });
+            menu.addItem((item) => {
+                item.setTitle(
+                    this.creature.enabled ? "Disable" : "Enable"
+                ).onClick(() => {
+                    this.map.plugin.app.workspace.trigger(
+                        "initiative-tracker:enable-disable",
+                        this.creature,
+                        !this.creature.enabled
+                    );
+                });
+            });
+            menu.addItem((item) => {
+                item.setTitle("Remove Creature").onClick(() => {
+                    this.map.plugin.app.workspace.trigger(
+                        "initiative-tracker:remove",
+                        this.creature
+                    );
+                });
+            });
+            menu.showAtMouseEvent(evt.originalEvent);
+        });
+        this.leafletInstance.on("mouseover", () => {
             this.popup.leafletInstance.bringToFront();
-        })
+        });
     }
     onShow() {
         if (this.tooltip === "always" && this.target) {

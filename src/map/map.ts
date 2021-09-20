@@ -333,7 +333,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     };
     zoomDistance: number;
 
-    unit: Length = "m";
+    unit: Length = (this.options.unit as Length) ?? "m";
 
     /** Marker Methods */
     addMarker(...markers: SavedMarkerProperties[]) {
@@ -1326,7 +1326,7 @@ export class ImageMap extends BaseMap {
     }
 
     get scale() {
-        return convert(1).from("m").to(this.unit);
+        return this.options.scale ?? 1;
     }
 
     setInitialCoords(coords: [number, number]) {
