@@ -417,7 +417,7 @@ export default class ObsidianLeaflet
                     );
                     if (!existingMarker) return;
 
-                    existingMarker.setLatLng(
+                    existingMarker.leafletInstance.setLatLng(
                         marker.leafletInstance.getLatLng()
                     );
                 });
@@ -436,13 +436,14 @@ export default class ObsidianLeaflet
                     );
                     if (!existingMarker) return;
 
-                    existingMarker.setLatLng(
+                    existingMarker.leafletInstance.setLatLng(
                         marker.leafletInstance.getLatLng()
                     );
                 });
         });
 
         map.on("marker-deleted", (marker) => {
+            console.log("🚀 ~ file: main.ts ~ line 446 ~ marker", marker);
             const otherMaps = this.maps.filter(
                 ({ id, map: m }) => id == map.id && m.contentEl != map.contentEl
             );

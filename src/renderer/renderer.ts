@@ -827,15 +827,9 @@ export class LeafletRenderer extends MarkdownRenderChild {
                         this.app.metadataCache.getFileCache(file) ?? {};
                     const { frontmatter } = cache;
 
-                    console.log(dvCache);
 
                     const tags: Set<string> =
                         dvCache?.tags?.get(path) ?? new Set();
-                    console.log(
-                        "🚀 ~ file: renderer.ts ~ line 833 ~ tags",
-                        tags,
-                        this.plugin.getIconForTag(tags)
-                    );
 
                     if (
                         !frontmatter ||

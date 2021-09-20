@@ -1007,13 +1007,15 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.rendered = false;
         this.trigger("removed");
     }
-    removeMarker(marker: Marker) {
+    removeMarker(markerToRemove: Marker) {
+        const marker = this.markers.find(({ id }) => id == markerToRemove.id);
         if (!marker) return;
 
         marker.remove();
         this.markers = this.markers.filter(({ id }) => id != marker.id);
 
         this.trigger("markers-updated");
+        this.trigger("should-save");
     }
     registerScope() {
         this.plugin.app.keymap.pushScope(this.escapeScope);
@@ -1115,7 +1117,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     unregisterScope() {
         this.plugin.app.keymap.popScope(this.escapeScope);
     }
-    //TODO: REWRITE
+
     updateMarkerIcons() {
         /** Add New Marker Types To Filter List */
         this.markerIcons.forEach(({ type }) => {

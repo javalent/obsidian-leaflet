@@ -274,7 +274,6 @@ declare abstract class BaseMap /* <
     startDrawingContext(): void;
     stopDrawingContext(): void;
     toProperties(): SavedMapData;
-    //TODO: REWRITE
     updateMarkerIcons(): void;
 }
 

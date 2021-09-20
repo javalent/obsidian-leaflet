@@ -91,20 +91,9 @@ export class InitiativeRenderer extends LeafletRenderer {
                 }
             )
         );
-        console.log(this.options.scale);
-        /* this.registerEvent(
-            this.plugin.app.workspace.on(
-                'initiative-tracker:reset-encounter', () => {
-                    this.view.players.forEach(p => {
-                        this.map.
-                    })
-                }
-            )
-        ) */
     }
 
     async buildMap() {
-        console.log(this.options.scale);
         this.map = new InitiativeMap(this, this.options);
 
         const { h, w } = await this.loader.getImageDimensions(GridImage);
@@ -222,8 +211,6 @@ class InitiativeMap extends ImageMap {
     }
     createMap() {
         super.createMap();
-
-        console.log(this.scale, this.unit);
 
         this.leafletInstance.off("contextmenu");
 
