@@ -150,6 +150,7 @@ export function getHeight(el: HTMLElement, height: string): string {
             throw new Error(t("Unparseable height provided."));
         if (/\d+%/.test(height)) {
             const element = el.closest(".markdown-preview-view");
+
             let [, perc] = height.match(/(\d+)%/);
 
             let computedStyle = getComputedStyle(element);

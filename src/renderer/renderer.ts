@@ -5,7 +5,8 @@ import {
     CachedMetadata,
     TFolder,
     Vault,
-    getAllTags
+    getAllTags,
+    MarkdownView
 } from "obsidian";
 
 import { parse as parseCSV } from "papaparse";
@@ -30,10 +31,12 @@ import {
     DEFAULT_BLOCK_PARAMETERS,
     parseLink,
     getHeight,
-    getHex
+    getHex,
+    VIEW_TYPE
 } from "../utils";
 import convert from "convert";
 import t from "../l10n/locale";
+import { LeafletMapView } from "src/map/view";
 
 declare module "leaflet" {
     interface Map {
@@ -64,7 +67,6 @@ export class LeafletRenderer extends MarkdownRenderChild {
     watchers: Set<Watcher> = new Set();
     loader: Loader = new Loader(this.plugin.app);
     resize: ResizeObserver;
-
     map: BaseMapType;
     verbose: boolean;
     parentEl: HTMLElement;
@@ -108,7 +110,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             geojsonColor: getHex(this.params.geojsonColor),
             gpxColor: getHex(this.params.gpxColor),
             hasAdditional,
-            height: getHeight(this.containerEl, this.params.height),
+            height: this.getHeight(this.params.height),
             id: this.params.id,
             imageOverlays: [],
             isInitiativeView: this.params.isInitiativeView,
@@ -298,7 +300,38 @@ export class LeafletRenderer extends MarkdownRenderChild {
             return m.map != this.map;
         });
     }
+    getHeight(height: string): string {
+        try {
+            if (!/\d+(px|%)/.test(height))
+                throw new Error(t("Unparseable height provided."));
+            if (/\d+%/.test(height)) {
+                const view =
+                    this.app.workspace.getActiveViewOfType(MarkdownView) ??
+                    this.app.workspace.getActiveViewOfType(LeafletMapView);
 
+                const element = view.contentEl;
+
+                let [, perc] = height.match(/(\d+)%/);
+
+                let computedStyle = getComputedStyle(element);
+
+                let clHeight = element.clientHeight; // height with padding
+
+                clHeight -=
+                    parseFloat(computedStyle.paddingTop) +
+                    parseFloat(computedStyle.paddingBottom);
+
+                height = `${(clHeight * Number(perc)) / 100}px`;
+            }
+        } catch (e) {
+            new Notice(
+                t("There was a problem with the provided height. Using 500px.")
+            );
+            height = "500px";
+        } finally {
+            return height;
+        }
+    }
     async loadFeatureData() {
         /** Get Markers from Parameters */
         let geojson = this.params.geojson,
@@ -826,7 +859,6 @@ export class LeafletRenderer extends MarkdownRenderChild {
                     const cache =
                         this.app.metadataCache.getFileCache(file) ?? {};
                     const { frontmatter } = cache;
-
 
                     const tags: Set<string> =
                         dvCache?.tags?.get(path) ?? new Set();
