@@ -134,7 +134,8 @@ export default {
         "Export all marker data to a CSV file.",
     Export: "Export",
     "Enable Draw Mode by Default": "Enable Draw Mode by Default",
-    "The draw control will be added to maps by default. Can be overridden with the draw map block parameter.": "The draw control will be added to maps by default. Can be overridden with the draw map block parameter.",
+    "The draw control will be added to maps by default. Can be overridden with the draw map block parameter.":
+        "The draw control will be added to maps by default. Can be overridden with the draw map block parameter.",
 
     //modals/settings.ts
     "Marker Name": "Marker Name",
@@ -205,6 +206,8 @@ export default {
         "There was an error saving the overlay.",
     "There was an error adding GeoJSON to map":
         "There was an error adding GeoJSON to map",
+    "There was an error adding GPX to map":
+        "There was an error adding GPX to map",
 
     //layer/marker.ts
     "No command found!": "No command found!",
