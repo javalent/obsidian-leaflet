@@ -3,7 +3,9 @@ import {
     TFile,
     MarkdownPostProcessorContext,
     Notice,
-    CachedMetadata
+    CachedMetadata,
+    TFolder,
+    Vault
 } from "obsidian";
 
 import type {
@@ -289,9 +291,33 @@ export class LeafletRenderer extends MarkdownRenderChild {
         if (!(geojson instanceof Array)) {
             geojson = [geojson];
         }
-        if (geojson.filter((g) => g).length) {
+        const geoSet = new Set(geojson?.flat(Infinity).filter((g) => g));
+
+        if (this.params.geojsonFolder && this.params.geojsonFolder.length) {
+            for (let path of this.params.geojsonFolder) {
+                let abstractFile =
+                    this.plugin.app.vault.getAbstractFileByPath(path);
+                if (!abstractFile) continue;
+                if (
+                    abstractFile instanceof TFile &&
+                    ["json", "geojson"].includes(abstractFile.extension)
+                )
+                    geoSet.add(path);
+                if (abstractFile instanceof TFolder) {
+                    Vault.recurseChildren(abstractFile, (file) => {
+                        if (
+                            file instanceof TFile &&
+                            ["json", "geojson"].includes(file.extension)
+                        )
+                            geoSet.add(file.path);
+                    });
+                }
+            }
+        }
+
+        if (geoSet.size) {
             this.map.log("Loading GeoJSON files.");
-            for (let link of geojson.flat(Infinity).filter((g) => g)) {
+            for (let link of geoSet) {
                 const file = this.plugin.app.metadataCache.getFirstLinkpathDest(
                     parseLink(link),
                     this.sourcePath
@@ -313,6 +339,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 }
             }
         }
+
         let gpx = this.params.gpx,
             gpxData: string[] = [];
         let gpxIcons: {
@@ -326,9 +353,29 @@ export class LeafletRenderer extends MarkdownRenderChild {
         if (!(gpx instanceof Array)) {
             gpx = [gpx];
         }
-        if (gpx.filter((g) => g).length) {
+
+        let gpxSet = new Set(gpx?.flat(Infinity).filter((g) => g));
+        if (this.params.gpxFolder && this.params.gpxFolder.length) {
+            for (let path of this.params.gpxFolder) {
+                let abstractFile =
+                    this.plugin.app.vault.getAbstractFileByPath(path);
+                if (!abstractFile) continue;
+                if (abstractFile instanceof TFile && abstractFile.extension === "gpx")
+                    gpxSet.add(path);
+                if (abstractFile instanceof TFolder) {
+                    Vault.recurseChildren(abstractFile, (file) => {
+                        if (
+                            file instanceof TFile &&
+                            file.extension === "gpx"
+                        )
+                            gpxSet.add(file.path);
+                    });
+                }
+            }
+        }
+        if (gpxSet.size) {
             this.map.log("Loading GPX files.");
-            for (let link of gpx.flat(Infinity).filter((g) => g)) {
+            for (let link of gpxSet) {
                 const file = this.plugin.app.metadataCache.getFirstLinkpathDest(
                     parseLink(link),
                     this.sourcePath

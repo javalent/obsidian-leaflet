@@ -12,7 +12,7 @@ import { GPXPoint } from "src/@types/layers";
 import { GeoJSON } from "./geojson";
 import { formatLatLng } from "src/utils";
 import t from "src/l10n/locale";
-import { Constructor, MarkdownView, Notice, View } from "obsidian";
+
 import { GPX_Data } from "src/@types/gpx";
 import { Position } from "geojson";
 
@@ -154,7 +154,6 @@ export class GPX extends Layer<L.GeoJSON> {
                 }
             });
         }
-
         this.geojson = new GeoJSON(
             this.map,
             this.group,

@@ -550,12 +550,21 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             this.log(`Adding ${this.gpxData.length} GPX features to map.`);
             this.gpxLayer = L.featureGroup().addTo(this.featureLayer);
             for (let gpx of this.gpxData) {
-                const gpxInstance = new GPX(
-                    this as BaseMapType,
-                    gpx,
-                    this.gpxIcons
-                );
-                gpxInstance.leafletInstance.addTo(this.gpxLayer);
+                try {
+                    const gpxInstance = new GPX(
+                        this as BaseMapType,
+                        gpx,
+                        this.gpxIcons
+                    );
+                    gpxInstance.leafletInstance.addTo(this.gpxLayer);
+                } catch (e) {
+                    console.error(e);
+                    new Notice(
+                        t("There was an error adding GPX to map") +
+                            ` ${this.id}`
+                    );
+                    return;
+                }
             }
 
             this.gpxControl = gpxControl(
