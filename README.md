@@ -52,6 +52,7 @@ darkMode: true
 | markerFile    | Create immutable marker from a note's frontmatter                                            |                                            |
 | markerFolder  | Create immutable markers from _all_ of the notes in a given folder                           |                                            |
 | markerTag\*   | Create immutable markers from _all_ of the notes with the given tags.                        |                                            |
+| filterTag\*   | Filter what files are used to create markers. Only markers that match the tags will be used. |                                            |
 | linksTo\*     | Create immutable markers from _all_ of the notes linking **TO** a note                       |                                            |
 | linksFrom\*   | Create immutable markers from _all_ of the notes linking **FROM** a note                     |                                            |
 | darkMode      | Invert map colors                                                                            | false                                      |
@@ -92,9 +93,7 @@ marker:
 
 #### Marker Tags in YAML
 
-YAML considers the `#` symbol to be a comment, so the `markerTag` parameter must either be wrapped in quotes (`"#tag"`) or defined without the `#` symbol.
-
-Additionally, `markerTag` groups are specified the same way as before - an _array_ of tags means the note **must match both tags**, while _multiple `markerTag` parameters will match notes with any tag_. Please see [Marker Tags](https://github.com/valentine195/obsidian-leaflet-plugin#marker-tags) for more information.
+YAML considers the `#` symbol to be a comment, so the `markerTag` or `filterTag` parameters must either be wrapped in quotes (`"#tag"`) or defined without the `#` symbol.
 
 ## Map IDs
 
@@ -326,7 +325,7 @@ Overlays drawn directly on the map may be edited. The radius and color may be ch
 
 ### Overlays using Note frontmatter
 
-Similarly to markers, overlays may be created from notes found using the `markerFile`, `markerFolder`, and `markerTag` parameters.
+Similarly to markers, overlays may be created from notes found using the `markerFile`, `markerFolder`, and `markerTag` parameters. The `filterTag` parameter may be used to filter what files are used based on their tags.
 
 The plugin will scan the frontmatter of the notes and generate an overlay from a frontmatter `mapoverlay` parameter, defined using the same syntax as above.
 
@@ -479,7 +478,7 @@ _Please note that until I implement some form of caching, having a large amount 
 
 #### Note Frontmatter
 
-The `markerFile`, `markerFolder`, `markerTag`, `linksTo`, and `linksFrom` parameters tell the plugin _where to look for notes_. The notes themselves determine how the markers are created, using note frontmatter tags.
+The `markerFile`, `markerFolder`, `markerTag`, `filterTag`, `linksTo`, and `linksFrom` parameters tell the plugin _where to look for notes_. The notes themselves determine how the markers are created, using note frontmatter tags.
 
 All markers created from the note will automatically have their link set to the note.
 
@@ -542,15 +541,38 @@ This will search through _all_ of the notes in the specified folder, even in sub
 
 If you have the [Dataview plugin](https://github.com/blacksmithgu/obsidian-dataview) installed, markers may also be created from tags using the following syntax:
 
-`markerTag: #<tag>, #<tag>, ...`
+`markerTag: <tag>, <tag>, ...`
+
+**Please note: The plugin uses YAML to parse the code block, so tags defined with `#` \*will not work\* unless wrapped in quotes (`"#tag"`).**
 
 Each `markerTag` parameter will return notes that have _all_ of the tags defined in that paramter. If you are looking for files containing _any_ tag listed, use separate `markerTag` parameters.
 
-If one or more `markerFolder` parameters are specified, the `markerTag` parameter will only look for notes _in the folders that contain the tags_.
+Example:
+
+```
+markerTag:
+  - tag1
+  - [tag2, tag3]
+  - tag4
+```
+
+The above will parse:
+
+1. Any note containing `tag1`.
+2. Any notes containing _both_ `tag2` **and** `tag3`.
+3. Any note containing `tag4`.
+
+> Note: notes are only parsed once, even if a note matches multiple criteria.
+
+#### Filter Tag
+
+Returned files can be filtered using the `filterTag` parameter. This parameter uses the same syntax as `markerTag`, but instead of _adding_ files, it will require that each file found using `markerFile`, `markerFolder` or `markerTag` match a set of tags.
 
 #### Links
 
 The `linksTo` and `linksFrom` parameters uses DataView's link index to find notes linked to or from the notes specified in the parameter to build immutable markers, using the same syntax as above.
+
+> Please note: Both `links` parameters require the [Dataview plugin](https://github.com/blacksmithgu/obsidian-dataview) to be installed.
 
 Multiple files can be specified using YAML array syntax:
 
@@ -695,13 +717,14 @@ Additional marker types can be added, selectable from a context menu on the map.
 
 Adding a new marker displays a new window, where the new marker parameters can be added.
 
-| Parameter    | Description                                                                                          |
-| ------------ | ---------------------------------------------------------------------------------------------------- |
-| Marker Name  | Displayed in the context menu when adding a marker (e.g., Location, Event, Person)                   |
-| Marker Icon  | The [Font Awesome Free](https://fontawesome.com/icons?d=gallery&p=2&s=solid&m=free) icon name to use |
-| Upload Image | Upload a custom image to use for the marker icon instead of using a Font Awesome icon                |
-| Layer Icon   | Layer this icon on top of the base marker. If off, the icon itself will be used.                     |
-| Icon Color   | Override the default icon color                                                                      |
+| Parameter       | Description                                                                                          |
+| --------------- | ---------------------------------------------------------------------------------------------------- |
+| Marker Name     | Displayed in the context menu when adding a marker (e.g., Location, Event, Person)                   |
+| Marker Icon     | The [Font Awesome Free](https://fontawesome.com/icons?d=gallery&p=2&s=solid&m=free) icon name to use |
+| Upload Image    | Upload a custom image to use for the marker icon instead of using a Font Awesome icon                |
+| Layer Icon      | Layer this icon on top of the base marker. If off, the icon itself will be used.                     |
+| Icon Color      | Override the default icon color                                                                      |
+| Associated Tags | Immutable markers will use this marker type if the file has this tag _and `mapmarker` is not set_.   |
 
 If layer icon is on, the icon be moved around the base icon by clicking and dragging, to customize where the icon is layered. If <kbd>Shift</kbd> is held while moving the icon, it will snap to the midlines.
 
@@ -712,6 +735,14 @@ When creating an additional marker, an image may be uploaded to use as the marke
 Click the "Upload Image" button and select the image to use. The plugin will load the image and scale it to `24px x 24px`. The image used for the marker cannot be edited once it has been uploaded.
 
 If an image has been uploaded, selecting a Font Awesome icon will remove the image.
+
+#### Associated Tags
+
+Associate a tag with a marker type.
+
+If a note is found using `markerFile`, `markerFolder`, or `markerTag`, the plugin will first use the frontmatter `mapmarker` parameter to determine marker type. If that is not set, it will then use the note's tags to find a marker type associated with one of the tags.
+
+The tags are searched in order of definition on the marker type.
 
 # Version History
 

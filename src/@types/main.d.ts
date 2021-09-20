@@ -25,11 +25,12 @@ export interface BlockParameters {
     layers?: string[];
     tileServer?: string | string[];
     osmLayer?: boolean;
-    marker?: string | string[];
-    commandMarker?: string | string[];
-    markerFolder?: string | string[];
-    markerFile?: string | string[];
-    markerTag?: string | string[][];
+    marker?: string[];
+    commandMarker?: string[];
+    markerFolder?: string[];
+    markerFile?: string[];
+    markerTag?: string[][];
+    filterTag?: string[][];
     imageOverlay?: Array<[string, [number, number], [number, number]]>;
     overlay?: Array<[string, [number, number], string, string]>;
     overlayTag?: string;
@@ -95,6 +96,7 @@ declare class ObsidianLeaflet extends Plugin {
     generateMarkerMarkup(markers: Icon[]): MarkerIcon[];
 
     registerMapEvents(map: BaseMapType): void;
+    getIconForTag(tags: Set<string>): string;
     createNewMarkerType(options?: {
         original?: Icon;
         layer?: boolean;

@@ -465,7 +465,6 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             this.displayed = true;
             if (this.tooltip === "always" && this.target) {
                 this.leafletInstance.on("add", () => {
-                    console.log("add");
                     this.popup.open(this.target.display);
                 });
             }

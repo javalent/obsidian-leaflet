@@ -25,6 +25,7 @@ export class CreateMarkerModal extends Modal {
         this.plugin = plugin;
 
         this.tempMarker = { ...this.marker };
+        if (!this.tempMarker.tags) this.tempMarker.tags = [];
     }
     get data() {
         return this.plugin.data;
@@ -394,6 +395,10 @@ export class CreateMarkerModal extends Modal {
             };
         }
 
+        this.buildTags(
+            createNewMarker.createDiv("additional-markers-container")
+        );
+
         let add = new Setting(createNewMarker);
 
         if (this.tempMarker.isImage) {
@@ -464,6 +469,7 @@ export class CreateMarkerModal extends Modal {
                 this.marker.transform = this.tempMarker.transform;
                 this.marker.isImage = this.tempMarker.isImage;
                 this.marker.imageUrl = this.tempMarker.imageUrl;
+                this.marker.tags = this.tempMarker.tags;
 
                 this.saved = true;
 
@@ -491,6 +497,54 @@ export class CreateMarkerModal extends Modal {
             (
                 this.contentEl.querySelector(`#${focusEl}`) as HTMLInputElement
             ).focus();
+        }
+    }
+
+    buildTags(containerEl: HTMLElement, focus: boolean = false) {
+        containerEl.empty();
+        let tag: string;
+        const tagSetting = new Setting(containerEl)
+            .setHeading()
+            .setName("Associate Tags")
+            .setDesc("Markers created from this tag using ")
+            .addText((t) => {
+                t.setPlaceholder("Add Tag");
+                t.onChange((v) => (tag = v));
+                if (focus) t.inputEl.focus();
+            })
+            .addButton((b) => {
+                b.setTooltip("Add Tag")
+                    .setButtonText("+")
+                    .onClick(() => {
+                        if (
+                            tag &&
+                            tag.length &&
+                            !this.tempMarker.tags?.includes(tag)
+                        ) {
+                            this.tempMarker.tags.push(tag);
+                            this.buildTags(containerEl, true);
+                        }
+                    });
+            });
+        tagSetting.descEl.createEl("code", { text: "markerTag" });
+        tagSetting.descEl.createSpan({
+            text: " will use this marker icon by default."
+        });
+
+        const tagContainer = containerEl.createDiv("additional-markers");
+        if (!this.tempMarker.tags) return;
+        for (let tag of this.tempMarker.tags) {
+            new Setting(tagContainer).setName(tag).addExtraButton((b) =>
+                b
+                    .setIcon("trash")
+                    .setTooltip("Remove Tag")
+                    .onClick(() => {
+                        this.tempMarker.tags = this.tempMarker.tags.filter(
+                            (t) => t !== tag
+                        );
+                        this.buildTags(containerEl);
+                    })
+            );
         }
     }
 

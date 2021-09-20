@@ -513,6 +513,16 @@ export default class ObsidianLeaflet
         return ret;
     }
 
+    public getIconForTag(tags: Set<string>) {
+        return this.data.markerIcons.find((icon) =>
+            (
+                (icon.tags ?? []).filter((t) =>
+                    tags.has(`${t[0] == "#" ? "" : "#"}${t}`)
+                ) ?? []
+            ).shift()
+        )?.type;
+    }
+
     public createNewMarkerType(options?: {
         original?: Icon;
         layer?: boolean;
@@ -529,7 +539,8 @@ export default class ObsidianLeaflet
                 layer: options?.layer ?? this.data.layerMarkers,
                 transform: this.data.defaultMarker.transform,
                 isImage: false,
-                imageUrl: ""
+                imageUrl: "",
+                tags: []
             };
             let newMarkerModal = new CreateMarkerModal(
                 this.app,

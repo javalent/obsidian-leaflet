@@ -313,7 +313,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 
                         await this.plugin.saveSettings();
                         this.display();
-                        
+
                         /* const tempMarker = { ...marker };
                         let newMarkerModal = new CreateMarkerModal(
                             this.app,
@@ -371,6 +371,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             let name = setting.nameEl.createDiv("marker-type-display");
             name.appendChild(markerIconDiv);
             name.appendText(marker.type);
+            if (marker.tags && marker.tags.length) {
+                setting.setDesc(marker.tags.join(", "));
+            }
         });
     }
     createLatLongSetting(containerEl: HTMLElement) {
