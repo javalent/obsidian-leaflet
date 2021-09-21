@@ -337,8 +337,10 @@ export default class ObsidianLeaflet
 
             /** Only need to save maps with defined marker data */
             this.data.mapMarkers = this.data.mapMarkers.filter(
-                ({ markers, overlays }) =>
-                    markers.length > 0 || overlays.length > 0
+                ({ markers, overlays, shapes }) =>
+                    markers.length > 0 ||
+                    overlays.length > 0 ||
+                    shapes.length > 0
             );
 
             /** Remove maps that haven't been accessed in more than 1 week that are not associated with a file */
