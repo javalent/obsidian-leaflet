@@ -853,6 +853,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                             (o) => o != overlay
                         );
                         this.trigger("markers-updated");
+                        this.trigger("should-save");
 
                         return;
                     }
