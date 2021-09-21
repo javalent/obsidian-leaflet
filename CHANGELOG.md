@@ -1,5 +1,19 @@
 # Version History
 
+## 4.0.0
+Highlights:
+
+1. The *entire* plugin has been rewritten, resulting in a much faster and smoother experience.
+2. Images are loaded in a background process and no longer block Obsidian from responding.
+3. You can now view detailed health data on the map, including elevation, pace, cadence and more!
+4. There is a brand-new Leaflet Map View. You can save parameters for your in-note maps to the view to open an exact copy, or create your own, custom view.
+5. You can now draw and edit shapes directly on maps!
+6. For those of you using Obsidian to run TTRPGs, Leaflet now integrates directly with the Initiative Tracker, giving you the ability to use it as a full-on battlemap.
+7. You can now specify alternate map serves other than OpenStreetMap, and real-world maps can now have multiple layers.
+8. The plugin now has full localization support (but currently only supports English).
+
+Several bug fixes.
+
 ## 3.18.0
 
 - Added support for GeoJSON styling using the MapBox SimpleStyle specification
