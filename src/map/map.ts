@@ -135,6 +135,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         public options: LeafletMapOptions
     ) {
         super();
+
         this.contentEl.style.height = options.height;
         this.contentEl.style.width = "100%";
         this.options = Object.assign({}, DEFAULT_MAP_OPTIONS, options);
@@ -333,7 +334,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     };
     zoomDistance: number;
 
-    unit: Length = (this.options.unit as Length) ?? "m";
+    unit: Length = (this.options.unit as Length) ?? this.plugin.defaultUnit;
 
     /** Marker Methods */
     addMarker(...markers: SavedMarkerProperties[]) {
@@ -469,14 +470,16 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 this.tempCircle.remove();
 
                 this.createOverlay({
-                    radius: this.tempCircle.getRadius(),
+                    radius: convert(this.tempCircle.getRadius())
+                        .from("m")
+                        .to(this.unit),
                     color: this.tempCircle.options.color,
                     loc: [
                         this.tempCircle.getLatLng().lat,
                         this.tempCircle.getLatLng().lng
                     ],
                     layer: this.currentGroup.id,
-                    unit: "m",
+                    unit: this.unit,
                     desc: "",
                     mutable: true,
                     marker: marker?.id ?? null
@@ -1187,8 +1190,10 @@ export class RealMap extends BaseMap {
 
     async buildLayer(layer: { data: string; id: string; alias?: string }) {
         const tileLayer = L.tileLayer(layer.data, {
-            attribution:
-                '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            ...(layer.data.contains("openstreetmap") && {
+                attribution:
+                    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }),
             className: this.options.darkMode ? "dark-mode" : ""
         });
 

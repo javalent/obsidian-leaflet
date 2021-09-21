@@ -54,7 +54,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 
         this.createMarkerSettings(containerEl);
 
-        this.createLatLongSetting(containerEl);
+        this.createMapSettings(containerEl);
 
         let defaultMarker = containerEl.createDiv(
             "additional-markers-container"
@@ -313,33 +313,6 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 
                         await this.plugin.saveSettings();
                         this.display();
-
-                        /* const tempMarker = { ...marker };
-                        let newMarkerModal = new CreateMarkerModal(
-                            this.app,
-                            this.plugin,
-                            marker
-                        );
-                        newMarkerModal.open();
-                        newMarkerModal.onClose = async () => {
-                            if (!marker.type || !marker.iconName) {
-                                return;
-                            }
-
-                            if (tempMarker.type != marker.type) {
-                                this.data.mapMarkers.forEach(({ markers }) => {
-                                    markers = markers.map((m) => {
-                                        if (m.type == tempMarker.type) {
-                                            m.type = marker.type;
-                                        }
-                                        return m;
-                                    });
-                                });
-                            }
-
-                            await this.plugin.saveSettings();
-                            this.display();
-                        }; */
                     })
                 )
                 .addExtraButton((b) =>
@@ -376,7 +349,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             }
         });
     }
-    createLatLongSetting(containerEl: HTMLElement) {
+    createMapSettings(containerEl: HTMLElement) {
         new Setting(containerEl)
             .setName(t("Default Latitude"))
             .setDesc(
@@ -425,6 +398,18 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                 text.inputEl.addEventListener("blur", async () => {
                     this.display();
                 });
+            });
+        new Setting(containerEl)
+            .setName(t("Default Units"))
+            .setDesc(t("Select the default system of units for the map."))
+            .addDropdown((d) => {
+                d.addOption("imperial", t("Imperial"))
+                    .addOption("metric", t("Metric"))
+                    .setValue(this.plugin.data.defaultUnitType)
+                    .onChange(async (v: "imperial" | "metric") => {
+                        this.plugin.data.defaultUnitType = v;
+                        await this.plugin.saveSettings();
+                    });
             });
     }
     createMarkerSettings(containerEl: HTMLElement) {

@@ -42,7 +42,6 @@ export const DEFAULT_BLOCK_PARAMETERS: BlockParameters = {
     overlay: [],
     overlayColor: "blue",
     scale: 1,
-    unit: "m",
     tileServer: [],
     verbose: false,
     zoomDelta: 1,
@@ -90,7 +89,8 @@ export const DEFAULT_SETTINGS: ObsidianAppData = {
     configDirectory: null,
     mapViewEnabled: true,
     mapViewParameters: {},
-    enableDraw: true
+    enableDraw: true,
+    defaultUnitType: "imperial"
 };
 export const BASE_POPUP_OPTIONS = {
     className: "leaflet-marker-link-popup",

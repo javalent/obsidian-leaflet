@@ -4,16 +4,12 @@ import {
     parseYaml,
     setIcon,
     TextComponent,
-    TFile,
-    TFolder,
-    Vault
+    TFile
 } from "obsidian";
 import Color from "color";
 
-import { parse as parseCSV } from "papaparse";
-
-import { BaseMapType, BlockParameters, ObsidianLeaflet } from "src/@types";
-import { LAT_LONG_DECIMALS, OVERLAY_TAG_REGEX } from "./constants";
+import { BaseMapType, BlockParameters } from "src/@types";
+import { LAT_LONG_DECIMALS } from "./constants";
 import { DESCRIPTION_ICON } from ".";
 import t from "src/l10n/locale";
 

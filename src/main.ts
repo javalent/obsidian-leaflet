@@ -12,8 +12,7 @@ import {
     addIcon,
     Platform,
     WorkspaceLeaf,
-    debounce,
-    FuzzySuggestModal
+    debounce
 } from "obsidian";
 
 //Local Imports
@@ -33,7 +32,8 @@ import {
     VIEW_ICON_SVG,
     VIEW_ICON,
     VIEW_TYPE,
-    MODIFIER_KEY
+    MODIFIER_KEY,
+    UNIT_SYSTEM
 } from "./utils";
 import {
     MapInterface,
@@ -52,6 +52,7 @@ import t from "./l10n/locale";
 import { CreateMarkerModal } from "./modals";
 import { LeafletMapView } from "./map/view";
 import { SRDMonster } from "../../obsidian-initiative-tracker/@types";
+import { Length } from "convert/dist/types/units";
 
 //add commands to app interface
 declare module "obsidian" {
@@ -120,6 +121,20 @@ export default class ObsidianLeaflet
         if (leaf && leaf.view && leaf.view instanceof InitiativeMapView)
             return leaf.view;
     }
+
+    get defaultUnit() {
+        if (this.data.defaultUnitType === "imperial") return "mi";
+        return "km";
+    }
+
+    unitSystemForUnit(unit: Length) {
+        if (!unit) return this.data.defaultUnitType;
+        return (
+            (UNIT_SYSTEM[unit] as "metric" | "imperial") ??
+            this.data.defaultUnitType
+        );
+    }
+
     async onload(): Promise<void> {
         console.log(t("Loading Obsidian Leaflet v%1", this.manifest.version));
         await this.loadSettings();
@@ -443,7 +458,6 @@ export default class ObsidianLeaflet
         });
 
         map.on("marker-deleted", (marker) => {
-            console.log("🚀 ~ file: main.ts ~ line 446 ~ marker", marker);
             const otherMaps = this.maps.filter(
                 ({ id, map: m }) => id == map.id && m.contentEl != map.contentEl
             );

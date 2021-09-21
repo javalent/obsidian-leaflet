@@ -5,7 +5,6 @@ import {
     icon,
     library,
     IconParams,
-    Layer
 } from "@fortawesome/fontawesome-svg-core";
 import type {
     IconDefinition,

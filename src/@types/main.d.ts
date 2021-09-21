@@ -1,3 +1,4 @@
+import { Length } from "convert/dist/types/units";
 import {
     Debouncer,
     MarkdownPostProcessorContext,
@@ -81,6 +82,10 @@ declare class ObsidianLeaflet extends Plugin {
     isMobile: boolean;
     isMacOS: boolean;
     view: LeafletMapView | null;
+
+    get defaultUnit(): Length;
+    unitSystemForUnit(unit: Length): "metric" | "imperial";
+
     /* escapeScope: Scope; */
     onload(): Promise<void>;
     onunload(): Promise<void>;

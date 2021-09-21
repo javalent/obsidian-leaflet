@@ -136,6 +136,11 @@ export default {
     "Enable Draw Mode by Default": "Enable Draw Mode by Default",
     "The draw control will be added to maps by default. Can be overridden with the draw map block parameter.":
         "The draw control will be added to maps by default. Can be overridden with the draw map block parameter.",
+    "Default Units": "Default Units",
+    "Select the default system of units for the map.":
+        "Select the default system of units for the map.",
+    Imperial: "Imperial",
+    Metric: "Metric",
 
     //modals/settings.ts
     "Marker Name": "Marker Name",
@@ -220,10 +225,11 @@ export default {
     Time: "Time",
     Elevation: "Elevation",
     Speed: "Speed",
+    Pace: "Pace",
     Temperature: "Temperature",
     "Heart Rate": "Heart Rate",
     Cadence: "Cadence",
-    "steps/s": "steps/s",
+    spm: "spm",
 
     //controls/zoom.ts
     "Show All Markers": "Show All Markers",

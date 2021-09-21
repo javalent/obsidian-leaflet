@@ -383,7 +383,10 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                 this.target = new Link(x, this.map.plugin.app);
             }
         }
+
         if (this.target) this.target.text = x;
+        if (this.popup && this.displayed && this.tooltip === "always")
+            this.popup.open(this.target.display);
     }
     get command() {
         return this._command;

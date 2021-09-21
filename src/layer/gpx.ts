@@ -10,11 +10,12 @@ import { popup } from "src/map/popup";
 import { GPXPoint } from "src/@types/layers";
 
 import { GeoJSON } from "./geojson";
-import { formatLatLng } from "src/utils";
+import { formatLatLng, formatNumber, getIcon, icon } from "src/utils";
 import t from "src/l10n/locale";
 
 import { GPX_Data } from "src/@types/gpx";
 import { Position } from "geojson";
+import convert from "convert";
 
 let L = window[LeafletSymbol];
 
@@ -331,26 +332,88 @@ export class GPX extends Layer<L.GeoJSON> {
             });
         }
 
-        if (point.meta.elevation && !isNaN(point.meta.elevation))
-            el.createSpan({
-                text: `${t("Elevation")}: ${point.meta.elevation.toFixed(2)} m`
+        if (point.meta.elevation && !isNaN(point.meta.elevation)) {
+            const unit =
+                this.map.plugin.unitSystemForUnit(this.map.unit) === "imperial"
+                    ? "ft"
+                    : "m";
+            const previous = this.points[this.points.indexOf(point) - 1];
+            let delta =
+                point.meta.elevation -
+                (previous?.meta?.elevation ?? point.meta.elevation);
+
+            const elevation = convert(point.meta.elevation).from("m").to(unit);
+            const elevationEl = el.createDiv("elevation gpx-elevation");
+            elevationEl.createSpan({
+                text: `${t("Elevation")}: ${formatNumber(
+                    elevation,
+                    2
+                )} ${unit} (`
             });
-        if (point.meta.speed && !isNaN(point.meta.speed))
-            el.createSpan({
-                text: `${t("Speed")}: ${point.meta.speed.toFixed(2)} m/s`
+
+            let iconEl: Element;
+            let cls: string;
+            const converted = formatNumber(
+                convert(delta).from("m").to(unit),
+                1
+            );
+            if (Number(converted) > 0) {
+                iconEl = icon(getIcon("angle-up")).node[0];
+                cls = "elevation-gain";
+            } else if (Number(converted) < 0) {
+                iconEl = icon(getIcon("angle-down")).node[0];
+                cls = "elevation-loss";
+            } else {
+                iconEl = createSpan();
+                cls = "";
+            }
+            const gainLoss = elevationEl.createSpan(cls);
+            gainLoss.appendChild(iconEl);
+            gainLoss.createSpan({
+                text: `${Math.abs(Number(converted))}${unit}`
             });
+            elevationEl.createSpan({ text: ")" });
+        }
+        if (point.meta.speed && !isNaN(point.meta.speed)) {
+            let speed = point.meta.speed,
+                unit: string,
+                pace: string;
+            switch (this.map.plugin.unitSystemForUnit(this.map.unit)) {
+                case "metric": {
+                    //kmh
+                    speed = convert(speed).from("m").to("km") * 60 * 60;
+                    unit = "km/h";
+                    pace = "km";
+                }
+                case "imperial": {
+                    //mph
+                    speed = convert(speed).from("m").to("mi") * 60 * 60;
+                    unit = "mph";
+                    pace = "mi";
+                }
+            }
+            el.createSpan({
+                text: `${t("Speed")}: ${formatNumber(speed, 2)} ${unit}`
+            });
+            el.createSpan({
+                text: `${t("Pace")}: ${formatNumber(60 / speed, 2)}"/${pace}`
+            });
+        }
         if (point.meta.atemp && !isNaN(point.meta.atemp))
             el.createSpan({
-                text: `${t("Temperature")}: ${point.meta.atemp.toFixed(2)} °C`
+                text: `${t("Temperature")}: ${formatNumber(
+                    point.meta.atemp,
+                    2
+                )} °C`
             });
         if (point.meta.hr && !isNaN(point.meta.hr))
             el.createSpan({
-                text: `${t("Heart Rate")}: ${point.meta.hr.toFixed(2)}`
+                text: `${t("Heart Rate")}: ${formatNumber(point.meta.hr, 2)}`
             });
         if (point.meta.cad && !isNaN(point.meta.cad))
             el.createSpan({
-                text: `${t("Cadence")}: ${point.meta.cad.toFixed(2)} ${t(
-                    "steps/s"
+                text: `${t("Cadence")}: ${formatNumber(point.meta.cad, 2)} ${t(
+                    "spm"
                 )}`
             });
         return el;

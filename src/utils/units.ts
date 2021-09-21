@@ -113,3 +113,116 @@ export const UNIT_NAME_ALIASES = {
     NM: t("nautical miles"),
     nmi: t("nautical miles")
 };
+export const UNIT_SYSTEM = {
+    meter: "metric",
+    meters: "metric",
+    metre: "metric",
+    metres: "metric",
+    m: "metric",
+
+    petameter: "metric",
+    petametre: "metric",
+    petameters: "metric",
+    petametres: "metric",
+    Pm: "metric",
+
+    terameter: "metric",
+    terametre: "metric",
+    terameters: "metric",
+    terametres: "metric",
+    Tm: "metric",
+
+    gigameter: "metric",
+    gigametre: "metric",
+    gigameters: "metric",
+    gigametres: "metric",
+    Gm: "metric",
+
+    megameter: "metric",
+    megametre: "metric",
+    megameters: "metric",
+    megametres: "metric",
+    Mm: "metric",
+
+    kilometer: "metric",
+    kilometre: "metric",
+    kilometers: "metric",
+    kilometres: "metric",
+    km: "metric",
+
+    hectometer: "metric",
+    hectometre: "metric",
+    hectometers: "metric",
+    hectometres: "metric",
+    hm: "metric",
+
+    decameter: "metric",
+    decametre: "metric",
+    decameters: "metric",
+    decametres: "metric",
+    dam: "metric",
+
+    decimeter: "metric",
+    decimetre: "metric",
+    decimeters: "metric",
+    decimetres: "metric",
+    dm: "metric",
+
+    centimeter: "metric",
+    centimetre: "metric",
+    centimeters: "metric",
+    centimetres: "metric",
+    cm: "metric",
+
+    millimeter: "metric",
+    millimetre: "metric",
+    millimeters: "metric",
+    millimetres: "metric",
+    mm: "metric",
+
+    micrometer: "metric",
+    micrometre: "metric",
+    micrometers: "metric",
+    micrometres: "metric",
+    μm: "metric",
+
+    nanometer: "metric",
+    nanometre: "metric",
+    nanometers: "metric",
+    nanometres: "metric",
+    nm: "metric",
+
+    picometer: "metric",
+    picometre: "metric",
+    picometers: "metric",
+    picometres: "metric",
+    pm: "metric",
+
+    femtometer: "metric",
+    femtometre: "metric",
+    femtometers: "metric",
+    femtometres: "metric",
+    fm: "metric",
+
+    foot: "imperial",
+    feet: "imperial",
+    ft: "imperial",
+
+    inch: "imperial",
+    inches: "imperial",
+    in: "imperial",
+
+    yard: "imperial",
+    yards: "imperial",
+    yd: "imperial",
+
+    mile: "imperial",
+    miles: "imperial",
+    mi: "imperial",
+
+    "nautical mile": "imperial",
+    "nautical miles": "imperial",
+    M: "imperial",
+    NM: "imperial",
+    nmi: "imperial"
+};

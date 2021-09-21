@@ -3,8 +3,9 @@ import { GPX } from "src/layer";
 import { FontAwesomeControl, FontAwesomeControlOptions } from "./controls";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { ExtraButtonComponent } from "obsidian";
-import { BULLSEYE } from "src/utils";
+import { BULLSEYE, formatNumber, getIcon, icon } from "src/utils";
 import t from "src/l10n/locale";
+import convert from "convert";
 const L = window[LeafletSymbol];
 class GPXControl extends FontAwesomeControl {
     target: GPX;
@@ -29,19 +30,9 @@ class GPXControl extends FontAwesomeControl {
         L.DomEvent.disableScrollPropagation(this.controlEl);
 
         this.iconEl.dataset["draggable"] = "false";
-
-        /*         this.map.on("click", () => this.collapse(), this); */
-
-        /* L.DomEvent.on(this.controlEl, "mouseenter", () => this.expand()); */
-        /*         L.DomEvent.on(this.controlEl, "mouseleave", () => this.collapse()); */
-
-        /* if (Platform.isMobile) {
-            L.DomEvent.on(this.controlEl, "click", this.expand, this);
-        } else {
-            L.DomEvent.on(this.controlEl, "focus", this.expand, this);
-        } */
     }
     setTarget(gpx: GPX) {
+        if (this.target) this.removeTarget();
         this.target = gpx;
         this.target.targeted = true;
         this.removeTooltip();
@@ -108,14 +99,48 @@ class GPXControl extends FontAwesomeControl {
                 text: t("Heatlines")
             });
         };
+
+        const unit =
+            this.map.plugin.unitSystemForUnit(this.map.unit) === "imperial"
+                ? "mi"
+                : "km";
+
+        if (this.target.data.length) {
+            addHeatlineDiv();
+            data.createDiv("data-item").createSpan({
+                text: `Distance: ${formatNumber(
+                    convert(this.target.data.length).from("m").to(unit),
+                    2
+                )}${unit}`
+            });
+        }
+
         if (this.target.flags.elevation) {
             addHeatlineDiv();
 
-            data.createDiv("data-item").createSpan({
-                text: `${t("Elevation")}: ${this.target.elevation.avg} ${t(
-                    "meters"
-                )}`
+            const elevationEl = data.createDiv("data-item");
+
+            const unit =
+                this.map.plugin.unitSystemForUnit(this.map.unit) === "imperial"
+                    ? "ft"
+                    : "m";
+
+            elevationEl.createSpan({ text: `${t("Elevation")}:` });
+            const gainLoss = elevationEl.createDiv("gpx-elevation");
+
+            const gain = convert(this.target.elevation.max).from("m").to(unit);
+            const gainEl = gainLoss.createDiv("elevation-gain");
+            gainEl.appendChild(icon(getIcon("angle-up")).node[0]);
+            gainEl.createSpan({
+                text: `${formatNumber(gain, 0)}${unit}`
             });
+            const loss = convert(this.target.elevation.min).from("m").to(unit);
+            const lossEl = gainLoss.createDiv("elevation-loss");
+            lossEl.appendChild(icon(getIcon("angle-down")).node[0]);
+            lossEl.createSpan({
+                text: `${formatNumber(loss, 0)}${unit}`
+            });
+
             const li = ul.createDiv("input-item");
             const input = li.createEl("input", {
                 attr: {
@@ -140,8 +165,29 @@ class GPXControl extends FontAwesomeControl {
         if (this.target.data.flags.speed) {
             addHeatlineDiv();
 
+            let speed = this.target.speed.avg,
+                unit: string,
+                pace: string;
+            switch (this.map.plugin.unitSystemForUnit(this.map.unit)) {
+                case "metric": {
+                    //kmh
+                    speed = convert(speed).from("m").to("km") * 60 * 60;
+                    unit = "km/h";
+                    pace = "km";
+                }
+                case "imperial": {
+                    //mph
+                    speed = convert(speed).from("m").to("mi") * 60 * 60;
+                    unit = "mph";
+                    pace = "mi";
+                }
+            }
+
             data.createDiv("data-item").createSpan({
-                text: `${t("Speed")}: ${this.target.speed.avg} m/s`
+                text: `${t("Speed")}: ${formatNumber(speed, 0)} ${unit}`
+            });
+            data.createDiv("data-item").createSpan({
+                text: `${t("Pace")}: ${formatNumber(60 / speed, 0)}"/${pace}`
             });
 
             const li = ul.createDiv("input-item");
@@ -169,7 +215,7 @@ class GPXControl extends FontAwesomeControl {
             addHeatlineDiv();
 
             data.createDiv("data-item").createSpan({
-                text: `${t("Cadence")}: ${this.target.cad.avg} ${t("steps/s")}`
+                text: `${t("Cadence")}: ${this.target.cad.avg} ${t("spm")}`
             });
             const li = ul.createDiv("input-item");
             const input = li.createEl("input", {

@@ -480,6 +480,17 @@ input.is-invalid {
     margin: 0.25rem;
 }
 
+.block-language-leaflet .leaflet-control-gpx .gpx-elevation {
+    display: flex;
+    justify-content: space-around;
+}
+.block-language-leaflet .gpx-elevation .elevation-gain {
+    color: green;
+}
+.block-language-leaflet .gpx-elevation .elevation-loss {
+    color: red;
+}
+
 .gpx-popup {
     display: flex;
     flex-flow: column;

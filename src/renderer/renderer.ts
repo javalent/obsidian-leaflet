@@ -127,7 +127,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                     ? this.params.tileServer
                     : [this.params.tileServer],
             type: this.params.image != "real" ? "image" : "real",
-            unit: this.params.unit,
+            unit: this.params.unit ?? this.plugin.defaultUnit,
             verbose: this.params.verbose,
             zoomDelta: +this.params.zoomDelta,
             zoomFeatures: this.params.zoomFeatures

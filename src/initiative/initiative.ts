@@ -264,6 +264,7 @@ class InitiativeMap extends ImageMap {
                     this.addCreature({ creature });
                 }
                 const marker = this.markerMap.get(creature.id);
+                marker.creature = creature;
 
                 marker.updateCreature();
             }
@@ -460,8 +461,6 @@ class InitiativeMarker extends Marker {
         }
 
         this.initIcon.syncStatuses();
-
-        this.creature = this.creature;
     }
 
     setDisabled() {

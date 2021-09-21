@@ -48,4 +48,5 @@ export interface ObsidianAppData {
     mapViewParameters: BlockParameters;
     mapViewEnabled: boolean;
     enableDraw: boolean;
+    defaultUnitType: "metric" | "imperial";
 }
