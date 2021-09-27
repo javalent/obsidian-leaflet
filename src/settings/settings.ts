@@ -271,10 +271,6 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                         const newMarker =
                             await this.plugin.createNewMarkerType();
                         if (!newMarker) return;
-                        console.log(
-                            "🚀 ~ file: settings.ts ~ line 272 ~ newMarker",
-                            newMarker
-                        );
                         this.data.markerIcons.push(newMarker);
                         await this.plugin.saveSettings();
 

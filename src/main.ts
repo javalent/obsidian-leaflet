@@ -576,10 +576,6 @@ export default class ObsidianLeaflet
             );
             newMarkerModal.open();
             newMarkerModal.onClose = async () => {
-                console.log(
-                    "🚀 ~ file: main.ts ~ line 580 ~ newMarker",
-                    newMarker
-                );
                 if (newMarkerModal.saved) resolve(newMarker);
                 resolve();
             };

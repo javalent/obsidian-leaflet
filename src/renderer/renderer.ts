@@ -164,7 +164,12 @@ export class LeafletRenderer extends MarkdownRenderChild {
     handled = false;
     async placeLayerInCodeBlock(layer: Marker | Overlay) {
         layer.mutable = false;
-        const type = layer instanceof Marker ? "marker" : "overlay";
+        const type =
+            layer instanceof Marker
+                ? layer.command
+                    ? "commandMarker"
+                    : "marker"
+                : "overlay";
 
         this.modifiedSource = `${this.modifiedSource}${type}: ${layer
             .toCodeBlockProperties()
