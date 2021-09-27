@@ -13,6 +13,8 @@ export interface Icon {
     layer?: boolean;
     transform?: { size: number; x: number; y: number };
     tags?: string[];
+    minZoom?: number;
+    maxZoom?: number;
 }
 
 export interface MapMarkerData {

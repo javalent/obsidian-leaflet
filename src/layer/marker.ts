@@ -214,8 +214,16 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         this.percent = percent;
         this.tooltip = tooltip;
 
-        this.minZoom = minZoom;
-        this.maxZoom = maxZoom;
+        const markerIcon = this.map.plugin.getIconForType(this.type);
+
+        this.minZoom = minZoom ?? markerIcon?.minZoom ?? null;
+        console.log(
+            "🚀 ~ file: marker.ts ~ line 220 ~ minZoom",
+            minZoom,
+            markerIcon,
+            this.minZoom
+        );
+        this.maxZoom = maxZoom ?? markerIcon?.maxZoom ?? null;
 
         this.checkAndAddToMap();
 

@@ -1,4 +1,11 @@
-import { App, ButtonComponent, Modal, Setting, TextComponent } from "obsidian";
+import {
+    App,
+    ButtonComponent,
+    Modal,
+    Notice,
+    Setting,
+    TextComponent
+} from "obsidian";
 import t from "src/l10n/locale";
 import { Icon, ObsidianLeaflet } from "../@types";
 import {
@@ -395,6 +402,57 @@ export class CreateMarkerModal extends Modal {
             };
         }
 
+        new Setting(createNewMarker)
+            .setName(t("Min Zoom"))
+            .setDesc(t("Only display above this zoom."))
+            .addText((text) => {
+                let warned = false;
+                text.inputEl.onkeydown = (evt) => {
+                    if (
+                        !/^(\d*\.?\d*|Backspace|Delete|Arrow\w+|\-|Tab)$/.test(
+                            evt.key
+                        )
+                    ) {
+                        if (!warned) {
+                            warned = true;
+                            new Notice(t("Minimum zoom must be a number."));
+                        }
+                        evt.preventDefault();
+                        return false;
+                    }
+                };
+                if (this.tempMarker.minZoom != null)
+                    text.setValue(`${this.tempMarker.minZoom}`);
+                text.onChange((v) => {
+                    this.tempMarker.minZoom = Number(v);
+                });
+            });
+        new Setting(createNewMarker)
+            .setName(t("Max Zoom"))
+            .setDesc(t("Only display below this zoom."))
+            .addText((text) => {
+                let warned = false;
+                text.inputEl.onkeydown = (evt) => {
+                    if (
+                        !/^(\d*\.?\d*|Backspace|Delete|Arrow\w+|\-|Tab)$/.test(
+                            evt.key
+                        )
+                    ) {
+                        if (!warned) {
+                            warned = true;
+                            new Notice(t("Maximum zoom must be a number."));
+                        }
+                        evt.preventDefault();
+                        return false;
+                    }
+                };
+                text.onChange((v) => {
+                    this.tempMarker.maxZoom = Number(v);
+                });
+                if (this.tempMarker.maxZoom != null)
+                    text.setValue(`${this.tempMarker.maxZoom}`);
+            });
+
         this.buildTags(
             createNewMarker.createDiv("additional-markers-container")
         );
@@ -470,6 +528,8 @@ export class CreateMarkerModal extends Modal {
                 this.marker.isImage = this.tempMarker.isImage;
                 this.marker.imageUrl = this.tempMarker.imageUrl;
                 this.marker.tags = this.tempMarker.tags;
+                this.marker.minZoom = this.tempMarker.minZoom;
+                this.marker.maxZoom = this.tempMarker.maxZoom;
 
                 this.saved = true;
 

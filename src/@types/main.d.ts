@@ -102,6 +102,7 @@ declare class ObsidianLeaflet extends Plugin {
 
     registerMapEvents(map: BaseMapType): void;
     getIconForTag(tags: Set<string>): string;
+    getIconForType(type: string): Icon;
     createNewMarkerType(options?: {
         original?: Icon;
         layer?: boolean;
