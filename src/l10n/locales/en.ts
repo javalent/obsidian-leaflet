@@ -218,6 +218,8 @@ export default {
     "No command found!": "No command found!",
     "This marker cannot be edited because it was defined in the code block.":
         "This marker cannot be edited because it was defined in the code block.",
+    "This overlay cannot be edited because it was defined in the code block.":
+        "This overlay cannot be edited because it was defined in the code block.",
 
     //layer/gpx.ts
     Lat: "Lat",

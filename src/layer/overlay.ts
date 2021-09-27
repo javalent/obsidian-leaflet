@@ -1,6 +1,8 @@
 import convert from "convert";
+import { Notice } from "obsidian";
 
 import { BaseMapType, SavedOverlayData } from "src/@types";
+import t from "src/l10n/locale";
 import { popup } from "src/map/popup";
 import { formatLatLng, formatNumber } from "src/utils";
 import { DISTANCE_DECIMALS, MODIFIER_KEY } from "src/utils";
@@ -34,6 +36,9 @@ export class Overlay extends Layer<L.Circle> {
 
     get mutable() {
         return this.data.mutable;
+    }
+    set mutable(b: boolean) {
+        this.data.mutable = b;
     }
     setMutable(mutable: boolean) {
         this.data.mutable = mutable;
@@ -97,7 +102,7 @@ export class Overlay extends Layer<L.Circle> {
     constructor(public map: BaseMapType, public data: SavedOverlayData) {
         super();
         this.leafletInstance = L.circle(L.latLng(this.data.loc), {
-            radius: this.radius,
+            radius: this.radiusInMeters,
             color: this.color
         });
 
@@ -118,6 +123,7 @@ export class Overlay extends Layer<L.Circle> {
         this.leafletInstance
             .on("contextmenu", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
+
                 this.map.handleMapContext(evt, this);
             })
             .on("mouseover", (evt: L.LeafletMouseEvent) => {
@@ -190,5 +196,16 @@ export class Overlay extends Layer<L.Circle> {
             tooltip: this.data.tooltip,
             marker: this.marker
         };
+    }
+
+    toCodeBlockProperties() {
+        return [
+            `[${this.color}`,
+            `[${this.latlng.lat},${this.latlng.lng}]`,
+            `${formatNumber(this.data.radius, DISTANCE_DECIMALS)} ${
+                this.data.unit
+            }`,
+            `${this.description}]`
+        ];
     }
 }

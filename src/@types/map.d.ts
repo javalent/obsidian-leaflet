@@ -2,7 +2,7 @@ import type { Length } from "convert/dist/types/units";
 
 import type L from "leaflet";
 import type { DivIcon } from "leaflet";
-import type { Events } from "obsidian";
+import type { EventRef, Events } from "obsidian";
 import type { MarkerIcon, SavedMarkerProperties, SavedOverlayData } from ".";
 import type { ObsidianLeaflet } from "./main";
 import type { Marker } from ".";
@@ -275,6 +275,21 @@ declare abstract class BaseMap /* <
     stopDrawingContext(): void;
     toProperties(): SavedMapData;
     updateMarkerIcons(): void;
+
+    on(name: "removed", callback: () => void): EventRef;
+    on(
+        name: "create-immutable-layer",
+        callback: (layer: Marker | Overlay) => Promise<void>
+    ): EventRef;
+    on(name: "should-save", callback: () => Promise<void>): EventRef;
+    on(name: "marker-added", callback: (marker: Marker) => void): EventRef;
+    on(name: "marker-dragging", callback: (marker: Marker) => void): EventRef;
+    on(
+        name: "marker-data-updated",
+        callback: (marker: Marker) => void
+    ): EventRef;
+    on(name: "marker-updated", callback: (marker: Marker) => void): EventRef;
+    on(name: "marker-deleted", callback: (marker: Marker) => void): EventRef;
 }
 
 declare class RealMap extends BaseMap /* <L.TileLayer> */ {

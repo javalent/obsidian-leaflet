@@ -1,4 +1,4 @@
-import { App, Notice, setIcon } from "obsidian";
+import { App, Menu, Notice, setIcon } from "obsidian";
 import type {
     MarkerIcon,
     Marker as MarkerDefinition,
@@ -242,57 +242,78 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                     return;
                 }
 
-                let markerSettingsModal = new MarkerContextModal(
-                    this,
-                    this.map
-                );
+                const menu = new Menu(this.map.plugin.app);
+                menu.setNoIcon();
 
-                markerSettingsModal.onClose = async () => {
-                    if (markerSettingsModal.deleted) {
-                        this.map.removeMarker(this);
-                        this.map.trigger("marker-deleted", this);
-                    } else {
-                        this.map.displaying.delete(this.type);
-                        this.map.displaying.set(
-                            markerSettingsModal.tempMarker.type,
-                            true
+                menu.addItem((item) => {
+                    item.setTitle("Edit Marker").onClick(() => {
+                        let markerSettingsModal = new MarkerContextModal(
+                            this,
+                            this.map
                         );
-                        this.link = markerSettingsModal.tempMarker.link;
-                        this.icon = this.map.markerIcons.get(
-                            markerSettingsModal.tempMarker.type
-                        );
-                        this.tooltip = markerSettingsModal.tempMarker.tooltip;
-                        this.minZoom = markerSettingsModal.tempMarker.minZoom;
-                        this.maxZoom = markerSettingsModal.tempMarker.maxZoom;
-                        this.command = markerSettingsModal.tempMarker.command;
 
-                        if (
-                            this.shouldShow(
-                                this.map.leafletInstance.getZoom()
-                            ) &&
-                            !this.displayed
-                        ) {
-                            this.show();
-                        } else if (
-                            this.shouldHide(
-                                this.map.leafletInstance.getZoom()
-                            ) &&
-                            this.displayed
-                        ) {
-                            this.hide();
-                        }
+                        markerSettingsModal.onClose = async () => {
+                            if (markerSettingsModal.deleted) {
+                                this.map.removeMarker(this);
+                                this.map.trigger("marker-deleted", this);
+                            } else {
+                                this.map.displaying.delete(this.type);
+                                this.map.displaying.set(
+                                    markerSettingsModal.tempMarker.type,
+                                    true
+                                );
+                                this.link = markerSettingsModal.tempMarker.link;
+                                this.icon = this.map.markerIcons.get(
+                                    markerSettingsModal.tempMarker.type
+                                );
+                                this.tooltip =
+                                    markerSettingsModal.tempMarker.tooltip;
+                                this.minZoom =
+                                    markerSettingsModal.tempMarker.minZoom;
+                                this.maxZoom =
+                                    markerSettingsModal.tempMarker.maxZoom;
+                                this.command =
+                                    markerSettingsModal.tempMarker.command;
 
-                        if (this.tooltip === "always") {
-                            this.popup.open(this.target.display);
-                        } else {
-                            this.popup.close();
-                        }
+                                if (
+                                    this.shouldShow(
+                                        this.map.leafletInstance.getZoom()
+                                    ) &&
+                                    !this.displayed
+                                ) {
+                                    this.show();
+                                } else if (
+                                    this.shouldHide(
+                                        this.map.leafletInstance.getZoom()
+                                    ) &&
+                                    this.displayed
+                                ) {
+                                    this.hide();
+                                }
 
-                        this.map.trigger("marker-updated", this);
+                                if (this.tooltip === "always") {
+                                    this.popup.open(this.target.display);
+                                } else {
+                                    this.popup.close();
+                                }
+
+                                this.map.trigger("marker-updated", this);
+                                this.map.trigger("should-save");
+                            }
+                        };
+                        markerSettingsModal.open();
+                    });
+                });
+                menu.addItem((item) => {
+                    item.setTitle("Convert to Code Block").onClick(async () => {
+                        this.mutable = false;
+
+                        this.map.trigger("create-immutable-layer", this);
+
                         this.map.trigger("should-save");
-                    }
-                };
-                markerSettingsModal.open();
+                    });
+                });
+                menu.showAtMouseEvent(evt.originalEvent);
             })
             .on("click", async (evt: L.LeafletMouseEvent) => {
                 if (this.map.isDrawing || this.map.controller.isDrawing) {
@@ -529,6 +550,18 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             maxZoom: this.maxZoom,
             tooltip: this.tooltip
         };
+    }
+
+    toCodeBlockProperties() {
+        return [
+            this.type,
+            this.latLng.lat,
+            this.latLng.lng,
+            this.link,
+            this.description,
+            this.minZoom,
+            this.maxZoom
+        ];
     }
 
     remove() {
