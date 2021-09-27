@@ -22,8 +22,6 @@ export abstract class BaseDrawControl extends FontAwesomeControl {
 
     actionsEl = this.controlEl.createDiv("control-actions");
 
-    cancelControl = new CancelControl(this);
-
     onClick() {
         this.openActions();
     }
@@ -32,6 +30,7 @@ export abstract class BaseDrawControl extends FontAwesomeControl {
     }
     closeActions() {
         this.actionsEl.removeClass("expanded");
+        
     }
     abstract draw(): void;
 }

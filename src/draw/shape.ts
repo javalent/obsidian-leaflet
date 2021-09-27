@@ -4,6 +4,7 @@ import { Vertex, VertexProperties } from "./vertex";
 import { Marker } from "src/layer";
 
 import { LeafletSymbol } from "src/utils/leaflet-import";
+import { Polyline } from "./polyline";
 
 const L = window[LeafletSymbol];
 export interface ShapeProperties {
@@ -24,9 +25,8 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
     }
     registerEvents() {
         this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) => {
-
+            L.DomEvent.stopPropagation(evt);
             if (this.controller.isDeleting) {
-
                 this.hideVertices();
                 this.controller.removeShape(this);
             }
@@ -34,16 +34,17 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
                 this.setColor(this.controller.color);
             }
 
+            if (this.controller.isAddingArrows && this.type == "polyline") {
+                (this as unknown as Polyline).toggleArrows();
+            }
         });
         this.leafletInstance.on("mousedown", (evt: L.LeafletMouseEvent) => {
-
             if (!this.controller.isDragging) return;
             this.map.leafletInstance.dragging.disable();
             this.dragStart = evt.latlng;
             this.controller.draggingShape = this;
         });
         this.leafletInstance.on("mouseup", (evt: L.LeafletMouseEvent) => {
-
             if (!this.controller.isDragging) return;
             this.map.leafletInstance.dragging.enable();
             this.controller.draggingShape = null;
@@ -142,7 +143,7 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
         );
         this.vertices.forEach((v) => v.incrementLatLng(delta));
         this.redraw();
-        
+
         if (propagate) {
             const otherShapes: Set<Shape<L.Path>> = new Set();
             this.vertices.forEach((v) =>
@@ -174,6 +175,7 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
             this.initialize();
             this.registerEvents();
         }
+        this.onShow();
     }
 
     showVertices() {
@@ -219,7 +221,7 @@ export abstract class Shape<T extends L.Path> extends Layer<T> {
     setColor(color: string) {
         this.color = color;
         this.leafletInstance.setStyle({ fillColor: color, color: color });
-        this.map.trigger('should-save');
+        this.map.trigger("should-save");
     }
 
     remove() {

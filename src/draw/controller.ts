@@ -1,7 +1,7 @@
 import { BaseMapType } from "src/@types";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { Polygon } from "./polygon";
-import { Polyline } from "./polyline";
+import { Polyline, PolylineProperties } from "./polyline";
 import { Rectangle } from "./rectangle";
 import { Shape, ShapeProperties } from "./shape";
 import { Vertex } from "./vertex";
@@ -28,6 +28,16 @@ export class DrawingController {
     isDeleting: boolean = false;
     isColoring: boolean = false;
     isDragging: boolean = false;
+    isAddingArrows: boolean = false;
+    setArrowContext(bool: boolean) {
+        this.isAddingArrows = bool;
+        if (this.shape?.type != "polyline") return;
+        if (bool) {
+            (this.shape as unknown as Polyline).addArrows();
+        } else {
+            (this.shape as unknown as Polyline).removeArrows();
+        }
+    }
     shape: Shape<L.Path>;
     shapes: Record<string, Shape<L.Path>[]> = {
         rectangle: [],
@@ -62,7 +72,13 @@ export class DrawingController {
                 break;
             }
             case "polyline": {
-                newShape = new Polyline(this, shape.vertices, shape.color);
+                newShape = new Polyline(
+                    this,
+                    shape.vertices,
+                    shape.color,
+                    (shape as PolylineProperties).arrows,
+                    (shape as PolylineProperties).reversed
+                );
                 break;
             }
             case "rectangle": {
@@ -86,7 +102,7 @@ export class DrawingController {
             if (this.shape.canSave) {
                 this.shapes[this.shape.type].push(this.shape);
                 this.shape.registerEvents();
-                this.map.trigger('should-save');
+                this.map.trigger("should-save");
             }
         }
         this.stopDrawing();
@@ -96,7 +112,6 @@ export class DrawingController {
         this.isDragging = true;
         this.map.contentEl.addClass("shape-dragging");
         this.map.leafletInstance.on("mousemove touchmove", this.onDrag, this);
-        
     }
     stopDragging() {
         this.isDragging = false;
