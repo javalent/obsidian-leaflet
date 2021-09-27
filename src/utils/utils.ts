@@ -297,6 +297,7 @@ export function getParamsFromSource(source: string): BlockParameters {
             geojson: string[];
             linksTo: string[];
             linksFrom: string[];
+            overlay: string[];
         } = {
             marker: [],
             markerFile: [],
@@ -306,7 +307,8 @@ export function getParamsFromSource(source: string): BlockParameters {
             commandMarker: [],
             geojson: [],
             linksTo: [],
-            linksFrom: []
+            linksFrom: [],
+            overlay: []
         };
 
         if (
@@ -361,9 +363,13 @@ export function getParamsFromSource(source: string): BlockParameters {
                         if ((source.match(r) || []).length > 1) {
                             //defined separately
                             obj[type] = (source.match(r) || []).map((p) =>
-                                p
-                                    .split(new RegExp(`(?:${type}):\\s?`))[1]
-                                    ?.trim()
+                                parseYaml(
+                                    p
+                                        .split(
+                                            new RegExp(`(?:${type}):\\s?`)
+                                        )[1]
+                                        ?.trim()
+                                )
                             );
                         } else if (params[type] instanceof Array) {
                             obj[type] = params[type];

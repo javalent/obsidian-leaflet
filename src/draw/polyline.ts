@@ -1,16 +1,105 @@
+import { FontAwesomeControl } from "src/controls/controls";
 import t from "src/l10n/locale";
 import { Marker } from "src/layer";
+import { getId } from "src/utils";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { BaseDrawControl } from "./base";
+import { DrawingController } from "./controller";
 import { DrawControl } from "./controls";
-import { Shape } from "./shape";
-import { Vertex } from "./vertex";
+import { Shape, ShapeProperties } from "./shape";
+import { Vertex, VertexProperties } from "./vertex";
 
 const L = window[LeafletSymbol];
 
+export interface PolylineProperties extends ShapeProperties {
+    arrows: boolean;
+    reversed: boolean;
+}
 export class Polyline extends Shape<L.Polyline> {
+    triangleID = getId();
+    constructor(
+        controller: DrawingController,
+        vertices: VertexProperties[] = [],
+        color: string = controller.color,
+        public arrows = controller.isAddingArrows,
+        public reversed = false
+    ) {
+        super(controller, vertices, color);
+        this.triangleEl.setAttrs({
+            id: `${this.triangleID}`,
+            viewBox: "0 0 10 10",
+            refX: "5",
+            refY: "5",
+            markerUnits: "strokeWidth",
+            markerWidth: "5",
+            markerHeight: "5",
+            orient: "auto",
+            fill: color
+        });
+        this.pathEl.setAttribute("d", "M 0 0 L 10 5 L 0 10 z");
+        this.triangleEl.appendChild(this.pathEl);
+        this.checkAndAddDef();
+        if (this.arrows) {
+            this.addArrows();
+            if (this.reversed) this.reverseArrows();
+            this.redraw();
+        }
+    }
+    triangleEl = L.SVG.create("marker");
+    pathEl = L.SVG.create("path");
     popup: null;
-
+    setColor(color: string) {
+        super.setColor(color);
+        this.triangleEl.setAttribute("fill", color);
+    }
+    toggleArrows() {
+        if (!this.arrows) {
+            this.addArrows();
+        } else if (!this.reversed) {
+            this.reverseArrows();
+        } else {
+            this.removeArrows();
+        }
+        this.redraw();
+        this.map.trigger("should-save");
+    }
+    reverseArrows() {
+        this.reversed = true;
+        this.pathEl.setAttribute("transform", "rotate(180 5 5)");
+    }
+    addArrows() {
+        this.arrows = true;
+        if (this.element) {
+            this.element.setAttribute("marker-mid", `url(#${this.triangleID})`);
+        } else {
+            this.leafletInstance.on("add", () => {
+                this.element.setAttribute(
+                    "marker-mid",
+                    `url(#${this.triangleID})`
+                );
+            });
+        }
+        this.leafletInstance.options.smoothFactor = 0;
+    }
+    get element() {
+        return this.leafletInstance.getElement();
+    }
+    removeArrows() {
+        this.arrows = false;
+        this.reversed = false;
+        this.element.removeAttribute("marker-mid");
+        this.pathEl.removeAttribute("transform");
+        this.leafletInstance.options.smoothFactor = 1;
+    }
+    toProperties(): PolylineProperties {
+        return {
+            type: this.type,
+            color: this.color,
+            vertices: this.vertices.map((v) => v.toProperties()),
+            arrows: this.arrows,
+            reversed: this.reversed
+        };
+    }
     extensions = {
         forward: {
             line: L.polyline([], {
@@ -37,7 +126,6 @@ export class Polyline extends Shape<L.Polyline> {
         this.extensions.forward.line.remove();
         this.extensions.forward.added = false;
     }
-
     _onClick(
         evt: L.LeafletMouseEvent,
         targets?: {
@@ -45,6 +133,9 @@ export class Polyline extends Shape<L.Polyline> {
             vertices?: Vertex[];
         }
     ) {
+        if (this.vertices.length == 0) {
+            this.checkAndAddDef();
+        }
         this.vertices.push(
             new Vertex(this.mouseLoc ?? evt.latlng, this, targets)
         );
@@ -58,8 +149,24 @@ export class Polyline extends Shape<L.Polyline> {
         }
     }
 
+    get coordinates() {
+        if (!this.arrows) return this.latlngs;
+        //return 1 extra coordinate per latlng
+        if (!this.latlngs.length) return [];
+        return [
+            this.latlngs[0],
+            ...this.latlngs
+                .slice(1)
+                .map((latlng, index) => [
+                    L.latLngBounds(this.latlngs[index], latlng).getCenter(),
+                    latlng
+                ])
+                .flat()
+        ];
+    }
+
     redraw() {
-        this.leafletInstance.setLatLngs(this.latlngs);
+        this.leafletInstance.setLatLngs(this.coordinates);
         this.leafletInstance.redraw();
         this.showExtensions(this.latlngs[this.vertices.length - 1]);
     }
@@ -103,9 +210,59 @@ export class Polyline extends Shape<L.Polyline> {
         return new Polyline(this.controller);
     }
     type = "polyline";
+    get pane() {
+        return this.map.leafletInstance.getPane("drawing");
+    }
+    checkAndAddDef() {
+        const svg = this.pane.firstElementChild;
+        if (!svg || !svg.querySelector("defs")) {
+            this.registerAddDef();
+        } else {
+            this.addDef();
+        }
+    }
+    registerAddDef() {
+        const observer = new MutationObserver((list) => {
+            for (const mutation of list) {
+                if (mutation.type === "childList") {
+                    this.addDef();
+                    observer.disconnect();
+                    return;
+                }
+            }
+        });
+        observer.observe(this.pane, {
+            childList: true,
+            attributes: false,
+            subtree: false
+        });
+    }
+
+    addDef() {
+        let def = this.pane.firstElementChild.querySelector("defs");
+        if (!def) {
+            def = L.SVG.create("defs") as SVGDefsElement;
+            this.pane.firstElementChild.prepend(def);
+        }
+        def.appendChild(this.triangleEl);
+    }
+    onShow() {
+        if (this.arrows) {
+            this.addArrows();
+            if (this.reversed) this.reverseArrows();
+            this.redraw();
+        }
+    }
+    remove() {
+        this.hideExtensions();
+        this.removeArrows();
+        super.remove();
+    }
 }
 
 export class PolylineControl extends BaseDrawControl {
+    arrow = new ArrowControl(this);
+
     constructor(public parent: DrawControl) {
         super(
             {
@@ -115,15 +272,49 @@ export class PolylineControl extends BaseDrawControl {
             },
             parent
         );
+
+        this.actionsEl.appendChild(this.arrow.controlEl);
+        this.actionsEl.appendChild(this.undo.controlEl);
+        this.actionsEl.appendChild(this.cancel.controlEl);
     }
     draw() {
         this.actionsEl.appendChild(this.complete.controlEl);
-        this.actionsEl.appendChild(this.undo.controlEl);
-        this.actionsEl.appendChild(this.cancel.controlEl);
     }
     onClick() {
         this.parent.stopDrawingContext();
         this.openActions();
         this.controller.newShape(new Polyline(this.controller));
+    }
+}
+
+export class ArrowControl extends FontAwesomeControl {
+    get active() {
+        return this.drawControl.controller.isAddingArrows;
+    }
+    constructor(public drawControl: BaseDrawControl) {
+        super(
+            {
+                icon: "arrow-up",
+                cls: "leaflet-control-arrow",
+                tooltip: "Add Arrows to Line"
+            },
+            drawControl.map.leafletInstance
+        );
+    }
+    //Complete and save
+    onClick(evt: MouseEvent) {
+        evt.stopPropagation();
+
+        if (this.active) {
+            this.controlEl.removeClass("active");
+            this.drawControl.controller.setArrowContext(false);
+        } else {
+            this.controlEl.addClass("active");
+            this.drawControl.controller.setArrowContext(true);
+        }
+
+        /* this.drawControl.controller.newShape(
+            this.drawControl.controller.shape.newInstance()
+        ); */
     }
 }

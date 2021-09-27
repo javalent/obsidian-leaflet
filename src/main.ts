@@ -245,7 +245,13 @@ export default class ObsidianLeaflet
         }
         log(params.verbose, params.id, "Beginning Markdown Postprocessor.");
 
-        const renderer = new LeafletRenderer(this, ctx.sourcePath, el, params);
+        const renderer = new LeafletRenderer(
+            this,
+            ctx.sourcePath,
+            el,
+            params,
+            source
+        );
         const map = renderer.map;
 
         this.registerMapEvents(map);
@@ -539,7 +545,9 @@ export default class ObsidianLeaflet
             ).shift()
         )?.type;
     }
-
+    public getIconForType(type: string) {
+        return this.data.markerIcons.find((i) => i.type == type);
+    }
     public createNewMarkerType(options?: {
         original?: Icon;
         layer?: boolean;
@@ -557,7 +565,9 @@ export default class ObsidianLeaflet
                 transform: this.data.defaultMarker.transform,
                 isImage: false,
                 imageUrl: "",
-                tags: []
+                tags: [],
+                minZoom: null,
+                maxZoom: null
             };
             let newMarkerModal = new CreateMarkerModal(
                 this.app,

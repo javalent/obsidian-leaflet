@@ -33,7 +33,7 @@ export interface BlockParameters {
     markerTag?: string[][];
     filterTag?: string[][];
     imageOverlay?: Array<[string, [number, number], [number, number]]>;
-    overlay?: Array<[string, [number, number], string, string]>;
+    overlay?: string[];
     overlayTag?: string;
     overlayColor?: string;
     height?: string;
@@ -102,6 +102,7 @@ declare class ObsidianLeaflet extends Plugin {
 
     registerMapEvents(map: BaseMapType): void;
     getIconForTag(tags: Set<string>): string;
+    getIconForType(type: string): Icon;
     createNewMarkerType(options?: {
         original?: Icon;
         layer?: boolean;

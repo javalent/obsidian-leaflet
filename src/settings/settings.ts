@@ -19,7 +19,7 @@ import {
     setValidationError,
     getMarkerIcon
 } from "src/utils";
-import { CreateMarkerModal, IconSuggestionModal } from "src/modals";
+import { IconSuggestionModal } from "src/modals";
 
 import type {
     MapMarkerData,

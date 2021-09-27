@@ -28,11 +28,17 @@ export class ColorControl extends BaseDrawControl {
         this.parent.controller.color = color;
         this.iconEl.setAttr("style", `color: ${this.parent.controller.color}`);
     }
+    closeActions() {
+        super.closeActions();
+        this.fill.setActive(false);
+    }
 }
 
 class ColorPickControl extends FontAwesomeControl {
     input: HTMLInputElement;
     onClick() {
+        this.drawControl.fill.setActive(false);
+
         this.input.click();
     }
     constructor(public drawControl: ColorControl) {
@@ -52,19 +58,32 @@ class ColorPickControl extends FontAwesomeControl {
                 (evt.target as HTMLInputElement).value
             );
         };
+        this.input.onchange = () => {
+            this.drawControl.fill.setActive(true);
+        };
     }
 }
 
 class ColorFillControl extends FontAwesomeControl {
+    active: boolean = false;
+    setActive(b: boolean) {
+        this.active = b;
+        this.drawControl.controller.isColoring = b;
+        if (b) {
+            this.controlEl.addClass("active");
+        } else {
+            this.controlEl.removeClass("active");
+        }
+    }
     onClick(evt: MouseEvent) {
         evt.stopPropagation();
-        this.drawControl.controller.isColoring = true;
+        this.setActive(!this.active);
     }
     constructor(public drawControl: ColorControl) {
         super(
             {
                 icon: "fill-drip",
-                cls: "leaflet-control-complete",
+                cls: "leaflet-control-fill-color",
                 tooltip: t("Fill Color")
             },
             drawControl.map.leafletInstance

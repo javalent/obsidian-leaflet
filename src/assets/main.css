@@ -536,6 +536,7 @@ input.is-invalid {
 
 .block-language-leaflet .leaflet-control-has-actions .control-actions.expanded {
     display: flex;
+    background-color: white;
 }
 .block-language-leaflet .leaflet-control-has-actions .control-actions {
     display: none;
@@ -553,6 +554,18 @@ input.is-invalid {
     .leaflet-control
     a {
     border-radius: 0;
+}
+
+.block-language-leaflet .leaflet-control-arrow.active,
+.block-language-leaflet .leaflet-control-fill-color.active {
+    background-color: #3388ff;
+    color: white;
+    border-radius: 0;
+}
+.block-language-leaflet .leaflet-control-arrow.active a,
+.block-language-leaflet .leaflet-control-fill-color.active a {
+    background-color: transparent;
+    color: white;
 }
 
 .block-language-leaflet .leaflet-div-icon.leaflet-middle-icon,
