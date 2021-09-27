@@ -53,6 +53,7 @@ export class Polyline extends Shape<L.Polyline> {
         this.triangleEl.setAttribute("fill", color);
     }
     toggleArrows() {
+        this.redraw();
         if (!this.arrows) {
             this.addArrows();
         } else if (!this.reversed) {
@@ -214,8 +215,9 @@ export class Polyline extends Shape<L.Polyline> {
         return this.map.leafletInstance.getPane("drawing");
     }
     checkAndAddDef() {
+        if (!this.pane) return;
         const svg = this.pane.firstElementChild;
-        if (!svg || !svg.querySelector("defs")) {
+        if (!svg) {
             this.registerAddDef();
         } else {
             this.addDef();
@@ -247,6 +249,7 @@ export class Polyline extends Shape<L.Polyline> {
         def.appendChild(this.triangleEl);
     }
     onShow() {
+        this.checkAndAddDef();
         if (this.arrows) {
             this.addArrows();
             if (this.reversed) this.reverseArrows();
