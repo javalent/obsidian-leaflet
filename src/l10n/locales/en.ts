@@ -141,6 +141,8 @@ export default {
         "Select the default system of units for the map.",
     Imperial: "Imperial",
     Metric: "Metric",
+    "Only display above this zoom.": "Only display above this zoom.",
+    "Only display below this zoom.": "Only display below this zoom.",
 
     //modals/settings.ts
     "Marker Name": "Marker Name",
