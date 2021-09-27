@@ -842,6 +842,14 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     }
     handleMapContext(evt: L.LeafletMouseEvent, overlay?: Overlay) {
         if (this.controller.isDrawing) return;
+        if (evt.originalEvent.getModifierState("Shift")) {
+            this.log(`Beginning overlay drawing context.`);
+            //begin drawing context
+
+            this.beginOverlayDrawingContext(evt);
+
+            return;
+        }
         if (overlay) {
             const under = this.getOverlaysUnderClick(evt);
             if (!under.length) {
@@ -919,6 +927,17 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                         this.trigger("should-save");
                     });
                 });
+                menu.addItem((item) => {
+                    item.setTitle("Delete Overlay").onClick(() => {
+                        this.log("Overlay deleted in context menu. Removing.");
+                        overlay.remove();
+                        this.overlays = this.overlays.filter(
+                            (o) => o != overlay
+                        );
+                        this.trigger("markers-updated");
+                        this.trigger("should-save");
+                    });
+                });
                 menu.showAtMouseEvent(evt.originalEvent);
             };
 
@@ -963,15 +982,6 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
                 contextMenu.showAtMouseEvent(evt.originalEvent);
             }
-
-            return;
-        }
-
-        if (evt.originalEvent.getModifierState("Shift")) {
-            this.log(`Beginning overlay drawing context.`);
-            //begin drawing context
-
-            this.beginOverlayDrawingContext(evt);
 
             return;
         }

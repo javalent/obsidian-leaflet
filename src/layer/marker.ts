@@ -321,6 +321,11 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                         this.map.trigger("should-save");
                     });
                 });
+                menu.addItem((item) => {
+                    item.setTitle("Delete Marker").onClick(() => {
+                        this.map.removeMarker(this);
+                    });
+                });
                 menu.showAtMouseEvent(evt.originalEvent);
             })
             .on("click", async (evt: L.LeafletMouseEvent) => {
