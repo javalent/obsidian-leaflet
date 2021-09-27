@@ -160,7 +160,6 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     createMap() {
         this.leafletInstance = L.map(this.contentEl, {
             crs: this.CRS,
-            editable: false,
             maxZoom: this.zoom.max,
             minZoom: this.zoom.min,
             zoomDelta: this.zoom.delta,
