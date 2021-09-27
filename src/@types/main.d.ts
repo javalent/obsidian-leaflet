@@ -33,7 +33,7 @@ export interface BlockParameters {
     markerTag?: string[][];
     filterTag?: string[][];
     imageOverlay?: Array<[string, [number, number], [number, number]]>;
-    overlay?: Array<[string, [number, number], string, string]>;
+    overlay?: string[];
     overlayTag?: string;
     overlayColor?: string;
     height?: string;

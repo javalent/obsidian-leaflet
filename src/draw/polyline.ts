@@ -38,10 +38,6 @@ export class Polyline extends Shape<L.Polyline> {
         });
         this.pathEl.setAttribute("d", "M 0 0 L 10 5 L 0 10 z");
         this.triangleEl.appendChild(this.pathEl);
-        console.log(
-            "🚀 ~ file: polyline.ts ~ line 42 ~ this.arrows",
-            this.arrows
-        );
         this.checkAndAddDef();
         if (this.arrows) {
             this.addArrows();
@@ -170,10 +166,6 @@ export class Polyline extends Shape<L.Polyline> {
     }
 
     redraw() {
-        console.log(
-            "🚀 ~ file: polyline.ts ~ line 145 ~ this.coordinates",
-            this.coordinates
-        );
         this.leafletInstance.setLatLngs(this.coordinates);
         this.leafletInstance.redraw();
         this.showExtensions(this.latlngs[this.vertices.length - 1]);
@@ -222,7 +214,6 @@ export class Polyline extends Shape<L.Polyline> {
         return this.map.leafletInstance.getPane("drawing");
     }
     checkAndAddDef() {
-        console.log("🚀 ~ file: polyline.ts ~ line 225 ~ checkAndAddDef");
         const svg = this.pane.firstElementChild;
         if (!svg || !svg.querySelector("defs")) {
             this.registerAddDef();
@@ -256,10 +247,6 @@ export class Polyline extends Shape<L.Polyline> {
         def.appendChild(this.triangleEl);
     }
     onShow() {
-        console.log(
-            "🚀 ~ file: polyline.ts ~ line 244 ~ this.arrows",
-            this.arrows
-        );
         if (this.arrows) {
             this.addArrows();
             if (this.reversed) this.reverseArrows();

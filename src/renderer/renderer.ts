@@ -37,6 +37,7 @@ import {
 import convert from "convert";
 import t from "../l10n/locale";
 import { LeafletMapView } from "src/map/view";
+import { Marker, Overlay } from "src/layer";
 
 declare module "leaflet" {
     interface Map {
@@ -71,13 +72,20 @@ export class LeafletRenderer extends MarkdownRenderChild {
     verbose: boolean;
     parentEl: HTMLElement;
     options: LeafletMapOptions;
+    file: TFile;
+    view: MarkdownView | LeafletMapView;
     constructor(
         public plugin: ObsidianLeaflet,
         private sourcePath: string,
         containerEl: HTMLElement,
-        public params: BlockParameters
+        public params: BlockParameters,
+        public source: string
     ) {
         super(containerEl);
+
+        this.view =
+            this.app.workspace.getActiveViewOfType(MarkdownView) ??
+            this.app.workspace.getActiveViewOfType(LeafletMapView);
 
         this.params = {
             ...DEFAULT_BLOCK_PARAMETERS,
@@ -99,6 +107,10 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 ].filter((v) => v).length > 1;
         }
 
+        let file = this.app.vault.getAbstractFileByPath(this.sourcePath);
+        if (file instanceof TFile) {
+            this.file = file;
+        }
         this.options = {
             bounds: this.params.bounds,
             context: this.sourcePath,
@@ -147,6 +159,48 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         this.resize.observe(this.containerEl);
     }
+    modifiedSource = this.source;
+    hasChangedSource: boolean = false;
+    handled = false;
+    async placeLayerInCodeBlock(layer: Marker | Overlay) {
+        layer.mutable = false;
+        const type = layer instanceof Marker ? "marker" : "overlay";
+
+        this.modifiedSource = `${this.modifiedSource}${type}: ${layer
+            .toCodeBlockProperties()
+            .join(",")}\n`;
+        if (!this.hasChangedSource) {
+            const modeChange = async () => {
+                if (!this.hasChangedSource) {
+                    return;
+                }
+                const source = await this.app.vault.cachedRead(this.file);
+                const modified = source.replace(
+                    this.source,
+                    this.modifiedSource
+                );
+
+                await this.app.vault.modify(this.file, modified);
+
+                this.source = this.modifiedSource;
+                this.hasChangedSource = false;
+            };
+            this.register(async () => await modeChange());
+            const onLayoutChange = this.app.workspace.on(
+                "layout-change",
+                async () => {
+                    const view =
+                        this.app.workspace.getActiveViewOfType(MarkdownView);
+                    if (view && view == this.view) {
+                        await modeChange();
+                        this.app.workspace.offref(onLayoutChange);
+                    }
+                }
+            );
+            this.registerEvent(onLayoutChange);
+        }
+        this.hasChangedSource = true;
+    }
 
     setHeight(height: string) {
         this.containerEl.style.height = height;
@@ -189,6 +243,13 @@ export class LeafletRenderer extends MarkdownRenderChild {
         this.map.on(
             "should-save",
             async () => await this.plugin.saveSettings()
+        );
+
+        this.map.on(
+            "create-immutable-layer",
+            async (layer: Marker | Overlay) => {
+                await this.placeLayerInCodeBlock(layer);
+            }
         );
 
         this.loadSavedData();
@@ -517,31 +578,30 @@ export class LeafletRenderer extends MarkdownRenderChild {
             }
         );
 
-        let immutableOverlayArray: SavedOverlayData[] = [
-            ...immutableOverlays,
-            ...(this.params.overlay ?? [])
-        ].map(([color, loc, length, desc, id = getId()]) => {
-            const match = `${length}`.match(OVERLAY_TAG_REGEX) ?? [];
+        let immutableOverlayArray: SavedOverlayData[] = [...immutableOverlays]
+            .filter((f) => f && f.length)
+            .map(([color, loc, length, desc, id = getId()]) => {
+                const match = `${length}`.match(OVERLAY_TAG_REGEX) ?? [];
 
-            if (!match || isNaN(Number(match[1]))) {
-                throw new Error(
-                    t(
-                        "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`."
-                    )
-                );
-            }
-            const [, radius, unit] = match ?? [];
-            return {
-                radius: Number(radius),
-                loc: loc,
-                color: color,
-                unit: unit && unit.length ? (unit as Length) : undefined,
-                layer: this.params.layers[0],
-                desc: desc,
-                id: id,
-                mutable: false
-            };
-        });
+                if (!match || isNaN(Number(match[1]))) {
+                    throw new Error(
+                        t(
+                            "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`."
+                        )
+                    );
+                }
+                const [, radius, unit] = match ?? [];
+                return {
+                    radius: Number(radius),
+                    loc: loc,
+                    color: color,
+                    unit: unit && unit.length ? (unit as Length) : undefined,
+                    layer: this.params.layers[0],
+                    desc: desc,
+                    id: id,
+                    mutable: false
+                };
+            });
 
         this.map.addMarker(...markerArray);
 
@@ -697,7 +757,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 markerTag.length ||
                 filterTag.length ||
                 linksTo.length ||
-                linksFrom
+                linksFrom.length
             ) {
                 let files = new Set(markerFile);
 
@@ -1058,6 +1118,49 @@ export class LeafletRenderer extends MarkdownRenderChild {
                     this.registerWatcher(file, idMap);
                 }
             }
+            if (this.params.overlay.length) {
+                const arr = Array.isArray(this.params.overlay[0])
+                    ? this.params.overlay
+                    : ([this.params.overlay] as any[]);
+                for (const overlay of arr.filter((o) => o && o.length)) {
+                    try {
+                        let [color, latlng, length, desc, id = getId()] =
+                            typeof overlay == "string"
+                                ? overlay.split(/,(?![^\[]*\])/)
+                                : (overlay as [
+                                      string,
+                                      [number, number],
+                                      string,
+                                      string,
+                                      string
+                                  ]);
+                        latlng =
+                            typeof latlng == "string"
+                                ? (latlng
+                                      .replace(/(\[|\])/g, "")
+                                      .split(",") as unknown as [
+                                      number,
+                                      number
+                                  ])
+                                : latlng;
+                        const match = length.match(OVERLAY_TAG_REGEX);
+                        if (!match) {
+                            continue;
+                        }
+
+                        const loc = [Number(latlng[0]), Number(latlng[1])];
+
+                        overlaysToReturn.push([
+                            color,
+                            loc as [number, number],
+                            length,
+                            desc,
+                            id
+                        ]);
+                    } catch (e) {}
+                }
+            }
+
             resolve({
                 markers: markers,
                 overlays: overlaysToReturn

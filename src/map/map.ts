@@ -1,7 +1,7 @@
 import convert from "convert";
 import { Length } from "convert/dist/types/units";
 
-import { Events, Menu, Notice, Point, Scope } from "obsidian";
+import { Events, Menu, Notice, Scope } from "obsidian";
 import {
     LayerGroup,
     LeafletMapOptions,
@@ -51,6 +51,7 @@ import t from "src/l10n/locale";
 import { drawControl } from "src/draw/controls";
 import { DrawingController } from "src/draw/controller";
 import { ShapeProperties } from "src/draw/shape";
+import { Layer } from "src/layer/layer";
 
 let L = window[LeafletSymbol];
 declare module "leaflet" {
@@ -469,9 +470,12 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 this.tempCircle.remove();
 
                 this.createOverlay({
-                    radius: convert(this.tempCircle.getRadius())
-                        .from("m")
-                        .to(this.unit),
+                    radius:
+                        this.type === "image"
+                            ? this.tempCircle.getRadius()
+                            : convert(this.tempCircle.getRadius())
+                                  .from("m")
+                                  .to(this.unit),
                     color: this.tempCircle.options.color,
                     loc: [
                         this.tempCircle.getLatLng().lat,
@@ -721,7 +725,9 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     getOverlaysUnderClick(evt: L.LeafletMouseEvent) {
         const overlays = [...this.overlays].filter(
             (overlay) =>
-                overlay.isUnder(evt) && overlay.layer === this.currentGroup.id
+                overlay.mutable &&
+                overlay.isUnder(evt) &&
+                overlay.layer === this.currentGroup.id
         );
         overlays.sort((a, b) => {
             return a.radiusInMeters - b.radiusInMeters;
@@ -839,89 +845,125 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         if (overlay) {
             const under = this.getOverlaysUnderClick(evt);
             if (!under.length) {
+                if (!overlay.mutable) {
+                    new Notice(
+                        t(
+                            "This overlay cannot be edited because it was defined in the code block."
+                        )
+                    );
+                    return;
+                }
                 under.push(overlay);
             }
 
             const openOverlayContext = (overlay: Overlay) => {
-                const modal = new OverlayContextModal(overlay, this);
-                modal.onClose = async () => {
-                    if (modal.deleted) {
-                        this.log("Overlay deleted in context menu. Removing.");
-                        overlay.remove();
-                        this.overlays = this.overlays.filter(
-                            (o) => o != overlay
-                        );
-                        this.trigger("markers-updated");
+                const menu = new Menu(this.plugin.app);
+
+                menu.setNoIcon();
+                menu.addItem((item) => {
+                    item.setTitle("Edit Overlay").onClick(() => {
+                        const modal = new OverlayContextModal(overlay, this);
+                        modal.onClose = async () => {
+                            if (modal.deleted) {
+                                this.log(
+                                    "Overlay deleted in context menu. Removing."
+                                );
+                                overlay.remove();
+                                this.overlays = this.overlays.filter(
+                                    (o) => o != overlay
+                                );
+                                this.trigger("markers-updated");
+                                this.trigger("should-save");
+
+                                return;
+                            }
+                            try {
+                                overlay.data.color = modal.tempOverlay.color;
+                                overlay.data.radius = modal.tempOverlay.radius;
+                                overlay.data.desc = modal.tempOverlay.desc;
+                                overlay.data.tooltip =
+                                    modal.tempOverlay.tooltip;
+                                let newRadius = convert(
+                                    Number(overlay.data.radius)
+                                )
+                                    .from(overlay.data.unit ?? "m")
+                                    .to(this.type == "image" ? this.unit : "m");
+
+                                if (this.type == "image") {
+                                    newRadius = newRadius / this.scale;
+                                }
+
+                                overlay.leafletInstance.setRadius(newRadius);
+                                overlay.leafletInstance.setStyle({
+                                    color: overlay.data.color
+                                });
+
+                                this.trigger("should-save");
+                            } catch (e) {
+                                new Notice(
+                                    t(
+                                        "There was an error saving the overlay."
+                                    ) + `\n\n${e.message}`
+                                );
+                            }
+                        };
+                        modal.open();
+                    });
+                });
+                menu.addItem((item) => {
+                    item.setTitle("Convert to Code Block").onClick(async () => {
+                        overlay.mutable = false;
+
+                        this.trigger("create-immutable-layer", overlay);
+
                         this.trigger("should-save");
-
-                        return;
-                    }
-                    try {
-                        overlay.data.color = modal.tempOverlay.color;
-                        overlay.data.radius = modal.tempOverlay.radius;
-                        overlay.data.desc = modal.tempOverlay.desc;
-                        overlay.data.tooltip = modal.tempOverlay.tooltip;
-                        let newRadius = convert(Number(overlay.data.radius))
-                            .from(overlay.data.unit ?? "m")
-                            .to(this.type == "image" ? this.unit : "m");
-
-                        if (this.type == "image") {
-                            newRadius = newRadius / this.scale;
-                        }
-
-                        overlay.leafletInstance.setRadius(newRadius);
-                        overlay.leafletInstance.setStyle({
-                            color: overlay.data.color
-                        });
-
-                        this.trigger("should-save");
-                    } catch (e) {
-                        new Notice(
-                            t("There was an error saving the overlay.") +
-                                `\n\n${e.message}`
-                        );
-                    }
-                };
-                modal.open();
+                    });
+                });
+                menu.showAtMouseEvent(evt.originalEvent);
             };
 
-            let contextMenu = new Menu(this.plugin.app);
+            if (under.length == 1) {
+                openOverlayContext(under[0]);
+            } else {
+                let contextMenu = new Menu(this.plugin.app);
 
-            contextMenu.setNoIcon();
-            contextMenu.addItem((item) => {
-                item.setTitle("Create Marker");
-                item.onClick(() => {
-                    contextMenu.hide();
-                    this.handleMapContext(evt);
-                });
-            });
-            under.forEach((overlay, index) => {
+                contextMenu.setNoIcon();
                 contextMenu.addItem((item) => {
-                    item.setTitle("Overlay " + `${index + 1}`);
+                    item.setTitle("Create Marker");
                     item.onClick(() => {
-                        openOverlayContext(overlay);
+                        contextMenu.hide();
+                        this.handleMapContext(evt);
                     });
-                    item.dom.onmouseenter = () => {
-                        overlay.leafletInstance
-                            .getElement()
-                            .addClass("leaflet-layer-targeted");
-                    };
-                    item.dom.onmouseleave = () => {
+                });
+                under.forEach((overlay, index) => {
+                    contextMenu.addItem((item) => {
+                        item.setTitle("Overlay " + `${index + 1}`);
+                        item.onClick(() => {
+                            openOverlayContext(overlay);
+                        });
+                        item.dom.onmouseenter = () => {
+                            overlay.leafletInstance
+                                .getElement()
+                                .addClass("leaflet-layer-targeted");
+                        };
+                        item.dom.onmouseleave = () => {
+                            overlay.leafletInstance
+                                .getElement()
+                                .removeClass("leaflet-layer-targeted");
+                        };
+                    });
+                });
+                contextMenu.onHide(() => {
+                    under.forEach((overlay) => {
                         overlay.leafletInstance
                             .getElement()
                             .removeClass("leaflet-layer-targeted");
-                    };
+                    });
                 });
-            });
-            contextMenu.onHide(() => {
-                under.forEach((overlay) => {
-                    overlay.leafletInstance
-                        .getElement()
-                        .removeClass("leaflet-layer-targeted");
-                });
-            });
 
-            contextMenu.showAtMouseEvent(evt.originalEvent);
+                contextMenu.showAtMouseEvent(evt.originalEvent);
+            }
+
             return;
         }
 

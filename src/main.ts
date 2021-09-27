@@ -245,7 +245,7 @@ export default class ObsidianLeaflet
         }
         log(params.verbose, params.id, "Beginning Markdown Postprocessor.");
 
-        const renderer = new LeafletRenderer(this, ctx.sourcePath, el, params);
+        const renderer = new LeafletRenderer(this, ctx.sourcePath, el, params, source);
         const map = renderer.map;
 
         this.registerMapEvents(map);
@@ -326,7 +326,7 @@ export default class ObsidianLeaflet
                 this.data.mapMarkers = this.data.mapMarkers.filter(
                     ({ id }) => id != map.id
                 );
-
+                    
                 this.data.mapMarkers.push({
                     ...map.map.toProperties(),
                     files: this.mapFiles

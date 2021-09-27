@@ -9,10 +9,6 @@ const localeMap: { [k: string]: Partial<typeof en> } = {
 const userLocale = localeMap[locale()];
 
 export default function t(str: keyof typeof en, ...inserts: string[]): string {
-    if (!userLocale) {
-        console.error("Error: dictionary locale not found", locale());
-    }
-
     let localeStr = (userLocale && userLocale[str]) ?? en[str];
 
     for (let i = 0; i < inserts.length; i++) {
