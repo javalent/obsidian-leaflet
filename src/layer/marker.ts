@@ -343,6 +343,10 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             .on("mouseover", (evt: L.LeafletMouseEvent) => {
                 L.DomEvent.stopPropagation(evt);
                 this.isBeingHovered = true;
+
+                if (this.target) {
+                    this.popup.open(this.target.display);
+                }
                 if (this.map.data.notePreview && this.link) {
                     this.map.plugin.app.workspace.trigger(
                         "link-hover",
@@ -351,11 +355,6 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                         this.link.replace("^", "#^").split("|").shift(), //linkText
                         this.map.options.context //source
                     );
-                    return;
-                }
-
-                if (this.target) {
-                    this.popup.open(this.target.display);
                 }
             })
             .on("mouseout", (evt: L.LeafletMouseEvent) => {
