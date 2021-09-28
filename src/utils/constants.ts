@@ -42,6 +42,7 @@ export const DEFAULT_BLOCK_PARAMETERS: BlockParameters = {
     overlay: [],
     overlayColor: "blue",
     scale: 1,
+    showAllMarkers: false,
     tileServer: [],
     verbose: false,
     zoomDelta: 1,

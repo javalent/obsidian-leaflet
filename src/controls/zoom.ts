@@ -24,25 +24,8 @@ class ZoomControl extends FontAwesomeControl {
         if (!this.enabled) {
             return;
         }
-        const group = L.featureGroup(
-            this.map.displayed.map(({ leafletInstance }) => leafletInstance)
-        );
-        if (!group || !group.getLayers().length) {
-            this.leafletInstance.fitWorld();
-            return;
-        }
-        this.map.log(`Moving to display ${group.getLayers().length} markers.`);
-        this.leafletInstance.fitBounds(
-            group.getBounds(),
-            {
-                maxZoom: this.leafletInstance.getBoundsZoom(group.getBounds())
-            } /* {
-            duration: 0.5,
-            easeLinearity: 0.1,
-            animate: true,
-            padding: [50, 50]
-        } */
-        );
+
+        this.map.zoomAllMarkers();
     }
 }
 

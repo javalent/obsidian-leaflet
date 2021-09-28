@@ -142,7 +142,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
             unit: this.params.unit ?? this.plugin.defaultUnit,
             verbose: this.params.verbose,
             zoomDelta: +this.params.zoomDelta,
-            zoomFeatures: this.params.zoomFeatures
+            zoomFeatures: this.params.zoomFeatures,
+            zoomMarkers: this.params.showAllMarkers
         };
 
         this.containerEl.style.height = this.options.height;

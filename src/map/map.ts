@@ -237,11 +237,18 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 this.zoomDistance = this.renderOptions.zoomDistance;
                 this.setZoomByDistance(this.renderOptions.zoomDistance);
             }
+
             this.leafletInstance.setZoom(this.zoom.default, {
                 animate: false
             });
             this.featureLayer.addTo(this.currentGroup.group);
             this.currentGroup.group.addTo(this.leafletInstance);
+
+            if (this.options.zoomMarkers) {
+                this.log(`Zooming to markers.`);
+
+                this.zoomAllMarkers();
+            }
         });
 
         this.leafletInstance.on(
@@ -279,7 +286,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     get displayed() {
         return this.markers.filter(
             (marker) =>
-                marker.layer === this.currentGroup.id &&
+                (marker.layer === this.currentGroup.id || !marker.layer) &&
                 this.displaying.get(marker.type)
         );
     }
@@ -1094,12 +1101,32 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 this.featureLayer.getBounds()
             );
         }
+        if (this.options.zoomMarkers) {
+            this.log(`Zooming to markers.`);
+
+            this.zoomAllMarkers();
+            return;
+        }
         this.log(
             `Resetting map view to [${this.initialCoords[0]}, ${this.initialCoords[1]}], zoom ${this.zoom.default}.`
         );
         this.leafletInstance.setView(this.initialCoords, this.zoom.default);
     }
     abstract setInitialCoords(coords: [number, number]): void;
+
+    zoomAllMarkers() {
+        const group = L.featureGroup(
+            this.displayed.map(({ leafletInstance }) => leafletInstance)
+        );
+        if (!group || !group.getLayers().length) {
+            this.leafletInstance.fitWorld();
+            return;
+        }
+        this.log(`Moving to display ${group.getLayers().length} markers.`);
+        this.leafletInstance.fitBounds(group.getBounds(), {
+            maxZoom: this.leafletInstance.getBoundsZoom(group.getBounds())
+        });
+    }
 
     sortOverlays() {
         if (!this.overlays.length) return;

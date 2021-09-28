@@ -3,7 +3,6 @@ import { BaseMapType, ObsidianLeaflet } from "src/@types";
 import t from "src/l10n/locale";
 import { LeafletRenderer } from "src/renderer/renderer";
 import { DEFAULT_BLOCK_PARAMETERS, VIEW_TYPE } from "src/utils";
-import { HomebrewCreature } from "../../../obsidian-initiative-tracker/@types";
 
 export class LeafletMapView extends ItemView {
     map: BaseMapType;
@@ -35,7 +34,8 @@ export class LeafletMapView extends ItemView {
             this.plugin,
             "",
             this.mapEl,
-            this.params
+            this.params,
+            ""
         );
 
         this.context.addChild(this.renderer);
@@ -47,7 +47,8 @@ export class LeafletMapView extends ItemView {
             this.plugin,
             "",
             this.mapEl,
-            this.params
+            this.params,
+            ""
         );
         this.context.addChild(this.renderer);
     }

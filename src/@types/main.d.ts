@@ -65,6 +65,7 @@ export interface BlockParameters {
     gpxColor?: string;
     drawColor?: string;
     zoomFeatures?: boolean;
+    showAllMarkers?: boolean;
     verbose?: boolean;
     isMapView?: boolean;
     isInitiativeView?: boolean;

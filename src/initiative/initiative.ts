@@ -28,6 +28,13 @@ export class InitiativeMapView extends LeafletMapView {
         public creatures: Creature[] = []
     ) {
         super(leaf, plugin);
+        this.registerEvent(
+            this.plugin.app.workspace.on("initiative-tracker:closed", () => {
+                this.removeChild(this.renderer);
+                this.leaf.detach();
+                this.unload();
+            })
+        );
     }
     get params() {
         return {
@@ -45,6 +52,10 @@ export class InitiativeMapView extends LeafletMapView {
         this.renderer = new InitiativeRenderer(this);
 
         this.context.addChild(this.renderer);
+    }
+    async onClose() {
+        this.renderer.unload();
+        super.onClose();
     }
     update() {
         this.renderer.unload();
@@ -77,7 +88,7 @@ export class InitiativeRenderer extends LeafletRenderer {
     map: InitiativeMap;
 
     constructor(public view: InitiativeMapView) {
-        super(view.plugin, "", view.mapEl, view.params);
+        super(view.plugin, "", view.mapEl, view.params, "");
 
         this.registerEvent(
             this.plugin.app.workspace.on(

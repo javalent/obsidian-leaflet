@@ -97,6 +97,7 @@ export interface LeafletMapOptions {
     verbose?: boolean;
     zoomDelta?: number;
     zoomFeatures?: boolean;
+    zoomMarkers?: boolean;
 }
 
 declare class Popup {
@@ -276,6 +277,8 @@ declare abstract class BaseMap /* <
     toProperties(): SavedMapData;
     updateMarkerIcons(): void;
 
+    zoomAllMarkers(): void;
+
     on(name: "removed", callback: () => void): EventRef;
     on(
         name: "layer-ready-for-features",
@@ -298,6 +301,7 @@ declare abstract class BaseMap /* <
     ): EventRef;
     on(name: "marker-updated", callback: (marker: Marker) => void): EventRef;
     on(name: "marker-deleted", callback: (marker: Marker) => void): EventRef;
+    on(name: "markers-updated", callback: () => void): EventRef;
 }
 
 declare class RealMap extends BaseMap /* <L.TileLayer> */ {

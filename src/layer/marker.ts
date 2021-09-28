@@ -86,7 +86,7 @@ class Link extends MarkerTarget {
         /* if (!this.external) { */
         await this.app.workspace.openLinkText(
             this._text.replace("^", "#^").split(/\|/).shift(),
-            this.app.workspace.getActiveFile()?.path,
+            this.app.workspace.getActiveFile()?.path ?? "",
             evt.originalEvent.getModifierState(MODIFIER_KEY)
         );
         /* } */

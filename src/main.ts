@@ -586,7 +586,6 @@ export default class ObsidianLeaflet
         players?: Creature[],
         creatures?: Creature[]
     ) {
-        const tracker = this.app.plugins.plugins["initiative-tracker"];
         if (!this.initiativeView) {
             const bool = this.app.workspace
                 .getLayout()
