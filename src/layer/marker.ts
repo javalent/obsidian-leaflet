@@ -505,12 +505,9 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
     shouldShow(zoom: number) {
         if (this.minZoom == this.maxZoom && this.minZoom == null) return true;
         if (!this.displayed) {
-            if (
-                this.minZoom != null &&
-                this.minZoom <= zoom &&
-                this.maxZoom != null &&
-                zoom <= this.maxZoom
-            ) {
+            const min = this.minZoom ?? this.map.zoom.min;
+            const max = this.maxZoom ?? this.map.zoom.max;
+            if (min <= zoom && zoom <= max) {
                 return this.map.displaying.get(this.type);
             }
         }
@@ -526,10 +523,9 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
     }
     shouldHide(zoom: number) {
         if (this.displayed) {
-            if (
-                (this.minZoom != null && this.minZoom > zoom) ||
-                (this.maxZoom != null && zoom > this.maxZoom)
-            ) {
+            const min = this.minZoom ?? this.map.zoom.min;
+            const max = this.maxZoom ?? this.map.zoom.max;
+            if (min > zoom || zoom > max) {
                 return true;
             }
         }
