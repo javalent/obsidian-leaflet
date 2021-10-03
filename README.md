@@ -33,7 +33,7 @@ darkMode: true
 ## Options
 
 | Option         | Description                                                                                  | Default                                    |
-| -------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------ | --- |
+| -------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------ |
 | id             | Unique identifier (can be anything). **Required.**                                           |                                            |
 | image          | Direct URL/file path to an image file to be used as the map layer.                           | OpenStreetMap map                          |
 | tileServer     | Add additional tile servers as different layers                                              |                                            |
