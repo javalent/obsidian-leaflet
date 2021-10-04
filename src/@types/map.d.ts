@@ -13,6 +13,7 @@ import type { GPXControl } from "./controls";
 import type { LeafletRenderer } from "src/renderer/renderer";
 import { DrawingController } from "src/draw/controller";
 import { ShapeProperties } from "src/draw/shape";
+import type geojson from "geojson";
 
 export interface ImageLayerData {
     data: string;
@@ -164,7 +165,7 @@ declare abstract class BaseMap /* <
 
     gpxControl: GPXControl;
     gpxLayer: L.FeatureGroup;
-    gpxData: string[];
+    gpxData: { data: string; alias?: string }[];
     gpxIcons: {
         start: string;
         end: string;
@@ -253,8 +254,8 @@ declare abstract class BaseMap /* <
     isLayerRendered(layer: string): boolean;
 
     loadFeatureData(data: {
-        geojsonData: any[];
-        gpxData: string[];
+        geojsonData: { data: geojson.GeoJsonObject; alias?: string }[];
+        gpxData: { data: string; alias?: string }[];
         gpxIcons: {
             start: string;
             end: string;
