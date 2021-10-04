@@ -404,7 +404,7 @@ export class CreateMarkerModal extends Modal {
 
         new Setting(createNewMarker)
             .setName(t("Min Zoom"))
-            .setDesc(t("Only display above this zoom."))
+            .setDesc(t("Only display below this zoom."))
             .addText((text) => {
                 let warned = false;
                 text.inputEl.onkeydown = (evt) => {
@@ -429,7 +429,7 @@ export class CreateMarkerModal extends Modal {
             });
         new Setting(createNewMarker)
             .setName(t("Max Zoom"))
-            .setDesc(t("Only display below this zoom."))
+            .setDesc(t("Only display above this zoom."))
             .addText((text) => {
                 let warned = false;
                 text.inputEl.onkeydown = (evt) => {

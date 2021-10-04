@@ -381,7 +381,9 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 percent: marker.percent,
                 description: marker.description,
                 tooltip:
-                    marker.tooltip ?? this.plugin.data.displayMarkerTooltips
+                    marker.tooltip ?? this.plugin.data.displayMarkerTooltips,
+                minZoom: marker.minZoom,
+                maxZoom: marker.maxZoom
             });
             this.markers.push(newMarker);
             toReturn.push(newMarker);

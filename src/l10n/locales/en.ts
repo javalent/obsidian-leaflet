@@ -188,12 +188,12 @@ export default {
     Default: "Default",
     "Display Tooltip": "Display Tooltip",
     "Min Zoom": "Min Zoom",
-    "Only display above this zoom. Current map minimum":
-        "Only display above this zoom. Current map minimum",
+    "Only display below this zoom. Current map minimum":
+        "Only display below this zoom. Current map minimum",
     "Minimum zoom must be a number.": "Minimum zoom must be a number.",
     "Max Zoom": "Max Zoom",
-    "Only display below this zoom. Current map maximum":
-        "Only display below this zoom. Current map maximum",
+    "Only display above this zoom. Current map maximum":
+        "Only display above this zoom. Current map maximum",
     "Maximum zoom must be a number.": "Maximum zoom must be a number.",
     "Delete Marker": "Delete Marker",
     "Overlay Radius": "Overlay Radius",

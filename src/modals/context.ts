@@ -141,7 +141,7 @@ export class MarkerContextModal extends Modal {
         new Setting(this.contentEl)
             .setName(t("Min Zoom"))
             .setDesc(
-                t("Only display above this zoom. Current map minimum") +
+                t("Only display below this zoom. Current map minimum") +
                     ": " +
                     this.map.zoom.min
             )
@@ -170,7 +170,7 @@ export class MarkerContextModal extends Modal {
         new Setting(this.contentEl)
             .setName(t("Max Zoom"))
             .setDesc(
-                t("Only display below this zoom. Current map maximum") +
+                t("Only display above this zoom. Current map maximum") +
                     ": " +
                     this.map.zoom.max
             )
