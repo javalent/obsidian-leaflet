@@ -141,8 +141,10 @@ export default {
         "Select the default system of units for the map.",
     Imperial: "Imperial",
     Metric: "Metric",
-    "Only display above this zoom.": "Only display above this zoom.",
-    "Only display below this zoom.": "Only display below this zoom.",
+    "Only display when zooming out above this zoom.":
+        "Only display when zooming out above this zoom.",
+    "Only display when zooming in below this zoom.":
+        "Only display when zooming in below this zoom.",
 
     //modals/settings.ts
     "Marker Name": "Marker Name",
@@ -188,12 +190,12 @@ export default {
     Default: "Default",
     "Display Tooltip": "Display Tooltip",
     "Min Zoom": "Min Zoom",
-    "Only display below this zoom. Current map minimum":
-        "Only display below this zoom. Current map minimum",
+    "Only display when zooming in below this zoom. Current map minimum":
+        "Only display when zooming in below this zoom. Current map minimum",
     "Minimum zoom must be a number.": "Minimum zoom must be a number.",
     "Max Zoom": "Max Zoom",
-    "Only display above this zoom. Current map maximum":
-        "Only display above this zoom. Current map maximum",
+    "Only display when zooming out above this zoom. Current map maximum":
+        "Only display when zooming out above this zoom. Current map maximum",
     "Maximum zoom must be a number.": "Maximum zoom must be a number.",
     "Delete Marker": "Delete Marker",
     "Overlay Radius": "Overlay Radius",
