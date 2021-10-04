@@ -6,7 +6,7 @@ import { Platform } from "obsidian";
 import t from "src/l10n/locale";
 
 const L = window[LeafletSymbol];
-class FilterMarkers extends FontAwesomeControl {
+export class FilterMarkers extends FontAwesomeControl {
     map: BaseMapType;
     section: HTMLElement;
     inputs: Map<string, HTMLInputElement>;
@@ -38,7 +38,7 @@ class FilterMarkers extends FontAwesomeControl {
 
         this.iconEl.dataset["draggable"] = "false";
 
-        this.map.on("click", this.collapse, this);
+        this.map.leafletInstance.on("click", this.collapse, this);
 
         L.DomEvent.on(this.controlEl, "mouseenter", () => this.expand());
         L.DomEvent.on(this.controlEl, "mouseleave", () => this.collapse());

@@ -1,5 +1,6 @@
 import convert from "convert";
 import { Length } from "convert/dist/types/units";
+import type geojson from "geojson";
 
 import { Events, Menu, Notice, Scope } from "obsidian";
 import {
@@ -51,7 +52,8 @@ import t from "src/l10n/locale";
 import { drawControl } from "src/draw/controls";
 import { DrawingController } from "src/draw/controller";
 import { ShapeProperties } from "src/draw/shape";
-import { Layer } from "src/layer/layer";
+import LayerControl from "src/controls/layers";
+import type { FilterMarkers } from "src/controls/filter";
 
 let L = window[LeafletSymbol];
 declare module "leaflet" {
@@ -70,6 +72,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     drawingGroup: L.FeatureGroup<any>;
     drawingLayer: any;
     readyForDrawings: boolean = false;
+    filterControl: FilterMarkers;
     abstract get bounds(): L.LatLngBounds;
 
     canvas: L.Canvas;
@@ -81,9 +84,9 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
     private escapeScope: Scope;
 
-    geojsonData: any[] = [];
+    geojsonData: { data: geojson.GeoJsonObject; alias?: string }[] = [];
     gpxControl: ReturnType<typeof gpxControl>;
-    gpxData: string[] = [];
+    gpxData: { data: string; alias?: string }[] = [];
     gpxIcons: {
         start: string;
         end: string;
@@ -101,7 +104,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     }[] = [];
 
     isDrawing: boolean = false;
-    layerControl = L.control.layers({}, {});
+    layerControl = new LayerControl();
     layerControlAdded = false;
 
     abstract render(options: {
@@ -512,17 +515,16 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     addLayerControl() {
         if (this.layerControlAdded) return;
         this.layerControlAdded = true;
-        const layerIcon = icon({ iconName: "layer-group", prefix: "fas" })
-            .node[0];
-        layerIcon.setAttr(`style`, "color: var(--text-normal);margin: auto;");
+        this.filterControl?.remove();
         this.layerControl.addTo(this.leafletInstance);
-        this.layerControl.getContainer().children[0].appendChild(layerIcon);
+        this.filterControl?.addTo(this.leafletInstance);
     }
     addFeatures() {
         /** Add GeoJSON to map */
         this.featureLayer = L.featureGroup();
         let added: number;
         if (this.geojsonData.length > 0) {
+            this.addLayerControl();
             this.log(
                 `Adding ${this.geojsonData.length} GeoJSON features to map.`
             );
@@ -531,16 +533,20 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
             added = 0;
 
-            this.geojsonData.forEach((geoJSON) => {
+            this.geojsonData.forEach(({ data, alias }) => {
                 try {
                     const geo = new GeoJSON(
                         this as BaseMapType,
                         this.featureLayer,
                         { color: this.options.geojsonColor },
-                        geoJSON
+                        data
                     );
 
                     geo.leafletInstance.addTo(this.geojsonLayer);
+                    this.layerControl.addOverlay(
+                        geo.leafletInstance,
+                        alias ?? `GeoJSON ${added + 1}`
+                    );
 
                     added++;
                 } catch (e) {
@@ -560,16 +566,23 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
         /** Add GPX to map */
         if (this.gpxData.length > 0) {
+            added = 0;
+            this.addLayerControl();
             this.log(`Adding ${this.gpxData.length} GPX features to map.`);
             this.gpxLayer = L.featureGroup().addTo(this.featureLayer);
-            for (let gpx of this.gpxData) {
+            for (let { data, alias } of this.gpxData) {
                 try {
                     const gpxInstance = new GPX(
                         this as BaseMapType,
-                        gpx,
+                        data,
                         this.gpxIcons
                     );
                     gpxInstance.leafletInstance.addTo(this.gpxLayer);
+                    this.layerControl.addOverlay(
+                        gpxInstance.leafletInstance,
+                        alias ?? `GPX ${added + 1}`
+                    );
+                    added++;
                 } catch (e) {
                     console.error(e);
                     new Notice(
@@ -668,9 +681,10 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 });
             }
         }
-        filterMarkerControl({ position: "topright" }, this).addTo(
-            this.leafletInstance
-        );
+        this.filterControl = filterMarkerControl(
+            { position: "topright" },
+            this
+        ).addTo(this.leafletInstance);
         zoomControl({ position: "topleft" }, this).addTo(this.leafletInstance);
         resetZoomControl({ position: "topleft" }, this).addTo(
             this.leafletInstance
@@ -1035,8 +1049,8 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         return this.mapLayers.find(({ id }) => id === layer) ? true : false;
     }
     loadFeatureData(data: {
-        geojsonData: any[];
-        gpxData: string[];
+        geojsonData: { data: geojson.GeoJsonObject; alias?: string }[];
+        gpxData: { data: string; alias?: string }[];
         gpxIcons: {
             start: string;
             end: string;

@@ -5,9 +5,9 @@ import {
     CachedMetadata,
     TFolder,
     Vault,
-    getAllTags,
     MarkdownView
 } from "obsidian";
+import type geojson from "geojson";
 
 import { parse as parseCSV } from "papaparse";
 
@@ -402,11 +402,19 @@ export class LeafletRenderer extends MarkdownRenderChild {
     async loadFeatureData() {
         /** Get Markers from Parameters */
         let geojson = this.params.geojson,
-            geojsonData: any[] = [];
+            geojsonData: { data: geojson.GeoJsonObject; alias: string }[] = [];
         if (!(geojson instanceof Array)) {
             geojson = [geojson];
         }
-        const geoSet = new Set(geojson?.flat(Infinity).filter((g) => g));
+        const geoSet: Set<{ path: string; alias?: string }> = new Set(
+            geojson
+                ?.flat(Infinity)
+                .filter((g) => g)
+                .map((g) => {
+                    const [path, alias] = g.replace(/(\[|\])/g, "").split("|");
+                    return { path, alias };
+                })
+        );
 
         if (this.params.geojsonFolder && this.params.geojsonFolder.length) {
             for (let path of this.params.geojsonFolder) {
@@ -417,14 +425,14 @@ export class LeafletRenderer extends MarkdownRenderChild {
                     abstractFile instanceof TFile &&
                     ["json", "geojson"].includes(abstractFile.extension)
                 )
-                    geoSet.add(path);
+                    geoSet.add({ path });
                 if (abstractFile instanceof TFolder) {
                     Vault.recurseChildren(abstractFile, (file) => {
                         if (
                             file instanceof TFile &&
                             ["json", "geojson"].includes(file.extension)
                         )
-                            geoSet.add(file.path);
+                            geoSet.add({ path: file.path });
                     });
                 }
             }
@@ -432,31 +440,32 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         if (geoSet.size) {
             this.map.log("Loading GeoJSON files.");
-            for (let link of geoSet) {
+            for (let { path, alias } of geoSet) {
                 const file = this.plugin.app.metadataCache.getFirstLinkpathDest(
-                    parseLink(link),
+                    parseLink(path),
                     this.sourcePath
                 );
                 if (file && file instanceof TFile) {
-                    let data = await this.plugin.app.vault.read(file);
+                    const raw = await this.plugin.app.vault.read(file);
+                    let data: geojson.GeoJsonObject;
                     try {
-                        data = JSON.parse(data);
+                        data = JSON.parse(raw);
                     } catch (e) {
                         new Notice(
                             t("Could not parse GeoJSON file") +
-                                ` ${link}` +
+                                ` ${path}` +
                                 "\n\n" +
                                 e.message
                         );
                         continue;
                     }
-                    geojsonData.push(data);
+                    geojsonData.push({ data, alias });
                 }
             }
         }
 
         let gpx = this.params.gpx,
-            gpxData: string[] = [];
+            gpxData: { data: string; alias?: string }[] = [];
         let gpxIcons: {
             start: string;
             end: string;
@@ -469,7 +478,15 @@ export class LeafletRenderer extends MarkdownRenderChild {
             gpx = [gpx];
         }
 
-        let gpxSet = new Set(gpx?.flat(Infinity).filter((g) => g));
+        let gpxSet: Set<{ path: string; alias?: string }> = new Set(
+            gpx
+                ?.flat(Infinity)
+                .filter((g) => g)
+                .map((g) => {
+                    const [path, alias] = g.replace(/(\[|\])/g, "").split("|");
+                    return { path, alias };
+                })
+        );
         if (this.params.gpxFolder && this.params.gpxFolder.length) {
             for (let path of this.params.gpxFolder) {
                 let abstractFile =
@@ -479,25 +496,25 @@ export class LeafletRenderer extends MarkdownRenderChild {
                     abstractFile instanceof TFile &&
                     abstractFile.extension === "gpx"
                 )
-                    gpxSet.add(path);
+                    gpxSet.add({ path });
                 if (abstractFile instanceof TFolder) {
                     Vault.recurseChildren(abstractFile, (file) => {
                         if (file instanceof TFile && file.extension === "gpx")
-                            gpxSet.add(file.path);
+                            gpxSet.add({ path: file.path });
                     });
                 }
             }
         }
         if (gpxSet.size) {
             this.map.log("Loading GPX files.");
-            for (let link of gpxSet) {
+            for (let { path, alias } of gpxSet) {
                 const file = this.plugin.app.metadataCache.getFirstLinkpathDest(
-                    parseLink(link),
+                    parseLink(path),
                     this.sourcePath
                 );
                 if (file && file instanceof TFile) {
                     let data = await this.plugin.app.vault.read(file);
-                    gpxData.push(data);
+                    gpxData.push({ data, alias });
                 }
             }
         }
