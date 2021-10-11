@@ -150,6 +150,44 @@ export class FilterMarkers extends FontAwesomeControl {
                 this.inputs.set(type, input);
             }
         }
+
+        if (
+            this.map.currentGroup.markers.custom &&
+            this.map.currentGroup.markers.custom.getLayers()?.length
+        ) {
+            const li = ul.createEl("div", "input-item");
+
+            const id = getId();
+            const input = li.createEl("input", {
+                attr: {
+                    id: "leaflet-control-expandable-item-label-" + id,
+                    ...(this.map.displaying.get("custom")
+                        ? { checked: true }
+                        : {})
+                },
+                type: "checkbox"
+            });
+
+            const label = li.createEl("label", {
+                attr: { for: "leaflet-control-expandable-item-label-" + id }
+            });
+
+            label.createDiv({
+                text: "Custom"
+            });
+
+            input.addEventListener("click", (evt) => {
+                if (input.checked) {
+                    this.show("custom");
+                } else if (this.map.displaying.get("custom")) {
+                    this.hide("custom");
+                }
+
+                this.map.displaying.set("custom", input.checked);
+            });
+
+            this.inputs.set("custom", input);
+        }
     }
     private update() {
         for (let [type, input] of this.inputs) {

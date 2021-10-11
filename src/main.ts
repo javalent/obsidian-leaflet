@@ -356,16 +356,20 @@ export default class ObsidianLeaflet
             );
 
             await this.saveData(this.data);
-
-            this.markerIcons = this.generateMarkerMarkup(this.data.markerIcons);
-
-            this.maps.forEach((map) => {
-                map.map.updateMarkerIcons();
-            });
         },
         100,
         false
     );
+
+    async saveMarkerTypes() {
+        await this.saveSettings();
+        this.markerIcons = this.generateMarkerMarkup(this.data.markerIcons);
+
+        this.maps.forEach((map) => {
+            map.map.updateMarkerIcons();
+        });
+    }
+
     async saveData(data: Record<any, any>) {
         if (this.configDirectory) {
             try {
@@ -484,40 +488,44 @@ export default class ObsidianLeaflet
         });
     }
 
+    public parseIcon(icon: Icon): MarkerIcon {
+        if (!icon.transform) {
+            icon.transform = this.data.defaultMarker.transform;
+        }
+        if (!icon.iconName) {
+            icon.iconName = this.data.defaultMarker.iconName;
+        }
+        const params =
+            icon.layer && !this.data.defaultMarker.isImage
+                ? {
+                      transform: icon.transform,
+                      mask: getIcon(this.data.defaultMarker.iconName)
+                  }
+                : {};
+        let node = getMarkerIcon(icon, {
+            ...params,
+            classes: ["full-width-height"]
+        }).node as HTMLElement;
+        node.style.color = icon.color
+            ? icon.color
+            : this.data.defaultMarker.color;
+
+        return {
+            type: icon.type,
+            html: node.outerHTML,
+            icon: markerDivIcon({
+                html: node.outerHTML,
+                className: `leaflet-div-icon`
+            })
+        };
+    }
+
     public generateMarkerMarkup(
         markers: Icon[] = this.data.markerIcons
     ): MarkerIcon[] {
-        let ret: MarkerIcon[] = markers.map((marker): MarkerIcon => {
-            if (!marker.transform) {
-                marker.transform = this.data.defaultMarker.transform;
-            }
-            if (!marker.iconName) {
-                marker.iconName = this.data.defaultMarker.iconName;
-            }
-            const params =
-                marker.layer && !this.data.defaultMarker.isImage
-                    ? {
-                          transform: marker.transform,
-                          mask: getIcon(this.data.defaultMarker.iconName)
-                      }
-                    : {};
-            let node = getMarkerIcon(marker, {
-                ...params,
-                classes: ["full-width-height"]
-            }).node as HTMLElement;
-            node.style.color = marker.color
-                ? marker.color
-                : this.data.defaultMarker.color;
-
-            return {
-                type: marker.type,
-                html: node.outerHTML,
-                icon: markerDivIcon({
-                    html: node.outerHTML,
-                    className: `leaflet-div-icon`
-                })
-            };
-        });
+        let ret: MarkerIcon[] = markers.map(
+            (marker): MarkerIcon => this.parseIcon(marker)
+        );
         const defaultHtml = getMarkerIcon(this.data.defaultMarker, {
             classes: ["full-width-height"],
             styles: {

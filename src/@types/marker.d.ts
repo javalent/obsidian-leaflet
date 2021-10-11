@@ -25,7 +25,13 @@ export interface MarkerProperties {
 }
 
 export interface SavedMarkerProperties {
-    type: string;
+    type:
+        | string
+        | {
+              icon: string;
+              color: string;
+              layer: boolean;
+          };
     loc: [number, number];
     percent: [number, number];
     id: string;

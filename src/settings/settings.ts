@@ -137,7 +137,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     this.data.defaultMarker.iconName = new_value;
                     this.data.defaultMarker.isImage = false;
 
-                    await this.plugin.saveSettings();
+                    await this.plugin.saveMarkerTypes();
 
                     this.display();
                 };
@@ -198,6 +198,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     this.data.defaultMarker.imageUrl =
                         canvas.toDataURL("image/png");
 
+                    this.plugin.saveMarkerTypes();
                     this.display();
 
                     //defaultMarkerIconSetting.settingEl.appendChild(canvas);
@@ -247,7 +248,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                             (marker) => (marker.layer = v)
                         );
 
-                        await this.plugin.saveSettings();
+                        await this.plugin.saveMarkerTypes();
 
                         this.display();
                         return;
@@ -272,7 +273,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                             await this.plugin.createNewMarkerType();
                         if (!newMarker) return;
                         this.data.markerIcons.push(newMarker);
-                        await this.plugin.saveSettings();
+                        await this.plugin.saveMarkerTypes();
 
                         this.display();
                     });
@@ -311,7 +312,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                             });
                         }
 
-                        await this.plugin.saveSettings();
+                        await this.plugin.saveMarkerTypes();
                         this.display();
                     })
                 )
@@ -320,7 +321,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                         this.data.markerIcons = this.data.markerIcons.filter(
                             (m) => m != marker
                         );
-                        await this.plugin.saveSettings();
+                        await this.plugin.saveMarkerTypes();
                         this.display();
                     })
                 );
@@ -704,7 +705,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                                     ({ id }) => id != marker.id
                                 );
                                 map.createMarker(
-                                    marker.type,
+                                    marker.type as string,
                                     marker.loc,
                                     undefined,
                                     marker.link,

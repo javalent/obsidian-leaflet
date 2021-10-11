@@ -350,25 +350,38 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     addMarker(...markers: SavedMarkerProperties[]) {
         let toReturn: Marker[] = [];
         for (const marker of markers) {
-            if (!this.markerTypes.includes(marker.type)) {
-                new Notice(
-                    t(
-                        `Marker type "%1" does not exist, using default.`,
-                        marker.type
-                    )
-                );
-                marker.type = "default";
+            let markerIcon: MarkerIcon;
+            let type: string;
+            if (typeof marker.type == "object") {
+                type = `custom`;
+                markerIcon = this.plugin.parseIcon({
+                    type: `custom`,
+                    iconName: marker.type.icon ?? "map-marker",
+                    layer: marker.type.layer ?? true,
+                    color: marker.type.color
+                });
+            } else {
+                if (!this.markerTypes.includes(marker.type)) {
+                    new Notice(
+                        t(
+                            `Marker type "%1" does not exist, using default.`,
+                            marker.type
+                        )
+                    );
+                    marker.type = "default";
+                }
+                markerIcon = this.markerIcons.get(marker.type);
+                type = marker.type;
             }
-            const markerIcon = this.markerIcons.get(marker.type);
 
             const mapIcon = markerIcon?.icon ?? this.defaultIcon.icon;
 
-            if (!this.displaying.has(marker.type)) {
-                this.displaying.set(marker.type, true);
+            if (!this.displaying.has(type)) {
+                this.displaying.set(type, true);
             }
             const newMarker = new Marker(this, {
                 id: marker.id,
-                type: marker.type,
+                type: type,
                 loc: L.latLng(marker.loc),
                 link: marker.link,
                 icon: mapIcon,
@@ -1231,7 +1244,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         });
         /** Remove Old Marker Types From Filter List */
         [...this.displaying].forEach(([type]) => {
-            if (this.markerTypes.includes(type)) return;
+            if (this.markerTypes.includes(type) || type == "custom") return;
 
             this.displaying.delete(type);
 
@@ -1243,8 +1256,8 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 );
             }
             this.currentGroup.markers[type]
-                .getLayers()
-                .forEach((layer) =>
+                ?.getLayers()
+                ?.forEach((layer) =>
                     this.currentGroup.markers.default.addLayer(layer)
                 );
 
@@ -1295,6 +1308,7 @@ export class RealMap extends BaseMap {
         const markerGroups = Object.fromEntries(
             this.markerTypes.map((type) => [type, L.layerGroup()])
         );
+        markerGroups.custom = L.layerGroup();
         const overlayGroups = {
             none: L.layerGroup(),
             ...Object.fromEntries(
@@ -1478,6 +1492,8 @@ export class ImageMap extends BaseMap {
         const markerGroups = Object.fromEntries(
             this.markerTypes.map((type) => [type, L.layerGroup()])
         );
+        markerGroups.custom = L.layerGroup();
+
         const overlayGroups = {
             none: L.layerGroup(),
             ...Object.fromEntries(

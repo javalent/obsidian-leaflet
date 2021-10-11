@@ -98,7 +98,9 @@ declare class ObsidianLeaflet extends Plugin {
 
     loadSettings(): Promise<void>;
     saveSettings: Debouncer<Promise<void>[]>;
+    saveMarkerTypes(): Promise<void>;
 
+    parseIcon(icon: Icon): MarkerIcon;
     generateMarkerMarkup(markers: Icon[]): MarkerIcon[];
 
     registerMapEvents(map: BaseMapType): void;

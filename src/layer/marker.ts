@@ -183,6 +183,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         }: MarkerProperties
     ) {
         super();
+        
         this.leafletInstance = divIconMarker(
             loc,
             {
@@ -508,7 +509,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             const min = this.minZoom ?? this.map.zoom.min;
             const max = this.maxZoom ?? this.map.zoom.max;
             if (min <= zoom && zoom <= max) {
-                return this.map.displaying.get(this.type);
+                return this.map.displaying.get(this.type) ?? true;
             }
         }
         return false;
