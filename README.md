@@ -33,7 +33,7 @@ darkMode: true
 ## Options
 
 | Option         | Description                                                                                  | Default                                    |
-| -------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| -------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------ | --- |
 | id             | Unique identifier (can be anything). **Required.**                                           |                                            |
 | image          | Direct URL/file path to an image file to be used as the map layer.                           | OpenStreetMap map                          |
 | tileServer     | Add additional tile servers as different layers                                              |                                            |
@@ -501,6 +501,26 @@ All markers created from the note will automatically have their link set to the 
 | mapzoom         | Marker created from this note will have its zoom breakpoint set to `[min, max]`. Optional.      |
 | mapmarkers      | Array of markers to create. See below for syntax.                                               |
 | mapoverlay      | Array of overlays to create. See below for syntax.                                              |
+
+##### mapmarker
+
+The `mapmarker` parameter can be used to define the _type_ of marker created. This can be one of two things:
+
+1. The name given to the marker type in settings.
+2. A definition defining the icon name, color, and whether or not to layer the icon on the default marker type.
+
+Examples:
+
+```
+mapmarker: event    # A marker type named event has been created in settings.
+
+# OR
+
+mapmarker:
+  icon: user        # Font Awesome icon name.
+  color: 00ff00     # Hex color string. Optional.
+  layer: false      # Whether or not to layer. Optional.
+```
 
 ##### mapmarkers
 
