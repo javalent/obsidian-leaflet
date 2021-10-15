@@ -349,12 +349,6 @@ export default class ObsidianLeaflet
                     shapes.length > 0
             );
 
-            /** Remove maps that haven't been accessed in more than 1 week that are not associated with a file */
-            this.data.mapMarkers = this.data.mapMarkers.filter(
-                ({ id, files, lastAccessed = Date.now() }) =>
-                    !id || files.length || Date.now() - lastAccessed <= 6.048e8
-            );
-
             await this.saveData(this.data);
         },
         100,
