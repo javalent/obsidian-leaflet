@@ -33,7 +33,7 @@ darkMode: true
 ## Options
 
 | Option         | Description                                                                                  | Default                                    |
-| -------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------ | --- |
+| -------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------ |
 | id             | Unique identifier (can be anything). **Required.**                                           |                                            |
 | image          | Direct URL/file path to an image file to be used as the map layer.                           | OpenStreetMap map                          |
 | tileServer     | Add additional tile servers as different layers                                              |                                            |
@@ -72,7 +72,7 @@ darkMode: true
 | imageOverlay   | Add an image overlay to the map.                                                             |                                            |
 | draw           | Enable the draw controller on the map.                                                       | true                                       |
 | drawColor      | Default color that new shapes will be drawn with                                             | #3388ff                                    |
-| showAllMarkers | Map will open showing all markers.                                                           | false                                      |     |
+| showAllMarkers | Map will open showing all markers.                                                           | false                                      |     
 
 > \*: Requires the [DataView plugin](https://github.com/blacksmithgu/obsidian-dataview).
 
