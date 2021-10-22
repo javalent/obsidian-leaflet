@@ -263,6 +263,7 @@ export default class OldWatcher extends Events {
                     const marker = markers[index];
 
                     if (
+                        marker &&
                         location.length == 2 &&
                         location.every((v: any) => typeof v == "number")
                     ) {
