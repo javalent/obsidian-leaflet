@@ -156,7 +156,7 @@ export class Watcher extends Component {
         ) {
             this.overlays.push(...this.frontmatter.mapoverlay);
         }
-        
+
         /*if (this.fileIds.has("overlayTag")) {
             if (this.map.options.overlayTag in this.frontmatter) {
                 this.map.overlays = this.map.overlays.filter(
@@ -276,6 +276,7 @@ export default class OldWatcher extends Events {
                     }
                 }
             } catch (e) {
+                console.error(e);
                 new Notice(
                     t(
                         `There was an error updating the marker for %1.`,
@@ -301,6 +302,7 @@ export default class OldWatcher extends Events {
                     }
                 }
             } catch (e) {
+                console.error(e);
                 new Notice(
                     t(
                         `There was an error updating the marker type for %1.`,
@@ -345,6 +347,7 @@ export default class OldWatcher extends Events {
                     }
                 );
             } catch (e) {
+                console.error(e);
                 new Notice(
                     t(`There was an error updating the markers for %1.`)
                 );
