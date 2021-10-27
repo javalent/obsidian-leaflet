@@ -727,7 +727,7 @@ A real-world map will open to this default latitude and longitude if not provide
 
 ### Default Map Marker
 
-The efault marker setting allows you to define a marker that other markers can be layered on top of. If no additional markers have been added, right clicking on the map will place this marker.
+The default marker setting allows you to define a marker that other markers can be layered on top of. If no additional markers have been added, right clicking on the map will place this marker.
 
 #### Marker Icon
 
