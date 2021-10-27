@@ -1,4 +1,4 @@
-import "leaflet";
+/* import "leaflet"; */
 import "../node_modules/leaflet/dist/leaflet.css";
 import "./assets/main.css";
 import type InitiativeTracker from "../../obsidian-initiative-tracker/src/main";
@@ -53,6 +53,7 @@ import { CreateMarkerModal } from "./modals";
 import { LeafletMapView } from "./map/view";
 import { SRDMonster } from "../../obsidian-initiative-tracker/@types";
 import { Length } from "convert/dist/types/units";
+
 
 //add commands to app interface
 declare module "obsidian" {

@@ -10,16 +10,17 @@ declare global {
 export const LeafletSymbol = "OBSIDIAN_LEAFLET_PLUGIN";
 
 const WindowL = window.L;
+if (!window.L) {
+    require("leaflet");
+}
 
-require("leaflet");
-window.L.Circle.mergeOptions({
+window[LeafletSymbol] = window.L;
+window[LeafletSymbol].Circle.mergeOptions({
     weight: MAP_OVERLAY_STROKE_WIDTH,
     opacity: MAP_OVERLAY_STROKE_OPACITY
 });
 
-window[LeafletSymbol] = window.L;
-
-window.L = WindowL;
-
 require("leaflet-fullscreen");
 require("leaflet-hotline");
+
+window.L = WindowL;
