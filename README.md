@@ -19,7 +19,6 @@ image: [[Image.jpg]]
 height: 500px
 lat: 50
 long: 50
-height: 500px
 minZoom: 1
 maxZoom: 10
 defaultZoom: 5
