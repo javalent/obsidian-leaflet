@@ -133,6 +133,7 @@ input.is-invalid {
 
 .block-language-leaflet > .leaflet-container {
     z-index: 0;
+    background-color: var(--background-secondary-alt);
 }
 
 .block-language-leaflet > .adding-text {

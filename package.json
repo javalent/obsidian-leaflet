@@ -1,10 +1,10 @@
 {
     "name": "obsidian-leaflet-plugin",
-    "version": "4.3.4",
+    "version": "4.3.5",
     "description": "Leaflet integration for Obsidian.md",
     "main": "main.js",
     "scripts": {
-        "dev": "webpack --config webpack.dev.js -w",
+        "dev": "set NODE_OPTIONS=--openssl-legacy-provider && webpack --config webpack.dev.js -w",
         "build": "webpack",
         "analyze": "webpack --profile --json > stats.json && webpack-bundle-analyzer ./stats.json"
     },
