@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.4.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.3.7...4.4.0) (2021-12-06)
+
+
+### Features
+
+* added `preserveAspect` map parameter (close [#254](https://github.com/valentine195/obsidian-leaflet-plugin/issues/254)) ([e507416](https://github.com/valentine195/obsidian-leaflet-plugin/commit/e5074160a62c1ad6b8dde5bc0c8bbcd2260efa5d))
+
 ### [4.3.7](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.3.6...4.3.7) (2021-12-06)
 
 
