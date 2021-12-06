@@ -183,7 +183,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         }: MarkerProperties
     ) {
         super();
-        
+
         this.leafletInstance = divIconMarker(
             loc,
             {
@@ -200,8 +200,10 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         );
         if (command) {
             this.target = new Command(link, this.map.plugin.app);
-        } else {
+        } else if (link) {
             this.target = new Link(link, this.map.plugin.app);
+        } else if (description) {
+            this.target = new Text(description);
         }
         this.id = id;
         this.type = type;
@@ -401,10 +403,11 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             });
         }
         if (!x || !x.length) {
-            this.target = null;
+            if (this.description && this.description.length)
+                this.target = new Text(this.description);
             return;
         }
-        if (!this.target) {
+        if (!this.target || this.target instanceof Text) {
             if (this.command) {
                 this.target = new Command(x, this.map.plugin.app);
             } else {
@@ -424,8 +427,10 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         if (!this.link) return;
         if (b) {
             this.target = new Command(this.link, this.map.plugin.app);
-        } else {
+        } else if (this.link) {
             this.target = new Link(this.link, this.map.plugin.app);
+        } else if (this.description) {
+            this.target = new Text(this.description);
         }
     }
     get mutable() {

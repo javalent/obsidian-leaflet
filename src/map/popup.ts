@@ -112,7 +112,6 @@ class Popup {
         if (this._timeoutHandler) {
             clearTimeout(this._timeoutHandler);
         }
-
         if (this.leafletInstance.isOpen()) {
             this.leafletInstance.setContent(content);
             if (this.target instanceof L.Polyline) {

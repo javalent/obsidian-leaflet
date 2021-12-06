@@ -643,7 +643,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 continue;
             }
 
-            let [type, lat, long, link, layer, minZoom, maxZoom] = data[0];
+            let [type, lat, long, link, description, minZoom, maxZoom] =
+                data[0];
 
             if (!type || !type.length || type === "undefined") {
                 type = "default";
@@ -675,18 +676,22 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 link = parseLink(link);
             }
 
-            if (!layer || !layer.length || layer === "undefined") {
-                layer = undefined;
+            if (
+                !description ||
+                !description.length ||
+                description === "undefined"
+            ) {
+                description = undefined;
             }
             markers.push([
                 type,
                 Number(lat),
                 Number(long),
                 link,
-                layer,
+                null,
                 false,
                 null,
-                null,
+                description,
                 min,
                 max
             ]);

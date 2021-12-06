@@ -303,6 +303,7 @@ declare abstract class BaseMap /* <
     on(name: "marker-updated", callback: (marker: Marker) => void): EventRef;
     on(name: "marker-deleted", callback: (marker: Marker) => void): EventRef;
     on(name: "markers-updated", callback: () => void): EventRef;
+    on(name: "should-close-popup", callback: (source: Popup) => void): EventRef;
 }
 
 declare class RealMap extends BaseMap /* <L.TileLayer> */ {
