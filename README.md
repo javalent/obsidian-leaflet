@@ -73,6 +73,7 @@ darkMode: true
 | drawColor                               | Default color that new shapes will be drawn with                                                            | #3388ff                                    |
 | showAllMarkers                          | Map will open showing all markers.                                                                          | false                                      |
 | preserveAspect                          | If the note pane the map is in is resized, the map will resize itself to maintain its initial aspect ratio. | false                                      |
+| noUI                                    | No controls will be added to the map.                                                                       | false                                      |
 
 > \*: Requires the [DataView plugin](https://github.com/blacksmithgu/obsidian-dataview).
 
