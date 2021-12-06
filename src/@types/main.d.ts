@@ -70,6 +70,7 @@ export interface BlockParameters {
     isMapView?: boolean;
     isInitiativeView?: boolean;
     draw?: boolean;
+    preserveAspect?: boolean;
 }
 
 declare class ObsidianLeaflet extends Plugin {

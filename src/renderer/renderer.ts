@@ -74,6 +74,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
     options: LeafletMapOptions;
     file: TFile;
     view: MarkdownView | LeafletMapView;
+    preserveAspect: boolean;
+    aspect: number;
     constructor(
         public plugin: ObsidianLeaflet,
         private sourcePath: string,
@@ -146,11 +148,21 @@ export class LeafletRenderer extends MarkdownRenderChild {
             zoomMarkers: this.params.showAllMarkers
         };
 
+        this.preserveAspect = this.params.preserveAspect ?? false;
+
         this.containerEl.style.height = this.options.height;
         this.containerEl.style.width = "100%";
         this.containerEl.style.backgroundColor = "var(--background-secondary)";
 
         this.resize = new ResizeObserver(() => {
+            const bound = this.containerEl.getBoundingClientRect();
+            if (this.preserveAspect && bound.width > 0 && bound.height > 0) {
+                if (this.aspect == undefined) {
+                    this.aspect = bound.width / bound.height;
+                }
+                const height = bound.width / this.aspect;
+                this.map.contentEl.style.height = `${height}px`;
+            }
             if (this.map && this.map.rendered) {
                 this.map.leafletInstance.invalidateSize();
             }
