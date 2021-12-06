@@ -1,4 +1,13 @@
-# Version History
+# Changelog
+
+All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+### [4.3.6](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.3.5...4.3.6) (2021-12-06)
+
+
+### Bug Fixes
+
+* fixed issue where drag and drop was not linking note to marker ([f9261e3](https://github.com/valentine195/obsidian-leaflet-plugin/commit/f9261e388a2a0238fbf81532bcfec6cc4c9af1b6))
 
 ## 4.0.0
 Highlights:

@@ -1,12 +1,16 @@
 {
     "name": "obsidian-leaflet-plugin",
-    "version": "4.3.5",
+    "version": "4.3.6",
     "description": "Leaflet integration for Obsidian.md",
     "main": "main.js",
     "scripts": {
         "dev": "set NODE_OPTIONS=--openssl-legacy-provider && webpack --config webpack.dev.js -w",
         "build": "webpack",
-        "analyze": "webpack --profile --json > stats.json && webpack-bundle-analyzer ./stats.json"
+        "analyze": "webpack --profile --json > stats.json && webpack-bundle-analyzer ./stats.json",
+        "release": "standard-version"
+    },
+    "standard-version": {
+        "t": ""
     },
     "keywords": [],
     "author": "",
@@ -38,6 +42,7 @@
         "mini-css-extract-plugin": "^2.1.0",
         "obsidian": "^0.12.11",
         "papaparse": "^5.3.0",
+        "standard-version": "^9.3.2",
         "string-replace-loader": "^3.0.3",
         "ts-loader": "^9.2.3",
         "tslib": "^2.0.3",
