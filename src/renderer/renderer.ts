@@ -132,6 +132,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             layers: this.params.layers,
             maxZoom: +this.params.maxZoom,
             minZoom: +this.params.minZoom,
+            noUI: this.params.noUI ?? false,
             osmLayer: this.params.osmLayer,
             overlayTag: this.params.overlayTag,
             overlayColor: this.params.overlayColor,

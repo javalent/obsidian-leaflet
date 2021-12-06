@@ -1,6 +1,7 @@
-import { ItemView, MarkdownRenderChild, WorkspaceLeaf } from "obsidian";
+import { ItemView, MarkdownRenderChild, Menu, WorkspaceLeaf } from "obsidian";
 import { BaseMapType, ObsidianLeaflet } from "src/@types";
 import t from "src/l10n/locale";
+import { EditParametersModal } from "src/modals/mapview";
 import { LeafletRenderer } from "src/renderer/renderer";
 import { DEFAULT_BLOCK_PARAMETERS, VIEW_TYPE } from "src/utils";
 
@@ -66,5 +67,16 @@ export class LeafletMapView extends ItemView {
                 this.contentEl.firstElementChild.getBoundingClientRect().height
             }px`
         );
+    }
+    onMoreOptionsMenu(menu: Menu): void {
+        menu.addItem((item) => {
+            item.setIcon("pencil")
+                .setTitle("Edit Map Parameters")
+                .onClick(() => {
+                    const modal = new EditParametersModal(this.plugin);
+                    modal.onClose = () => {};
+                    modal.open();
+                });
+        });
     }
 }

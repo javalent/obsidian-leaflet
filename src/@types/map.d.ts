@@ -85,6 +85,8 @@ export interface LeafletMapOptions {
     maxZoom?: number;
     minZoom?: number;
 
+    noUI?: boolean;
+
     osmLayer?: boolean;
 
     overlayColor?: string;

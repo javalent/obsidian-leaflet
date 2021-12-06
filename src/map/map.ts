@@ -168,9 +168,12 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             minZoom: this.zoom.min,
             zoomDelta: this.zoom.delta,
             zoomSnap: this.zoom.delta,
+            zoomControl: !this.options.noUI,
             wheelPxPerZoomLevel: 60 * (1 / this.zoom.delta),
             worldCopyJump: this.type === "real",
-            ...(this.plugin.isDesktop ? { fullscreenControl: true } : {})
+            ...(this.plugin.isDesktop && !this.options.noUI
+                ? { fullscreenControl: true }
+                : {})
         });
         this.leafletInstance.createPane("base-layer");
         this.leafletInstance.createPane("geojson");
@@ -670,6 +673,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         }
     }
     buildControls() {
+        if (this.options.noUI) return;
         if (this.options.hasAdditional) {
             this.addLayerControl();
         }
