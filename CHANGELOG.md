@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.5.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.4.0...4.5.0) (2021-12-06)
+
+
+### Features
+
+* added noUI parameter ([452dbc2](https://github.com/valentine195/obsidian-leaflet-plugin/commit/452dbc2347a10d3af64137c1cda22f3fd989beb0))
+
 ## [4.4.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.3.7...4.4.0) (2021-12-06)
 
 
