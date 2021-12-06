@@ -54,7 +54,6 @@ import { LeafletMapView } from "./map/view";
 import { SRDMonster } from "../../obsidian-initiative-tracker/@types";
 import { Length } from "convert/dist/types/units";
 
-
 //add commands to app interface
 declare module "obsidian" {
     interface App {
@@ -395,12 +394,20 @@ export default class ObsidianLeaflet
         });
         this.registerDomEvent(map.contentEl, "drop", (evt) => {
             evt.stopPropagation();
-
-            let file = decodeURIComponent(
+            let link = decodeURIComponent(
                 evt.dataTransfer.getData("text/plain")
             )
                 .split("file=")
                 .pop();
+
+            const extension = /\.\w+$/.test(link) ? "" : ".md";
+
+            const file = this.app.vault.getAbstractFileByPath(
+                `${link}${extension}`
+            );
+
+            if (!(file instanceof TFile)) return;
+
             const latlng = map.leafletInstance.mouseEventToLatLng(evt);
             const loc: [number, number] = [latlng.lat, latlng.lng];
 
@@ -408,7 +415,8 @@ export default class ObsidianLeaflet
                 map.defaultIcon.type,
                 loc,
                 undefined,
-                file
+                undefined,
+                file.basename
             );
             marker.leafletInstance.closeTooltip();
         });
