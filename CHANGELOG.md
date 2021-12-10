@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [4.6.1](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.6.0...4.6.1) (2021-12-10)
+
+
+### Bug Fixes
+
+* bug with naming of new tileoverlays ([7398e5d](https://github.com/valentine195/obsidian-leaflet-plugin/commit/7398e5d594b17465e0136b855968da9957b8ce9b))
+
 ## [4.6.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.5.0...4.6.0) (2021-12-10)
 
 
