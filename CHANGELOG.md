@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [4.6.2](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.6.1...4.6.2) (2021-12-10)
+
+
+### Bug Fixes
+
+* index bug ([e11f663](https://github.com/valentine195/obsidian-leaflet-plugin/commit/e11f663b1eac24e2d499b84c64e3e3895b682238))
+
 ### [4.6.1](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.6.0...4.6.1) (2021-12-10)
 
 
