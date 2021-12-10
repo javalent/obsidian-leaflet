@@ -36,6 +36,7 @@ darkMode: true
 | [id](#map-ids)                          | Unique identifier (can be anything). **Required.**                                                          |                                            |
 | [image](#image-maps)                    | Direct URL/file path to an image file to be used as the map layer.                                          | OpenStreetMap map                          |
 | [tileServer](#real-world-maps)          | Add additional tile servers as different layers                                                             |                                            |
+| [tileOverlay](#real-world-maps)         | Add additional tile servers an overlay over the base map.                                                   |                                            |
 | [osmLayer](#real-world-maps)            | Turn off the OpenStreetMap layer (only usable if additional Tile Servers have been provided)                |                                            |
 | [lat](#initial-coordinates)             | Default latitude to display when rendering.                                                                 | 50% (image) / 39.983334 (open street map)  |
 | [long](#initial-coordinates)            | Default longitude to display when rendering.                                                                | 50% (image) / -82.983330 (open street map) |
@@ -154,6 +155,25 @@ Real world maps are created if the `image` parameter is not provided. These maps
 At this time, tile servers requiring API access are not usable.
 
 If additional tile servers are provided, the `OpenStreetMap` layer can be turned off using the `osmLayer: false` parameter.
+
+### Tile Servers and Tile Overlays
+
+As mentioned above, additional tile servers can be added using the `tileServer` and `tileOverlay` parameter. Both have the same syntax:
+
+`tileServer: <domain>|<alias (optional)>`
+
+For example:
+```md
+tileServer: https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png|Dark
+
+---
+
+tileServer:
+  - https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png|Dark
+  - https://tiles.wmflabs.org/hillshading/{z}/{x}/{y}.png|Hills
+```
+
+Tile servers specified in `tileServer` will be added as additional **layers** that can be fully switched to. Tile servers specified as `tileOverlay` will be added as overlays that will load on top of the base map.
 
 ## Image Maps
 
