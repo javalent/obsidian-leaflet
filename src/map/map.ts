@@ -686,6 +686,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             } else {
                 this.on("first-layer-ready", () => {
                     this.addLayerControl();
+                let index = 0;
                     for (const overlay of this.options.tileOverlay) {
                         index++;
                         const [server, name = `Layer ${index}`] =
