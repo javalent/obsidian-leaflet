@@ -95,6 +95,7 @@ export interface LeafletMapOptions {
     unit?: string;
 
     tileLayer?: string[];
+    tileOverlay?: string[];
 
     type?: "image" | "real";
     verbose?: boolean;

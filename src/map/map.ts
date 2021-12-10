@@ -647,6 +647,13 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
                     this.layerControl.addOverlay(image, overlay.alias);
                 }
+                let index = 0;
+                for (const overlay of this.options.tileOverlay) {
+                    index++;
+                    const [server, name = `Layer ${index}`] =
+                        overlay.split("|");
+                    this.layerControl.addOverlay(L.tileLayer(server), name);
+                }
             } else {
                 this.on("first-layer-ready", () => {
                     this.addLayerControl();
@@ -661,6 +668,29 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                         });
 
                         this.layerControl.addOverlay(image, overlay.alias);
+                    }
+                });
+            }
+        }
+        if (this.options.tileOverlay && this.options.tileOverlay.length) {
+            if (this.mapLayers.length) {
+                this.addLayerControl();
+                
+                let index = 0;
+                for (const overlay of this.options.tileOverlay) {
+                    index++;
+                    const [server, name = `Layer ${index}`] =
+                        overlay.split("|");
+                    this.layerControl.addOverlay(L.tileLayer(server), name);
+                }
+            } else {
+                this.on("first-layer-ready", () => {
+                    this.addLayerControl();
+                    for (const overlay of this.options.tileOverlay) {
+                        index++;
+                        const [server, name = `Layer ${index}`] =
+                            overlay.split("|");
+                        this.layerControl.addOverlay(L.tileLayer(server), name);
                     }
                 });
             }

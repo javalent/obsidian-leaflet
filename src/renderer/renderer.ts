@@ -141,6 +141,10 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 this.params.tileServer instanceof Array
                     ? this.params.tileServer
                     : [this.params.tileServer],
+            tileOverlay:
+                this.params.tileOverlay instanceof Array
+                    ? this.params.tileOverlay
+                    : [this.params.tileOverlay],
             type: this.params.image != "real" ? "image" : "real",
             unit: this.params.unit ?? this.plugin.defaultUnit,
             verbose: this.params.verbose,
