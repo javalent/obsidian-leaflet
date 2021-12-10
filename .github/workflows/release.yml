@@ -29,6 +29,9 @@ jobs:
                   zip -r ${{ env.PLUGIN_NAME }}.zip ${{ env.PLUGIN_NAME }}
                   ls
                   echo "::set-output name=tag_name::$(git tag --sort version:refname | tail -n 1)"
+                  git config user.name "Jeremy Valentine"
+                  git config user.email valentine.195@gmail.com
+                  npx rexreplace "^.*?#+\s\[.*?\n.*?(?=\s*#+\s\[)" "_" -s -M -G -m -o "CHANGELOG.md" > CHANGELOG-LATEST.md
             - name: Create Release
               id: create_release
               uses: actions/create-release@v1
@@ -38,7 +41,7 @@ jobs:
               with:
                   tag_name: ${{ github.ref }}
                   release_name: ${{ github.ref }}
-                  body_path: CHANGELOG.md
+                  body_path: CHANGELOG-LATEST.md
                   draft: false
                   prerelease: false
             - name: Upload zip file
