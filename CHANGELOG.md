@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.6.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.5.0...4.6.0) (2021-12-10)
+
+
+### Features
+
+* added `tileOverlay` map option to specify tile servers as map overlays ([eec6368](https://github.com/valentine195/obsidian-leaflet-plugin/commit/eec636861baaf1add50182d301ef033ec2ddf865))
+
 ## [4.5.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.4.0...4.5.0) (2021-12-06)
 
 
