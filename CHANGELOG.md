@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.7.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.6.2...4.7.0) (2021-12-10)
+
+
+### Features
+
+* testing changelog for claire ([a7d6464](https://github.com/valentine195/obsidian-leaflet-plugin/commit/a7d64644c54714ab386bc0f489f779a95e826148))
+
 ### [4.6.2](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.6.1...4.6.2) (2021-12-10)
 
 
