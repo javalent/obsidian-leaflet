@@ -1,7 +1,6 @@
 /* import "leaflet"; */
 import "../node_modules/leaflet/dist/leaflet.css";
 import "./assets/main.css";
-import type InitiativeTracker from "../../obsidian-initiative-tracker/src/main";
 import { Creature } from "../../obsidian-initiative-tracker/src/utils/creature";
 
 import {
@@ -51,12 +50,18 @@ import { InitiativeMapView } from "./initiative/initiative";
 import t from "./l10n/locale";
 import { CreateMarkerModal } from "./modals";
 import { LeafletMapView } from "./map/view";
-import { SRDMonster } from "../../obsidian-initiative-tracker/@types";
 import { Length } from "convert/dist/types/units";
 
 //add commands to app interface
+
+import type { Plugins } from "../../obsidian-overload/index";
+
 declare module "obsidian" {
     interface App {
+        plugins: {
+            getPlugin<T extends keyof Plugins>(plugin: T): Plugins[T];
+        };
+
         commands: {
             listCommands(): Command[];
             executeCommandById(id: string): void;
@@ -66,18 +71,6 @@ declare module "obsidian" {
         keymap: {
             pushScope(scope: Scope): void;
             popScope(scope: Scope): void;
-        };
-        plugins: {
-            plugins: {
-                "obsidian-5e-statblocks": {
-                    data: Map<string, SRDMonster>;
-                };
-                "obsidian-dice-roller": {
-                    parseDice(text: string): Promise<{ result: number }>;
-                };
-                "obsidian-leaflet-plugin": ObsidianLeaflet;
-                "initiative-tracker": InitiativeTracker;
-            };
         };
     }
     interface MarkdownPostProcessorContext {
@@ -155,7 +148,7 @@ export default class ObsidianLeaflet
             });
         }
 
-        if (this.app.plugins.plugins["initiative-tracker"]) {
+        if (this.app.plugins.getPlugin("initiative-tracker")) {
             this.registerView(
                 "INITIATIVE_TRACKER_MAP_VIEW",
                 (leaf: WorkspaceLeaf) => {

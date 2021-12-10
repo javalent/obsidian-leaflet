@@ -35,6 +35,7 @@
         "css-loader": "^5.2.7",
         "ignore-loader": "^0.1.2",
         "imports-loader": "^3.0.0",
+        "javalent-obsidian-overload": "^1.0.0",
         "leaflet": "^1.7.1",
         "leaflet-fullscreen": "^1.0.2",
         "leaflet-hotline": "^0.4.0",
