@@ -113,6 +113,14 @@ export class LeafletRenderer extends MarkdownRenderChild {
         if (file instanceof TFile) {
             this.file = file;
         }
+        let tileLayer: string[] = [];
+        if (this.params.tileServer && this.params.tileServer.length) {
+            tileLayer = [this.params.tileServer].flat();
+        }
+        let tileOverlay: string[] = [];
+        if (this.params.tileOverlay && this.params.tileOverlay.length) {
+            tileOverlay = [this.params.tileOverlay].flat();
+        }
         this.options = {
             bounds: this.params.bounds,
             context: this.sourcePath,
@@ -137,14 +145,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
             overlayTag: this.params.overlayTag,
             overlayColor: this.params.overlayColor,
             scale: this.params.scale,
-            tileLayer:
-                this.params.tileServer instanceof Array
-                    ? this.params.tileServer
-                    : [this.params.tileServer],
-            tileOverlay:
-                this.params.tileOverlay instanceof Array
-                    ? this.params.tileOverlay
-                    : [this.params.tileOverlay],
+            tileLayer,
+            tileOverlay,
             type: this.params.image != "real" ? "image" : "real",
             unit: this.params.unit ?? this.plugin.defaultUnit,
             verbose: this.params.verbose,
