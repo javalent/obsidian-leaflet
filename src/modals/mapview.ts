@@ -15,7 +15,6 @@ export class EditParametersModal extends Modal {
     }
 
     onOpen() {
-        console.log("Open");
         this.containerEl.addClass("leaflet-edit-parameters");
         const text = new TextAreaComponent(this.contentEl);
         text.setValue(

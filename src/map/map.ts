@@ -665,20 +665,12 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 });
             }
         }
-        console.log(
-            "🚀 ~ file: map.ts ~ line 669 ~ this.options.tileOverlay",
-            this.options.tileOverlay
-        );
         if (this.options.tileOverlay && this.options.tileOverlay.length) {
             if (this.mapLayers.length) {
                 this.addLayerControl();
 
                 let index = 0;
                 for (const overlay of this.options.tileOverlay) {
-                    console.log(
-                        "🚀 ~ file: map.ts ~ line 674 ~ overlay",
-                        overlay
-                    );
                     index++;
                     const [server, name = `Layer ${index}`] =
                         overlay.split("|");
