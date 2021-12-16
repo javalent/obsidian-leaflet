@@ -72,6 +72,7 @@ declare module "obsidian" {
             pushScope(scope: Scope): void;
             popScope(scope: Scope): void;
         };
+        scope: any;
     }
     interface MarkdownPostProcessorContext {
         containerEl: HTMLElement;

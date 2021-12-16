@@ -118,7 +118,8 @@ export abstract class SuggestionModal<T> extends FuzzySuggestModal<T> {
     items: T[] = [];
     suggestions: HTMLDivElement[];
     popper: PopperInstance;
-    scope: Scope = new Scope();
+    //@ts-ignore
+    scope: Scope = new Scope(this.app.scope);
     suggester: Suggester<FuzzyMatch<T>>;
     suggestEl: HTMLDivElement;
     promptEl: HTMLDivElement;

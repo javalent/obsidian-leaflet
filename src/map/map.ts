@@ -147,8 +147,8 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.contentEl.addEventListener("touchmove", (evt) => {
             evt.stopPropagation();
         });
-
-        this.escapeScope = new Scope();
+        //@ts-ignore
+        this.escapeScope = new Scope(this.plugin.app.scope);
         this.escapeScope.register(undefined, "Escape", () =>
             this.escapeScopeCallback()
         );
