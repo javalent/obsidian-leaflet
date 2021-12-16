@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.8.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.7.4...4.8.0) (2021-12-16)
+
+
+### Features
+
+* added `width` parameter (close [#262](https://github.com/valentine195/obsidian-leaflet-plugin/issues/262)) ([d2d2a22](https://github.com/valentine195/obsidian-leaflet-plugin/commit/d2d2a2252c0e06893b99e7c377bc4f6648b7d829))
+
+
+### Bug Fixes
+
+* removed console logs ([34feb92](https://github.com/valentine195/obsidian-leaflet-plugin/commit/34feb92e040a1d2a2e3896f2dddec6fa7c59985e))
+* scopes now properly inherit global scopes ([0b3b681](https://github.com/valentine195/obsidian-leaflet-plugin/commit/0b3b681f26e84baf7017d68ae492ac6b172f996f))
+
 ### [4.7.4](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.7.3...4.7.4) (2021-12-11)
 
 
