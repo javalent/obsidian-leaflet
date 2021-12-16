@@ -158,7 +158,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
         this.preserveAspect = this.params.preserveAspect ?? false;
 
         this.containerEl.style.height = this.options.height;
-        this.containerEl.style.width = "100%";
+        this.containerEl.style.width = this.params.width ?? "100%";
         this.containerEl.style.backgroundColor = "var(--background-secondary)";
 
         this.resize = new ResizeObserver(() => {

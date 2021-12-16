@@ -131,6 +131,10 @@ input.is-invalid {
     color: #dc3545;
 }
 
+.block-language-leaflet {
+    margin: 0 auto;
+}
+
 .block-language-leaflet > .leaflet-container {
     z-index: 0;
     background-color: var(--background-secondary-alt);

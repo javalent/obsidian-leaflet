@@ -69,6 +69,7 @@ export interface LeafletMapOptions {
 
     hasAdditional?: boolean;
     height?: string;
+    width?: string;
     id?: string;
     imageOverlays?: {
         alias: string;

@@ -141,7 +141,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         super();
 
         this.contentEl.style.height = options.height;
-        this.contentEl.style.width = "100%";
+        this.contentEl.style.width = options.width ?? "100%";
         this.options = Object.assign({}, DEFAULT_MAP_OPTIONS, options);
         /** Stop Touchmove Propagation for Mobile */
         this.contentEl.addEventListener("touchmove", (evt) => {

@@ -40,7 +40,8 @@ darkMode: true
 | [osmLayer](#real-world-maps)            | Turn off the OpenStreetMap layer (only usable if additional Tile Servers have been provided)                |                                            |
 | [lat](#initial-coordinates)             | Default latitude to display when rendering.                                                                 | 50% (image) / 39.983334 (open street map)  |
 | [long](#initial-coordinates)            | Default longitude to display when rendering.                                                                | 50% (image) / -82.983330 (open street map) |
-| height                                  | Height of the map element. Can be provided in pixels or percentage of window height.                        | 500px                                      |
+| height                                  | Height of the map element. Can be provided in pixels or percentage of note height.                          | 500px                                      |
+| width                                   | Width of the map element. Can be provided in pixels or percentage of note width.                            | 100%                                       |
 | [minZoom](#initial-zoom-level)          | Minimum allowable zoom level of the map.                                                                    | 1                                          |
 | [maxZoom](#initial-zoom-level)          | Maximum allowable zoom level of the map.                                                                    | 10                                         |
 | [defaultZoom](#initial-zoom-level)      | Map will load zoomed to this level.                                                                         | 5                                          |
@@ -163,14 +164,16 @@ As mentioned above, additional tile servers can be added using the `tileServer` 
 `tileServer: <domain>|<alias (optional)>`
 
 For example:
+
 ```md
 tileServer: https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png|Dark
 
 ---
 
 tileServer:
-  - https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png|Dark
-  - https://tiles.wmflabs.org/hillshading/{z}/{x}/{y}.png|Hills
+
+-   https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png|Dark
+-   https://tiles.wmflabs.org/hillshading/{z}/{x}/{y}.png|Hills
 ```
 
 Tile servers specified in `tileServer` will be added as additional **layers** that can be fully switched to. Tile servers specified as `tileOverlay` will be added as overlays that will load on top of the base map.
