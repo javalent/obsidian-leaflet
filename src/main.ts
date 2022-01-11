@@ -81,6 +81,11 @@ declare module "obsidian" {
     interface MenuItem {
         dom: HTMLDivElement;
     }
+    interface Vault {
+        config: {
+            theme: "moonstone" | "obsidian";
+        };
+    }
 }
 
 export default class ObsidianLeaflet

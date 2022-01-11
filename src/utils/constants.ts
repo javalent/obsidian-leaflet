@@ -91,7 +91,9 @@ export const DEFAULT_SETTINGS: ObsidianAppData = {
     mapViewEnabled: true,
     mapViewParameters: {},
     enableDraw: true,
-    defaultUnitType: "imperial"
+    defaultUnitType: "imperial",
+    defaultTile: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    defaultTileDark: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
 };
 export const BASE_POPUP_OPTIONS = {
     className: "leaflet-marker-link-popup",
