@@ -51,4 +51,6 @@ export interface ObsidianAppData {
     mapViewEnabled: boolean;
     enableDraw: boolean;
     defaultUnitType: "metric" | "imperial";
+    defaultTile: string;
+    defaultTileDark: string;
 }

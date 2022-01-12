@@ -1392,10 +1392,19 @@ export class RealMap extends BaseMap {
 
         this.log("Building initial map layer.");
 
+        const tileServer =
+            this.plugin.app.vault.config.theme == "moonstone"
+                ? this.plugin.data.defaultTile
+                : this.plugin.data.defaultTileDark;
+
         let osmLayer = {
             id: "real",
-            data: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            alias: "OpenStreetMap"
+            data: tileServer,
+            alias:
+                tileServer ==
+                "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    ? "OpenStreetMap"
+                    : "Tile Server"
         };
 
         const layers: {

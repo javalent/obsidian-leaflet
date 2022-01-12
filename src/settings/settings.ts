@@ -50,11 +50,11 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
 
         containerEl.createEl("h2", { text: t("Obsidian Leaflet Settings") });
 
-        this.createCSVSetting(containerEl);
+        this.createCSVSetting(containerEl.createDiv());
 
-        this.createMarkerSettings(containerEl);
+        this.createMarkerSettings(containerEl.createDiv());
 
-        this.createMapSettings(containerEl);
+        this.createMapSettings(containerEl.createDiv());
 
         let defaultMarker = containerEl.createDiv(
             "additional-markers-container"
@@ -351,6 +351,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
         });
     }
     createMapSettings(containerEl: HTMLElement) {
+        containerEl.empty();
         new Setting(containerEl)
             .setName(t("Default Latitude"))
             .setDesc(
@@ -412,6 +413,49 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                         await this.plugin.saveSettings();
                     });
             });
+        new Setting(containerEl)
+            .setName("Default Tile Server")
+            .setDesc("Change the default tile server used by the map.")
+            .addText((t) => {
+                t.setValue(this.plugin.data.defaultTile).onChange((v) => {
+                    this.plugin.data.defaultTile = v;
+                    this.plugin.saveSettings();
+                });
+            })
+            .addExtraButton((b) =>
+                b
+                    .setIcon("reset")
+                    .setTooltip("Reset")
+                    .onClick(() => {
+                        this.plugin.data.defaultTile =
+                            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+                        
+                        this.createMapSettings(containerEl);
+                        this.plugin.saveSettings();
+                    })
+            );
+        new Setting(containerEl)
+            .setName("Default Tile Server (Dark Mode)")
+            .setDesc(
+                "Change the default tile server used by the map when in dark mode."
+            )
+            .addText((t) => {
+                t.setValue(this.plugin.data.defaultTileDark).onChange((v) => {
+                    this.plugin.data.defaultTileDark = v;
+                    this.plugin.saveSettings();
+                });
+            })
+            .addExtraButton((b) =>
+                b
+                    .setIcon("reset")
+                    .setTooltip("Reset")
+                    .onClick(() => {
+                        this.plugin.data.defaultTileDark =
+                            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+                        this.createMapSettings(containerEl);
+                        this.plugin.saveSettings();
+                    })
+            );
     }
     createMarkerSettings(containerEl: HTMLElement) {
         const configSetting = new Setting(containerEl)

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.9.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.8.0...4.9.0) (2022-01-11)
+
+
+### Features
+
+* add settings to change default tile servers ([043e248](https://github.com/valentine195/obsidian-leaflet-plugin/commit/043e248c7d17bd17374527b5a5838c41fd6f12dc))
+
 ## [4.8.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.7.4...4.8.0) (2021-12-16)
 
 
