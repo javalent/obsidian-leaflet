@@ -8,7 +8,7 @@ const L = window[LeafletSymbol];
 export interface FontAwesomeControlOptions extends L.ControlOptions {
     icon: IconName;
     cls: string;
-    tooltip: string;
+    tooltip?: string;
 }
 export abstract class FontAwesomeControl extends L.Control {
     icon: IconName;
@@ -36,9 +36,11 @@ export abstract class FontAwesomeControl extends L.Control {
         this.iconEl.appendChild(
             icon({ prefix: "fas", iconName: this.icon }).node[0]
         );
-        this.controlEl.children[0].setAttrs({
-            "aria-label": this.tooltip
-        });
+        if (this.tooltip) {
+            this.controlEl.children[0].setAttrs({
+                "aria-label": this.tooltip
+            });
+        }
         L.DomEvent.on(this.controlEl, "click", (evt: MouseEvent) =>
             this.onClick(evt)
         );
