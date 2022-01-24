@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.11.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.10.0...4.11.0) (2022-01-24)
+
+
+### Features
+
+* much improved image loading ([08c80ed](https://github.com/valentine195/obsidian-leaflet-plugin/commit/08c80ed73b44ab870d0ae5d4b7947b4690400bec))
+
+## [4.10.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.9.0...4.10.0) (2022-01-23)
+
+
+### Features
+
+* now show current zoom level on Reset Zoom control ([e53ace5](https://github.com/valentine195/obsidian-leaflet-plugin/commit/e53ace5a4b83765f45b5b86e091a1ff07c6ce29a))
+
+
+### Bug Fixes
+
+* Update release notes message ([8d8ec5c](https://github.com/valentine195/obsidian-leaflet-plugin/commit/8d8ec5cdf48fbb4de26eb53c77b7c932ee7ea81f))
+
 ## [4.9.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.8.0...4.9.0) (2022-01-11)
 
 
