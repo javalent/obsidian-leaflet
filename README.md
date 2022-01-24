@@ -180,6 +180,14 @@ Tile servers specified in `tileServer` will be added as additional **layers** th
 
 ## Image Maps
 
+> **:warning: Making an Image Map?**
+> 
+> For images maps, it is **highly** recommended that you set your [bounds](#bounds) first.
+> 
+> This will make working with your images much easier!
+> 
+> Josh Plunkett has made a great video breaking down the process [here](https://www.youtube.com/watch?v=54EyMzJP5DU).
+
 ### Image Map URL / file path
 
 Image maps can be loaded one of three ways:
