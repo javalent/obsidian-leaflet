@@ -143,11 +143,11 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.contentEl.style.height = options.height;
         this.contentEl.style.width = options.width ?? "100%";
         this.options = Object.assign({}, DEFAULT_MAP_OPTIONS, options);
+        
         /** Stop Touchmove Propagation for Mobile */
         this.contentEl.addEventListener("touchmove", (evt) => {
             evt.stopPropagation();
         });
-        //@ts-ignore
         this.escapeScope = new Scope(this.plugin.app.scope);
         this.escapeScope.register(undefined, "Escape", () =>
             this.escapeScopeCallback()
@@ -203,17 +203,6 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) =>
             this.handleMapClick(evt)
         );
-
-        this.leafletInstance.on("zoomanim", (evt: L.ZoomAnimEvent) => {
-            //check markers
-            this.markers.forEach((marker) => {
-                if (marker.shouldShow(evt.zoom)) {
-                    this.leafletInstance.once("zoomend", () => marker.show());
-                } else if (marker.shouldHide(evt.zoom)) {
-                    marker.hide();
-                }
-            });
-        });
 
         this.on("first-layer-ready", () => {
             this.addFeatures();

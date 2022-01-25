@@ -392,6 +392,14 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                 this.leafletInstance.closeTooltip();
                 this.isBeingHovered = false;
             });
+        this.map.leafletInstance.on("zoomanim", (evt: L.ZoomAnimEvent) => {
+            //check markers
+            if (this.shouldShow(evt.zoom)) {
+                this.map.leafletInstance.once("zoomend", () => this.show());
+            } else if (this.shouldHide(evt.zoom)) {
+                this.hide();
+            }
+        });
     }
     get link() {
         return this.target && this.target.text;
