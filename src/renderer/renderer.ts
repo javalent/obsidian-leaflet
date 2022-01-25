@@ -105,7 +105,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 hasAdditional ||
                 [
                     this.params.osmLayer,
-                    ...[this.params.tileServer].flat()
+                    ...[this.params.tileServer].flat(),
+                    ...[this.params.tileOverlay].flat()
                 ].filter((v) => v).length > 1;
         }
 
