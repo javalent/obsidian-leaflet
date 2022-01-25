@@ -158,7 +158,7 @@ At this time, tile servers requiring API access are not usable.
 
 If additional tile servers are provided, the `OpenStreetMap` layer can be turned off using the `osmLayer: false` parameter.
 
-### Tile Servers and Tile Overlays
+### Tile Servers
 
 As mentioned above, additional tile servers can be added using the `tileServer` and `tileOverlay` parameter. Both have the same syntax:
 
@@ -177,7 +177,17 @@ tileServer:
 -   https://tiles.wmflabs.org/hillshading/{z}/{x}/{y}.png|Hills
 ```
 
-Tile servers specified in `tileServer` will be added as additional **layers** that can be fully switched to. Tile servers specified as `tileOverlay` will be added as overlays that will load on top of the base map.
+Tile servers specified in `tileServer` will be added as additional **layers** that can be fully switched to. 
+
+### Tile Overlays
+
+Tile servers specified as `tileOverlay` instead as `tileServer` will be added as overlays that will load on top of the base map.
+
+Tile overlays can be set to default on by appending `|on` to the end:
+
+```md
+tileServer: https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png|Dark|on
+```
 
 ## Image Maps
 

@@ -74,6 +74,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     drawingLayer: any;
     readyForDrawings: boolean = false;
     filterControl: FilterMarkers;
+    tileOverlayLayer: L.FeatureGroup<L.TileLayer>;
     abstract get bounds(): L.LatLngBounds;
 
     canvas: L.Canvas;
@@ -239,6 +240,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             });
             this.featureLayer.addTo(this.currentGroup.group);
             this.currentGroup.group.addTo(this.leafletInstance);
+            this.tileOverlayLayer.addTo(this.leafletInstance);
 
             if (this.options.zoomMarkers) {
                 this.log(`Zooming to markers.`);
@@ -527,9 +529,19 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.layerControl.addTo(this.leafletInstance);
         this.filterControl?.addTo(this.leafletInstance);
     }
+    onFirstLayerReady(callback: (...args: any[]) => any) {
+        if (this.mapLayers.length) {
+            callback();
+        } else {
+            this.on("first-layer-ready", () => {
+                callback();
+            });
+        }
+    }
     addFeatures() {
         /** Add GeoJSON to map */
         this.featureLayer = L.featureGroup();
+        this.tileOverlayLayer = L.featureGroup();
         let added: number;
         if (this.geojsonData.length > 0) {
             this.addLayerControl();
@@ -623,7 +635,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
         /** Add Image Overlays to Map */
         if (this.imageOverlayData && this.imageOverlayData.length) {
-            if (this.mapLayers.length) {
+            this.onFirstLayerReady(() => {
                 this.addLayerControl();
                 this.leafletInstance.createPane("image-overlay");
                 for (let overlay of this.imageOverlayData) {
@@ -637,47 +649,26 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
                     this.layerControl.addOverlay(image, overlay.alias);
                 }
-            } else {
-                this.on("first-layer-ready", () => {
-                    this.addLayerControl();
-                    this.leafletInstance.createPane("image-overlay");
-                    for (let overlay of this.imageOverlayData) {
-                        let bounds = overlay.bounds.length
-                            ? overlay.bounds
-                            : this.bounds;
-
-                        const image = L.imageOverlay(overlay.data, bounds, {
-                            pane: "image-overlay"
-                        });
-
-                        this.layerControl.addOverlay(image, overlay.alias);
-                    }
-                });
-            }
+            });
         }
         if (this.options.tileOverlay && this.options.tileOverlay.length) {
-            if (this.mapLayers.length) {
+            this.onFirstLayerReady(() => {
                 this.addLayerControl();
-
                 let index = 0;
                 for (const overlay of this.options.tileOverlay) {
                     index++;
-                    const [server, name = `Layer ${index}`] =
+                    const [server, name = `Layer ${index}`, on] =
                         overlay.split("|");
-                    this.layerControl.addOverlay(L.tileLayer(server), name);
-                }
-            } else {
-                this.on("first-layer-ready", () => {
-                    this.addLayerControl();
-                    let index = 0;
-                    for (const overlay of this.options.tileOverlay) {
-                        index++;
-                        const [server, name = `Layer ${index}`] =
-                            overlay.split("|");
-                        this.layerControl.addOverlay(L.tileLayer(server), name);
+                    const layer = L.tileLayer(server);
+                    if (on && on == "on") {
+                        layer.addTo(this.tileOverlayLayer);
                     }
-                });
-            }
+                    this.layerControl.addOverlay(
+                        layer,
+                        name && name.length ? name : `Layer ${index}`
+                    );
+                }
+            });
         }
     }
 
