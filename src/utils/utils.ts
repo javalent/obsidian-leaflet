@@ -437,42 +437,4 @@ export function catchErrorAsync(
     }
 }
 
-export function buildTooltip(
-    title: string,
-    { icon, description }: { icon?: boolean; description?: string }
-) {
-    let display: HTMLDivElement = createDiv({
-        attr: { style: "text-align: left;" }
-    });
-    const titleEl = display.createDiv({
-        attr: {
-            style: "display: flex; justify-content: space-between;"
-        }
-    });
-    const labelEl = titleEl.createEl("label", {
-        text: title,
-        attr: {
-            style: "text-align: left;"
-        }
-    });
-    if (icon) {
-        setIcon(
-            titleEl.createDiv({
-                attr: {
-                    style: "margin-left: 0.5rem;"
-                }
-            }),
-            DESCRIPTION_ICON
-        );
-    }
-    if (description) {
-        labelEl.setAttr("style", "font-weight: bolder; text-align: left;");
-        display.createEl("p", {
-            attr: {
-                style: "margin: 0.25rem 0; text-align: left;"
-            },
-            text: description
-        });
-    }
-    return display;
-}
+

@@ -1,11 +1,10 @@
-import type { DivIconMarker, BaseMapType } from "src/@types";
+import type { BaseMapType } from "src/@types";
 import type geojson from "geojson";
 
 import { Marker } from "./marker";
 
 import {
-    buildTooltip,
-    getId,
+    DESCRIPTION_ICON,
     MAP_OVERLAY_STROKE_OPACITY,
     MAP_OVERLAY_STROKE_WIDTH,
     MODIFIER_KEY
@@ -14,6 +13,8 @@ import { LeafletSymbol } from "src/utils/leaflet-import";
 import { Layer } from "./layer";
 import { formatLatLng } from "src/utils";
 import { popup } from "src/map/popup";
+import { LeafletMouseEvent } from "leaflet";
+import { setIcon } from "obsidian";
 let L = window[LeafletSymbol];
 
 export class GeoJSON extends Layer<L.GeoJSON> {
@@ -32,7 +33,8 @@ export class GeoJSON extends Layer<L.GeoJSON> {
             color: string;
             pane?: string;
         },
-        data: geojson.GeoJsonObject
+        data: geojson.GeoJsonObject,
+        public note?: string
     ) {
         super();
         this.leafletInstance = L.geoJSON(data, {
@@ -72,6 +74,16 @@ export class GeoJSON extends Layer<L.GeoJSON> {
                 this.features.push(geo);
             }
         });
+
+        if (note) {
+            this.leafletInstance.on("click", async (evt: LeafletMouseEvent) => {
+                await this.map.plugin.app.workspace.openLinkText(
+                    this.note.replace("^", "#^").split(/\|/).shift(),
+                    this.map.plugin.app.workspace.getActiveFile()?.path ?? "",
+                    true
+                );
+            });
+        }
     }
     get display() {
         if (!this._display) {
@@ -87,6 +99,55 @@ export class GeoJSON extends Layer<L.GeoJSON> {
         return marker.leafletInstance;
     }
     toProperties() {}
+    buildTooltip(
+        title: string,
+        { icon, description }: { icon?: boolean; description?: string }
+    ) {
+        let display: HTMLDivElement = createDiv({
+            attr: { style: "text-align: left;" }
+        });
+        const titleEl = display.createDiv({
+            attr: {
+                style: "display: flex; justify-content: space-between;"
+            }
+        });
+        const labelEl = titleEl.createEl("label", {
+            text: title,
+            attr: {
+                style: "text-align: left;"
+            }
+        });
+        if (icon) {
+            setIcon(
+                titleEl.createDiv({
+                    attr: {
+                        style: "margin-left: 0.5rem;"
+                    }
+                }),
+                DESCRIPTION_ICON
+            );
+        }
+        if (this.note && this.note.length) {
+            setIcon(
+                titleEl.createDiv({
+                    attr: {
+                        style: "margin-left: 0.5rem;"
+                    }
+                }),
+                "note-glyph"
+            );
+        }
+        if (description) {
+            labelEl.setAttr("style", "font-weight: bolder; text-align: left;");
+            display.createEl("p", {
+                attr: {
+                    style: "margin: 0.25rem 0; text-align: left;"
+                },
+                text: description
+            });
+        }
+        return display;
+    }
 }
 
 class GeoJSONMarker {
@@ -112,13 +173,19 @@ class GeoJSONMarker {
         this.title =
             feature?.properties.title ?? feature?.properties.name ?? null;
         this.description = feature?.properties.description ?? null;
-        if (this.title) {
-            this.iconDisplay = buildTooltip(this.title, {
-                icon: this.description != null
-            });
-            this.descriptionDisplay = buildTooltip(this.title, {
-                description: this.description
-            });
+        if (this.title || this.parent.note) {
+            this.iconDisplay = this.parent.buildTooltip(
+                this.title ?? this.parent.note,
+                {
+                    icon: this.description != null
+                }
+            );
+            this.descriptionDisplay = this.parent.buildTooltip(
+                this.title ?? this.parent.note,
+                {
+                    description: this.description
+                }
+            );
         }
 
         this.leafletInstance = L.marker(latlng, {
@@ -174,10 +241,10 @@ class GeoJSONFeature {
             feature.properties.title ?? feature.properties.name ?? null;
         this.description = feature.properties.description ?? null;
         if (this.title) {
-            this.iconDisplay = buildTooltip(this.title, {
+            this.iconDisplay = this.parent.buildTooltip(this.title, {
                 icon: this.description != null
             });
-            this.descriptionDisplay = buildTooltip(this.title, {
+            this.descriptionDisplay = this.parent.buildTooltip(this.title, {
                 description: this.description
             });
         }

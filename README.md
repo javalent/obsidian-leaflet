@@ -177,7 +177,7 @@ tileServer:
 -   https://tiles.wmflabs.org/hillshading/{z}/{x}/{y}.png|Hills
 ```
 
-Tile servers specified in `tileServer` will be added as additional **layers** that can be fully switched to. 
+Tile servers specified in `tileServer` will be added as additional **layers** that can be fully switched to.
 
 ### Tile Overlays
 
@@ -437,13 +437,19 @@ or
 ```leaflet
 geojson:
   - [[GeoJSON_File.json]]
-  - [[GeoJSON_File_2.json]]|optional-alias
+  - [[GeoJSON_File_2.json]]|optional-alias|[[optional-note-wikilink]]
 ```
 ````
 
 _Please note that GeoJSON is drawn in the order it is provided. If a smaller file overlaps a larger file, you may not be able to interact with it._
 
 Especially large or a large number of GeoJSON files could slow down initial rendering.
+
+### Linking to Notes
+
+A GeoJSON file can link to a note by appending `|[[]]` to the end.
+
+**Please note that the alias is required when linking to a note.**
 
 ### Styles and Color
 

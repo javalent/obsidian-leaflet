@@ -86,7 +86,11 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
     private escapeScope: Scope;
 
-    geojsonData: { data: geojson.GeoJsonObject; alias?: string }[] = [];
+    geojsonData: {
+        data: geojson.GeoJsonObject;
+        alias?: string;
+        note?: string;
+    }[] = [];
     gpxControl: ReturnType<typeof gpxControl>;
     gpxData: { data: string; alias?: string }[] = [];
     gpxIcons: {
@@ -553,19 +557,20 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
             added = 0;
 
-            this.geojsonData.forEach(({ data, alias }) => {
+            this.geojsonData.forEach(({ data, alias, note }) => {
                 try {
                     const geo = new GeoJSON(
                         this as BaseMapType,
                         this.featureLayer,
                         { color: this.options.geojsonColor },
-                        data
+                        data,
+                        note
                     );
 
                     geo.leafletInstance.addTo(this.geojsonLayer);
                     this.layerControl.addOverlay(
                         geo.leafletInstance,
-                        alias ?? `GeoJSON ${added + 1}`
+                        alias && alias.length ? alias : `GeoJSON ${added + 1}`
                     );
 
                     added++;
