@@ -417,7 +417,7 @@ GeoJSON can be loaded into the map using the following syntax:
 
 ````
 ```leaflet
-geojson: [[GeoJSON_File.json]]
+geojson: [[GeoJSON_File.json]]|optional-alias
 ```
 ````
 
@@ -427,7 +427,7 @@ or
 ```leaflet
 geojson:
   - [[GeoJSON_File.json]]
-  - [[GeoJSON_File_2.json]]
+  - [[GeoJSON_File_2.json]]|optional-alias
 ```
 ````
 
