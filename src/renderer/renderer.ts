@@ -437,9 +437,10 @@ export class LeafletRenderer extends MarkdownRenderChild {
                     ?.flat(Infinity)
                     .filter((g) => g)
                     .map((g) => {
-                        const [path, alias, note] = g
+                        let [path, alias = path, note] = g
                             .replace(/(\[|\])/g, "")
                             .split("|");
+                        if (!alias?.length) alias = path;
                         return { path, alias, note };
                     })
             );
@@ -511,7 +512,10 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 ?.flat(Infinity)
                 .filter((g) => g)
                 .map((g) => {
-                    const [path, alias] = g.replace(/(\[|\])/g, "").split("|");
+                    let [path, alias = path] = g
+                        .replace(/(\[|\])/g, "")
+                        .split("|");
+                    if (!alias?.length) alias = path;
                     return { path, alias };
                 })
         );
