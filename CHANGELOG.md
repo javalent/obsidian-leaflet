@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [4.12.1](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.12.0...4.12.1) (2022-01-25)
+
+
+### Bug Fixes
+
+* geojson and gpx now default to the file name [#263](https://github.com/valentine195/obsidian-leaflet-plugin/issues/263) ([4e9b72b](https://github.com/valentine195/obsidian-leaflet-plugin/commit/4e9b72b04ca25f4504f19c742f6dbb9b3fbb87cc))
+
 ## [4.12.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.11.0...4.12.0) (2022-01-25)
 
 
