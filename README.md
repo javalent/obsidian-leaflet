@@ -76,6 +76,7 @@ darkMode: true
 | showAllMarkers                          | Map will open showing all markers.                                                                          | false                                      |
 | preserveAspect                          | If the note pane the map is in is resized, the map will resize itself to maintain its initial aspect ratio. | false                                      |
 | noUI                                    | No controls will be added to the map.                                                                       | false                                      |
+| lock                                    | Control whether the map will start locked or unlocked                                                       | false                                      |
 
 > \*: Requires the [DataView plugin](https://github.com/blacksmithgu/obsidian-dataview).
 
@@ -181,11 +182,11 @@ Tile servers specified in `tileServer` will be added as additional **layers** th
 ## Image Maps
 
 > **:warning: Making an Image Map?**
-> 
+>
 > For images maps, it is **highly** recommended that you set your [bounds](#bounds) first.
-> 
+>
 > This will make working with your images much easier!
-> 
+>
 > Josh Plunkett has made a great video breaking down the process [here](https://www.youtube.com/watch?v=54EyMzJP5DU).
 
 ### Image Map URL / file path
