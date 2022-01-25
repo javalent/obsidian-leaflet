@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.12.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.11.0...4.12.0) (2022-01-25)
+
+
+### Features
+
+* can now link geojson to notes ([9eb6b2a](https://github.com/valentine195/obsidian-leaflet-plugin/commit/9eb6b2a24993dd55044ecd16df9de8e4ab495c75))
+* maps can now be locked to prevent editing ([25befa7](https://github.com/valentine195/obsidian-leaflet-plugin/commit/25befa710a2d73ab02952281d23864e51a207a4a))
+* tile layers can now default on with the `|on` flag ([f5a4e56](https://github.com/valentine195/obsidian-leaflet-plugin/commit/f5a4e565f0b86528af66bb4af2b69160ca63c89a))
+
+
+### Bug Fixes
+
+* fixes control order when just using tileoverlays ([8bbce58](https://github.com/valentine195/obsidian-leaflet-plugin/commit/8bbce58807fac4638cc8fe1a829b6193beea50cc))
+
 ## [4.11.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.10.0...4.11.0) (2022-01-24)
 
 
