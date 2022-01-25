@@ -183,13 +183,12 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         }: MarkerProperties
     ) {
         super();
-
         this.leafletInstance = divIconMarker(
             loc,
             {
                 icon: icon,
-                keyboard: mutable,
-                draggable: mutable,
+                keyboard: mutable && !this.map.options.lock,
+                draggable: mutable && !this.map.options.lock,
                 bubblingMouseEvents: true
             },
             {
@@ -399,6 +398,15 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             } else if (this.shouldHide(evt.zoom)) {
                 this.hide();
             }
+        });
+        this.map.on("lock", () => {
+            if (!this.mutable) return;
+            if (this.map.options.lock) {
+                this.leafletInstance.dragging.disable();
+            } else {
+                this.leafletInstance.dragging.enable();
+            }
+            this.leafletInstance.options.keyboard = !this.map.options.lock;
         });
     }
     get link() {

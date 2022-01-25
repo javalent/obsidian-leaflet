@@ -138,6 +138,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             isInitiativeView: this.params.isInitiativeView,
             isMapView: this.params.isMapView,
             layers: this.params.layers,
+            lock: this.params.lock,
             maxZoom: +this.params.maxZoom,
             minZoom: +this.params.minZoom,
             noUI: this.params.noUI ?? false,

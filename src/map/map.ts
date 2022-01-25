@@ -54,6 +54,7 @@ import { DrawingController } from "src/draw/controller";
 import { ShapeProperties } from "src/draw/shape";
 import LayerControl from "src/controls/layers";
 import type { FilterMarkers } from "src/controls/filter";
+import { lockControl } from "src/controls/lock";
 
 let L = window[LeafletSymbol];
 declare module "leaflet" {
@@ -143,7 +144,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.contentEl.style.height = options.height;
         this.contentEl.style.width = options.width ?? "100%";
         this.options = Object.assign({}, DEFAULT_MAP_OPTIONS, options);
-        
+
         /** Stop Touchmove Propagation for Mobile */
         this.contentEl.addEventListener("touchmove", (evt) => {
             evt.stopPropagation();
@@ -717,6 +718,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             { position: "topright" },
             this
         ).addTo(this.leafletInstance);
+        lockControl({ position: "topright" }, this).addTo(this.leafletInstance);
         zoomControl({ position: "topleft" }, this).addTo(this.leafletInstance);
         resetZoomControl({ position: "topleft" }, this).addTo(
             this.leafletInstance
