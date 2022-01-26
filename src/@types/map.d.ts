@@ -92,7 +92,13 @@ export interface LeafletMapOptions {
 
     overlayColor?: string;
     overlayTag?: string;
+
+    recenter?: boolean;
+
     scale?: number;
+
+    shiftZoom?: boolean;
+
     unit?: string;
 
     tileLayer?: string[];

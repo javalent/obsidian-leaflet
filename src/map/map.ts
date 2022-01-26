@@ -268,6 +268,9 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                     | L.TileLayer;
 
                 this.resetZoom();
+                if (this.options.recenter) {
+                    this.leafletInstance.setMaxBounds(this.bounds);
+                }
             }
         );
 
@@ -1563,6 +1566,9 @@ export class ImageMap extends BaseMap {
         if (this.mapLayers.length === 1) {
             this.currentLayer = this.mapLayers[0].layer;
             this.trigger("first-layer-ready", this.currentGroup);
+            if (this.options.recenter) {
+                this.leafletInstance.setMaxBounds(this.bounds);
+            }
         }
 
         this.layerControl.addBaseLayer(
