@@ -77,4 +77,11 @@ export abstract class FontAwesomeControl extends L.Control {
         this.tooltip = null;
         this.controlEl.children[0].removeAttribute("aria-label");
     }
+    setIcon(name: IconName) {
+        this.iconEl.empty();
+        this.icon = name;
+        this.iconEl.appendChild(
+            icon({ prefix: "fas", iconName: this.icon }).node[0]
+        );
+    }
 }

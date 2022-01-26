@@ -76,6 +76,7 @@ export interface BlockParameters {
     width?: string;
     recenter?: boolean;
     shiftZoom?: boolean;
+    lock?: boolean;
 }
 
 declare class ObsidianLeaflet extends Plugin {

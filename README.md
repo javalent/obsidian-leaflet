@@ -76,6 +76,7 @@ darkMode: true
 | showAllMarkers                          | Map will open showing all markers.                                                                          | false                                      |
 | preserveAspect                          | If the note pane the map is in is resized, the map will resize itself to maintain its initial aspect ratio. | false                                      |
 | noUI                                    | No controls will be added to the map.                                                                       | false                                      |
+| lock                                    | Control whether the map will start locked or unlocked                                                       | false                                      |
 
 > \*: Requires the [DataView plugin](https://github.com/blacksmithgu/obsidian-dataview).
 
@@ -157,7 +158,7 @@ At this time, tile servers requiring API access are not usable.
 
 If additional tile servers are provided, the `OpenStreetMap` layer can be turned off using the `osmLayer: false` parameter.
 
-### Tile Servers and Tile Overlays
+### Tile Servers
 
 As mentioned above, additional tile servers can be added using the `tileServer` and `tileOverlay` parameter. Both have the same syntax:
 
@@ -176,9 +177,27 @@ tileServer:
 -   https://tiles.wmflabs.org/hillshading/{z}/{x}/{y}.png|Hills
 ```
 
-Tile servers specified in `tileServer` will be added as additional **layers** that can be fully switched to. Tile servers specified as `tileOverlay` will be added as overlays that will load on top of the base map.
+Tile servers specified in `tileServer` will be added as additional **layers** that can be fully switched to.
+
+### Tile Overlays
+
+Tile servers specified as `tileOverlay` instead as `tileServer` will be added as overlays that will load on top of the base map.
+
+Tile overlays can be set to default on by appending `|on` to the end:
+
+```md
+tileServer: https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png|Dark|on
+```
 
 ## Image Maps
+
+> **:warning: Making an Image Map?**
+>
+> For images maps, it is **highly** recommended that you set your [bounds](#bounds) first.
+>
+> This will make working with your images much easier!
+>
+> Josh Plunkett has made a great video breaking down the process [here](https://www.youtube.com/watch?v=54EyMzJP5DU).
 
 ### Image Map URL / file path
 
@@ -408,7 +427,7 @@ GeoJSON can be loaded into the map using the following syntax:
 
 ````
 ```leaflet
-geojson: [[GeoJSON_File.json]]
+geojson: [[GeoJSON_File.json]]|optional-alias
 ```
 ````
 
@@ -418,13 +437,19 @@ or
 ```leaflet
 geojson:
   - [[GeoJSON_File.json]]
-  - [[GeoJSON_File_2.json]]
+  - [[GeoJSON_File_2.json]]|optional-alias|[[optional-note-wikilink]]
 ```
 ````
 
 _Please note that GeoJSON is drawn in the order it is provided. If a smaller file overlaps a larger file, you may not be able to interact with it._
 
 Especially large or a large number of GeoJSON files could slow down initial rendering.
+
+### Linking to Notes
+
+A GeoJSON file can link to a note by appending `|[[]]` to the end.
+
+**Please note that the alias is required when linking to a note.**
 
 ### Styles and Color
 

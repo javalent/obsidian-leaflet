@@ -183,13 +183,12 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         }: MarkerProperties
     ) {
         super();
-
         this.leafletInstance = divIconMarker(
             loc,
             {
                 icon: icon,
-                keyboard: mutable,
-                draggable: mutable,
+                keyboard: mutable && !this.map.options.lock,
+                draggable: mutable && !this.map.options.lock,
                 bubblingMouseEvents: true
             },
             {
@@ -392,6 +391,23 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                 this.leafletInstance.closeTooltip();
                 this.isBeingHovered = false;
             });
+        this.map.leafletInstance.on("zoomanim", (evt: L.ZoomAnimEvent) => {
+            //check markers
+            if (this.shouldShow(evt.zoom)) {
+                this.map.leafletInstance.once("zoomend", () => this.show());
+            } else if (this.shouldHide(evt.zoom)) {
+                this.hide();
+            }
+        });
+        this.map.on("lock", () => {
+            if (!this.mutable) return;
+            if (this.map.options.lock) {
+                this.leafletInstance.dragging.disable();
+            } else {
+                this.leafletInstance.dragging.enable();
+            }
+            this.leafletInstance.options.keyboard = !this.map.options.lock;
+        });
     }
     get link() {
         return this.target && this.target.text;

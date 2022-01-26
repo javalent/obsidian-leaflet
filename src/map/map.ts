@@ -54,6 +54,7 @@ import { DrawingController } from "src/draw/controller";
 import { ShapeProperties } from "src/draw/shape";
 import LayerControl from "src/controls/layers";
 import type { FilterMarkers } from "src/controls/filter";
+import { lockControl } from "src/controls/lock";
 
 let L = window[LeafletSymbol];
 declare module "leaflet" {
@@ -73,6 +74,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     drawingLayer: any;
     readyForDrawings: boolean = false;
     filterControl: FilterMarkers;
+    tileOverlayLayer: L.FeatureGroup<L.TileLayer>;
     abstract get bounds(): L.LatLngBounds;
 
     canvas: L.Canvas;
@@ -84,7 +86,11 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
     private escapeScope: Scope;
 
-    geojsonData: { data: geojson.GeoJsonObject; alias?: string }[] = [];
+    geojsonData: {
+        data: geojson.GeoJsonObject;
+        alias?: string;
+        note?: string;
+    }[] = [];
     gpxControl: ReturnType<typeof gpxControl>;
     gpxData: { data: string; alias?: string }[] = [];
     gpxIcons: {
@@ -143,11 +149,11 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.contentEl.style.height = options.height;
         this.contentEl.style.width = options.width ?? "100%";
         this.options = Object.assign({}, DEFAULT_MAP_OPTIONS, options);
+
         /** Stop Touchmove Propagation for Mobile */
         this.contentEl.addEventListener("touchmove", (evt) => {
             evt.stopPropagation();
         });
-        //@ts-ignore
         this.escapeScope = new Scope(this.plugin.app.scope);
         this.escapeScope.register(undefined, "Escape", () =>
             this.escapeScopeCallback()
@@ -204,17 +210,6 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             this.handleMapClick(evt)
         );
 
-        this.leafletInstance.on("zoomanim", (evt: L.ZoomAnimEvent) => {
-            //check markers
-            this.markers.forEach((marker) => {
-                if (marker.shouldShow(evt.zoom)) {
-                    this.leafletInstance.once("zoomend", () => marker.show());
-                } else if (marker.shouldHide(evt.zoom)) {
-                    marker.hide();
-                }
-            });
-        });
-
         this.on("first-layer-ready", () => {
             this.addFeatures();
             /** Move to supplied coordinates */
@@ -249,6 +244,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             });
             this.featureLayer.addTo(this.currentGroup.group);
             this.currentGroup.group.addTo(this.leafletInstance);
+            this.tileOverlayLayer.addTo(this.leafletInstance);
 
             if (this.options.zoomMarkers) {
                 this.log(`Zooming to markers.`);
@@ -540,9 +536,19 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.layerControl.addTo(this.leafletInstance);
         this.filterControl?.addTo(this.leafletInstance);
     }
+    onFirstLayerReady(callback: (...args: any[]) => any) {
+        if (this.mapLayers.length) {
+            callback();
+        } else {
+            this.on("first-layer-ready", () => {
+                callback();
+            });
+        }
+    }
     addFeatures() {
         /** Add GeoJSON to map */
         this.featureLayer = L.featureGroup();
+        this.tileOverlayLayer = L.featureGroup();
         let added: number;
         if (this.geojsonData.length > 0) {
             this.addLayerControl();
@@ -554,19 +560,20 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
             added = 0;
 
-            this.geojsonData.forEach(({ data, alias }) => {
+            this.geojsonData.forEach(({ data, alias, note }) => {
                 try {
                     const geo = new GeoJSON(
                         this as BaseMapType,
                         this.featureLayer,
                         { color: this.options.geojsonColor },
-                        data
+                        data,
+                        note
                     );
 
                     geo.leafletInstance.addTo(this.geojsonLayer);
                     this.layerControl.addOverlay(
                         geo.leafletInstance,
-                        alias ?? `GeoJSON ${added + 1}`
+                        alias && alias.length ? alias : `GeoJSON ${added + 1}`
                     );
 
                     added++;
@@ -636,7 +643,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
         /** Add Image Overlays to Map */
         if (this.imageOverlayData && this.imageOverlayData.length) {
-            if (this.mapLayers.length) {
+            this.onFirstLayerReady(() => {
                 this.addLayerControl();
                 this.leafletInstance.createPane("image-overlay");
                 for (let overlay of this.imageOverlayData) {
@@ -650,47 +657,26 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
                     this.layerControl.addOverlay(image, overlay.alias);
                 }
-            } else {
-                this.on("first-layer-ready", () => {
-                    this.addLayerControl();
-                    this.leafletInstance.createPane("image-overlay");
-                    for (let overlay of this.imageOverlayData) {
-                        let bounds = overlay.bounds.length
-                            ? overlay.bounds
-                            : this.bounds;
-
-                        const image = L.imageOverlay(overlay.data, bounds, {
-                            pane: "image-overlay"
-                        });
-
-                        this.layerControl.addOverlay(image, overlay.alias);
-                    }
-                });
-            }
+            });
         }
         if (this.options.tileOverlay && this.options.tileOverlay.length) {
-            if (this.mapLayers.length) {
+            this.onFirstLayerReady(() => {
                 this.addLayerControl();
-
                 let index = 0;
                 for (const overlay of this.options.tileOverlay) {
                     index++;
-                    const [server, name = `Layer ${index}`] =
+                    const [server, name = `Layer ${index}`, on] =
                         overlay.split("|");
-                    this.layerControl.addOverlay(L.tileLayer(server), name);
-                }
-            } else {
-                this.on("first-layer-ready", () => {
-                    this.addLayerControl();
-                    let index = 0;
-                    for (const overlay of this.options.tileOverlay) {
-                        index++;
-                        const [server, name = `Layer ${index}`] =
-                            overlay.split("|");
-                        this.layerControl.addOverlay(L.tileLayer(server), name);
+                    const layer = L.tileLayer(server);
+                    if (on && on == "on") {
+                        layer.addTo(this.tileOverlayLayer);
                     }
-                });
-            }
+                    this.layerControl.addOverlay(
+                        layer,
+                        name && name.length ? name : `Layer ${index}`
+                    );
+                }
+            });
         }
     }
 
@@ -731,6 +717,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             { position: "topright" },
             this
         ).addTo(this.leafletInstance);
+        lockControl({ position: "topright" }, this).addTo(this.leafletInstance);
         zoomControl({ position: "topleft" }, this).addTo(this.leafletInstance);
         resetZoomControl({ position: "topleft" }, this).addTo(
             this.leafletInstance

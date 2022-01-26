@@ -63,16 +63,18 @@ declare module "obsidian" {
         };
 
         commands: {
+            commands: { [id: string]: Command };
+            editorCommands: { [id: string]: Command };
+            findCommand(id: string): Command;
+            executeCommandById(id: string): void;
             listCommands(): Command[];
             executeCommandById(id: string): void;
             findCommand(id: string): Command;
-            commands: { [id: string]: Command };
         };
         keymap: {
             pushScope(scope: Scope): void;
             popScope(scope: Scope): void;
         };
-        scope: any;
     }
     interface MarkdownPostProcessorContext {
         containerEl: HTMLElement;
@@ -85,6 +87,12 @@ declare module "obsidian" {
         config: {
             theme: "moonstone" | "obsidian";
         };
+    }
+    interface Workspace {
+        on(
+            name: "initiative-tracker:unload",
+            callback: (...args: any) => any
+        ): EventRef;
     }
 }
 

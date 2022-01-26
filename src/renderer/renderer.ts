@@ -105,7 +105,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 hasAdditional ||
                 [
                     this.params.osmLayer,
-                    ...[this.params.tileServer].flat()
+                    ...[this.params.tileServer].flat(),
+                    ...[this.params.tileOverlay].flat()
                 ].filter((v) => v).length > 1;
         }
 
@@ -138,6 +139,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             isInitiativeView: this.params.isInitiativeView,
             isMapView: this.params.isMapView,
             layers: this.params.layers,
+            lock: this.params.lock,
             maxZoom: +this.params.maxZoom,
             minZoom: +this.params.minZoom,
             noUI: this.params.noUI ?? false,
@@ -423,19 +425,27 @@ export class LeafletRenderer extends MarkdownRenderChild {
     async loadFeatureData() {
         /** Get Markers from Parameters */
         let geojson = this.params.geojson,
-            geojsonData: { data: geojson.GeoJsonObject; alias: string }[] = [];
+            geojsonData: {
+                data: geojson.GeoJsonObject;
+                alias: string;
+                note: string;
+            }[] = [];
         if (!(geojson instanceof Array)) {
             geojson = [geojson];
         }
-        const geoSet: Set<{ path: string; alias?: string }> = new Set(
-            geojson
-                ?.flat(Infinity)
-                .filter((g) => g)
-                .map((g) => {
-                    const [path, alias] = g.replace(/(\[|\])/g, "").split("|");
-                    return { path, alias };
-                })
-        );
+        const geoSet: Set<{ path: string; alias?: string; note?: string }> =
+            new Set(
+                geojson
+                    ?.flat(Infinity)
+                    .filter((g) => g)
+                    .map((g) => {
+                        let [path, alias = path, note] = g
+                            .replace(/(\[|\])/g, "")
+                            .split("|");
+                        if (!alias?.length) alias = path;
+                        return { path, alias, note };
+                    })
+            );
 
         if (this.params.geojsonFolder && this.params.geojsonFolder.length) {
             for (let path of this.params.geojsonFolder) {
@@ -461,7 +471,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         if (geoSet.size) {
             this.map.log("Loading GeoJSON files.");
-            for (let { path, alias } of geoSet) {
+            for (let { path, alias, note } of geoSet) {
                 const file = this.plugin.app.metadataCache.getFirstLinkpathDest(
                     parseLink(path),
                     this.sourcePath
@@ -480,7 +490,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                         );
                         continue;
                     }
-                    geojsonData.push({ data, alias });
+                    geojsonData.push({ data, alias, note });
                 }
             }
         }
@@ -504,7 +514,10 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 ?.flat(Infinity)
                 .filter((g) => g)
                 .map((g) => {
-                    const [path, alias] = g.replace(/(\[|\])/g, "").split("|");
+                    let [path, alias = path] = g
+                        .replace(/(\[|\])/g, "")
+                        .split("|");
+                    if (!alias?.length) alias = path;
                     return { path, alias };
                 })
         );
