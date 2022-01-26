@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.13.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.12.1...4.13.0) (2022-01-26)
+
+
+### Features
+
+* adds ability to force map to recenter when dragged ([057f9c6](https://github.com/valentine195/obsidian-leaflet-plugin/commit/057f9c61e54b2d01fabaf9299b72bb5f5a2452ab))
+* adds noScrollZoom block parameter ([a8b607f](https://github.com/valentine195/obsidian-leaflet-plugin/commit/a8b607fe234e14c2c247bfa89f25999716ccb2a7))
+
 ### [4.12.1](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.12.0...4.12.1) (2022-01-25)
 
 
