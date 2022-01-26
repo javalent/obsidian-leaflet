@@ -77,6 +77,8 @@ darkMode: true
 | preserveAspect                          | If the note pane the map is in is resized, the map will resize itself to maintain its initial aspect ratio. | false                                      |
 | noUI                                    | No controls will be added to the map.                                                                       | false                                      |
 | lock                                    | Control whether the map will start locked or unlocked                                                       | false                                      |
+| recenter                                | Forces map to stay re-center itself after panning.                                                          | false                                      |
+| noScrollZoom                            | Turns off scrollwheel zooming.                                                                              | false                                      |
 
 > \*: Requires the [DataView plugin](https://github.com/blacksmithgu/obsidian-dataview).
 
