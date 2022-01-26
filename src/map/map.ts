@@ -172,6 +172,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             crs: this.CRS,
             maxZoom: this.zoom.max,
             minZoom: this.zoom.min,
+            scrollWheelZoom: !this.options.noScrollZoom,
             zoomDelta: this.zoom.delta,
             zoomSnap: this.zoom.delta,
             zoomControl: !this.options.noUI,

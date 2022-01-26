@@ -148,7 +148,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             overlayColor: this.params.overlayColor,
             recenter: this.params.recenter,
             scale: this.params.scale,
-            shiftZoom: this.params.shiftZoom,
+            noScrollZoom: this.params.noScrollZoom,
             tileLayer,
             tileOverlay,
             type: this.params.image != "real" ? "image" : "real",

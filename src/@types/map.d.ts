@@ -89,6 +89,7 @@ export interface LeafletMapOptions {
     minZoom?: number;
 
     noUI?: boolean;
+    noScrollZoom?: boolean;
 
     osmLayer?: boolean;
 
@@ -98,8 +99,6 @@ export interface LeafletMapOptions {
     recenter?: boolean;
 
     scale?: number;
-
-    shiftZoom?: boolean;
 
     unit?: string;
 
@@ -316,7 +315,7 @@ declare abstract class BaseMap /* <
     on(name: "marker-deleted", callback: (marker: Marker) => void): EventRef;
     on(name: "markers-updated", callback: () => void): EventRef;
     on(name: "should-close-popup", callback: (source: Popup) => void): EventRef;
-    on(name: 'lock', callback: () => void): EventRef;
+    on(name: "lock", callback: () => void): EventRef;
 }
 
 declare class RealMap extends BaseMap /* <L.TileLayer> */ {

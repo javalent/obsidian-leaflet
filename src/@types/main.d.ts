@@ -75,7 +75,7 @@ export interface BlockParameters {
     noUI?: boolean;
     width?: string;
     recenter?: boolean;
-    shiftZoom?: boolean;
+    noScrollZoom?: boolean;
     lock?: boolean;
 }
 
