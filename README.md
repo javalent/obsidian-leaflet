@@ -199,7 +199,7 @@ tileServer: https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png|Dark|o
 >
 > This will make working with your images much easier!
 >
-> Josh Plunkett has made a great video breaking down the process [here](https://www.youtube.com/watch?v=54EyMzJP5DU).
+> Read the [discussion](https://github.com/valentine195/obsidian-leaflet-plugin/discussions/130) about the process. Josh Plunkett has also made a great video breaking down the process [here](https://www.youtube.com/watch?v=54EyMzJP5DU).
 
 ### Image Map URL / file path
 
