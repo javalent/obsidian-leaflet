@@ -273,63 +273,9 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                 menu.setNoIcon();
 
                 menu.addItem((item) => {
-                    item.setTitle("Edit Marker").onClick(() => {
-                        let markerSettingsModal = new MarkerContextModal(
-                            this,
-                            this.map
-                        );
-
-                        markerSettingsModal.onClose = async () => {
-                            if (markerSettingsModal.deleted) {
-                                this.map.removeMarker(this);
-                                this.map.trigger("marker-deleted", this);
-                            } else {
-                                this.map.displaying.delete(this.type);
-                                this.map.displaying.set(
-                                    markerSettingsModal.tempMarker.type,
-                                    true
-                                );
-                                this.link = markerSettingsModal.tempMarker.link;
-                                this.icon = this.map.markerIcons.get(
-                                    markerSettingsModal.tempMarker.type
-                                );
-                                this.tooltip =
-                                    markerSettingsModal.tempMarker.tooltip;
-                                this.minZoom =
-                                    markerSettingsModal.tempMarker.minZoom;
-                                this.maxZoom =
-                                    markerSettingsModal.tempMarker.maxZoom;
-                                this.command =
-                                    markerSettingsModal.tempMarker.command;
-
-                                if (
-                                    this.shouldShow(
-                                        this.map.leafletInstance.getZoom()
-                                    ) &&
-                                    !this.displayed
-                                ) {
-                                    this.show();
-                                } else if (
-                                    this.shouldHide(
-                                        this.map.leafletInstance.getZoom()
-                                    ) &&
-                                    this.displayed
-                                ) {
-                                    this.hide();
-                                }
-
-                                if (this.tooltip === "always") {
-                                    this.popup.open(this.target.display);
-                                } else {
-                                    this.popup.close();
-                                }
-
-                                this.map.trigger("marker-updated", this);
-                                this.map.trigger("should-save");
-                            }
-                        };
-                        markerSettingsModal.open();
-                    });
+                    item.setTitle("Edit Marker").onClick(() =>
+                        this.editMarker()
+                    );
                 });
                 menu.addItem((item) => {
                     item.setTitle("Convert to Code Block").onClick(async () => {
@@ -346,6 +292,18 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                     });
                 });
                 menu.showAtMouseEvent(evt.originalEvent);
+            })
+            .on("dblclick", (evt) => {
+                if (!this.mutable) {
+                    new Notice(
+                        t(
+                            "This marker cannot be edited because it was defined in the code block."
+                        )
+                    );
+                    return;
+                }
+                L.DomEvent.stopPropagation(evt);
+                this.editMarker();
             })
             .on("click", async (evt: L.LeafletMouseEvent) => {
                 if (this.map.isDrawing || this.map.controller.isDrawing) {
@@ -430,6 +388,52 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             }
             this.leafletInstance.options.keyboard = !this.map.options.lock;
         });
+    }
+    editMarker() {
+        let markerSettingsModal = new MarkerContextModal(this, this.map);
+
+        markerSettingsModal.onClose = async () => {
+            if (markerSettingsModal.deleted) {
+                this.map.removeMarker(this);
+                this.map.trigger("marker-deleted", this);
+            } else {
+                this.map.displaying.delete(this.type);
+                this.map.displaying.set(
+                    markerSettingsModal.tempMarker.type,
+                    true
+                );
+                this.link = markerSettingsModal.tempMarker.link;
+                this.icon = this.map.markerIcons.get(
+                    markerSettingsModal.tempMarker.type
+                );
+                this.tooltip = markerSettingsModal.tempMarker.tooltip;
+                this.minZoom = markerSettingsModal.tempMarker.minZoom;
+                this.maxZoom = markerSettingsModal.tempMarker.maxZoom;
+                this.command = markerSettingsModal.tempMarker.command;
+
+                if (
+                    this.shouldShow(this.map.leafletInstance.getZoom()) &&
+                    !this.displayed
+                ) {
+                    this.show();
+                } else if (
+                    this.shouldHide(this.map.leafletInstance.getZoom()) &&
+                    this.displayed
+                ) {
+                    this.hide();
+                }
+
+                if (this.tooltip === "always") {
+                    this.popup.open(this.target.display);
+                } else {
+                    this.popup.close();
+                }
+
+                this.map.trigger("marker-updated", this);
+                this.map.trigger("should-save");
+            }
+        };
+        markerSettingsModal.open();
     }
     get link() {
         return this.target && this.target.text;
