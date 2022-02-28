@@ -185,6 +185,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
     popup = popup(this.map, this);
     private _icon: MarkerIcon;
     isBeingHovered: boolean = false;
+    private _link: string;
     constructor(
         public map: BaseMapType,
         {
@@ -234,7 +235,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         } else if (link) {
             this.target = new Link(link, this.map.plugin.app, this.description);
         } else if (description) {
-            this.target = new Text(description);
+            this.target = new Text(this.description);
         }
 
         this.link = link;
@@ -402,6 +403,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                     markerSettingsModal.tempMarker.type,
                     true
                 );
+                this.description = markerSettingsModal.tempMarker.description;
                 this.link = markerSettingsModal.tempMarker.link;
                 this.icon = this.map.markerIcons.get(
                     markerSettingsModal.tempMarker.type
@@ -436,7 +438,7 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         markerSettingsModal.open();
     }
     get link() {
-        return this.target && this.target.text;
+        return this._link;
     }
     set link(x: string) {
         if (this.leafletInstance.options?.icon) {
@@ -453,10 +455,14 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             if (this.command) {
                 this.target = new Command(x, this.map.plugin.app);
             } else {
-                this.target = new Link(x, this.map.plugin.app);
+                this.target = new Link(
+                    x,
+                    this.map.plugin.app,
+                    this.description
+                );
             }
         }
-
+        this._link = x;
         if (this.target) this.target.text = x;
         if (this.popup && this.displayed && this.tooltip === "always")
             this.popup.open(this.target.display);
@@ -470,7 +476,11 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         if (b) {
             this.target = new Command(this.link, this.map.plugin.app);
         } else if (this.link) {
-            this.target = new Link(this.link, this.map.plugin.app);
+            this.target = new Link(
+                this.link,
+                this.map.plugin.app,
+                this.description
+            );
         } else if (this.description) {
             this.target = new Text(this.description);
         }

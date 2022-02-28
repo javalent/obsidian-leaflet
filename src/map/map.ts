@@ -458,6 +458,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.displaying.set(marker.type, true);
 
         existing.link = marker.link;
+        existing.description = marker.description;
         existing.icon = this.markerIcons.get(marker.type);
         existing.minZoom = marker.minZoom;
         existing.maxZoom = marker.maxZoom;
