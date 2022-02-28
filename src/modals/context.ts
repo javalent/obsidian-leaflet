@@ -30,6 +30,7 @@ export class MarkerContextModal extends Modal {
     tempMarker: Marker;
     modal: CommandSuggestionModal | PathSuggestionModal;
     limit: number = 100;
+    advanced = false;
     constructor(public marker: Marker, public map: BaseMapType) {
         super(map.plugin.app);
         this.marker = marker;
@@ -43,17 +44,28 @@ export class MarkerContextModal extends Modal {
     }
     async display() {
         this.contentEl.empty();
+
         new Setting(this.contentEl)
-            .setName(t("Execute Command"))
-            .setDesc(t("The marker will execute an Obsidian command on click"))
-            .addToggle((t) => {
-                t.setValue(this.tempMarker.command || false).onChange((v) => {
-                    this.tempMarker.command = v;
-                    this.tempMarker.link = "";
-                    this.display();
+            .setName(t("Marker Type"))
+            .addDropdown((drop) => {
+                drop.addOption("default", t("Default"));
+                this.map.markerIcons.forEach((marker) => {
+                    drop.addOption(
+                        marker.type,
+                        marker.type[0].toUpperCase() +
+                            marker.type.slice(1).toLowerCase()
+                    );
+                });
+                drop.setValue(this.marker.type).onChange(async (value) => {
+                    let newMarker =
+                        value == "default"
+                            ? this.map.data.defaultMarker
+                            : this.map.data.markerIcons.find(
+                                  (m) => m.type == value
+                              );
+                    this.tempMarker.type = newMarker.type;
                 });
             });
-
         if (this.tempMarker.command) {
             new Setting(this.contentEl)
                 .setName(t("Command to Execute"))
@@ -105,101 +117,111 @@ export class MarkerContextModal extends Modal {
                 });
         }
         new Setting(this.contentEl)
-            .setName(t("Marker Type"))
-            .addDropdown((drop) => {
-                drop.addOption("default", t("Default"));
-                this.map.markerIcons.forEach((marker) => {
-                    drop.addOption(
-                        marker.type,
-                        marker.type[0].toUpperCase() +
-                            marker.type.slice(1).toLowerCase()
+            .setName("Description")
+            .addTextArea((t) =>
+                t
+                    .setValue(this.tempMarker.description)
+                    .onChange((v) => (this.tempMarker.description = v))
+            );
+        new Setting(this.contentEl)
+            .setName("Show Advanced Options")
+            .addToggle((t) =>
+                t.setValue(this.advanced).onChange((v) => {
+                    this.advanced = v;
+                    this.display();
+                })
+            );
+        if (this.advanced) {
+            new Setting(this.contentEl)
+                .setName(t("Execute Command"))
+                .setDesc(
+                    t("The marker will execute an Obsidian command on click")
+                )
+                .addToggle((t) => {
+                    t.setValue(this.tempMarker.command || false).onChange(
+                        (v) => {
+                            this.tempMarker.command = v;
+                            this.tempMarker.link = "";
+                            this.display();
+                        }
                     );
                 });
-                drop.setValue(this.marker.type).onChange(async (value) => {
-                    let newMarker =
-                        value == "default"
-                            ? this.map.data.defaultMarker
-                            : this.map.data.markerIcons.find(
-                                  (m) => m.type == value
-                              );
-                    this.tempMarker.type = newMarker.type;
+            new Setting(this.contentEl)
+                .setName(t("Display Tooltip"))
+                .addDropdown((drop) => {
+                    drop.addOption("hover", t("Hover"));
+                    drop.addOption("always", t("Always"));
+                    drop.addOption("never", t("Never"));
+                    drop.setValue(this.tempMarker.tooltip ?? "hover").onChange(
+                        async (value: TooltipDisplay) => {
+                            this.tempMarker.tooltip = value;
+                        }
+                    );
                 });
-            });
-        new Setting(this.contentEl)
-            .setName(t("Display Tooltip"))
-            .addDropdown((drop) => {
-                drop.addOption("hover", t("Hover"));
-                drop.addOption("always", t("Always"));
-                drop.addOption("never", t("Never"));
-                drop.setValue(this.tempMarker.tooltip ?? "hover").onChange(
-                    async (value: TooltipDisplay) => {
-                        this.tempMarker.tooltip = value;
-                    }
-                );
-            });
 
-        new Setting(this.contentEl)
-            .setName(t("Min Zoom"))
-            .setDesc(
-                t(
-                    "Only display when zooming in below this zoom. Current map minimum"
-                ) +
-                    ": " +
-                    this.map.zoom.min
-            )
-            .addText((text) => {
-                let warned = false;
-                text.inputEl.onkeydown = (evt) => {
-                    if (
-                        !/^(\d*\.?\d*|Backspace|Delete|Arrow\w+|\-|Tab)$/.test(
-                            evt.key
-                        )
-                    ) {
-                        if (!warned) {
-                            warned = true;
-                            new Notice(t("Minimum zoom must be a number."));
+            new Setting(this.contentEl)
+                .setName(t("Min Zoom"))
+                .setDesc(
+                    t(
+                        "Only display when zooming in below this zoom. Current map minimum"
+                    ) +
+                        ": " +
+                        this.map.zoom.min
+                )
+                .addText((text) => {
+                    let warned = false;
+                    text.inputEl.onkeydown = (evt) => {
+                        if (
+                            !/^(\d*\.?\d*|Backspace|Delete|Arrow\w+|\-|Tab)$/.test(
+                                evt.key
+                            )
+                        ) {
+                            if (!warned) {
+                                warned = true;
+                                new Notice(t("Minimum zoom must be a number."));
+                            }
+                            evt.preventDefault();
+                            return false;
                         }
-                        evt.preventDefault();
-                        return false;
-                    }
-                };
-                if (this.tempMarker.minZoom != null)
-                    text.setValue(`${this.tempMarker.minZoom}`);
-                text.onChange((v) => {
-                    this.tempMarker.minZoom = Number(v);
+                    };
+                    if (this.tempMarker.minZoom != null)
+                        text.setValue(`${this.tempMarker.minZoom}`);
+                    text.onChange((v) => {
+                        this.tempMarker.minZoom = Number(v);
+                    });
                 });
-            });
-        new Setting(this.contentEl)
-            .setName(t("Max Zoom"))
-            .setDesc(
-                t(
-                    "Only display when zooming out above this zoom. Current map maximum"
-                ) +
-                    ": " +
-                    this.map.zoom.max
-            )
-            .addText((text) => {
-                let warned = false;
-                text.inputEl.onkeydown = (evt) => {
-                    if (
-                        !/^(\d*\.?\d*|Backspace|Delete|Arrow\w+|\-|Tab)$/.test(
-                            evt.key
-                        )
-                    ) {
-                        if (!warned) {
-                            warned = true;
-                            new Notice(t("Maximum zoom must be a number."));
+            new Setting(this.contentEl)
+                .setName(t("Max Zoom"))
+                .setDesc(
+                    t(
+                        "Only display when zooming out above this zoom. Current map maximum"
+                    ) +
+                        ": " +
+                        this.map.zoom.max
+                )
+                .addText((text) => {
+                    let warned = false;
+                    text.inputEl.onkeydown = (evt) => {
+                        if (
+                            !/^(\d*\.?\d*|Backspace|Delete|Arrow\w+|\-|Tab)$/.test(
+                                evt.key
+                            )
+                        ) {
+                            if (!warned) {
+                                warned = true;
+                                new Notice(t("Maximum zoom must be a number."));
+                            }
+                            evt.preventDefault();
+                            return false;
                         }
-                        evt.preventDefault();
-                        return false;
-                    }
-                };
-                text.onChange((v) => {
-                    this.tempMarker.maxZoom = Number(v);
+                    };
+                    text.onChange((v) => {
+                        this.tempMarker.maxZoom = Number(v);
+                    });
+                    if (this.tempMarker.maxZoom != null)
+                        text.setValue(`${this.tempMarker.maxZoom}`);
                 });
-                if (this.tempMarker.maxZoom != null)
-                    text.setValue(`${this.tempMarker.maxZoom}`);
-            });
+        }
 
         new Setting(this.contentEl).addButton((b) => {
             b.setIcon("trash")
