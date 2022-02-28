@@ -7,7 +7,6 @@ import type {
     TooltipDisplay,
     MarkerProperties,
     SavedMarkerProperties,
-    Popup,
     BaseMapType
 } from "src/@types";
 import { MarkerContextModal } from "src/modals";
@@ -47,7 +46,11 @@ class Link extends MarkerTarget {
             ) != null
         );
     }
-    constructor(private _text: string, private app: App) {
+    constructor(
+        private _text: string,
+        private app: App,
+        public description?: string
+    ) {
         super();
         this.display = this._getDisplay();
     }
@@ -66,13 +69,31 @@ class Link extends MarkerTarget {
                 href: this.text,
                 cls: "external-link"
             });
-        return createSpan({
-            text: this.text
-                .replace(/(\^)/, " > ^")
-                .replace(/#/, " > ")
-                .split("|")
-                .pop()
-        });
+        if (this.description?.length) {
+            const holder = createDiv();
+            holder.createSpan({ text: this.description });
+            if (this.text?.length) {
+                holder.createEl("br");
+                holder.createEl("br");
+                holder.createSpan({
+                    text: this.text
+                        .replace(/(\^)/, " > ^")
+                        .replace(/#/, " > ")
+                        .split("|")
+                        .pop(),
+                    cls: "internal-link"
+                });
+            }
+            return holder;
+        } else {
+            return createSpan({
+                text: this.text
+                    .replace(/(\^)/, " > ^")
+                    .replace(/#/, " > ")
+                    .split("|")
+                    .pop()
+            });
+        }
     }
     get external() {
         return (
@@ -197,24 +218,26 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
                 type: type
             }
         );
-        if (command) {
-            this.target = new Command(link, this.map.plugin.app);
-        } else if (link) {
-            this.target = new Link(link, this.map.plugin.app);
-        } else if (description) {
-            this.target = new Text(description);
-        }
         this.id = id;
         this.type = type;
         this.loc = loc;
         this.description = description;
-        this.link = link;
         this.layer = layer;
         this.mutable = mutable;
         this.command = command;
         this.divIcon = icon;
         this.percent = percent;
         this.tooltip = tooltip;
+
+        if (command) {
+            this.target = new Command(link, this.map.plugin.app);
+        } else if (link) {
+            this.target = new Link(link, this.map.plugin.app, this.description);
+        } else if (description) {
+            this.target = new Text(description);
+        }
+
+        this.link = link;
 
         const markerIcon = this.map.plugin.getIconForType(this.type);
 
@@ -358,7 +381,6 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
             })
             .on("drag", (evt: L.LeafletMouseEvent) => {
                 this.map.trigger("marker-dragging", this);
-
                 if (this.tooltip === "always" && this.popup) {
                     this.popup.setLatLng(evt.latlng);
                 } else if (this.popup.isOpen()) {
