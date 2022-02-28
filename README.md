@@ -31,6 +31,13 @@ darkMode: true
 
 ## Options
 
+> :pencil: Using Links
+> 
+> Several parameters below are for providing links to the map, whether that be for images, marker files, etc.
+> 
+> In all cases, either Obsidian's Wikilinks (`[[Link]]`) *or* standard markdown links (`[Link](./path/to/file)`) may be provided.
+
+
 | Option                                  | Description                                                                                                 | Default                                    |
 | --------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
 | [id](#map-ids)                          | Unique identifier (can be anything). **Required.**                                                          |                                            |
@@ -103,6 +110,10 @@ marker:
 #### Marker Tags in YAML
 
 YAML considers the `#` symbol to be a comment, so the `markerTag` or `filterTag` parameters must either be wrapped in quotes (`"#tag"`) or defined without the `#` symbol.
+
+#### Links
+
+I
 
 ## Map IDs
 

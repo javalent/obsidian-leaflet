@@ -210,6 +210,11 @@ export async function getBlob(url: string, app: App) {
 }
 
 export function parseLink(link: string) {
+    if (!link) return undefined;
+    if (/(?:\[.*\]\(|\[\[)(.+)(?:\)|\]\])/.test(link)) {
+        const [_, path] = link.match(/(?:\[.*\]\(|\[\[)(.+)(?:\)|\]\])/) ?? [];
+        return path;
+    }
     return link?.replace(/(\[|\])/g, "");
 }
 
@@ -232,7 +237,7 @@ export function getParamsFromSource(source: string): BlockParameters {
 
     /** Pull out links */
 
-    const links = source.match(/\[\[([^\[\]]*?)\]\]/g) ?? [];
+    const links = source.match(/(?:\[.*\]\(|\[\[)[^\[\]]*(?:\)|\]\])/g) ?? [];
     for (let link of links) {
         source = source.replace(
             link,
@@ -241,10 +246,10 @@ export function getParamsFromSource(source: string): BlockParameters {
     }
 
     /** Pull out tags */
-
     try {
         params = parseYaml(source);
     } catch (e) {
+        console.error(`Obsidian Leaflet: YAML Parsing failed\n${e}`)
         params = Object.fromEntries(
             source.split("\n").map((l) => l.split(/:\s?/))
         );
@@ -436,5 +441,3 @@ export function catchErrorAsync(
         };
     }
 }
-
-

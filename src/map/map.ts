@@ -1491,7 +1491,7 @@ export class ImageMap extends BaseMap {
         w: number;
     }): LayerGroup<L.ImageOverlay> {
         if (!this.mapLayers.length) {
-            this.log("Building initial map layer.");
+            this.log("map.ts: 1494: Building initial map layer. ");
         }
         const { h, w } = layer;
 

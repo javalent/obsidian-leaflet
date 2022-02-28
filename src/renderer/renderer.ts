@@ -703,12 +703,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 max = Number(maxZoom);
             }
 
-            if (!link || !link.length || link === "undefined") {
-                link = undefined;
-            } else if (/\[\[[\s\S]+\]\]/.test(link)) {
-                //obsidian wiki-link
-                link = parseLink(link);
-            }
+            link = parseLink(link);
 
             if (
                 !description ||
@@ -960,9 +955,15 @@ export class LeafletRenderer extends MarkdownRenderChild {
                         );
                 }
 
-                for (let path of files) {
+                for (let link of files) {
+                    const path = parseLink(link);
+
+                    if (!path) {
+                        this.map.log(`Could not parse link for ${link}`);
+                        continue;
+                    }
                     const file = this.app.metadataCache.getFirstLinkpathDest(
-                        parseLink(path),
+                        path,
                         this.sourcePath
                     );
                     const linkText = this.app.metadataCache.fileToLinktext(
