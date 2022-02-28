@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.14.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.13.0...4.14.0) (2022-02-28)
+
+
+### Features
+
+* Adds description field + reorganizes Edit Marker modal ([b1a648f](https://github.com/valentine195/obsidian-leaflet-plugin/commit/b1a648feeff2b171c824e7f2349d5e62fa21bf6c))
+* Adds support for markdown links in addition to wikilinks (close [#280](https://github.com/valentine195/obsidian-leaflet-plugin/issues/280)) ([c903209](https://github.com/valentine195/obsidian-leaflet-plugin/commit/c9032096810b908c768a093769fce7401ce08d40))
+* Marker double-clicks now open the edit marker modal ([1c01511](https://github.com/valentine195/obsidian-leaflet-plugin/commit/1c01511e9e6869dc58df54d5199990175de99749))
+
+
+### Bug Fixes
+
+* Fixed issue where setting a marker description could also set the link ([138d59b](https://github.com/valentine195/obsidian-leaflet-plugin/commit/138d59bdb9e91ff6493d6c24e6c6135a131e1133))
+* Marker descriptions now displayed in tooltip even if there is a link ([bd9a200](https://github.com/valentine195/obsidian-leaflet-plugin/commit/bd9a200c23f46898e84287e4ebb9c33a98ac848e))
+
 ## [4.13.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.12.1...4.13.0) (2022-01-26)
 
 
