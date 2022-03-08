@@ -232,9 +232,9 @@ Image maps can be loaded one of three ways:
 
 You may notice that basic image maps and zooming do not necessarily behave the way you think they would. For instance, you may find that setting a higher max zoom value just makes the map *start farther away*, instead of actually allowing you to zoom in more.
 
-This is because of the way image maps are drawn. You can think of image maps as being a picture overlayed on top of a map, but the map is blank. As you change your zoom levels you are *changing the zoom levels of the map*. The image is then overlayed onto the map *after* the map is created for that zoom level, which means the coordinates of the image overlay changes as the map scale changes.
+This is because of the way image maps are essentially a hack on top of the LeafletJS module. There is still an underlying map that still has its latitude and longitude, it just can't be seen. The image is then drawn on top of that map (centered at [0, 0]) and then stretched to fit. If you change parameters (such as the zoom levels), the underlying map is changed... but the image is **still placed at [0, 0] and stretched to fit!**
 
-Instead, the [image bounds](#bounds) need to be set for your map. This tells Leaflet *exactly* what coordinates your image should be placed at on the underlaying map layer. No matter how the map instance changes, the image will be in the same spot, **every time.** 
+Instead, the [image bounds](#bounds) need to be set for your map. This tells Leaflet *exactly* what coordinates your image should be placed at on the underlaying map layer. No matter how the map instance changes, the image will be in the same spot and the same size, **every time!** 
 
 ### Multi-Image Maps
 
