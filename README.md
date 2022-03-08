@@ -161,6 +161,14 @@ zoomTag: nearby
 
 Then the map will read the `nearby` tag, recognize it is `100 miles`, and set the map's initial zoom to the closest level that will display 100 miles (this depends on `minZoom`, `maxZoom`, and `zoomDelta`).
 
+#### Zooming with Image Maps
+
+You may notice that basic image maps and zooming do not necessarily behave the way you think they would. For instance, you may find that setting a higher max zoom value just makes the map *start farther away*, instead of actually allowing you to zoom in more.
+
+This is because of the way image maps are drawn. You can think of image maps as being a picture overlayed on top of a map, but the map is blank. As you change your zoom levels you are *changing the zoom levels of the map*. The image is then overlayed onto the map *after* the map is created for that zoom level, which means the coordinates of the image overlay changes as the map scale changes.
+
+Instead, the [image bounds](#bounds) need to be set for your map. This tells Leaflet *exactly* what coordinates your image should be placed at on the underlaying map layer. No matter how the map instance changes, the image will be in the same spot, **every time.** 
+
 ## Real World Maps
 
 Real world maps are created if the `image` parameter is not provided. These maps by default will load the `OpenStreetMap` map, but additional tile servers can be provided using the `tileServer` parameter.
@@ -219,6 +227,14 @@ Image maps can be loaded one of three ways:
 1. Direct URL (e.g., https://i.imgur.com/jH8j3mJ.jpg)
 2. Obsidian URL (e.g., obsidian://open?vault=VaultName&file=Path/To/Image.jpg)
 3. Obsidian wikilink of image (e.g., [[Image.jpg]])
+
+### Zooming with Image Maps
+
+You may notice that basic image maps and zooming do not necessarily behave the way you think they would. For instance, you may find that setting a higher max zoom value just makes the map *start farther away*, instead of actually allowing you to zoom in more.
+
+This is because of the way image maps are drawn. You can think of image maps as being a picture overlayed on top of a map, but the map is blank. As you change your zoom levels you are *changing the zoom levels of the map*. The image is then overlayed onto the map *after* the map is created for that zoom level, which means the coordinates of the image overlay changes as the map scale changes.
+
+Instead, the [image bounds](#bounds) need to be set for your map. This tells Leaflet *exactly* what coordinates your image should be placed at on the underlaying map layer. No matter how the map instance changes, the image will be in the same spot, **every time.** 
 
 ### Multi-Image Maps
 
