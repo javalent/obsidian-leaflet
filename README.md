@@ -138,6 +138,12 @@ coordinates: [[Note with Location Frontmatter]]
 
 ### Initial Zoom Level
 
+> :warning: Using an Image Map?
+> 
+> Zoom levels and image maps may be a little unintuitive. 
+> 
+> Check out [Zooming with Image Maps](#zooming-with-image-maps) below.
+
 The initial zoom level of the map may be set using the `defaultZoom` parameter. This must be a number between the `minZoom` and `maxZoom` parameters - if outside of them, it will be set to the nearest parameter.
 
 Alternatively, if a `coordinates` note has been defined, the initial zoom level may be read from that note's frontmatter as `<distance> <unit>`.
@@ -160,14 +166,6 @@ zoomTag: nearby
 ```
 
 Then the map will read the `nearby` tag, recognize it is `100 miles`, and set the map's initial zoom to the closest level that will display 100 miles (this depends on `minZoom`, `maxZoom`, and `zoomDelta`).
-
-#### Zooming with Image Maps
-
-You may notice that basic image maps and zooming do not necessarily behave the way you think they would. For instance, you may find that setting a higher max zoom value just makes the map *start farther away*, instead of actually allowing you to zoom in more.
-
-This is because of the way image maps are drawn. You can think of image maps as being a picture overlayed on top of a map, but the map is blank. As you change your zoom levels you are *changing the zoom levels of the map*. The image is then overlayed onto the map *after* the map is created for that zoom level, which means the coordinates of the image overlay changes as the map scale changes.
-
-Instead, the [image bounds](#bounds) need to be set for your map. This tells Leaflet *exactly* what coordinates your image should be placed at on the underlaying map layer. No matter how the map instance changes, the image will be in the same spot, **every time.** 
 
 ## Real World Maps
 
