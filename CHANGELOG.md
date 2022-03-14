@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.0.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.14.0...5.0.0) (2022-03-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* OpenStreetMap has restricted use of its tile server in Obsidian. The default tile server for Obsidian Leaflet has been changed to Stamen Terrain. Please see #286 for more information. (close #286)
+
+### Features
+
+* OpenStreetMap has restricted use of its tile server in Obsidian. The default tile server for Obsidian Leaflet has been changed to Stamen Terrain. Please see [#286](https://github.com/valentine195/obsidian-leaflet-plugin/issues/286) for more information. (close [#286](https://github.com/valentine195/obsidian-leaflet-plugin/issues/286)) ([3b33092](https://github.com/valentine195/obsidian-leaflet-plugin/commit/3b33092ddf540d444033a2457e3fe6d7c68867f5))
+
 ## [4.14.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.13.0...4.14.0) (2022-02-28)
 
 
