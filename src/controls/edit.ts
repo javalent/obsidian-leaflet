@@ -2,7 +2,7 @@ import { Modal, Setting, TextComponent, Notice, Events } from "obsidian";
 import { BaseMapType, ObsidianLeaflet } from "src/@types";
 import { Marker } from "src/layer";
 import { CommandSuggestionModal, PathSuggestionModal } from "src/modals";
-import { getId } from "src/utils";
+import { DEFAULT_TILE_SERVER, getId } from "src/utils";
 import { FontAwesomeControl, FontAwesomeControlOptions } from "./controls";
 
 import { LeafletSymbol } from "src/utils/leaflet-import";
@@ -124,7 +124,7 @@ class SimpleLeafletMap extends Events {
         let layer, mapLayers;
         if (this.original.type === "real") {
             layer = L.tileLayer(
-                "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                DEFAULT_TILE_SERVER,
                 {
                     attribution:
                         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

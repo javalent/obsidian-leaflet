@@ -7,6 +7,11 @@ import {
 
 export const VIEW_TYPE = "obsidian-leaflet-map-view";
 
+export const DEFAULT_TILE_SERVER =
+    "https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.png";
+export const DEFAULT_ATTRIBUTION =
+    'Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://www.openstreetmap.org/copyright">ODbL</a>.';
+
 export const OVERLAY_TAG_REGEX = /^(\d+(?:\.\d+)?)\s?(\w*)/;
 
 export const MAP_OVERLAY_STROKE_WIDTH = 2;
@@ -92,8 +97,9 @@ export const DEFAULT_SETTINGS: ObsidianAppData = {
     mapViewParameters: {},
     enableDraw: true,
     defaultUnitType: "imperial",
-    defaultTile: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    defaultTileDark: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+    defaultTile: DEFAULT_TILE_SERVER,
+    defaultTileDark: DEFAULT_TILE_SERVER,
+    defaultAttribution: DEFAULT_ATTRIBUTION
 };
 export const BASE_POPUP_OPTIONS = {
     className: "leaflet-marker-link-popup",
@@ -358,9 +364,7 @@ export const LEAFLET_PROVIDERS = {
         url: "https://stamen-tiles-{s}.a.ssl.fastly.net/{variant}/{z}/{x}/{y}{r}.{ext}",
         options: {
             attribution:
-                'Map tiles by <a href="http://stamen.com">Stamen Design</a>, ' +
-                '<a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; ' +
-                "Map data {attribution.OpenStreetMap}",
+                'Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://www.openstreetmap.org/copyright">ODbL</a>.',
             subdomains: "abcd",
             minZoom: 0,
             maxZoom: 20,

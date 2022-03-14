@@ -24,6 +24,7 @@ import { OverlayContextModal } from "src/modals/context";
 
 import {
     copyToClipboard,
+    DEFAULT_ATTRIBUTION,
     DEFAULT_MAP_OPTIONS,
     DISTANCE_DECIMALS,
     formatLatLng,
@@ -1317,11 +1318,17 @@ export class RealMap extends BaseMap {
     }
 
     async buildLayer(layer: { data: string; id: string; alias?: string }) {
+        if (layer.data.contains("openstreetmap")) {
+            new Notice(
+                "OpenStreetMap has restricted the use of its tile server in Obsidian. Your map may break at any time. Please switch to a different tile server."
+            );
+        }
         const tileLayer = L.tileLayer(layer.data, {
-            ...(layer.data.contains("openstreetmap") && {
-                attribution:
-                    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }),
+            ...(layer.data.contains("stamen-tiles")
+                ? {
+                      attribution: DEFAULT_ATTRIBUTION
+                  }
+                : { attribution: this.plugin.data.defaultAttribution }),
             className: this.options.darkMode ? "dark-mode" : ""
         });
 

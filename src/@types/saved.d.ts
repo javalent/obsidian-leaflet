@@ -53,4 +53,5 @@ export interface ObsidianAppData {
     defaultUnitType: "metric" | "imperial";
     defaultTile: string;
     defaultTileDark: string;
+    defaultAttribution: string;
 }

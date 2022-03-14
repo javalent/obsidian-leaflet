@@ -32,7 +32,8 @@ import {
     VIEW_ICON,
     VIEW_TYPE,
     MODIFIER_KEY,
-    UNIT_SYSTEM
+    UNIT_SYSTEM,
+    DEFAULT_TILE_SERVER
 } from "./utils";
 import {
     MapInterface,
@@ -58,6 +59,7 @@ import type { Plugins } from "../../obsidian-overload/index";
 
 declare module "obsidian" {
     interface App {
+        //@ts-ignore
         plugins: {
             getPlugin<T extends keyof Plugins>(plugin: T): Plugins[T];
         };
@@ -84,6 +86,7 @@ declare module "obsidian" {
         dom: HTMLDivElement;
     }
     interface Vault {
+        //@ts-ignore
         config: {
             theme: "moonstone" | "obsidian";
         };
@@ -162,6 +165,7 @@ export default class ObsidianLeaflet
             });
         }
 
+        //@ts-ignore
         if (this.app.plugins.getPlugin("initiative-tracker")) {
             this.registerView(
                 "INITIATIVE_TRACKER_MAP_VIEW",
@@ -314,6 +318,38 @@ export default class ObsidianLeaflet
                     await this.app.vault.adapter.read(this.configFilePath)
                 )
             );
+        }
+
+        if (
+            this.data.version?.major != null &&
+            this.data.version?.major < 5 &&
+            (this.data.defaultTile.contains("openstreetmap") ||
+                this.data.defaultTileDark.contains("openstreetmap"))
+        ) {
+            new Notice(
+                createFragment((e) => {
+                    e.createSpan({
+                        text: "Obsidian Leaflet: OpenStreetMap has restricted the use of its tile server in Obsidian."
+                    });
+                    e.createEl("br");
+                    e.createEl("br");
+                    e.createSpan({
+                        text: "Going forward, the default tile server will be "
+                    });
+                    e.createEl("a", {
+                        href: "http://maps.stamen.com/#terrain/12/37.7706/-122.3782",
+                        text: "Stamen Terrain"
+                    });
+                    e.createSpan({ text: "." });
+                }),
+                0
+            );
+            if (this.data.defaultTile.contains("openstreetmap")) {
+                this.data.defaultTile = DEFAULT_TILE_SERVER;
+            }
+            if (this.data.defaultTileDark.contains("openstreetmap")) {
+                this.data.defaultTileDark = DEFAULT_TILE_SERVER;
+            }
         }
         this.data.previousVersion = this.manifest.version;
         const splitVersion = this.data.previousVersion.split(".");

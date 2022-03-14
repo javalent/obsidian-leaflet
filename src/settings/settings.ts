@@ -17,7 +17,9 @@ import {
     iconNames,
     removeValidationError,
     setValidationError,
-    getMarkerIcon
+    getMarkerIcon,
+    DEFAULT_TILE_SERVER,
+    DEFAULT_ATTRIBUTION
 } from "src/utils";
 import { IconSuggestionModal } from "src/modals";
 
@@ -415,7 +417,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             });
         new Setting(containerEl)
             .setName("Default Tile Server")
-            .setDesc("Change the default tile server used by the map.")
+            .setDesc(
+                "It is up to you to ensure you have proper access to this tile server."
+            )
             .addText((t) => {
                 t.setValue(this.plugin.data.defaultTile).onChange((v) => {
                     this.plugin.data.defaultTile = v;
@@ -427,9 +431,33 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     .setIcon("reset")
                     .setTooltip("Reset")
                     .onClick(() => {
-                        this.plugin.data.defaultTile =
-                            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-                        
+                        this.plugin.data.defaultTile = DEFAULT_TILE_SERVER;
+
+                        this.createMapSettings(containerEl);
+                        this.plugin.saveSettings();
+                    })
+            );
+        new Setting(containerEl)
+            .setName("Default Tile Server Attribution")
+            .setDesc(
+                "Please ensure your attribution meets all requirements set by the tile server."
+            )
+            .addTextArea((t) => {
+                t.setValue(this.plugin.data.defaultAttribution).onChange(
+                    (v) => {
+                        this.plugin.data.defaultAttribution = v;
+                        this.plugin.saveSettings();
+                    }
+                );
+            })
+            .addExtraButton((b) =>
+                b
+                    .setIcon("reset")
+                    .setTooltip("Reset")
+                    .onClick(() => {
+                        this.plugin.data.defaultAttribution =
+                            DEFAULT_ATTRIBUTION;
+
                         this.createMapSettings(containerEl);
                         this.plugin.saveSettings();
                     })
@@ -437,7 +465,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName("Default Tile Server (Dark Mode)")
             .setDesc(
-                "Change the default tile server used by the map when in dark mode."
+                "It is up to you to ensure you have proper access to this tile server."
             )
             .addText((t) => {
                 t.setValue(this.plugin.data.defaultTileDark).onChange((v) => {
@@ -450,8 +478,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     .setIcon("reset")
                     .setTooltip("Reset")
                     .onClick(() => {
-                        this.plugin.data.defaultTileDark =
-                            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+                        this.plugin.data.defaultTileDark = DEFAULT_TILE_SERVER;
                         this.createMapSettings(containerEl);
                         this.plugin.saveSettings();
                     })
