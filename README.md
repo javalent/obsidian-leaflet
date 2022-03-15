@@ -32,11 +32,10 @@ darkMode: true
 ## Options
 
 > :pencil: Using Links
-> 
+>
 > Several parameters below are for providing links to the map, whether that be for images, marker files, etc.
-> 
-> In all cases, either Obsidian's Wikilinks (`[[Link]]`) *or* standard markdown links (`[Link](./path/to/file)`) may be provided.
-
+>
+> In all cases, either Obsidian's Wikilinks (`[[Link]]`) _or_ standard markdown links (`[Link](./path/to/file)`) may be provided.
 
 | Option                                  | Description                                                                                                 | Default                                    |
 | --------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
@@ -53,6 +52,7 @@ darkMode: true
 | [maxZoom](#initial-zoom-level)          | Maximum allowable zoom level of the map.                                                                    | 10                                         |
 | [defaultZoom](#initial-zoom-level)      | Map will load zoomed to this level.                                                                         | 5                                          |
 | [zoomDelta](#initial-zoom-level)        | Zoom level will change by this amount when zooming.                                                         | 1                                          |
+| zoomFeatures                            | The map will automatically fit all [GeoJSON](#geojson) and [GPX](#gpx) features                             |                                            |
 | [unit](#unit-and-scale)                 | Unit to display distances in                                                                                | meters                                     |
 | [scale](#unit-and-scale)                | Scale factor for image map distance calculation.                                                            | 1                                          |
 | [marker](#markers)                      | Create immutable markers on the map                                                                         |                                            |
@@ -139,9 +139,9 @@ coordinates: [[Note with Location Frontmatter]]
 ### Initial Zoom Level
 
 > :warning: Using an Image Map?
-> 
-> Zoom levels and image maps may be a little unintuitive. 
-> 
+>
+> Zoom levels and image maps may be a little unintuitive.
+>
 > Check out [Zooming with Image Maps](#zooming-with-image-maps) below.
 
 The initial zoom level of the map may be set using the `defaultZoom` parameter. This must be a number between the `minZoom` and `maxZoom` parameters - if outside of them, it will be set to the nearest parameter.
@@ -228,11 +228,11 @@ Image maps can be loaded one of three ways:
 
 ### Zooming with Image Maps
 
-You may notice that basic image maps and zooming do not necessarily behave the way you think they would. For instance, you may find that setting a higher max zoom value just makes the map *start farther away*, instead of actually allowing you to zoom in more.
+You may notice that basic image maps and zooming do not necessarily behave the way you think they would. For instance, you may find that setting a higher max zoom value just makes the map _start farther away_, instead of actually allowing you to zoom in more.
 
 This is because of the way image maps are essentially a hack on top of the LeafletJS module. There is still an underlying map that still has its latitude and longitude, it just can't be seen. The image is then drawn on top of that map (centered at [0, 0]) and then stretched to fit. If you change parameters (such as the zoom levels), the underlying map is changed... but the image is **still placed at [0, 0] and stretched to fit!**
 
-Instead, the [image bounds](#bounds) need to be set for your map. This tells Leaflet *exactly* what coordinates your image should be placed at on the underlaying map layer. No matter how the map instance changes, the image will be in the same spot and the same size, **every time!** 
+Instead, the [image bounds](#bounds) need to be set for your map. This tells Leaflet _exactly_ what coordinates your image should be placed at on the underlaying map layer. No matter how the map instance changes, the image will be in the same spot and the same size, **every time!**
 
 ### Multi-Image Maps
 
