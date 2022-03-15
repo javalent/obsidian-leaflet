@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.0.1](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.0.0...5.0.1) (2022-03-15)
+
+
+### Bug Fixes
+
+* Fixes GPX tooltip not inheriting map units (close [#288](https://github.com/valentine195/obsidian-leaflet-plugin/issues/288)) ([8640245](https://github.com/valentine195/obsidian-leaflet-plugin/commit/8640245f87428a239b81bca13dce4230fcf4b880))
+
 ## [5.0.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/4.14.0...5.0.0) (2022-03-14)
 
 
