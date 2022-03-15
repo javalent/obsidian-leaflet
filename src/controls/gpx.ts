@@ -174,12 +174,14 @@ class GPXControl extends FontAwesomeControl {
                     speed = convert(speed).from("m").to("km") * 60 * 60;
                     unit = "km/h";
                     pace = "km";
+                    break;
                 }
                 case "imperial": {
                     //mph
                     speed = convert(speed).from("m").to("mi") * 60 * 60;
                     unit = "mph";
                     pace = "mi";
+                    break;
                 }
             }
 
