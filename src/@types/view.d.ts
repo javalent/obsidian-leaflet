@@ -1,5 +1,6 @@
 import { ItemView, MarkdownRenderChild, WorkspaceLeaf } from "obsidian";
-import { ObsidianLeaflet } from "./main";
+
+import type ObsidianLeaflet from "src/main";
 import { BaseMapType } from "./map";
 
 export class LeafletMapView extends ItemView {

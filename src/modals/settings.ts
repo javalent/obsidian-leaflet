@@ -7,7 +7,8 @@ import {
     TextComponent
 } from "obsidian";
 import t from "src/l10n/locale";
-import { Icon, ObsidianLeaflet } from "../@types";
+import { Icon } from "../@types";
+import type ObsidianLeaflet from "src/main";
 import {
     findIconDefinition,
     getIcon,

@@ -1,9 +1,4 @@
-import type {
-    BaseMapType,
-    MarkerIcon,
-    ObsidianLeaflet,
-    SavedOverlayData
-} from "src/@types";
+import type { MarkerIcon, SavedOverlayData } from "src/@types";
 import {
     Component,
     Events,

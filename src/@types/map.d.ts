@@ -4,7 +4,7 @@ import type L from "leaflet";
 import type { DivIcon } from "leaflet";
 import type { EventRef, Events } from "obsidian";
 import type { MarkerIcon, SavedMarkerProperties, SavedOverlayData } from ".";
-import type { ObsidianLeaflet } from "./main";
+
 import type { Marker } from ".";
 import type { ObsidianAppData, TooltipDisplay } from "./saved";
 import type { Overlay } from "src/layer";
@@ -14,6 +14,7 @@ import type { LeafletRenderer } from "src/renderer/renderer";
 import { DrawingController } from "src/draw/controller";
 import { ShapeProperties } from "src/draw/shape";
 import type geojson from "geojson";
+import type ObsidianLeaflet from "src/main";
 
 export interface ImageLayerData {
     data: string;

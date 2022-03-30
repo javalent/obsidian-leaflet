@@ -28,9 +28,9 @@ import type {
     Icon,
     SavedMarkerProperties,
     TooltipDisplay,
-    ObsidianLeaflet
 } from "src/@types";
 import { FolderSuggestionModal } from "src/modals/path";
+import type ObsidianLeaflet from "src/main";
 import t from "src/l10n/locale";
 
 export class ObsidianLeafletSettingTab extends PluginSettingTab {

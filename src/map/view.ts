@@ -1,9 +1,10 @@
 import { ItemView, MarkdownRenderChild, Menu, WorkspaceLeaf } from "obsidian";
-import { BaseMapType, ObsidianLeaflet } from "src/@types";
+import { BaseMapType,  } from "src/@types";
 import t from "src/l10n/locale";
 import { EditParametersModal } from "src/modals/mapview";
 import { LeafletRenderer } from "src/renderer/renderer";
 import { DEFAULT_BLOCK_PARAMETERS, VIEW_TYPE } from "src/utils";
+import type ObsidianLeaflet from "src/main";
 
 export class LeafletMapView extends ItemView {
     map: BaseMapType;

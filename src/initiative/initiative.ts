@@ -3,7 +3,7 @@ import {
     BaseMapType,
     ImageLayerData,
     MarkerDivIconOptions,
-    ObsidianLeaflet
+    
 } from "src/@types";
 import { FontAwesomeControl } from "src/controls/controls";
 import t from "src/l10n/locale";
@@ -15,6 +15,7 @@ import { LeafletSymbol } from "src/utils/leaflet-import";
 import { Creature } from "../../../obsidian-initiative-tracker/src/utils/creature";
 import { ImageMap } from "../map/map";
 import { LeafletMapView } from "../map/view";
+import type ObsidianLeaflet from "src/main";
 
 const L = window[LeafletSymbol];
 

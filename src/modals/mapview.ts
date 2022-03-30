@@ -5,7 +5,7 @@ import {
     Notice,
     TextAreaComponent
 } from "obsidian";
-import { ObsidianLeaflet } from "src/@types";
+import type ObsidianLeaflet from "src/main";
 
 import t from "src/l10n/locale";
 

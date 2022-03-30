@@ -14,10 +14,10 @@ import { parse as parseCSV } from "papaparse";
 import type {
     BlockParameters,
     LeafletMapOptions,
-    ObsidianLeaflet,
     SavedMarkerProperties,
     SavedOverlayData
 } from "../@types";
+import type ObsidianLeaflet from "src/main";
 import type { BaseMapType, ImageLayerData } from "../@types/map";
 
 import Watcher from "../utils/watcher";

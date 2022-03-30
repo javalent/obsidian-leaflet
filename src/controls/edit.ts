@@ -1,9 +1,10 @@
 import { Modal, Setting, TextComponent, Notice, Events } from "obsidian";
-import { BaseMapType, ObsidianLeaflet } from "src/@types";
+import { BaseMapType } from "src/@types";
 import { Marker } from "src/layer";
 import { CommandSuggestionModal, PathSuggestionModal } from "src/modals";
 import { DEFAULT_TILE_SERVER, getId } from "src/utils";
 import { FontAwesomeControl, FontAwesomeControlOptions } from "./controls";
+import type ObsidianLeaflet from "src/main";
 
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import t from "src/l10n/locale";
@@ -123,13 +124,10 @@ class SimpleLeafletMap extends Events {
     ) {
         let layer, mapLayers;
         if (this.original.type === "real") {
-            layer = L.tileLayer(
-                DEFAULT_TILE_SERVER,
-                {
-                    attribution:
-                        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                }
-            );
+            layer = L.tileLayer(DEFAULT_TILE_SERVER, {
+                attribution:
+                    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            });
             const group = L.layerGroup([layer]);
 
             mapLayers = [

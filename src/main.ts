@@ -41,7 +41,6 @@ import {
     ObsidianAppData,
     Icon,
     Marker,
-    ObsidianLeaflet as ObsidianLeafletImplementation,
     BaseMapType
 } from "./@types";
 
@@ -101,7 +100,6 @@ declare module "obsidian" {
 
 export default class ObsidianLeaflet
     extends Plugin
-    implements ObsidianLeafletImplementation
 {
     data: ObsidianAppData;
     markerIcons: MarkerIcon[];
