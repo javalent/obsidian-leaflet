@@ -86,7 +86,7 @@ export class Watcher extends Component {
                     new Marker(this.renderer.map, {
                         id: this.ids.get("location"),
                         type: this.type.type,
-                        icon: this.type.icon,
+                        /* icon: this.type.icon, */
                         loc: L.latLng(location),
                         link: this.file.path,
                         layer: this.renderer.map.mapLayers[0].id,
@@ -114,13 +114,6 @@ export class Watcher extends Component {
                         this.markers.push(
                             new Marker(this.renderer.map, {
                                 type: type,
-                                icon:
-                                    this.plugin.markerIcons.find(
-                                        (t) => t.type == type
-                                    )?.icon ??
-                                    this.plugin.markerIcons.find(
-                                        (t) => t.type == "default"
-                                    ).icon,
                                 loc: L.latLng(location),
                                 percent: null,
                                 id: this.ids.get("mapmarkers"),

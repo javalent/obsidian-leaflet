@@ -1,6 +1,8 @@
-import { BaseMapType, TooltipDisplay } from ".";
-import { MarkerDivIcon, DivIconMarker } from "./map";
+import { TooltipDisplay } from ".";
+import { MarkerDivIcon } from "./map";
+import type { Marker as MarkerDefinition } from "../layer/marker";
 
+export type Marker = MarkerDefinition;
 export interface MarkerIcon {
     readonly type: string;
     readonly html: string;
@@ -9,7 +11,6 @@ export interface MarkerIcon {
 
 export interface MarkerProperties {
     id: string;
-    icon: MarkerDivIcon;
     type: string;
     loc: L.LatLng;
     link: string;
@@ -43,59 +44,4 @@ export interface SavedMarkerProperties {
     minZoom: number;
     maxZoom: number;
     tooltip: TooltipDisplay;
-}
-
-declare class Marker {
-    leafletInstance: DivIconMarker;
-    loc: L.LatLng;
-    percent: [number, number];
-    id: string;
-    isBeingHovered: boolean;
-    layer: string;
-    command: boolean;
-    maxZoom: number;
-    minZoom: number;
-    divIcon: MarkerDivIcon;
-    description: string;
-    tooltip?: TooltipDisplay;
-    constructor(
-        map: L.Map,
-        {
-            id,
-            icon,
-            type,
-            loc,
-            link,
-            layer,
-            mutable,
-            command,
-            zoom,
-            percent,
-            description,
-            maxZoom
-        }: MarkerProperties
-    );
-    get link(): string;
-    set link(x: string);
-
-    get display(): string;
-
-    get mutable(): boolean;
-    set mutable(x: boolean);
-
-    get type(): string;
-    set type(x: string);
-
-    set icon(icon: MarkerIcon);
-
-    setLatLng(latlng: L.LatLng): void;
-    remove(): void;
-    show(): void;
-    hide(): void;
-    shouldShow(zoom: number): boolean;
-    shouldHide(zoom: number): boolean;
-
-    toProperties(): SavedMarkerProperties;
-
-    static from(map: BaseMapType, properties: MarkerProperties): Marker;
 }

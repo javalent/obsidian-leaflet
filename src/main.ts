@@ -33,7 +33,8 @@ import {
     VIEW_TYPE,
     MODIFIER_KEY,
     UNIT_SYSTEM,
-    DEFAULT_TILE_SERVER
+    DEFAULT_TILE_SERVER,
+    getId
 } from "./utils";
 import {
     MapInterface,
@@ -563,7 +564,6 @@ export default class ObsidianLeaflet
             })
         };
     }
-
     public generateMarkerMarkup(
         markers: Icon[] = this.data.markerIcons
     ): MarkerIcon[] {
@@ -574,7 +574,8 @@ export default class ObsidianLeaflet
             classes: ["full-width-height"],
             styles: {
                 color: this.data.defaultMarker.color
-            }
+            },
+            maskId: `leaflet-mask-${getId()}`
         }).html;
         ret.unshift({
             type: "default",

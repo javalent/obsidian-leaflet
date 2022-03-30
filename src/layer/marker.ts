@@ -1,7 +1,6 @@
 import { App, Menu, Notice, setIcon } from "obsidian";
 import type {
     MarkerIcon,
-    Marker as MarkerDefinition,
     DivIconMarker,
     MarkerDivIcon,
     TooltipDisplay,
@@ -10,7 +9,7 @@ import type {
     BaseMapType
 } from "src/@types";
 import { MarkerContextModal } from "src/modals";
-import { divIconMarker } from "src/map";
+import { divIconMarker, markerDivIcon } from "src/map";
 import { Layer } from "../layer/layer";
 import { popup } from "src/map/popup";
 import { MODIFIER_KEY } from "src/utils";
@@ -166,7 +165,7 @@ class Command extends MarkerTarget {
     }
 }
 
-export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
+export class Marker extends Layer<DivIconMarker> {
     target: MarkerTarget;
     private _mutable: boolean;
     private _type: string;
@@ -190,7 +189,6 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         public map: BaseMapType,
         {
             id,
-            icon,
             type,
             loc,
             link,
@@ -205,10 +203,13 @@ export class Marker extends Layer<DivIconMarker> implements MarkerDefinition {
         }: MarkerProperties
     ) {
         super();
+
+        const marker = this.map.plugin.getIconForType(type);
+        const icon = markerDivIcon(this.map.plugin.parseIcon(marker));
         this.leafletInstance = divIconMarker(
             loc,
             {
-                icon: icon,
+                icon,
                 keyboard: mutable && !this.map.options.lock,
                 draggable: mutable && !this.map.options.lock,
                 bubblingMouseEvents: true

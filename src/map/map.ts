@@ -388,7 +388,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 type: type,
                 loc: L.latLng(marker.loc),
                 link: marker.link,
-                icon: mapIcon,
+                /* icon: mapIcon, */
                 layer: marker.layer
                     ? marker.layer
                     : this.currentGroup?.id ?? null,
