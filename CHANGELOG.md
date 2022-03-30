@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.0.2](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.0.1...5.0.2) (2022-03-30)
+
+
+### Bug Fixes
+
+* Fixes icons not rendering due to SVG mask duplication (close [#293](https://github.com/valentine195/obsidian-leaflet-plugin/issues/293)) ([6e95de5](https://github.com/valentine195/obsidian-leaflet-plugin/commit/6e95de573634887de500caed78a8a10b8155dad1))
+
 ### [5.0.1](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.0.0...5.0.1) (2022-03-15)
 
 
