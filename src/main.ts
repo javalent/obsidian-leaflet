@@ -599,7 +599,7 @@ export default class ObsidianLeaflet
         )?.type;
     }
     public getIconForType(type: string) {
-        return this.data.markerIcons.find((i) => i.type == type);
+        return this.data.markerIcons.find((i) => i.type == type) ?? this.data.defaultMarker;
     }
     public createNewMarkerType(options?: {
         original?: Icon;
