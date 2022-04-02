@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.0.3](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.0.2...5.0.3) (2022-04-02)
+
+
+### Bug Fixes
+
+* Fixes issue where marker types deleted in settings would crash the plugin ([bacc370](https://github.com/valentine195/obsidian-leaflet-plugin/commit/bacc37086f5822832eb5346c0312465b62178b0c))
+
 ### [5.0.2](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.0.1...5.0.2) (2022-03-30)
 
 
