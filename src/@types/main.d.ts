@@ -23,6 +23,7 @@ export interface MapInterface {
 export interface BlockParameters {
     id?: string;
     image?: string | string[];
+    inkarnate_id?: string;
     layers?: string[];
     tileServer?: string | string[];
     tileOverlay?: string | string[];

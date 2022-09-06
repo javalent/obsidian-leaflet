@@ -247,7 +247,7 @@ export default class ObsidianLeaflet
     ): Promise<void> {
         /* try { */
         /** Get Parameters from Source */
-        let params = getParamsFromSource(source);
+        let params = await getParamsFromSource(source);
 
         if (!params.id) {
             new Notice(t("Obsidian Leaflet maps must have an ID."));
