@@ -1066,7 +1066,6 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 item.setTitle(
                     marker.type == "default" ? "Default" : marker.type
                 );
-                item.setActive(true);
                 item.onClick(async () => {
                     this.log(`${marker.type} selected. Creating marker.`);
                     this.createMarker(
