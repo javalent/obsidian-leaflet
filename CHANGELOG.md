@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.0.4](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.0.3...5.0.4) (2022-09-12)
+
+
+### Bug Fixes
+
+* fixes appearance of native context menus ([a70a041](https://github.com/valentine195/obsidian-leaflet-plugin/commit/a70a0415c84a2d925799f048a2151152ecbc772d))
+
 ### [5.0.3](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.0.2...5.0.3) (2022-04-02)
 
 
