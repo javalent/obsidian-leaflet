@@ -536,7 +536,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                     gpxSet.add({ path });
                 if (abstractFile instanceof TFolder) {
                     Vault.recurseChildren(abstractFile, (file) => {
-                        if (file instanceof TFile && file.extension === "gpx")
+                        if (file instanceof TFile && (file.extension === "gpx" || file.path.endsWith(".gpx.gz")))
                             gpxSet.add({ path: file.path });
                     });
                 }
@@ -550,8 +550,13 @@ export class LeafletRenderer extends MarkdownRenderChild {
                     this.sourcePath
                 );
                 if (file && file instanceof TFile) {
-                    let data = await this.plugin.app.vault.read(file);
-                    if (file.extension === 'gz') data = (await doUnzip(data)).toString();
+                    let data: string;
+                    if(file.extension === 'gz') {
+                        let dataBuffer = await this.plugin.app.vault.readBinary(file);
+                        data = (await doUnzip(dataBuffer)).toString();
+                    } else {
+                        data = await this.plugin.app.vault.read(file);
+                    }
                     gpxData.push({ data, alias });
                 }
             }
