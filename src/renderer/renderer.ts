@@ -1,3 +1,4 @@
+import { unzip } from "zlib";
 import {
     MarkdownRenderChild,
     TFile,
@@ -38,6 +39,8 @@ import convert from "convert";
 import t from "../l10n/locale";
 import { LeafletMapView } from "src/map/view";
 import { Marker, Overlay } from "src/layer";
+import { promisify } from "util";
+const doUnzip = promisify(unzip);
 
 declare module "leaflet" {
     interface Map {
@@ -548,6 +551,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 );
                 if (file && file instanceof TFile) {
                     let data = await this.plugin.app.vault.read(file);
+                    if (file.extension === 'gz') data = (await doUnzip(data)).toString();
                     gpxData.push({ data, alias });
                 }
             }
