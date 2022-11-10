@@ -54,6 +54,7 @@
         "webpack-cli": "^4.7.2",
         "webpack-inject-plugin": "^1.5.5",
         "worker-loader": "^3.0.8",
-        "xmldom": "^0.6.0"
+        "xmldom": "^0.6.0",
+        "zlib": "^1.0.5"
     }
 }
