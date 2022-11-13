@@ -1,4 +1,4 @@
-import { unzip } from "zlib";
+import { ungzip } from "pako";
 import {
     MarkdownRenderChild,
     TFile,
@@ -40,7 +40,6 @@ import t from "../l10n/locale";
 import { LeafletMapView } from "src/map/view";
 import { Marker, Overlay } from "src/layer";
 import { promisify } from "util";
-const doUnzip = promisify(unzip);
 
 declare module "leaflet" {
     interface Map {
@@ -553,7 +552,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                     let data: string;
                     if(file.extension === 'gz') {
                         let dataBuffer = await this.plugin.app.vault.readBinary(file);
-                        data = (await doUnzip(dataBuffer)).toString();
+                        data = ungzip(dataBuffer, {to: 'string'});
                     } else {
                         data = await this.plugin.app.vault.read(file);
                     }
