@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.1.2](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.1.1...5.1.2) (2023-01-30)
+
+
+### Bug Fixes
+
+* lock state persists ([d6436b1](https://github.com/valentine195/obsidian-leaflet-plugin/commit/d6436b1cb4ad324174db81428b76f620aff0f71a))
+
 ### [5.1.1](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.0.5...5.1.1) (2022-11-13)
 
 
