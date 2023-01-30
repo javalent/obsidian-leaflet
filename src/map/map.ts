@@ -1235,6 +1235,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     toProperties(): SavedMapData {
         return {
             id: this.id,
+            locked: this.options.lock,
             lastAccessed: Date.now(),
             markers: this.markers
                 .filter(({ mutable }) => mutable)

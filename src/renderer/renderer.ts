@@ -535,7 +535,11 @@ export class LeafletRenderer extends MarkdownRenderChild {
                     gpxSet.add({ path });
                 if (abstractFile instanceof TFolder) {
                     Vault.recurseChildren(abstractFile, (file) => {
-                        if (file instanceof TFile && (file.extension === "gpx" || file.path.endsWith(".gpx.gz")))
+                        if (
+                            file instanceof TFile &&
+                            (file.extension === "gpx" ||
+                                file.path.endsWith(".gpx.gz"))
+                        )
                             gpxSet.add({ path: file.path });
                     });
                 }
@@ -550,9 +554,11 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 );
                 if (file && file instanceof TFile) {
                     let data: string;
-                    if(file.extension === 'gz') {
-                        let dataBuffer = await this.plugin.app.vault.readBinary(file);
-                        data = ungzip(dataBuffer, {to: 'string'});
+                    if (file.extension === "gz") {
+                        let dataBuffer = await this.plugin.app.vault.readBinary(
+                            file
+                        );
+                        data = ungzip(dataBuffer, { to: "string" });
                     } else {
                         data = await this.plugin.app.vault.read(file);
                     }
@@ -584,6 +590,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
         this.map.addOverlay(...new Set(mapData?.overlays ?? []));
 
         this.map.addShapes(...mapData.shapes);
+
+        this.map.options.lock = mapData.locked;
     }
 
     async loadImmutableData() {

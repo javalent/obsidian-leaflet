@@ -370,6 +370,7 @@ export type BaseMapType = RealMap | ImageMap;
 
 export interface SavedMapData {
     id: string;
+    locked: boolean;
     lastAccessed: number;
     markers: SavedMarkerProperties[];
     overlays: SavedOverlayData[];

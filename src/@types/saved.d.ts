@@ -22,6 +22,7 @@ export interface MapMarkerData {
     files: string[];
     lastAccessed: number;
     id: string;
+    locked: boolean;
     markers: SavedMarkerProperties[];
     overlays: SavedOverlayData[];
     shapes: ShapeProperties[];

@@ -47,9 +47,10 @@ module.exports = {
             },
             {
                 test: /\.tsx?$/,
-                loader: "ts-loader",
+                loader: "esbuild-loader",
                 options: {
-                    transpileOnly: true
+                    loader: "tsx", // Or 'ts' if you don't need tsx
+                    target: "es2020"
                 }
             },
             {

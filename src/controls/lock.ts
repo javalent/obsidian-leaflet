@@ -17,6 +17,7 @@ class LockControl extends FontAwesomeControl {
             this.setTooltip("Unlock Map");
         }
         this.map.trigger("lock");
+        this.map.trigger("should-save");
     }
 }
 

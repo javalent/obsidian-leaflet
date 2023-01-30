@@ -14,3 +14,5 @@ dist
 rollup.config-dev.js
 .hotreload
 webpack.dev.js
+
+.env

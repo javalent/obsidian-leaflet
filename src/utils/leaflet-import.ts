@@ -1,4 +1,6 @@
 import { MAP_OVERLAY_STROKE_OPACITY, MAP_OVERLAY_STROKE_WIDTH } from ".";
+import { HotlinePlugin } from "./hotline";
+import { FullscreenPlugin } from "./fullscreen/fullscreen";
 import type * as Leaflet from "leaflet";
 
 declare global {
@@ -8,6 +10,7 @@ declare global {
 }
 
 export const LeafletSymbol = "OBSIDIAN_LEAFLET_PLUGIN";
+console.log("🚀 ~ file: leaflet-import.ts:11 ~ LeafletSymbol", LeafletSymbol);
 
 const WindowL = window.L;
 if (!window.L) {
@@ -19,8 +22,7 @@ window[LeafletSymbol].Circle.mergeOptions({
     weight: MAP_OVERLAY_STROKE_WIDTH,
     opacity: MAP_OVERLAY_STROKE_OPACITY
 });
-
-require("leaflet-fullscreen");
-require("leaflet-hotline");
+HotlinePlugin(window[LeafletSymbol]);
+FullscreenPlugin(window[LeafletSymbol]);
 
 window.L = WindowL;
