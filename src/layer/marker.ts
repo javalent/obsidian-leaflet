@@ -206,8 +206,11 @@ export class Marker extends Layer<DivIconMarker> {
 
         const marker = this.map.plugin.getIconForType(type);
         if (!marker) {
-            new Notice(`Leaflet: Could not create icon for ${type} - does this type exist in settings?`)
-            return;}
+            new Notice(
+                `Leaflet: Could not create icon for ${type} - does this type exist in settings?`
+            );
+            return;
+        }
         const icon = markerDivIcon(this.map.plugin.parseIcon(marker));
         this.leafletInstance = divIconMarker(
             loc,
@@ -223,6 +226,7 @@ export class Marker extends Layer<DivIconMarker> {
                 type: type
             }
         );
+
         this.id = id;
         this.type = type;
         this.loc = loc;
@@ -386,12 +390,15 @@ export class Marker extends Layer<DivIconMarker> {
         });
         this.map.on("lock", () => {
             if (!this.mutable) return;
-            if (this.map.options.lock) {
-                this.leafletInstance.dragging.disable();
-            } else {
-                this.leafletInstance.dragging.enable();
-            }
-            this.leafletInstance.options.keyboard = !this.map.options.lock;
+            this.registerForShow(() => {
+                if (!this.leafletInstance.dragging) return;
+                if (this.map.options.lock) {
+                    this.leafletInstance.dragging.disable();
+                } else {
+                    this.leafletInstance.dragging.enable();
+                }
+                this.leafletInstance.options.keyboard = !this.map.options.lock;
+            });
         });
     }
     editMarker() {

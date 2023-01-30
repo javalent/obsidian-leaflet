@@ -1,7 +1,7 @@
 import { BaseMapType } from "src/@types";
 import { FontAwesomeControl, FontAwesomeControlOptions } from "./controls";
 
-class LockControl extends FontAwesomeControl {
+export class LockControl extends FontAwesomeControl {
     map: BaseMapType;
     constructor(opts: FontAwesomeControlOptions, map: BaseMapType) {
         super(opts, map.leafletInstance);
@@ -9,15 +9,18 @@ class LockControl extends FontAwesomeControl {
     }
     onClick(evt: MouseEvent) {
         this.map.options.lock = !this.map.options.lock;
-        if (!this.map.options.lock) {
+        this.setState(this.map.options.lock);
+        this.map.trigger("lock");
+        this.map.trigger("should-save");
+    }
+    setState(state: boolean) {
+        if (!state) {
             this.setIcon("unlock");
             this.setTooltip("Lock Map");
         } else {
             this.setIcon("lock");
             this.setTooltip("Unlock Map");
         }
-        this.map.trigger("lock");
-        this.map.trigger("should-save");
     }
 }
 

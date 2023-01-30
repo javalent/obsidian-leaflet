@@ -290,6 +290,8 @@ declare abstract class BaseMap /* <
     toProperties(): SavedMapData;
     updateMarkerIcons(): void;
 
+    updateLockState(state: boolean): void;
+
     zoomAllMarkers(): void;
 
     on(name: "removed", callback: () => void): EventRef;

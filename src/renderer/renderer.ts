@@ -577,6 +577,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
         if (!mapData) return;
 
+        this.map.updateLockState(mapData.locked);
+
         this.map.addMarker(
             ...(mapData.markers?.map((m) => {
                 const layer =
@@ -590,8 +592,6 @@ export class LeafletRenderer extends MarkdownRenderChild {
         this.map.addOverlay(...new Set(mapData?.overlays ?? []));
 
         this.map.addShapes(...mapData.shapes);
-
-        this.map.options.lock = mapData.locked;
     }
 
     async loadImmutableData() {

@@ -372,11 +372,6 @@ export default class ObsidianLeaflet extends Plugin {
                 this.data.mapMarkers = this.data.mapMarkers.filter(
                     ({ id }) => id != map.id
                 );
-
-                console.log(
-                    "🚀 ~ file: main.ts:380 ~ map.map.toProperties()",
-                    map.map.toProperties()
-                );
                 this.data.mapMarkers.push({
                     ...map.map.toProperties(),
                     files: this.mapFiles

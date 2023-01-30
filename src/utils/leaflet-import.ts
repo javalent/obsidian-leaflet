@@ -10,7 +10,6 @@ declare global {
 }
 
 export const LeafletSymbol = "OBSIDIAN_LEAFLET_PLUGIN";
-console.log("🚀 ~ file: leaflet-import.ts:11 ~ LeafletSymbol", LeafletSymbol);
 
 const WindowL = window.L;
 if (!window.L) {

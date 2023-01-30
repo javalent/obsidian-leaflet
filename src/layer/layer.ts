@@ -31,15 +31,15 @@ export abstract class Layer<T extends L.Layer> {
         this.group && this.group.removeLayer(this.leafletInstance);
     }
 
-    checkAndAddToMap() {
+    registerForShow(cb: (...args: any[]) => any) {
         if (this.map.isLayerRendered(this.layer)) {
-            this.show();
+            cb();
         } else if (this.layer) {
             this.map.on(
                 `layer-ready-for-features`,
                 (layer: LayerGroup<L.TileLayer | L.ImageOverlay>) => {
                     if (layer === this.mapLayer) {
-                        this.show();
+                        cb();
                     }
                 }
             );
@@ -48,10 +48,14 @@ export abstract class Layer<T extends L.Layer> {
                 "first-layer-ready",
                 (layer: LayerGroup<L.TileLayer | L.ImageOverlay>) => {
                     this.layer = layer.id;
-                    this.show();
+                    cb();
                 }
             );
         }
+    }
+
+    checkAndAddToMap() {
+        this.registerForShow(this.show.bind(this));
     }
     remove() {
         this.group && this.group.removeLayer(this.leafletInstance);

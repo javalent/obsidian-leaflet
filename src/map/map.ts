@@ -55,7 +55,7 @@ import { DrawingController } from "src/draw/controller";
 import { ShapeProperties } from "src/draw/shape";
 import LayerControl from "src/controls/layers";
 import type { FilterMarkers } from "src/controls/filter";
-import { lockControl } from "src/controls/lock";
+import { LockControl, lockControl } from "src/controls/lock";
 
 let L = window[LeafletSymbol];
 declare module "leaflet" {
@@ -76,6 +76,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     readyForDrawings: boolean = false;
     filterControl: FilterMarkers;
     tileOverlayLayer: L.FeatureGroup<L.TileLayer>;
+    lockControl: LockControl;
     abstract get bounds(): L.LatLngBounds;
 
     canvas: L.Canvas;
@@ -720,7 +721,9 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             { position: "topright" },
             this
         ).addTo(this.leafletInstance);
-        lockControl({ position: "topright" }, this).addTo(this.leafletInstance);
+        this.lockControl = lockControl({ position: "topright" }, this).addTo(
+            this.leafletInstance
+        );
         zoomControl({ position: "topleft" }, this).addTo(this.leafletInstance);
         resetZoomControl({ position: "topleft" }, this).addTo(
             this.leafletInstance
@@ -753,6 +756,13 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 this.leafletInstance
             );
         }
+    }
+
+    updateLockState(state: boolean): void {
+        this.options.lock = state;
+
+        this.lockControl.setState(this.options.lock);
+        this.trigger("lock");
     }
 
     abstract buildLayer(layer?: {
