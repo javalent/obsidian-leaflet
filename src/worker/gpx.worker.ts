@@ -24,7 +24,6 @@ ctx.onmessage = async (event) => {
     }
 };
 
-export default {} as typeof Worker & (new () => Worker);
 const _MAX_POINT_INTERVAL_MS = 15000;
 const _SECOND_IN_MILLIS = 1000;
 const _MINUTE_IN_MILLIS = 60 * _SECOND_IN_MILLIS;
