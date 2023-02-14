@@ -822,7 +822,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.popup.setTarget(evt.latlng).open(`[${latlng.lat}, ${latlng.lng}]`);
         if (
             this.data.copyOnClick &&
-            (evt.originalEvent.getModifierState(MODIFIER_KEY) || Platform.isMobile)
+            (evt.originalEvent.getModifierState("Shift") || Platform.isMobile)
         ) {
             this.log(`Copying coordinates of click to clipboard.`);
             await copyToClipboard(evt.latlng);
