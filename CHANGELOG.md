@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.2.1](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.2.0...5.2.1) (2023-02-14)
+
+
+### Bug Fixes
+
+* adds copy coordinates to mobile context menu ([400894f](https://github.com/valentine195/obsidian-leaflet-plugin/commit/400894f41c16fac2259ed00b952f4767a224a63f))
+
 ## [5.2.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.1.2...5.2.0) (2023-02-14)
 
 
