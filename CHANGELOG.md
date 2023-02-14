@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.2.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.1.2...5.2.0) (2023-02-14)
+
+
+### Features
+
+* Mobile measuring added to map long-press menu ([525ae2d](https://github.com/valentine195/obsidian-leaflet-plugin/commit/525ae2dbd9fb503a17ab28e36eafb0b6aa15a72f))
+
 ### [5.1.2](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.1.1...5.1.2) (2023-01-30)
 
 
