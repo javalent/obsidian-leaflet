@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.2.2](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.2.1...5.2.2) (2023-02-14)
+
+
+### Bug Fixes
+
+* fixes copy on shift-click ([f623074](https://github.com/valentine195/obsidian-leaflet-plugin/commit/f62307466c2695c1ff2f93e5f2bbd89fbd0230b4))
+
 ### [5.2.1](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.2.0...5.2.1) (2023-02-14)
 
 
