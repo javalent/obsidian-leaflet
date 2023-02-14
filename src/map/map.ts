@@ -813,18 +813,19 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             evt.originalEvent.getModifierState("Shift") ||
             evt.originalEvent.getModifierState("Alt")
         ) {
-            this.log(`Map popup context detected. Opening popup.`);
-            const latlng = formatLatLng(evt.latlng);
-            this.popup
-                .setTarget(evt.latlng)
-                .open(`[${latlng.lat}, ${latlng.lng}]`);
-            if (
-                this.data.copyOnClick &&
-                evt.originalEvent.getModifierState(MODIFIER_KEY)
-            ) {
-                this.log(`Copying coordinates of click to clipboard.`);
-                await copyToClipboard(evt.latlng);
-            }
+            await this.getMapCoordinates(evt);
+        }
+    }
+    async getMapCoordinates(evt: L.LeafletMouseEvent) {
+        this.log(`Map popup context detected. Opening popup.`);
+        const latlng = formatLatLng(evt.latlng);
+        this.popup.setTarget(evt.latlng).open(`[${latlng.lat}, ${latlng.lng}]`);
+        if (
+            this.data.copyOnClick &&
+            (evt.originalEvent.getModifierState(MODIFIER_KEY) || Platform.isMobile)
+        ) {
+            this.log(`Copying coordinates of click to clipboard.`);
+            await copyToClipboard(evt.latlng);
         }
     }
     handleMapDistance(evt: L.LeafletMouseEvent, mobile?: boolean) {
@@ -909,9 +910,13 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             });
         }
     }
+
     handleMapContext(evt: L.LeafletMouseEvent, overlay?: Overlay) {
         if (this.controller.isDrawing) {
             return;
+        }
+        if (Platform.isMobile) {
+            return this.handleMapContextMobile(evt, overlay);
         }
         if (evt.originalEvent.getModifierState("Shift")) {
             this.log(`Beginning overlay drawing context.`);
@@ -1056,7 +1061,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
             return;
         }
-        if (this.markerIcons.size <= 1 && !Platform.isMobile) {
+        if (this.markerIcons.size <= 1) {
             this.log(
                 `No additional marker types defined. Adding default marker.`
             );
@@ -1073,21 +1078,6 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         contextMenu.setNoIcon();
 
         this.log(`Opening marker context menu.`);
-
-        if (Platform.isMobile) {
-            contextMenu.addItem((item) =>
-                item
-                    .setTitle(
-                        !this.isDrawing
-                            ? "Measure distance"
-                            : "Finish measuring"
-                    )
-                    .onClick(() => {
-                        this.handleMapDistance(evt, true);
-                    })
-            );
-            contextMenu.addSeparator();
-        }
 
         this.markerIcons.forEach((marker: MarkerIcon) => {
             if (!marker.type || !marker.html) return;
@@ -1107,6 +1097,46 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             });
         });
 
+        contextMenu.showAtMouseEvent(evt.originalEvent);
+    }
+    handleMapContextMobile(evt: L.LeafletMouseEvent, overlay?: Overlay) {
+        let contextMenu = new Menu(this.plugin.app);
+
+        contextMenu.setNoIcon();
+        contextMenu.addItem((item) => {
+            item.setTitle("Show coordinates").onClick(async () => {
+                await this.getMapCoordinates(evt);
+            });
+        });
+        contextMenu.addItem((item) =>
+            item
+                .setTitle(
+                    !this.isDrawing ? "Measure distance" : "Finish measuring"
+                )
+                .onClick(() => {
+                    this.handleMapDistance(evt, true);
+                })
+        );
+        contextMenu.addSeparator();
+        this.log(`Opening marker context menu.`);
+
+        this.markerIcons.forEach((marker: MarkerIcon) => {
+            if (!marker.type || !marker.html) return;
+            contextMenu.addItem((item) => {
+                item.setTitle(
+                    marker.type == "default" ? "Default" : marker.type
+                );
+                item.onClick(async () => {
+                    this.log(`${marker.type} selected. Creating marker.`);
+                    this.createMarker(
+                        marker.type,
+                        [evt.latlng.lat, evt.latlng.lng],
+                        undefined
+                    );
+                    this.trigger("should-save");
+                });
+            });
+        });
         contextMenu.showAtMouseEvent(evt.originalEvent);
     }
     isLayerRendered(layer: string) {
