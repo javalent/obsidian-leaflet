@@ -2,7 +2,7 @@ import convert from "convert";
 import { Length } from "convert/dist/types/units";
 import type geojson from "geojson";
 
-import { Events, Menu, Notice, Scope } from "obsidian";
+import { Events, Menu, Notice, Platform, Scope } from "obsidian";
 import {
     LayerGroup,
     LeafletMapOptions,
@@ -827,11 +827,12 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             }
         }
     }
-    handleMapDistance(evt: L.LeafletMouseEvent) {
+    handleMapDistance(evt: L.LeafletMouseEvent, mobile?: boolean) {
         if (
-            (!evt.originalEvent.getModifierState("Shift") &&
+            !mobile &&
+            ((!evt.originalEvent.getModifierState("Shift") &&
                 !evt.originalEvent.getModifierState("Alt")) ||
-            evt.originalEvent.getModifierState("Control")
+                evt.originalEvent.getModifierState("Control"))
         ) {
             if (this.distanceEvent == undefined) {
                 return;
@@ -902,13 +903,16 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             );
 
             this.leafletInstance.on("mouseout", () => {
+                if (Platform.isMobile) return;
                 this.stopDrawingContext();
                 this.distanceEvent = undefined;
             });
         }
     }
     handleMapContext(evt: L.LeafletMouseEvent, overlay?: Overlay) {
-        if (this.controller.isDrawing) return;
+        if (this.controller.isDrawing) {
+            return;
+        }
         if (evt.originalEvent.getModifierState("Shift")) {
             this.log(`Beginning overlay drawing context.`);
             //begin drawing context
@@ -1052,8 +1056,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
             return;
         }
-
-        if (this.markerIcons.size <= 1) {
+        if (this.markerIcons.size <= 1 && !Platform.isMobile) {
             this.log(
                 `No additional marker types defined. Adding default marker.`
             );
@@ -1070,6 +1073,22 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         contextMenu.setNoIcon();
 
         this.log(`Opening marker context menu.`);
+
+        if (Platform.isMobile) {
+            contextMenu.addItem((item) =>
+                item
+                    .setTitle(
+                        !this.isDrawing
+                            ? "Measure distance"
+                            : "Finish measuring"
+                    )
+                    .onClick(() => {
+                        this.handleMapDistance(evt, true);
+                    })
+            );
+            contextMenu.addSeparator();
+        }
+
         this.markerIcons.forEach((marker: MarkerIcon) => {
             if (!marker.type || !marker.html) return;
             contextMenu.addItem((item) => {
