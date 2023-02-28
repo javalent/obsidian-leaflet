@@ -369,7 +369,7 @@ export class Marker extends Layer<DivIconMarker> {
                 if (this.map.data.notePreview && this.link) {
                     this.map.plugin.app.workspace.trigger("hover-link", {
                         event: evt.originalEvent,
-                        source: this.map.options.context,
+                        source: this.map.plugin.manifest.id,
                         hoverParent: {},
                         targetEl: this.leafletInstance.getElement(),
                         linktext: this.link
