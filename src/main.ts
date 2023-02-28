@@ -65,6 +65,7 @@ import type { Plugins } from "../../obsidian-overload/index";
 declare module "obsidian" {
     interface HoverPopover {
         targetEl: HTMLElement;
+        onShow(): void;
     }
     interface EphemeralState {
         focus?: boolean;
@@ -260,48 +261,19 @@ export default class ObsidianLeaflet extends Plugin {
         const pagePreviewPlugin =
             this.app.internalPlugins.plugins["page-preview"];
         if (!pagePreviewPlugin.enabled) return;
-        const uninstaller = around(
-            pagePreviewPlugin.instance.constructor.prototype,
-            {
-                onLinkHover(old: Function) {
-                    return function (
-                        parent: HoverParent,
-                        targetEl: HTMLElement,
-                        linkText: string,
-                        path: string,
-                        state: EphemeralState,
-                        ...args: unknown[]
+        const uninstaller = around(HoverPopover.prototype, {
+            onShow(old: Function) {
+                return function () {
+                    if (
+                        this.parent?.state?.source ==
+                        OBSIDIAN_LEAFLET_POPOVER_SOURCE
                     ) {
-                        let popover;
-                        if (state?.source == OBSIDIAN_LEAFLET_POPOVER_SOURCE) {
-                            popover = parent.hoverPopover;
-                            if (
-                                !(
-                                    popover &&
-                                    popover.state !== 3 &&
-                                    popover.targetEl === targetEl
-                                )
-                            ) {
-                                popover = new HoverPopover(parent, targetEl);
-                            }
-                            popover.hoverEl.addClass(
-                                "obsidian-leaflet-popover"
-                            );
-                        }
-
-                        return old.call(
-                            this,
-                            popover ? { popover } : parent,
-                            targetEl,
-                            linkText,
-                            path,
-                            state,
-                            ...args
-                        );
-                    };
-                }
+                        this.hoverEl.addClass("obsidian-leaflet-popover");
+                    }
+                    return old.call(this);
+                };
             }
-        );
+        });
         this.register(uninstaller);
 
         // This will recycle the event handlers so that they pick up the patched onLinkHover method

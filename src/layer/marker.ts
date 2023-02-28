@@ -370,7 +370,9 @@ export class Marker extends Layer<DivIconMarker> {
                     this.map.plugin.app.workspace.trigger("hover-link", {
                         event: evt.originalEvent,
                         source: this.map.plugin.manifest.id,
-                        hoverParent: {},
+                        hoverParent: {
+                            state: { source: OBSIDIAN_LEAFLET_POPOVER_SOURCE }
+                        },
                         targetEl: this.leafletInstance.getElement(),
                         linktext: this.link
                             .replace("^", "#^")
