@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.2.4](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.2.3...5.2.4) (2023-02-28)
+
+
+### Bug Fixes
+
+* decorate leaflet sourced hover-popovers ([617d69f](https://github.com/valentine195/obsidian-leaflet-plugin/commit/617d69f7d2e2e7d0402f8dd33ab4b5935bbed15d))
+
 ### [5.2.3](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.2.2...5.2.3) (2023-02-28)
 
 
