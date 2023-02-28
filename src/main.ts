@@ -212,6 +212,11 @@ export default class ObsidianLeaflet extends Plugin {
             })
         );
 
+        this.registerHoverLinkSource(this.manifest.id, {
+            display: this.manifest.name,
+            defaultMod: false
+        });
+
         this.addSettingTab(new ObsidianLeafletSettingTab(this.app, this));
     }
 
