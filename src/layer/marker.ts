@@ -368,11 +368,23 @@ export class Marker extends Layer<DivIconMarker> {
                 }
                 if (this.map.data.notePreview && this.link) {
                     this.map.plugin.app.workspace.trigger(
-                        "link-hover",
+                        "hover-link",
+                        {
+                            event: evt.originalEvent,
+                            source: this.map.options.context,
+                            hoverParent: {},
+                            targetEl: this.leafletInstance.getElement(),
+                            linktext: this.link
+                                .replace("^", "#^")
+                                .split("|")
+                                .shift(),
+                            state: null
+                        }
+                        /* "link-hover",
                         this, //hover popover, but don't need
                         this.leafletInstance.getElement(), //targetEl
                         this.link.replace("^", "#^").split("|").shift(), //linkText
-                        this.map.options.context //source
+                        this.map.options.context //source */
                     );
                 }
             })
