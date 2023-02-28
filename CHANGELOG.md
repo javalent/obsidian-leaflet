@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.2.3](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.2.2...5.2.3) (2023-02-28)
+
+
+### Bug Fixes
+
+* adds plugin as link hover source ([ada3e64](https://github.com/valentine195/obsidian-leaflet-plugin/commit/ada3e64627b5472c185ce4949135b94b70dd2e95))
+* map now respects cmd-hover ([cd2142e](https://github.com/valentine195/obsidian-leaflet-plugin/commit/cd2142e23c4a187d307be21b6fc571ca9b93ec82))
+
 ### [5.2.2](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.2.1...5.2.2) (2023-02-14)
 
 
