@@ -12,7 +12,7 @@ import { MarkerContextModal } from "src/modals";
 import { divIconMarker, markerDivIcon } from "src/map";
 import { Layer } from "../layer/layer";
 import { popup } from "src/map/popup";
-import { MODIFIER_KEY } from "src/utils";
+import { MODIFIER_KEY, OBSIDIAN_LEAFLET_POPOVER_SOURCE } from "src/utils";
 import { copyToClipboard, formatLatLng } from "src/utils";
 
 import { LeafletSymbol } from "../utils/leaflet-import";
@@ -278,7 +278,7 @@ export class Marker extends Layer<DivIconMarker> {
                     return;
                 }
 
-                const menu = new Menu(this.map.plugin.app);
+                const menu = new Menu();
                 menu.setNoIcon();
 
                 menu.addItem((item) => {
@@ -367,25 +367,17 @@ export class Marker extends Layer<DivIconMarker> {
                     this.popup.open(this.target.display);
                 }
                 if (this.map.data.notePreview && this.link) {
-                    this.map.plugin.app.workspace.trigger(
-                        "hover-link",
-                        {
-                            event: evt.originalEvent,
-                            source: this.map.options.context,
-                            hoverParent: {},
-                            targetEl: this.leafletInstance.getElement(),
-                            linktext: this.link
-                                .replace("^", "#^")
-                                .split("|")
-                                .shift(),
-                            state: null
-                        }
-                        /* "link-hover",
-                        this, //hover popover, but don't need
-                        this.leafletInstance.getElement(), //targetEl
-                        this.link.replace("^", "#^").split("|").shift(), //linkText
-                        this.map.options.context //source */
-                    );
+                    this.map.plugin.app.workspace.trigger("hover-link", {
+                        event: evt.originalEvent,
+                        source: this.map.options.context,
+                        hoverParent: {},
+                        targetEl: this.leafletInstance.getElement(),
+                        linktext: this.link
+                            .replace("^", "#^")
+                            .split("|")
+                            .shift(),
+                        state: { source: OBSIDIAN_LEAFLET_POPOVER_SOURCE }
+                    });
                 }
             })
             .on("mouseout", (evt: L.LeafletMouseEvent) => {

@@ -11,8 +11,12 @@ import {
     addIcon,
     Platform,
     WorkspaceLeaf,
-    debounce
+    debounce,
+    HoverParent,
+    EphemeralState,
+    HoverPopover
 } from "obsidian";
+import { around } from "monkey-around";
 
 //Local Imports
 
@@ -34,7 +38,8 @@ import {
     MODIFIER_KEY,
     UNIT_SYSTEM,
     DEFAULT_TILE_SERVER,
-    getId
+    getId,
+    OBSIDIAN_LEAFLET_POPOVER_SOURCE
 } from "./utils";
 import {
     MapInterface,
@@ -58,10 +63,38 @@ import { Length } from "convert/dist/types/units";
 import type { Plugins } from "../../obsidian-overload/index";
 
 declare module "obsidian" {
+    interface HoverPopover {
+        targetEl: HTMLElement;
+    }
+    interface EphemeralState {
+        focus?: boolean;
+        subpath?: string;
+        line?: number;
+        startLoc?: Loc;
+        endLoc?: Loc;
+        scroll?: number;
+        source?: string;
+    }
+    interface InternalPlugin {
+        disable(): void;
+        enable(): void;
+        enabled: boolean;
+        _loaded: boolean;
+        instance: { name: string; id: string };
+    }
+    interface InternalPlugins {
+        "page-preview": InternalPlugin;
+    }
     interface App {
         //@ts-ignore
         plugins: {
             getPlugin<T extends keyof Plugins>(plugin: T): Plugins[T];
+        };
+        internalPlugins: {
+            plugins: InternalPlugins;
+            getPluginById<T extends keyof InternalPlugins>(
+                id: T
+            ): InternalPlugins[T];
         };
 
         commands: {
@@ -162,62 +195,124 @@ export default class ObsidianLeaflet extends Plugin {
             });
         }
 
-        //@ts-ignore
-        if (this.app.plugins.getPlugin("initiative-tracker")) {
-            this.registerView(
-                "INITIATIVE_TRACKER_MAP_VIEW",
-                (leaf: WorkspaceLeaf) => {
-                    return new InitiativeMapView(leaf, this);
-                }
-            );
-        }
+        this.app.workspace.onLayoutReady(() => {
+            this.patchLinkHover();
 
-        this.registerEvent(
-            this.app.workspace.on("initiative-tracker:unload", () => {
-                if (this.initiativeView) {
-                    this.initiativeView.leaf.detach();
-                }
-            })
-        );
+            this.registerEvent(
+                this.app.vault.on("rename", async (file, oldPath) => {
+                    if (!file) return;
+                    if (!this.mapFiles.find(({ file: f }) => f === oldPath))
+                        return;
+
+                    this.mapFiles.find(({ file: f }) => f === oldPath).file =
+                        file.path;
+
+                    await this.saveSettings();
+                })
+            );
+            this.registerEvent(
+                this.app.vault.on("delete", async (file) => {
+                    if (!file) return;
+                    if (!this.mapFiles.find(({ file: f }) => f === file.path))
+                        return;
+
+                    this.mapFiles = this.mapFiles.filter(
+                        ({ file: f }) => f != file.path
+                    );
+
+                    await this.saveSettings();
+                })
+            );
+
+            this.registerHoverLinkSource(this.manifest.id, {
+                display: this.manifest.name,
+                defaultMod: false
+            });
+            //@ts-ignore
+            if (this.app.plugins.getPlugin("initiative-tracker")) {
+                this.registerView(
+                    "INITIATIVE_TRACKER_MAP_VIEW",
+                    (leaf: WorkspaceLeaf) => {
+                        return new InitiativeMapView(leaf, this);
+                    }
+                );
+            }
+
+            this.registerEvent(
+                this.app.workspace.on("initiative-tracker:unload", () => {
+                    if (this.initiativeView) {
+                        this.initiativeView.leaf.detach();
+                    }
+                })
+            );
+        });
 
         this.markerIcons = this.generateMarkerMarkup(this.data.markerIcons);
-
         this.registerMarkdownCodeBlockProcessor(
             "leaflet",
             this.postprocessor.bind(this)
         );
 
-        this.registerEvent(
-            this.app.vault.on("rename", async (file, oldPath) => {
-                if (!file) return;
-                if (!this.mapFiles.find(({ file: f }) => f === oldPath)) return;
-
-                this.mapFiles.find(({ file: f }) => f === oldPath).file =
-                    file.path;
-
-                await this.saveSettings();
-            })
-        );
-        this.registerEvent(
-            this.app.vault.on("delete", async (file) => {
-                if (!file) return;
-                if (!this.mapFiles.find(({ file: f }) => f === file.path))
-                    return;
-
-                this.mapFiles = this.mapFiles.filter(
-                    ({ file: f }) => f != file.path
-                );
-
-                await this.saveSettings();
-            })
-        );
-
-        this.registerHoverLinkSource(this.manifest.id, {
-            display: this.manifest.name,
-            defaultMod: false
-        });
-
         this.addSettingTab(new ObsidianLeafletSettingTab(this.app, this));
+    }
+    patchLinkHover() {
+        const plugin = this;
+        const pagePreviewPlugin =
+            this.app.internalPlugins.plugins["page-preview"];
+        if (!pagePreviewPlugin.enabled) return;
+        const uninstaller = around(
+            pagePreviewPlugin.instance.constructor.prototype,
+            {
+                onLinkHover(old: Function) {
+                    return function (
+                        parent: HoverParent,
+                        targetEl: HTMLElement,
+                        linkText: string,
+                        path: string,
+                        state: EphemeralState,
+                        ...args: unknown[]
+                    ) {
+                        let popover;
+                        if (state?.source == OBSIDIAN_LEAFLET_POPOVER_SOURCE) {
+                            popover = parent.hoverPopover;
+                            if (
+                                !(
+                                    popover &&
+                                    popover.state !== 3 &&
+                                    popover.targetEl === targetEl
+                                )
+                            ) {
+                                popover = new HoverPopover(parent, targetEl);
+                            }
+                            popover.hoverEl.addClass(
+                                "obsidian-leaflet-popover"
+                            );
+                        }
+
+                        return old.call(
+                            this,
+                            popover ? { popover } : parent,
+                            targetEl,
+                            linkText,
+                            path,
+                            state,
+                            ...args
+                        );
+                    };
+                }
+            }
+        );
+        this.register(uninstaller);
+
+        // This will recycle the event handlers so that they pick up the patched onLinkHover method
+        pagePreviewPlugin.disable();
+        pagePreviewPlugin.enable();
+
+        plugin.register(function () {
+            if (!pagePreviewPlugin.enabled) return;
+            pagePreviewPlugin.disable();
+            pagePreviewPlugin.enable();
+        });
     }
 
     async onunload(): Promise<void> {

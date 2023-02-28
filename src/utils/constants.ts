@@ -5,6 +5,8 @@ import {
     ObsidianAppData
 } from "src/@types";
 
+export const OBSIDIAN_LEAFLET_POPOVER_SOURCE = "obsidian-leaflet";
+
 export const VIEW_TYPE = "obsidian-leaflet-map-view";
 
 export const DEFAULT_TILE_SERVER =
