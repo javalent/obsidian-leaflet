@@ -4,6 +4,7 @@ import {
     TFile,
     Notice,
     CachedMetadata,
+    resolveSubpath,
     TFolder,
     Vault,
     MarkdownView
@@ -450,16 +451,20 @@ export class LeafletRenderer extends MarkdownRenderChild {
             );
 
         if (this.params.geojsonFolder && this.params.geojsonFolder.length) {
-            for (let path of this.params.geojsonFolder) {
-                let abstractFile =
-                    this.plugin.app.vault.getAbstractFileByPath(path);
+            let file = this.plugin.app.vault.getAbstractFileByPath(this.sourcePath);
+            const cache = this.plugin.app.metadataCache.getFileCache(file);
+            const subFolder = cache ? resolveSubpath(cache, folder) : undefined;
+
+            var folder = this.params.geojsonFolder;
+            for (let path of subFolder) {
+                let abstractFile = this.plugin.app.vault.getAbstractFileByPath(path);
                 if (!abstractFile) continue;
                 if (
                     abstractFile instanceof TFile &&
                     ["json", "geojson"].includes(abstractFile.extension)
                 )
                     geoSet.add({ path });
-                if (abstractFile instanceof TFolder) {
+                /*if (abstractFile instanceof TFolder) {
                     Vault.recurseChildren(abstractFile, (file) => {
                         if (
                             file instanceof TFile &&
@@ -467,7 +472,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                         )
                             geoSet.add({ path: file.path });
                     });
-                }
+                }*/
             }
         }
 
@@ -995,8 +1000,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                         file.extension !== "md"
                     )
                         continue;
-                    const cache =
-                        this.app.metadataCache.getFileCache(file) ?? {};
+                    const cache = this.app.metadataCache.getFileCache(file) ?? {};
                     const { frontmatter } = cache;
 
                     const tags: Set<string> =
