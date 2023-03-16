@@ -450,7 +450,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                     })
             );
 
-        function collectFiles(abstractFile, geoSet, depth) {
+        function collectGeos(abstractFile, geoSet, depth) {
             depth = depth - 1;
             if (depth < 0 || !abstractFile) {
                 return;
@@ -461,7 +461,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 geoSet.add({ path: p, alias: p.substring(1+p.lastIndexOf('/'),p.lastIndexOf('.')) });
             } else
             if (abstractFile instanceof TFolder) {
-                abstractFile.children.forEach(file => collectFiles(file, geoSet, depth));
+                abstractFile.children.forEach(file => collectGeos(file, geoSet, depth));
             }
         }
 
@@ -480,7 +480,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                     ++depth;
                 }
                 let abstractFile = this.plugin.app.vault.getAbstractFileByPath(path);
-                collectFiles(abstractFile, geoSet, depth);
+                collectGeos(abstractFile, geoSet, depth);
             }
         }
 
@@ -818,6 +818,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
         }
         return markers;
     }
+
     async getImmutableItems(): Promise<{
         markers: ImmutableMarker[];
         overlays: ImmutableOverlay[];
@@ -837,6 +838,19 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 overlayColor
             } = this.params;
 
+            function collectFiles(abstractFile, geoSet, depth) {
+                depth = depth - 1;
+                if (depth < 0 || !abstractFile) {
+                    return;
+                }
+                if (abstractFile instanceof TFile) {
+                    geoSet.add(abstractFile.path);
+                } else
+                if (abstractFile instanceof TFolder) {
+                    abstractFile.children.forEach(file => collectFiles(file, geoSet, depth));
+                }
+            }
+        
             if (
                 markerFile.length ||
                 markerFolder.length ||
@@ -847,16 +861,19 @@ export class LeafletRenderer extends MarkdownRenderChild {
             ) {
                 let files = new Set(markerFile);
 
+                var sub = this.sourcePath.substring(0, this.sourcePath.lastIndexOf("/"));
                 for (let path of markerFolder) {
-                    let abstractFile =
-                        this.app.vault.getAbstractFileByPath(path);
-                    if (!abstractFile) continue;
-                    if (abstractFile instanceof TFile) files.add(path);
-                    if (abstractFile instanceof TFolder) {
-                        Vault.recurseChildren(abstractFile, (file) => {
-                            if (file instanceof TFile) files.add(file.path);
-                        });
+                    if (path[0] == '.') {
+                        var rest = path.substring(1);
+                        path = sub + rest;
                     }
+                    var depth = 2;
+                    while (path.endsWith('/')){
+                        path = path.substring(0, path.length - 1);
+                        ++depth;
+                    }
+                    let abstractFile = this.app.vault.getAbstractFileByPath(path);
+                    collectFiles(abstractFile, files, depth);
                 }
                 //get cache
                 //error is thrown here because plugins isn't exposed on Obsidian App
