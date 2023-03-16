@@ -450,29 +450,36 @@ export class LeafletRenderer extends MarkdownRenderChild {
                     })
             );
 
-        if (this.params.geojsonFolder && this.params.geojsonFolder.length) {
-            let file = this.plugin.app.vault.getAbstractFileByPath(this.sourcePath);
-            const cache = this.plugin.app.metadataCache.getFileCache(file);
-            const subFolder = cache ? resolveSubpath(cache, folder) : undefined;
+        function collectFiles(abstractFile, geoSet, depth) {
+            depth = depth - 1;
+            if (depth < 0 || !abstractFile) {
+                return;
+            }
+            if (abstractFile instanceof TFile &&
+                ["json", "geojson"].includes(abstractFile.extension)) {
+                geoSet.add({ path: abstractFile.path });
+            } else
+            if (abstractFile instanceof TFolder) {
+                abstractFile.children.forEach(file => collectFiles(file, geoSet, depth));
+            }
+        }
 
-            var folder = this.params.geojsonFolder;
-            for (let path of subFolder) {
+        if (this.params.geojsonFolder && this.params.geojsonFolder.length) {
+            var f = this.params.geojsonFolder;
+            let arr = (typeof(f) === 'string' || f instanceof String) ? [ f ] : f;
+            var sub = this.sourcePath.substring(0, this.sourcePath.lastIndexOf("/"));
+            for (let path of arr) {
+                if (path[0] == '.') {
+                    var rest = path.substring(1);
+                    path = sub + rest;
+                }
+                var depth = 2;
+                while (path.endsWith('/')){
+                    path = path.substring(0, path.length - 1);
+                    ++depth;
+                }
                 let abstractFile = this.plugin.app.vault.getAbstractFileByPath(path);
-                if (!abstractFile) continue;
-                if (
-                    abstractFile instanceof TFile &&
-                    ["json", "geojson"].includes(abstractFile.extension)
-                )
-                    geoSet.add({ path });
-                /*if (abstractFile instanceof TFolder) {
-                    Vault.recurseChildren(abstractFile, (file) => {
-                        if (
-                            file instanceof TFile &&
-                            ["json", "geojson"].includes(file.extension)
-                        )
-                            geoSet.add({ path: file.path });
-                    });
-                }*/
+                collectFiles(abstractFile, geoSet, depth);
             }
         }
 
