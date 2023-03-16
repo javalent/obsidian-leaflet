@@ -470,16 +470,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
             let arr = (typeof(f) === 'string' || f instanceof String) ? [ f ] : f;
             var sub = this.sourcePath.substring(0, this.sourcePath.lastIndexOf("/"));
             for (let path of arr) {
-                if (path[0] == '.') {
-                    var rest = path.substring(1);
-                    path = sub + rest;
-                }
-                var depth = 2;
-                while (path.endsWith('/')){
-                    path = path.substring(0, path.length - 1);
-                    ++depth;
-                }
-                let abstractFile = this.plugin.app.vault.getAbstractFileByPath(path);
+                var abstractFile, depth;
+                ({ abstractFile, path, depth } = this.filePathAndDepth(path, sub));
                 collectGeos(abstractFile, geoSet, depth);
             }
         }
@@ -863,16 +855,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
                 var sub = this.sourcePath.substring(0, this.sourcePath.lastIndexOf("/"));
                 for (let path of markerFolder) {
-                    if (path[0] == '.') {
-                        var rest = path.substring(1);
-                        path = sub + rest;
-                    }
-                    var depth = 2;
-                    while (path.endsWith('/')){
-                        path = path.substring(0, path.length - 1);
-                        ++depth;
-                    }
-                    let abstractFile = this.app.vault.getAbstractFileByPath(path);
+                    var abstractFile, depth;
+                    ({ abstractFile, path, depth } = this.filePathAndDepth(path, sub));
                     collectFiles(abstractFile, files, depth);
                 }
                 //get cache
@@ -1274,6 +1258,20 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 overlays: overlaysToReturn
             });
         });
+    }
+
+    private filePathAndDepth(path: string, sub: string) {
+        if (path[0] == '.') {
+            var rest = path.substring(1);
+            path = sub + rest;
+        }
+        var depth = 2;
+        while (path.endsWith('/')) {
+            path = path.substring(0, path.length - 1);
+            ++depth;
+        }
+        let abstractFile = this.app.vault.getAbstractFileByPath(path);
+        return { abstractFile, depth, path };
     }
 
     registerWatcher(file: TFile, fileIds: Map<string, string>) {
