@@ -457,7 +457,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
             }
             if (abstractFile instanceof TFile &&
                 ["json", "geojson"].includes(abstractFile.extension)) {
-                geoSet.add({ path: abstractFile.path });
+                let p = abstractFile.path;
+                geoSet.add({ path: p, alias: p.substring(1+p.lastIndexOf('/'),p.lastIndexOf('.')) });
             } else
             if (abstractFile instanceof TFolder) {
                 abstractFile.children.forEach(file => collectFiles(file, geoSet, depth));
