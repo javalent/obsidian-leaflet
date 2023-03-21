@@ -501,6 +501,9 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 }
             }
         }
+        geojsonData.reverse(); //deeper Elements are 'contained' in shallow Geometries and must be added last!
+        //this does NOT help though for parallel, large-scale Structures like Subway-Networks. 
+        //These must be added manually to avoid Overlay! 
 
         let gpx = this.params.gpx,
             gpxData: { data: string; alias?: string }[] = [];
