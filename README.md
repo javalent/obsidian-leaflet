@@ -8,6 +8,9 @@ Adds interactable mapping functionality to Obsidian.md, using [Leaflet.js](https
 
 Proof of concept currently. May not work as expected. Currently only tested on Windows & Mac.
 
+
+Read this in other languages: [简体中文](./README_zh_CN.md).
+
 ## Working with the plugin & example
 
 A map can be created with a `leaflet` code block. For example:
