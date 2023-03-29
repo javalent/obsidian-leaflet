@@ -139,6 +139,14 @@ export default {
     "Default Units": "Default Units",
     "Select the default system of units for the map.":
         "Select the default system of units for the map.",
+    "Default Tile Server": "Default Tile Server",
+    "It is up to you to ensure you have proper access to this tile server.":
+        "It is up to you to ensure you have proper access to this tile server.",
+    "Default Tile Server Attribution": "Default Tile Server Attribution",
+    "Please ensure your attribution meets all requirements set by the tile server.":
+        "Please ensure your attribution meets all requirements set by the tile server.",
+    "Default Tile Server (Dark Mode)": "Default Tile Server (Dark Mode)",
+
     Imperial: "Imperial",
     Metric: "Metric",
     "Only display when zooming out above this zoom.":
@@ -197,6 +205,9 @@ export default {
     "Only display when zooming out above this zoom. Current map maximum":
         "Only display when zooming out above this zoom. Current map maximum",
     "Maximum zoom must be a number.": "Maximum zoom must be a number.",
+    "Associate Tags": "Associate Tags",
+    "Markers created from this tag using ": "Markers created from this tag using ",
+    " will use this marker icon by default.": " will use this marker icon by default.",
     "Delete Marker": "Delete Marker",
     "Overlay Radius": "Overlay Radius",
     "Circle radius in": "Circle radius in",

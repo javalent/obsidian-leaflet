@@ -416,9 +416,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     });
             });
         new Setting(containerEl)
-            .setName("Default Tile Server")
+            .setName(t("Default Tile Server"))
             .setDesc(
-                "It is up to you to ensure you have proper access to this tile server."
+                t("It is up to you to ensure you have proper access to this tile server.")
             )
             .addText((t) => {
                 t.setValue(this.plugin.data.defaultTile).onChange((v) => {
@@ -438,9 +438,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     })
             );
         new Setting(containerEl)
-            .setName("Default Tile Server Attribution")
+            .setName(t("Default Tile Server Attribution"))
             .setDesc(
-                "Please ensure your attribution meets all requirements set by the tile server."
+                t("Please ensure your attribution meets all requirements set by the tile server.")
             )
             .addTextArea((t) => {
                 t.setValue(this.plugin.data.defaultAttribution).onChange(
@@ -463,9 +463,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     })
             );
         new Setting(containerEl)
-            .setName("Default Tile Server (Dark Mode)")
+            .setName(t("Default Tile Server (Dark Mode)"))
             .setDesc(
-                "It is up to you to ensure you have proper access to this tile server."
+                t("It is up to you to ensure you have proper access to this tile server.")
             )
             .addText((t) => {
                 t.setValue(this.plugin.data.defaultTileDark).onChange((v) => {

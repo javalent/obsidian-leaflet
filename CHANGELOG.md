@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.2.7](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.2.6...5.2.7) (2023-03-29)
+
 ### [5.2.6](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.2.5...5.2.6) (2023-02-28)
 
 
