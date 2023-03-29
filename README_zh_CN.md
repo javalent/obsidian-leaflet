@@ -740,12 +740,10 @@ Overriding this CSS in a custom snippet will allow for customization of the dark
 如果开启了图层图标，可以通过点击和拖动来移动图标并自定义图标的图层位置。如果按住 <kbd>Shift</kbd> 移动图标，它将吸附到中线上。
 
 #### 使用图像作为标记图标（Marker Icon）
-
 在创建附加标记时，可以上传图像以用作标记图标，而不是选择 Font Awesome 图标。
-
 单击 "Upload Image" 按钮并选择要使用的图像。插件将加载图像并将其缩放为 `24px x 24px`。上传标记时使用的图像无法编辑。
-
 如果已上传图像，则选择 Font Awesome 图标将删除该图像。
+
 #### 关联标签
 将标签与标记类型关联。
 
@@ -797,8 +795,8 @@ Overriding this CSS in a custom snippet will allow for customization of the dark
 <a href="https://www.buymeacoffee.com/valentine195"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=valentine195&button_colour=e3e7ef&font_colour=262626&font_family=Inter&outline_colour=262626&coffee_colour=ff0000"></a>
 
 # 译者注:
-<span id="explan-image-map">[1]</span>: 图像 地图的功能，是指在地图上增加要展示的图片。
-<span id="explan-tile-server">[2]</span>: Tile Server，地图服务器专业术语，可以直接理解成地图服务器。    
-<span id="explan-open-street-map">[3]</span>: OpenStreetMap，是一个开放源代码的免费地图项目。    
-<span id="explan-open-street-map">[3]</span>: Overlay， 叠加层，可以理解成地图上的图层，或着是一些可以放置在地图上的图片。
-<span id="explan-open-street-map">[3]</span>: Marker， 地图标记。
+<span id="explan-image-map">[1]</span>: 图像 地图的功能，是指在地图上增加要展示的图片。   
+<span id="explan-tile-server">[2]</span>: Tile Server，地图服务器专业术语，可以直接理解成地图服务器。      
+<span id="explan-open-street-map">[3]</span>: OpenStreetMap，是一个开放源代码的免费地图项目。     
+<span id="explan-open-street-map">[3]</span>: Overlay， 叠加层，可以理解成地图上的图层，或着是一些可以放置在地图上的图片。  
+<span id="explan-open-street-map">[3]</span>: Marker， 地图标记。  
