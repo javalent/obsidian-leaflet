@@ -36,55 +36,55 @@ darkMode: true
 >
 > 对于文件链接或路径你可以使用Obsidian's的双链链接 (`[[Link]]`) _或_ 标准的markdown链接(`[Link](./path/to/file)`) 。
 
-| 参数                                     | 描述                                                                                           | 默认值                                        |
-|----------------------------------------|----------------------------------------------------------------------------------------------|--------------------------------------------|
-| <a href="#maps-id">id</a>              | 唯一标识符（可以是任何字符）。 **必填**                                                                       |                                            |
-| <a href="#image-maps">image</a>        | 用作地图图层的图像<sup>[<a href="#ref1">1</a>]</sup>文件的直接URL/文件路径。                                    | OpenStreetMap map                          |
-| [tileServer](#real-world-maps)         | 添加额外的瓦片服务器<sup>[<a href="#ref1">2</a>]</sup>作为不同的图层。                                         |                                            |
-| [tileOverlay](#real-world-maps)        | 将额外的瓦片服务器添加为底图上的叠加层。                                                                         |                                            |
-| [osmLayer](#real-world-maps)           | 关闭OpenStreetMap<sup>[<a href="#ref1">3</a>]</sup>图层(仅在提供了额外的瓦片服务器时才可以使用这个功能。)                |                                            |
-| [lat](#initial-coordinates)            | 渲染时显示地图的默认纬度。                                                                                | 50% (image) / 39.983334 (open street map)  |
-| [long](#initial-coordinates)           | 渲染时显示地图的默认经度。                                                                                | 50% (image) / -82.983330 (open street map) |
-| height                                 | 渲染后的地图在笔记中显示的高度，可以使用像素或笔记高度的百分比。                                                             | 500px                                      |
-| width                                  | 选然后的地图在笔记中显示的宽度，可以使用像素或笔记高度的百分比。                                                             | 100%                                       |
-| [minZoom](#initial-zoom-level)         | 地图允许的最小缩放级别。                                                                                 | 1                                          |
-| [maxZoom](#initial-zoom-level)         | 地图允许的最大缩放级别。                                                                                 | 10                                         |
-| [defaultZoom](#initial-zoom-level)     | 地图将会加载此缩放级别。                                                                                 | 5                                          |
-| [zoomDelta](#initial-zoom-level)       | 缩放级别间隔。                                                                                      | 1                                          |
-| zoomFeatures                           | 地图将自动适应所有[GeoJSON](#geojson)和[GPX](#gpx)要素。                                                  |                                            |
-| [unit](#unit-and-scale)                | 距离显示的单位。                                                                                     | meters                                     |
-| [scale](#unit-and-scale)               | 图像地图距离计算的比例因子。                                                                               | 1                                          |
-| [marker](#markers)                     | 在地图上创建标记:📍                                                                                  |                                            |
-| [commandMarker](#defined-in-code-block) | 创建执行命令的标记。                                                                                   |                                            |
-| [markerFile](#marker-file)             | 根据笔记的frontmatter创建标记。                                                                        |                                            |
-| [markerFolder](#marker-folders)        | 从指定的文件夹中所有笔记提取数据创建标记。                                                                        |                                            |
-| [markerTag\*](#marker-tags)            | 指定tag，此插件会从 _所有_ 笔记中找到所有含有此tag的笔记，过滤数据并在当前笔记创建对应标记。                                          |                                            |
-| [filterTag\*](#filter-tag)             | Filter what files are used to create markers. Only markers that match the tags will be used. |                                            |
-| [linksTo\*](#links)                    | Create immutable markers from _all_ of the notes linking **TO** a note                       |                                            |
-| [linksFrom\*](#links)                  | Create immutable markers from _all_ of the notes linking **FROM** a note                     |                                            |
-| [darkMode](#dark-mode)                 | 地图颜色 暗黑模式                                                                                    | false                                      |
-| [overlay](#overlays)                   | 给地图增加一个圆形叠加层                                                                                 |                                            |
-| [overlayTag](#overlay-tag)             | Define a YAML tag to search for in specified marker notes                                    |                                            |
-| [overlayColor](#overlay-color)         | 更改默认叠加层颜色                                                                                    | blue                                       |
-| [bounds](#bounds)                      | 将图像地图边界设置为指定的坐标，而不是默认值。	                                                                     |                                            |
-| [coordinates](#initial-coordinates)    | 从一个笔记中读取位置数据，并将其用作初始坐标。                                                                      |                                            |
-| [zoomTag](#initial-zoom-level)         | 从一个笔记中读取距离缩放数据，并将其用作初始的默认缩放值。                                                                |                                            |
-| [geojson](#geojson)                    | 指定GeoJSON文件路径，将GeoJSON文件加载到地图上。                                                              |                                            |
-| [geojsonColor](#styles-and-color)      | 更改GeoJSON要素的默认颜色。                                                                            | #3388ff                                    |
-| geojsonFolder                          | 解析指定文件夹里所有的.geojson或.json后缀格式的文件，并加载到地图上。                                                    |                                            |
-| [gpx](#gpx)                            | 指定GPX文件路径，将GPX文件加载到地图上。                                                                      |                                            |
-| [gpxMarkers](#gpx-markers)             | 设置默认的起始、终止和途经点标记。                                                                            |                                            |
-| gpxColor                               | 控制默认的GPX颜色。                                                                                  | #3388ff                                    |
-| gpxFolder                              | 解析指定文件夹里所有的.gpx后缀格式的文件，并加载到地图上。                                                              |                                            |
-| [imageOverlay](#image-overlays)        | 向地图添加一个图像叠加层。                                                                                |                                            |
-| [draw](#enable-draw-mode-by-default)   | 在地图上启用绘制控制器。                                                                                 | true                                       |
-| drawColor                              | 新形状绘制时使用的默认颜色。                                                                               | #3388ff                                    |
-| showAllMarkers                         | 地图将显示所有标记。                                                                                   | false                                      |
-| preserveAspect                         | 如果调整地图所在的笔记窗格大小，则地图将调整大小以保持其初始纵横比。                                                           | false                                      |
-| noUI                                   | 是否添加地图控制按钮空间。                                                                                | false                                      |
-| lock                                   | 是否默认锁定地图。                                                                                    | false                                      |
-| recenter                               | 是否在拖动地图后强制重新居中。                                                                              | false                                      |
-| noScrollZoom                           | 是否禁用滚轮缩放。                                                                                    | false                                      |
+| 参数                                                 | 描述                                                                                           | 默认值                                        |
+|----------------------------------------------------|----------------------------------------------------------------------------------------------|--------------------------------------------|
+| <a href="#maps-id">id</a>                          | 唯一标识符（可以是任何字符）。 **必填**                                                                       |                                            |
+| <a href="#image-maps">image</a>                    | 用作地图图层的图像<sup>[<a href="#ref1">1</a>]</sup>文件的直接URL/文件路径。                                    | OpenStreetMap map                          |
+| <a href="#real-world-maps">tileServer</a>          | 添加额外的瓦片服务器<sup>[<a href="#ref1">2</a>]</sup>作为不同的图层。                                         |                                            |
+| <a href="#real-world-maps">tileOverlay</a>         | 将额外的瓦片服务器添加为底图上的叠加层。                                                                         |                                            |
+| <a href="#real-world-maps">osmLayer</a>            | 关闭OpenStreetMap<sup>[<a href="#ref1">3</a>]</sup>图层(仅在提供了额外的瓦片服务器时才可以使用这个功能。)                |                                            |
+| <a href="#initial-coordinates">lat</a>             | 渲染时显示地图的默认纬度。                                                                                | 50% (image) / 39.983334 (open street map)  |
+| <a href="#initial-coordinates">long</a>            | 渲染时显示地图的默认经度。                                                                                | 50% (image) / -82.983330 (open street map) |
+| height                                             | 渲染后的地图在笔记中显示的高度，可以使用像素或笔记高度的百分比。                                                             | 500px                                      |
+| width                                              | 选然后的地图在笔记中显示的宽度，可以使用像素或笔记高度的百分比。                                                             | 100%                                       |
+| <a href="#initial-zoom-level">minZoom</a>          | 地图允许的最小缩放级别。                                                                                 | 1                                          |
+| <a href="#initial-zoom-level">maxZoom</a>          | 地图允许的最大缩放级别。                                                                                 | 10                                         |
+| <a href="#initial-zoom-level">defaultZoom</a>      | 地图将会加载此缩放级别。                                                                                 | 5                                          |
+| <a href="#initial-zoom-level">zoomDelta</a>        | 缩放级别间隔。                                                                                      | 1                                          |
+| zoomFeatures                                       | 地图将自动适应所有[GeoJSON](#geojson)和[GPX](#gpx)要素。                                                  |                                            |
+| <a href="#unit-and-scale">unit</a>                 | 距离显示的单位。                                                                                     | meters                                     |
+| <a href="#unit-and-scale">scale</a>                | 图像地图距离计算的比例因子。                                                                               | 1                                          |
+| <a href="#markers">marker</a>                      | 在地图上创建标记:📍                                                                                  |                                            |
+| <a href="#defined-in-code-block">commandMarker</a> | 创建执行命令的标记。                                                                                   |                                            |
+| <a href="#marker-file">markerFile</a>              | 根据笔记的frontmatter创建标记。                                                                        |                                            |
+| <a href="#marker-folders">markerFolder</a>         | 从指定的文件夹中所有笔记提取数据创建标记。                                                                        |                                            |
+| <a href="#marker-tags">markerTag\*</a>             | 指定tag，此插件会从 _所有_ 笔记中找到所有含有此tag的笔记，过滤数据并在当前笔记创建对应标记。                                          |                                            |
+| <a href="#filter-tag">filterTag\*</a>              | Filter what files are used to create markers. Only markers that match the tags will be used. |                                            |
+| <a href="#links">linksTo\*</a>                     | Create immutable markers from _all_ of the notes linking **TO** a note                       |                                            |
+| <a href="#links">linksFrom\*</a>                   | Create immutable markers from _all_ of the notes linking **FROM** a note                     |                                            |
+| <a href="#dark-mode">darkMode</a>                  | 地图颜色 暗黑模式                                                                                    | false                                      |
+| <a href="#overlays">overlay</a>                    | 给地图增加一个圆形叠加层                                                                                 |                                            |
+| <a href="#overlay-tag">overlayTag</a>              | Define a YAML tag to search for in specified marker notes                                    |                                            |
+| <a href="#overlay-color">overlayColor</a>          | 更改默认叠加层颜色                                                                                    | blue                                       |
+| <a href="#bounds">bounds</a>                       | 将图像地图边界设置为指定的坐标，而不是默认值。	                                                                     |                                            |
+| <a href="#initial-coordinates">coordinates</a>     | 从一个笔记中读取位置数据，并将其用作初始坐标。                                                                      |                                            |
+| <a href="#initial-zoom-level">zoomTag</a>          | 从一个笔记中读取距离缩放数据，并将其用作初始的默认缩放值。                                                                |                                            |
+| <a href="#geojson">geojson</a>                     | 指定GeoJSON文件路径，将GeoJSON文件加载到地图上。                                                              |                                            |
+| <a href="#styles-and-color">geojsonColor</a>       | 更改GeoJSON要素的默认颜色。                                                                            | #3388ff                                    |
+| geojsonFolder                                      | 解析指定文件夹里所有的.geojson或.json后缀格式的文件，并加载到地图上。                                                    |                                            |
+| <a href="#gpx">gpx</a>                             | 指定GPX文件路径，将GPX文件加载到地图上。                                                                      |                                            |
+| <a href="#gpx-markers">gpxMarkers</a>              | 设置默认的起始、终止和途经点标记。                                                                            |                                            |
+| gpxColor                                           | 控制默认的GPX颜色。                                                                                  | #3388ff                                    |
+| gpxFolder                                          | 解析指定文件夹里所有的.gpx后缀格式的文件，并加载到地图上。                                                              |                                            |
+| <a href="#image-overlays">imageOverlay</a>         | 向地图添加一个图像叠加层。                                                                                |                                            |
+| <a href="#enable-draw-mode-by-default">draw</a>                                | 在地图上启用绘制控制器。                                                                                 | true                                       |
+| drawColor                                          | 新形状绘制时使用的默认颜色。                                                                               | #3388ff                                    |
+| showAllMarkers                                     | 地图将显示所有标记。                                                                                   | false                                      |
+| preserveAspect                                     | 如果调整地图所在的笔记窗格大小，则地图将调整大小以保持其初始纵横比。                                                           | false                                      |
+| noUI                                               | 是否添加地图控制按钮空间。                                                                                | false                                      |
+| lock                                               | 是否默认锁定地图。                                                                                    | false                                      |
+| recenter                                           | 是否在拖动地图后强制重新居中。                                                                              | false                                      |
+| noScrollZoom                                       | 是否禁用滚轮缩放。                                                                                    | false                                      |
 
 > \*: 带'*'的参数需要提前安装 [DataView 插件](https://github.com/blacksmithgu/obsidian-dataview)才支持的功能。
 
@@ -194,7 +194,7 @@ tileServer:
 tileServer: https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png|Dark|on
 ```
 
-## 图像地图
+## <span id="image-maps">图像地图</span>
 
 > **:warning: 制作图像地图?**
 >
