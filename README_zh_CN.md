@@ -106,24 +106,47 @@ marker:
 
 #### YAML中的Marker Tags
 YAML considers the `#` symbol to be a comment, so the `markerTag` or `filterTag` parameters must either be wrapped in quotes (`"#tag"`) or defined without the `#` symbol.
+YAML认为`#`符号是一个注释，因此`markerTag` 或 `filterTag` 参数必须要么用引号括起来`"#tag"`，要么定义时不带`#`符号。
+
 
 #### Links
 I
 
 ## <span id="maps-id">地图ID</span>
-从版本3.0.0开始，地图需要一个ID。如果打开一个包含旧的地图块的笔记，插件将会警告你该地图现在需要一个ID。    
+从版本3.0.0开始，地图映射id是必需的。如果打开一个包含旧的地图块的笔记，插件将会警告你需要为该地图新增一个ID属性。    
 一旦旧地图被分配了一个ID，插件将尝试将标记数据与新地图关联起来。  
-在更新到3.0.0后第一次打开插件时，将创建一个标记数据备份以防需要降级。如果您遇到问题，请在Github上创建一个ISSUE。  
+如下:
+````markdown
+```leaflet
+id: my-first-map
+```
+````
+
+在更新到3.0.0后第一次打开插件时，将会创建一个标记数据备份以防需要降级。如果您遇到问题，请在Github上创建一个ISSUE。  
 ## 初次加载地图时的设置
 
 ### <span id="initial-coordinates">初始坐标</span>
 地图将会打开属性`lat`和`long`指定的纬度和经度处。如果未提供，则使用默认设置中定义的纬度和经度。  
 另外，可以使用`coordinates`参数定义纬度和经度。坐标可以定义为数字数组，也可以定义为链接到具有“location”前置标签的笔记的wikilink：
-
-```
+````markdown
+#以下两种方式效果一致
+```leaflet
 coordinates: [36, -89]
-coordinates: [[Frontmatter带有位置的的笔记]]
 ```
+```leaflet
+coordinates: [[Frontmatter带有位置的的笔记.md]]
+```
+
+
+````
+其中《Frontmatter带有位置的的笔记.md》的 frontmatter 中包含location属性
+````markdown
+---
+location: [36, -89]
+---
+````
+
+
 
 ### <span id="initial-zoom-level">初始缩放等级</span>
 
@@ -202,7 +225,7 @@ tileServer: https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png|Dark|o
 >
 > 这样会使您处理图片的时侯更轻松！
 >
-> 请阅读有关该过程的[讨论](https://github.com/valentine195/obsidian-leaflet-plugin/discussions/130) about the process. Josh Plunkett has also made a great video breaking down the process [here](https://www.youtube.com/watch?v=54EyMzJP5DU).
+> 请阅读有关该过程的[讨论](https://github.com/valentine195/obsidian-leaflet-plugin/discussions/130) 。 Josh Plunkett同时也制作了一个非常棒的视频展示用法[here](https://www.youtube.com/watch?v=54EyMzJP5DU).
 
 ### 图像地图的URL/文件路径
 
@@ -259,16 +282,6 @@ bounds:
 ### <span id="unit-and-scale">单位和比例</span>
 如果提供了，插件将通过 `scale` 缩放计算出的两点之间的距离，并以 `xxx unit` 的形式显示结果。
 在现实世界的地图中，只需要提供 `unit:`, 它将尝试将测量从“米”缩放到指定的“unit”单位。
-可以使用 `bounds` 参数为图像地图指定自定义边界：
-
-````
-```leaflet
-image: [[Image.jpg]]
-bounds:
-    - [<top-left-latitude>, <top-left-longitude>]
-    - [<bottom-right-latitude>, <bottom-right-longitude>]
-```
-````
 
 ## <span id="markers">标记</span>  
 通过单击右键可以在地图上添加新标记。   
@@ -690,8 +703,8 @@ Overriding this CSS in a custom snippet will allow for customization of the dark
 如果禁用此选项，则默认情况下不会显示叠加层工具提示。这可以在叠加层上下文菜单中按叠加层进行更改。  
 目前无法更改不可变叠加层的此设置。
 
-### 按 Shift-单击 复制坐标
-打开此设置将在地图上任意位置按<kbd>Ctrl</kbd> + <kbd>Shift</kbd>-单击 时将纬度和经度坐标复制到剪贴板中
+### 按 Shift-单击左键 复制坐标
+打开此设置将在地图上任意位置按<kbd>Ctrl</kbd> + <kbd>Shift</kbd>-单击左键 时将纬度和经度坐标复制到剪贴板中
 
 ### 纬度和经度
 如果没有提供，则会打开一个现实世界地图到这个默认的纬度和经度。

@@ -282,12 +282,12 @@ export class Marker extends Layer<DivIconMarker> {
                 menu.setNoIcon();
 
                 menu.addItem((item) => {
-                    item.setTitle("Edit Marker").onClick(() =>
+                    item.setTitle(t("Edit Marker")).onClick(() =>
                         this.editMarker()
                     );
                 });
                 menu.addItem((item) => {
-                    item.setTitle("Convert to Code Block").onClick(async () => {
+                    item.setTitle(t("Convert to Code Block")).onClick(async () => {
                         this.mutable = false;
 
                         this.map.trigger("create-immutable-layer", this);
@@ -296,7 +296,7 @@ export class Marker extends Layer<DivIconMarker> {
                     });
                 });
                 menu.addItem((item) => {
-                    item.setTitle("Delete Marker").onClick(() => {
+                    item.setTitle(t("Delete Marker")).onClick(() => {
                         this.map.removeMarker(this);
                     });
                 });

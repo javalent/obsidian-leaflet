@@ -945,7 +945,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
                 menu.setNoIcon();
                 menu.addItem((item) => {
-                    item.setTitle("Edit Overlay").onClick(() => {
+                    item.setTitle(t("Edit Overlay")).onClick(() => {
                         const modal = new OverlayContextModal(overlay, this);
                         modal.onClose = async () => {
                             if (modal.deleted) {
@@ -995,7 +995,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                     });
                 });
                 menu.addItem((item) => {
-                    item.setTitle("Convert to Code Block").onClick(async () => {
+                    item.setTitle(t("Convert to Code Block")).onClick(async () => {
                         overlay.mutable = false;
 
                         this.trigger("create-immutable-layer", overlay);
@@ -1004,7 +1004,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                     });
                 });
                 menu.addItem((item) => {
-                    item.setTitle("Delete Overlay").onClick(() => {
+                    item.setTitle(t("Delete Overlay")).onClick(() => {
                         this.log("Overlay deleted in context menu. Removing.");
                         overlay.remove();
                         this.overlays = this.overlays.filter(
@@ -1024,7 +1024,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
                 contextMenu.setNoIcon();
                 contextMenu.addItem((item) => {
-                    item.setTitle("Create Marker");
+                    item.setTitle(t("Create Marker"));
                     item.onClick(() => {
                         contextMenu.hide();
                         this.handleMapContext(evt);

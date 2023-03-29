@@ -228,6 +228,8 @@ export default {
         "There was an error adding GeoJSON to map",
     "There was an error adding GPX to map":
         "There was an error adding GPX to map",
+    "Edit Overlay": "Edit Overlay",
+    "Create Marker": "Create Marker",
 
     //layer/marker.ts
     "No command found!": "No command found!",
@@ -235,6 +237,9 @@ export default {
         "This marker cannot be edited because it was defined in the code block.",
     "This overlay cannot be edited because it was defined in the code block.":
         "This overlay cannot be edited because it was defined in the code block.",
+    "Edit Marker": "Edit Marker",
+    "Convert to Code Block": "Convert to Code Block",
+
 
     //layer/gpx.ts
     Lat: "Lat",
@@ -279,7 +284,6 @@ export default {
         "There was an issue with the provided latitude.",
     "There was an issue with the provided longitude.":
         "There was an issue with the provided longitude.",
-
     //draw
     Draw: "Draw",
     Polygon: "Polygon",
