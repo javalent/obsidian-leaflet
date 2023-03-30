@@ -801,8 +801,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                 }
             } catch (e) {
                 new Notice(
-                    "There was an error while importing " + files[0].name
-                );
+                    t("There was an error while importing %1", files[0].name));
                 console.error(e);
             }
 

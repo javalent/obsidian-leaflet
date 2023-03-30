@@ -1379,7 +1379,7 @@ export class RealMap extends BaseMap {
     async buildLayer(layer: { data: string; id: string; alias?: string }) {
         if (layer.data.contains("openstreetmap")) {
             new Notice(
-                "OpenStreetMap has restricted the use of its tile server in Obsidian. Your map may break at any time. Please switch to a different tile server."
+                t("OpenStreetMap has restricted the use of its tile server in Obsidian. Your map may break at any time. Please switch to a different tile server.")
             );
         }
         const tileLayer = L.tileLayer(layer.data, {
@@ -1474,7 +1474,7 @@ export class RealMap extends BaseMap {
             const [id, alias] = tileLayer.split("|");
             if (!id) {
                 new Notice(
-                    `There was an issue parsing the tile layer: ${tileLayer}`
+                    t("There was an issue parsing the tile layer: %1", tileLayer)
                 );
                 continue;
             }
@@ -1485,7 +1485,7 @@ export class RealMap extends BaseMap {
         if (this.options.osmLayer || !layers.length) {
             if (!this.options.osmLayer) {
                 new Notice(
-                    "OpenStreetMap cannot be turned off without specifying additional tile servers."
+                    t("OpenStreetMap cannot be turned off without specifying additional tile servers.")
                 );
             }
             layers.unshift(osmLayer);

@@ -207,7 +207,7 @@ export class Marker extends Layer<DivIconMarker> {
         const marker = this.map.plugin.getIconForType(type);
         if (!marker) {
             new Notice(
-                `Leaflet: Could not create icon for ${type} - does this type exist in settings?`
+                t("Leaflet: Could not create icon for %1 - does this type exist in settings?", type)
             );
             return;
         }

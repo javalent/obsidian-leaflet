@@ -230,7 +230,12 @@ export default {
         "There was an error adding GPX to map",
     "Edit Overlay": "Edit Overlay",
     "Create Marker": "Create Marker",
-
+    "OpenStreetMap has restricted the use of its tile server in Obsidian. Your map may break at any time. Please switch to a different tile server.":
+        "OpenStreetMap has restricted the use of its tile server in Obsidian. Your map may break at any time. Please switch to a different tile server.",
+    "There was an issue parsing the tile layer: %1":
+        "There was an issue parsing the tile layer: %1",
+    "OpenStreetMap cannot be turned off without specifying additional tile servers.":
+        "OpenStreetMap cannot be turned off without specifying additional tile servers.",
     //layer/marker.ts
     "No command found!": "No command found!",
     "This marker cannot be edited because it was defined in the code block.":
@@ -239,7 +244,8 @@ export default {
         "This overlay cannot be edited because it was defined in the code block.",
     "Edit Marker": "Edit Marker",
     "Convert to Code Block": "Convert to Code Block",
-
+    "Leaflet: Could not create icon for %1 - does this type exist in settings?":
+        "Leaflet: Could not create icon for %1 - does this type exist in settings?",
 
     //layer/gpx.ts
     Lat: "Lat",

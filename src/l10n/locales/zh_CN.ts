@@ -220,12 +220,20 @@ export default {
     "There was an error adding GPX to map": "将 GPX 添加到地图时出错",
     "Edit Overlay": "编辑覆盖层",
     "Create Marker": "创建标记",
+    "OpenStreetMap has restricted the use of its tile server in Obsidian. Your map may break at any time. Please switch to a different tile server.":
+        "OpenStreetMap已经限制了在Obsidian中使用其瓦片服务器。您的地图随时可能会出现问题。请切换到其他的瓦片服务器。",
+    "There was an issue parsing the tile layer: %1":
+        "解析瓦片图层时出现问题：%1。",
+    "OpenStreetMap cannot be turned off without specifying additional tile servers.":
+        "没有指定其他瓦片服务器的情况下，无法关闭OpenStreetMap。",
 //layer/marker.ts
     "No command found!": "未找到命令！",
     "This marker cannot be edited because it was defined in the code block.": "此标记无法编辑，因为它已经在代码块中被使用",
     "This overlay cannot be edited because it was defined in the code block.": "此覆盖层无法编辑，因为它已经在代码块中被使用",
     "Edit Marker": "编辑标记",
     "Convert to Code Block": "转换成代码块",
+    "Leaflet: Could not create icon for %1 - does this type exist in settings?":
+        "Leaflet：无法为%1创建图标-在设置中是否存在此类型？",
 
 //layer/gpx.ts
     Lat: "纬度",
