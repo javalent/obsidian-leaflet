@@ -218,19 +218,25 @@ tileServer: https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png|Dark|o
 瓦片服务器的子域列表，以逗号','作为分隔符，如'a,b,c'，主要用来并发请求瓦片服务器，将会替换在瓦片服务器的's'参数"。    
 `tileSubdomains: <domain1>,<domain2>,<domain3>`
 
+比如，使用高德地图可以采用如下配置：
 ````markdown
 ```leaflet
 osmLayer: false
 tileServer: https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}
-tileSubdomains: 1,2,3
+tileSubdomains: 1,2,3,4
+defaultZoom: 15
+minZoom: 3
+maxZoom: 18
 ```
 ````
 
 
-则最后请求高德会有三个地址    
+则最后请求高德会有四个地址    
 https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}  
 https://webrd02.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}  
-https://webrd03.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z} 
+https://webrd03.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}
+https://webrd04.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}
+
 
 > 注意：用户无需关注多少个地址，这种配置`tileSubdomains`属性的方式，
 > Leaflet会通过这些地址并发加载地图图片，一定程度上能提升地图缩放变动的加载速度
