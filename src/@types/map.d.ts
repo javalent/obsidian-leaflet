@@ -106,6 +106,8 @@ export interface LeafletMapOptions {
     tileLayer?: string[];
     tileOverlay?: string[];
 
+    tileSubdomains: string[];
+
     type?: "image" | "real";
     verbose?: boolean;
     zoomDelta?: number;

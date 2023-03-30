@@ -153,6 +153,10 @@ export default {
         "Only display when zooming out above this zoom.",
     "Only display when zooming in below this zoom.":
         "Only display when zooming in below this zoom.",
+    "Reset": "Reset",
+    "Default Tile Server Subdomains": "Default Tile Server Subdomains",
+    "Available subdomains for this tile server concurrent requests.":
+        "Available subdomains for this tile server concurrent requests. Spilt by ',', etc. 'a,b,c'",
 
     //modals/settings.ts
     "Marker Name": "Marker Name",

@@ -151,7 +151,10 @@ export default {
     Metric: "公制",
     "Only display when zooming out above this zoom.": "仅当缩放级别大于此缩放级别时显示",
     "Only display when zooming in below this zoom.": "仅当缩放级别小于此缩放级别时显示",
-
+    "Reset": "重置为默认",
+    "Default Tile Server Subdomains": "默认瓦片服务器子域",
+    "Available subdomains for this tile server concurrent requests.":
+        "瓦片服务器的子域列表，逗号','作为分隔符，如'a,b,c'，主要用来并发请求瓦片服务器,将会替换在瓦片服务器的's'参数",
     //modals/settings.ts
     "Marker Name": "标记名称",
     "Marker name already exists.": "标记名称已存在",

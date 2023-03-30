@@ -33,7 +33,7 @@ import {
     parseLink,
     getHeight,
     getHex,
-    VIEW_TYPE
+    VIEW_TYPE, TILE_SUBDOMAINS_SPILT
 } from "../utils";
 import convert from "convert";
 import t from "../l10n/locale";
@@ -66,6 +66,7 @@ type ImmutableOverlay = [
     desc: string,
     id: string
 ];
+
 export class LeafletRenderer extends MarkdownRenderChild {
     watchers: Set<Watcher> = new Set();
     loader: Loader = new Loader(this.plugin.app);
@@ -124,6 +125,12 @@ export class LeafletRenderer extends MarkdownRenderChild {
         if (this.params.tileOverlay && this.params.tileOverlay.length) {
             tileOverlay = [this.params.tileOverlay].flat();
         }
+        let tileSubdomains: string[] = [];
+
+        if (this.params.tileSubdomains && this.params.tileSubdomains.length) {
+            tileSubdomains = [this.params.tileSubdomains].flat().map(s=>s.split(TILE_SUBDOMAINS_SPILT)).flat();
+        }
+
         this.options = {
             bounds: this.params.bounds,
             context: this.sourcePath,
@@ -153,6 +160,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             noScrollZoom: this.params.noScrollZoom,
             tileLayer,
             tileOverlay,
+            tileSubdomains: tileSubdomains,
             type: this.params.image != "real" ? "image" : "real",
             unit: this.params.unit ?? this.plugin.defaultUnit,
             verbose: this.params.verbose,

@@ -44,6 +44,7 @@ darkMode: true
 | <a href="#image-maps">image</a>                    | 用作 _地图图层的图像_<sup>[<a href="#explan-image-map">1</a>]</sup>文件的直接URL/文件路径。                           | OpenStreetMap map                          |
 | <a href="#real-world-maps">tileServer</a>          | 添加额外的 _瓦片服务器_ <sup>[<a href="#explan-tile-server">2</a>]</sup>作为不同的图层。                             |                                            |
 | <a href="#real-world-maps">tileOverlay</a>         | 将额外的瓦片服务器添加为底图上的叠加层。                                                                               |                                            |
+| <a href="#tile-subdomains">tileSubdomains</a>      | 瓦片服务器子域参数，指定瓦片服务器的子域，用于并发请求。                                                                       | a,b,c                                      |
 | <a href="#real-world-maps">osmLayer</a>            | 关闭 _OpenStreetMap_<sup>[<a href="#explan-open-stree-tmap">3</a>]</sup>图层(仅在提供了额外的瓦片服务器时才可以使用这个功能。) |                                            |
 | <a href="#initial-coordinates">lat</a>             | 渲染时显示地图的默认纬度。                                                                                      | 50% (image) / 39.983334 (open street map)  |
 | <a href="#initial-coordinates">long</a>            | 渲染时显示地图的默认经度。                                                                                      | 50% (image) / -82.983330 (open street map) |
@@ -79,7 +80,7 @@ darkMode: true
 | gpxColor                                           | 控制默认的GPX颜色。                                                                                        | #3388ff                                    |
 | gpxFolder                                          | 解析指定文件夹里所有的.gpx后缀格式的文件，并加载到地图上。                                                                    |                                            |
 | <a href="#image-overlays">imageOverlay</a>         | 向地图添加一个图像叠加层。                                                                                      |                                            |
-| <a href="#enable-draw-mode-by-default">draw</a>                                | 在地图上启用绘制控制器。                                                                                       | true                                       |
+| <a href="#enable-draw-mode-by-default">draw</a>                               | 在地图上启用绘制控制器。                                                                                       | true                                       |
 | drawColor                                          | 新形状绘制时使用的默认颜色。                                                                                     | #3388ff                                    |
 | showAllMarkers                                     | 地图将显示所有标记。                                                                                         | false                                      |
 | preserveAspect                                     | 如果调整地图所在的笔记窗格大小，则地图将调整大小以保持其初始纵横比。                                                                 | false                                      |
@@ -178,7 +179,7 @@ zoomTag: nearby
 ```
 
 那么地图将读取 `nearby` 属性值作为缩放的值，并识别出它是 `100 英里`，并将地图的初始缩放级别设置为最接近可以显示 100 英里的级别（这取决于 `minZoom`、`maxZoom` 和 `zoomDelta`）。
-## <span href="real-world-maps">真实世界地图</span>
+## <span id="real-world-maps">真实世界地图</span>
 
 如果未提供 `image` 参数，则会创建真实世界地图。这些地图默认加载 `OpenStreetMap` 地图，但可以使用 `tileServer` 参数提供其他瓦片服务器。   
  **请确保您使用的瓦片服务器可以公开使用。**   
@@ -205,13 +206,34 @@ tileServer:
 ```
 在 `tileServer` 中指定的瓦片服务器将作为其他可完全切换的 **图层** 添加。
 
-### 瓦片叠加层
-使用 `tileOverlay` 属性而不是 `tileServer`属性将会使瓦片服务器成为叠加层被添加到基础地图之上。   
-可以通过在末尾添加 `|on` 来将瓦片叠加层设置为默认打开：
+### 瓦片叠加层   
+使用 `tileOverlay` 属性而不是 `tileServer`属性将会使瓦片服务器成为叠加层被添加到基础地图之上。     
+可以通过在末尾添加 `|on` 来将瓦片叠加层设置为默认打开：   
 
 ```md
 tileServer: https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png|Dark|on
 ```
+
+### <span id="tile-subdomains">瓦片服务器子域参数</span>
+瓦片服务器的子域列表，以逗号','作为分隔符，如'a,b,c'，主要用来并发请求瓦片服务器，将会替换在瓦片服务器的's'参数"。    
+`tileSubdomains: <domain1>,<domain2>,<domain3>`
+
+````markdown
+```leaflet
+osmLayer: false
+tileServer: https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}
+tileSubdomains: 1,2,3
+```
+````
+
+
+则最后请求高德会有三个地址    
+https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}  
+https://webrd02.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}  
+https://webrd03.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z} 
+
+> 注意：用户无需关注多少个地址，这种配置`tileSubdomains`属性的方式，
+> Leaflet会通过这些地址并发加载地图图片，一定程度上能提升地图缩放变动的加载速度
 
 ## <span id="image-maps">图像地图</span>
 

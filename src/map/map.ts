@@ -25,14 +25,14 @@ import { OverlayContextModal } from "src/modals/context";
 import {
     copyToClipboard,
     DEFAULT_ATTRIBUTION,
-    DEFAULT_MAP_OPTIONS,
+    DEFAULT_MAP_OPTIONS, DEFAULT_TILE_SUBDOMAINS,
     DISTANCE_DECIMALS,
     formatLatLng,
     formatNumber,
     getId,
     icon,
     log,
-    MODIFIER_KEY
+    MODIFIER_KEY, TILE_SUBDOMAINS_SPILT
 } from "src/utils";
 
 import { popup } from "./popup";
@@ -1376,18 +1376,21 @@ export class RealMap extends BaseMap {
         this.initialCoords = coords;
     }
 
-    async buildLayer(layer: { data: string; id: string; alias?: string }) {
+    async buildLayer(layer: { data: string; id: string; alias?: string; subdomains?:string[] }) {
         if (layer.data.contains("openstreetmap")) {
             new Notice(
                 t("OpenStreetMap has restricted the use of its tile server in Obsidian. Your map may break at any time. Please switch to a different tile server.")
             );
         }
+        const subdomainsValue = layer.subdomains? layer.subdomains : (this.plugin.data.defaultTileSubdomains ?
+            this.plugin.data.defaultTileSubdomains.split(TILE_SUBDOMAINS_SPILT).filter(s=>s).map(s => s.trim()) :
+            DEFAULT_TILE_SUBDOMAINS);
         const tileLayer = L.tileLayer(layer.data, {
             ...(layer.data.contains("stamen-tiles")
                 ? {
                       attribution: DEFAULT_ATTRIBUTION
                   }
-                : { attribution: this.plugin.data.defaultAttribution }),
+                : { attribution: this.plugin.data.defaultAttribution, subdomains: subdomainsValue}),
             className: this.options.darkMode ? "dark-mode" : ""
         });
 
@@ -1469,6 +1472,7 @@ export class RealMap extends BaseMap {
             id: string;
             data: string;
             alias?: string;
+            subdomains?: string[];
         }[] = [];
         for (let tileLayer of this.options.tileLayer) {
             const [id, alias] = tileLayer.split("|");
@@ -1479,7 +1483,7 @@ export class RealMap extends BaseMap {
                 continue;
             }
 
-            layers.push({ id, data: id, alias });
+            layers.push({ id, data: id, alias, subdomains: this.options.tileSubdomains });
         }
 
         if (this.options.osmLayer || !layers.length) {

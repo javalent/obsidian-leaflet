@@ -53,6 +53,7 @@ export interface ObsidianAppData {
     enableDraw: boolean;
     defaultUnitType: "metric" | "imperial";
     defaultTile: string;
+    defaultTileSubdomains: string;
     defaultTileDark: string;
     defaultAttribution: string;
 }
