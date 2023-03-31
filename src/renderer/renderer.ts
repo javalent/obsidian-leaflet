@@ -7,7 +7,8 @@ import {
     resolveSubpath,
     TFolder,
     Vault,
-    MarkdownView
+    MarkdownView,
+    TAbstractFile
 } from "obsidian";
 import type geojson from "geojson";
 
@@ -450,7 +451,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                     })
             );
 
-        function collectGeos(abstractFile, geoSet, depth) {
+        function collectGeos(abstractFile: TAbstractFile, geoSet: Set<{ path: string; alias?: string; note?: string; }>, depth: number) {
             depth = depth - 1;
             if (depth < 0 || !abstractFile) {
                 return;
@@ -466,9 +467,9 @@ export class LeafletRenderer extends MarkdownRenderChild {
         }
 
         if (this.params.geojsonFolder && this.params.geojsonFolder.length) {
-            var f = this.params.geojsonFolder;
-            let arr = (typeof(f) === 'string' || f instanceof String) ? [ f ] : f;
-            var sub = this.sourcePath.substring(0, this.sourcePath.lastIndexOf("/"));
+            const f = this.params.geojsonFolder;
+            const sub = this.sourcePath.substring(0, this.sourcePath.lastIndexOf("/"));
+            let arr = Array.isArray(f) ? f : [ f ];
             for (let path of arr) {
                 var abstractFile, depth;
                 ({ abstractFile, path, depth } = this.filePathAndDepth(path, sub));
@@ -833,7 +834,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 overlayColor
             } = this.params;
 
-            function collectFiles(abstractFile, geoSet, depth) {
+            function collectFiles(abstractFile: TAbstractFile, geoSet: Set<string>, depth: number) {
                 depth = depth - 1;
                 if (depth < 0 || !abstractFile) {
                     return;
