@@ -220,6 +220,10 @@ export default {
     "Overlay Color": "Overlay Color",
     "Delete Overlay": "Delete Overlay",
 
+    //modals/geojson.ts
+    "File Name": "File Name",
+    "Enter a file name.": "Enter a file name.",
+
     //map/view.ts
     "Leaflet Map": "Leaflet Map",
 
@@ -305,5 +309,6 @@ export default {
     Text: "Text",
     Color: "Color",
     "Fill Color": "Fill Color",
-    "Move Shapes": "Move Shapes"
+    "Move Shapes": "Move Shapes",
+    "Export Drawing to GeoJSON": "Export Drawing to GeoJSON",
 };
