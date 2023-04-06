@@ -4,9 +4,11 @@ import {
     TFile,
     Notice,
     CachedMetadata,
+    resolveSubpath,
     TFolder,
     Vault,
-    MarkdownView
+    MarkdownView,
+    TAbstractFile
 } from "obsidian";
 import type geojson from "geojson";
 
@@ -457,25 +459,29 @@ export class LeafletRenderer extends MarkdownRenderChild {
                     })
             );
 
+        function collectGeos(abstractFile: TAbstractFile, geoSet: Set<{ path: string; alias?: string; note?: string; }>, depth: number) {
+            depth = depth - 1;
+            if (depth < 0 || !abstractFile) {
+                return;
+            }
+            if (abstractFile instanceof TFile &&
+                ["json", "geojson"].includes(abstractFile.extension)) {
+                let p = abstractFile.path;
+                geoSet.add({ path: p, alias: p.substring(1+p.lastIndexOf('/'),p.lastIndexOf('.')) });
+            } else
+            if (abstractFile instanceof TFolder) {
+                abstractFile.children.forEach(file => collectGeos(file, geoSet, depth));
+            }
+        }
+
         if (this.params.geojsonFolder && this.params.geojsonFolder.length) {
-            for (let path of this.params.geojsonFolder) {
-                let abstractFile =
-                    this.plugin.app.vault.getAbstractFileByPath(path);
-                if (!abstractFile) continue;
-                if (
-                    abstractFile instanceof TFile &&
-                    ["json", "geojson"].includes(abstractFile.extension)
-                )
-                    geoSet.add({ path });
-                if (abstractFile instanceof TFolder) {
-                    Vault.recurseChildren(abstractFile, (file) => {
-                        if (
-                            file instanceof TFile &&
-                            ["json", "geojson"].includes(file.extension)
-                        )
-                            geoSet.add({ path: file.path });
-                    });
-                }
+            const f = this.params.geojsonFolder;
+            const sub = this.sourcePath.substring(0, this.sourcePath.lastIndexOf("/"));
+            let arr = Array.isArray(f) ? f : [ f ];
+            for (let path of arr) {
+                var abstractFile, depth;
+                ({ abstractFile, path, depth } = this.filePathAndDepth(path, sub));
+                collectGeos(abstractFile, geoSet, depth);
             }
         }
 
@@ -504,6 +510,9 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 }
             }
         }
+        geojsonData.reverse(); //deeper Elements are 'contained' in shallow Geometries and must be added last!
+        //this does NOT help though for parallel, large-scale Structures like Subway-Networks. 
+        //These must be added manually to avoid Overlay! 
 
         let gpx = this.params.gpx,
             gpxData: { data: string; alias?: string }[] = [];
@@ -813,6 +822,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
         }
         return markers;
     }
+
     async getImmutableItems(): Promise<{
         markers: ImmutableMarker[];
         overlays: ImmutableOverlay[];
@@ -832,6 +842,19 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 overlayColor
             } = this.params;
 
+            function collectFiles(abstractFile: TAbstractFile, geoSet: Set<string>, depth: number) {
+                depth = depth - 1;
+                if (depth < 0 || !abstractFile) {
+                    return;
+                }
+                if (abstractFile instanceof TFile) {
+                    geoSet.add(abstractFile.path);
+                } else
+                if (abstractFile instanceof TFolder) {
+                    abstractFile.children.forEach(file => collectFiles(file, geoSet, depth));
+                }
+            }
+        
             if (
                 markerFile.length ||
                 markerFolder.length ||
@@ -842,16 +865,11 @@ export class LeafletRenderer extends MarkdownRenderChild {
             ) {
                 let files = new Set(markerFile);
 
+                var sub = this.sourcePath.substring(0, this.sourcePath.lastIndexOf("/"));
                 for (let path of markerFolder) {
-                    let abstractFile =
-                        this.app.vault.getAbstractFileByPath(path);
-                    if (!abstractFile) continue;
-                    if (abstractFile instanceof TFile) files.add(path);
-                    if (abstractFile instanceof TFolder) {
-                        Vault.recurseChildren(abstractFile, (file) => {
-                            if (file instanceof TFile) files.add(file.path);
-                        });
-                    }
+                    var abstractFile, depth;
+                    ({ abstractFile, path, depth } = this.filePathAndDepth(path, sub));
+                    collectFiles(abstractFile, files, depth);
                 }
                 //get cache
                 //error is thrown here because plugins isn't exposed on Obsidian App
@@ -1003,8 +1021,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                         file.extension !== "md"
                     )
                         continue;
-                    const cache =
-                        this.app.metadataCache.getFileCache(file) ?? {};
+                    const cache = this.app.metadataCache.getFileCache(file) ?? {};
                     const { frontmatter } = cache;
 
                     const tags: Set<string> =
@@ -1253,6 +1270,20 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 overlays: overlaysToReturn
             });
         });
+    }
+
+    private filePathAndDepth(path: string, sub: string) {
+        if (path[0] == '.') {
+            var rest = path.substring(1);
+            path = sub + rest;
+        }
+        var depth = 2;
+        while (path.endsWith('/')) {
+            path = path.substring(0, path.length - 1);
+            ++depth;
+        }
+        let abstractFile = this.app.vault.getAbstractFileByPath(path);
+        return { abstractFile, depth, path };
     }
 
     registerWatcher(file: TFile, fileIds: Map<string, string>) {
