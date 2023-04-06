@@ -566,8 +566,8 @@ export class CreateMarkerModal extends Modal {
         let tag: string;
         const tagSetting = new Setting(containerEl)
             .setHeading()
-            .setName("Associate Tags")
-            .setDesc("Markers created from this tag using ")
+            .setName(t("Associate Tags"))
+            .setDesc(t("Markers created from this tag using "))
             .addText((t) => {
                 t.setPlaceholder("Add Tag");
                 t.onChange((v) => (tag = v));
@@ -589,7 +589,7 @@ export class CreateMarkerModal extends Modal {
             });
         tagSetting.descEl.createEl("code", { text: "markerTag" });
         tagSetting.descEl.createSpan({
-            text: " will use this marker icon by default."
+            text: t(" will use this marker icon by default.")
         });
 
         const tagContainer = containerEl.createDiv("additional-markers");

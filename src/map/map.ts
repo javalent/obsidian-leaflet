@@ -25,14 +25,14 @@ import { OverlayContextModal } from "src/modals/context";
 import {
     copyToClipboard,
     DEFAULT_ATTRIBUTION,
-    DEFAULT_MAP_OPTIONS,
+    DEFAULT_MAP_OPTIONS, DEFAULT_TILE_SUBDOMAINS,
     DISTANCE_DECIMALS,
     formatLatLng,
     formatNumber,
     getId,
     icon,
     log,
-    MODIFIER_KEY
+    MODIFIER_KEY, TILE_SUBDOMAINS_SPILT
 } from "src/utils";
 
 import { popup } from "./popup";
@@ -945,7 +945,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
                 menu.setNoIcon();
                 menu.addItem((item) => {
-                    item.setTitle("Edit Overlay").onClick(() => {
+                    item.setTitle(t("Edit Overlay")).onClick(() => {
                         const modal = new OverlayContextModal(overlay, this);
                         modal.onClose = async () => {
                             if (modal.deleted) {
@@ -995,7 +995,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                     });
                 });
                 menu.addItem((item) => {
-                    item.setTitle("Convert to Code Block").onClick(async () => {
+                    item.setTitle(t("Convert to Code Block")).onClick(async () => {
                         overlay.mutable = false;
 
                         this.trigger("create-immutable-layer", overlay);
@@ -1004,7 +1004,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                     });
                 });
                 menu.addItem((item) => {
-                    item.setTitle("Delete Overlay").onClick(() => {
+                    item.setTitle(t("Delete Overlay")).onClick(() => {
                         this.log("Overlay deleted in context menu. Removing.");
                         overlay.remove();
                         this.overlays = this.overlays.filter(
@@ -1024,7 +1024,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
                 contextMenu.setNoIcon();
                 contextMenu.addItem((item) => {
-                    item.setTitle("Create Marker");
+                    item.setTitle(t("Create Marker"));
                     item.onClick(() => {
                         contextMenu.hide();
                         this.handleMapContext(evt);
@@ -1376,18 +1376,21 @@ export class RealMap extends BaseMap {
         this.initialCoords = coords;
     }
 
-    async buildLayer(layer: { data: string; id: string; alias?: string }) {
+    async buildLayer(layer: { data: string; id: string; alias?: string; subdomains?:string[] }) {
         if (layer.data.contains("openstreetmap")) {
             new Notice(
-                "OpenStreetMap has restricted the use of its tile server in Obsidian. Your map may break at any time. Please switch to a different tile server."
+                t("OpenStreetMap has restricted the use of its tile server in Obsidian. Your map may break at any time. Please switch to a different tile server.")
             );
         }
+        const subdomainsValue = layer.subdomains? layer.subdomains : (this.plugin.data.defaultTileSubdomains ?
+            this.plugin.data.defaultTileSubdomains.split(TILE_SUBDOMAINS_SPILT).filter(s=>s).map(s => s.trim()) :
+            DEFAULT_TILE_SUBDOMAINS);
         const tileLayer = L.tileLayer(layer.data, {
             ...(layer.data.contains("stamen-tiles")
                 ? {
                       attribution: DEFAULT_ATTRIBUTION
                   }
-                : { attribution: this.plugin.data.defaultAttribution }),
+                : { attribution: this.plugin.data.defaultAttribution, subdomains: subdomainsValue}),
             className: this.options.darkMode ? "dark-mode" : ""
         });
 
@@ -1469,23 +1472,24 @@ export class RealMap extends BaseMap {
             id: string;
             data: string;
             alias?: string;
+            subdomains?: string[];
         }[] = [];
         for (let tileLayer of this.options.tileLayer) {
             const [id, alias] = tileLayer.split("|");
             if (!id) {
                 new Notice(
-                    `There was an issue parsing the tile layer: ${tileLayer}`
+                    t("There was an issue parsing the tile layer: %1", tileLayer)
                 );
                 continue;
             }
 
-            layers.push({ id, data: id, alias });
+            layers.push({ id, data: id, alias, subdomains: this.options.tileSubdomains });
         }
 
         if (this.options.osmLayer || !layers.length) {
             if (!this.options.osmLayer) {
                 new Notice(
-                    "OpenStreetMap cannot be turned off without specifying additional tile servers."
+                    t("OpenStreetMap cannot be turned off without specifying additional tile servers.")
                 );
             }
             layers.unshift(osmLayer);

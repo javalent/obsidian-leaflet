@@ -207,7 +207,7 @@ export class Marker extends Layer<DivIconMarker> {
         const marker = this.map.plugin.getIconForType(type);
         if (!marker) {
             new Notice(
-                `Leaflet: Could not create icon for ${type} - does this type exist in settings?`
+                t("Leaflet: Could not create icon for %1 - does this type exist in settings?", type)
             );
             return;
         }
@@ -282,12 +282,12 @@ export class Marker extends Layer<DivIconMarker> {
                 menu.setNoIcon();
 
                 menu.addItem((item) => {
-                    item.setTitle("Edit Marker").onClick(() =>
+                    item.setTitle(t("Edit Marker")).onClick(() =>
                         this.editMarker()
                     );
                 });
                 menu.addItem((item) => {
-                    item.setTitle("Convert to Code Block").onClick(async () => {
+                    item.setTitle(t("Convert to Code Block")).onClick(async () => {
                         this.mutable = false;
 
                         this.map.trigger("create-immutable-layer", this);
@@ -296,7 +296,7 @@ export class Marker extends Layer<DivIconMarker> {
                     });
                 });
                 menu.addItem((item) => {
-                    item.setTitle("Delete Marker").onClick(() => {
+                    item.setTitle(t("Delete Marker")).onClick(() => {
                         this.map.removeMarker(this);
                     });
                 });

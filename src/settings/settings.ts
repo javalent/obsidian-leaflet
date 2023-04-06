@@ -19,7 +19,7 @@ import {
     setValidationError,
     getMarkerIcon,
     DEFAULT_TILE_SERVER,
-    DEFAULT_ATTRIBUTION
+    DEFAULT_ATTRIBUTION, DEFAULT_TILE_SUBDOMAINS
 } from "src/utils";
 import { IconSuggestionModal } from "src/modals";
 
@@ -416,9 +416,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     });
             });
         new Setting(containerEl)
-            .setName("Default Tile Server")
+            .setName(t("Default Tile Server"))
             .setDesc(
-                "It is up to you to ensure you have proper access to this tile server."
+                t("It is up to you to ensure you have proper access to this tile server.")
             )
             .addText((t) => {
                 t.setValue(this.plugin.data.defaultTile).onChange((v) => {
@@ -429,7 +429,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             .addExtraButton((b) =>
                 b
                     .setIcon("reset")
-                    .setTooltip("Reset")
+                    .setTooltip(t("Reset"))
                     .onClick(() => {
                         this.plugin.data.defaultTile = DEFAULT_TILE_SERVER;
 
@@ -438,9 +438,31 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     })
             );
         new Setting(containerEl)
-            .setName("Default Tile Server Attribution")
+            .setName(t("Default Tile Server Subdomains"))
             .setDesc(
-                "Please ensure your attribution meets all requirements set by the tile server."
+                t("Available subdomains for this tile server concurrent requests.")
+            )
+            .addText((t) => {
+                t.setValue(this.plugin.data.defaultTileSubdomains).onChange((v) => {
+                    this.plugin.data.defaultTileSubdomains = v;
+                    this.plugin.saveSettings();
+                });
+            })
+            .addExtraButton((b) =>
+                b
+                    .setIcon("reset")
+                    .setTooltip(t("Reset"))
+                    .onClick(() => {
+                        this.plugin.data.defaultTileSubdomains = DEFAULT_TILE_SUBDOMAINS;
+
+                        this.createMapSettings(containerEl);
+                        this.plugin.saveSettings();
+                    })
+            );
+        new Setting(containerEl)
+            .setName(t("Default Tile Server Attribution"))
+            .setDesc(
+                t("Please ensure your attribution meets all requirements set by the tile server.")
             )
             .addTextArea((t) => {
                 t.setValue(this.plugin.data.defaultAttribution).onChange(
@@ -453,7 +475,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             .addExtraButton((b) =>
                 b
                     .setIcon("reset")
-                    .setTooltip("Reset")
+                    .setTooltip(t("Reset"))
                     .onClick(() => {
                         this.plugin.data.defaultAttribution =
                             DEFAULT_ATTRIBUTION;
@@ -463,9 +485,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     })
             );
         new Setting(containerEl)
-            .setName("Default Tile Server (Dark Mode)")
+            .setName(t("Default Tile Server (Dark Mode)"))
             .setDesc(
-                "It is up to you to ensure you have proper access to this tile server."
+                t("It is up to you to ensure you have proper access to this tile server.")
             )
             .addText((t) => {
                 t.setValue(this.plugin.data.defaultTileDark).onChange((v) => {
@@ -476,7 +498,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
             .addExtraButton((b) =>
                 b
                     .setIcon("reset")
-                    .setTooltip("Reset")
+                    .setTooltip(t("Reset"))
                     .onClick(() => {
                         this.plugin.data.defaultTileDark = DEFAULT_TILE_SERVER;
                         this.createMapSettings(containerEl);
@@ -801,8 +823,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                 }
             } catch (e) {
                 new Notice(
-                    "There was an error while importing " + files[0].name
-                );
+                    t("There was an error while importing %1", files[0].name));
                 console.error(e);
             }
 

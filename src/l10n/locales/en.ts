@@ -139,12 +139,24 @@ export default {
     "Default Units": "Default Units",
     "Select the default system of units for the map.":
         "Select the default system of units for the map.",
+    "Default Tile Server": "Default Tile Server",
+    "It is up to you to ensure you have proper access to this tile server.":
+        "It is up to you to ensure you have proper access to this tile server.",
+    "Default Tile Server Attribution": "Default Tile Server Attribution",
+    "Please ensure your attribution meets all requirements set by the tile server.":
+        "Please ensure your attribution meets all requirements set by the tile server.",
+    "Default Tile Server (Dark Mode)": "Default Tile Server (Dark Mode)",
+
     Imperial: "Imperial",
     Metric: "Metric",
     "Only display when zooming out above this zoom.":
         "Only display when zooming out above this zoom.",
     "Only display when zooming in below this zoom.":
         "Only display when zooming in below this zoom.",
+    "Reset": "Reset",
+    "Default Tile Server Subdomains": "Default Tile Server Subdomains",
+    "Available subdomains for this tile server concurrent requests.":
+        "Available subdomains for this tile server concurrent requests. Spilt by ',', etc. 'a,b,c'",
 
     //modals/settings.ts
     "Marker Name": "Marker Name",
@@ -197,6 +209,9 @@ export default {
     "Only display when zooming out above this zoom. Current map maximum":
         "Only display when zooming out above this zoom. Current map maximum",
     "Maximum zoom must be a number.": "Maximum zoom must be a number.",
+    "Associate Tags": "Associate Tags",
+    "Markers created from this tag using ": "Markers created from this tag using ",
+    " will use this marker icon by default.": " will use this marker icon by default.",
     "Delete Marker": "Delete Marker",
     "Overlay Radius": "Overlay Radius",
     "Circle radius in": "Circle radius in",
@@ -217,13 +232,24 @@ export default {
         "There was an error adding GeoJSON to map",
     "There was an error adding GPX to map":
         "There was an error adding GPX to map",
-
+    "Edit Overlay": "Edit Overlay",
+    "Create Marker": "Create Marker",
+    "OpenStreetMap has restricted the use of its tile server in Obsidian. Your map may break at any time. Please switch to a different tile server.":
+        "OpenStreetMap has restricted the use of its tile server in Obsidian. Your map may break at any time. Please switch to a different tile server.",
+    "There was an issue parsing the tile layer: %1":
+        "There was an issue parsing the tile layer: %1",
+    "OpenStreetMap cannot be turned off without specifying additional tile servers.":
+        "OpenStreetMap cannot be turned off without specifying additional tile servers.",
     //layer/marker.ts
     "No command found!": "No command found!",
     "This marker cannot be edited because it was defined in the code block.":
         "This marker cannot be edited because it was defined in the code block.",
     "This overlay cannot be edited because it was defined in the code block.":
         "This overlay cannot be edited because it was defined in the code block.",
+    "Edit Marker": "Edit Marker",
+    "Convert to Code Block": "Convert to Code Block",
+    "Leaflet: Could not create icon for %1 - does this type exist in settings?":
+        "Leaflet: Could not create icon for %1 - does this type exist in settings?",
 
     //layer/gpx.ts
     Lat: "Lat",
@@ -268,7 +294,6 @@ export default {
         "There was an issue with the provided latitude.",
     "There was an issue with the provided longitude.":
         "There was an issue with the provided longitude.",
-
     //draw
     Draw: "Draw",
     Polygon: "Polygon",
