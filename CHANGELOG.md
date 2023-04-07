@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.4.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.2.6...5.4.0) (2023-04-07)
+
+
+### Features
+
+* can alt-click to measure polylines from drawing ([6bc541f](https://github.com/valentine195/obsidian-leaflet-plugin/commit/6bc541f859c46f4ce52be8a4df602f935ef94e1c))
+
+
+### Bug Fixes
+
+* fixes incorrect use of Set ([b3f5c47](https://github.com/valentine195/obsidian-leaflet-plugin/commit/b3f5c47473e3c4f3c25be85f5b0de7f12b2a2506))
+
 ## [5.3.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.2.6...5.3.0) (2023-04-06)
 
 ### New Features
