@@ -312,7 +312,11 @@ export class LeafletRenderer extends MarkdownRenderChild {
         );
 
         /** Register File Watcher to Update Markers/Overlays */
-        if (file) this.registerWatcher(file, new Map([["coordinates", "coordinates"]]));
+        if (file)
+            this.registerWatcher(
+                file,
+                new Map([["coordinates", "coordinates"]])
+            );
         let imageOverlayData;
         if (this.params.imageOverlay?.length) {
             imageOverlayData = await Promise.all(
@@ -1328,7 +1332,6 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
     registerWatcher(file: TFile, fileIds: Map<string, string>) {
         if (file == undefined) return;
-        console.log("🚀 ~ file: renderer.ts:1330 ~ file:", file);
         const watcher = new Watcher(this, file, fileIds);
         this.watchers.set(file, watcher);
         watcher.on("remove", () => this.watchers.delete(file));

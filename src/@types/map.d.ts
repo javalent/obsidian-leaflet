@@ -170,7 +170,7 @@ declare abstract class BaseMap /* <
 
     displaying: Map<string, boolean>;
     get displayed(): Marker[];
-
+    distanceAlongPolylines(polylines: L.Polyline[]): string;
     drawingLayer: L.LayerGroup;
 
     featureLayer: L.FeatureGroup;
@@ -206,7 +206,7 @@ declare abstract class BaseMap /* <
     get plugin(): ObsidianLeaflet;
 
     popup: Popup;
-    previousDistanceLine: L.Polyline;
+    previousDistanceLines: L.Polyline[];
 
     readyForDrawings: boolean;
 
@@ -320,7 +320,9 @@ declare abstract class BaseMap /* <
     on(name: "marker-deleted", callback: (marker: Marker) => void): EventRef;
     on(name: "markers-updated", callback: () => void): EventRef;
     on(name: "should-close-popup", callback: (source: Popup) => void): EventRef;
+    on(name: "should-save", callback: () => void): EventRef;
     on(name: "lock", callback: () => void): EventRef;
+    on(name: "ready-for-drawings", callback: () => void): EventRef;
 }
 
 declare class RealMap extends BaseMap /* <L.TileLayer> */ {
@@ -401,9 +403,9 @@ declare class DivIconMarker extends L.Marker {
 declare class DistanceDisplay extends L.Control {
     controlEl: HTMLElement;
     textEl: HTMLSpanElement;
-    get line(): L.Polyline;
+    get lines(): L.Polyline[];
     map: BaseMapType;
-    popups: [Popup, Popup];
+    popups: Popup[];
     constructor(opts: L.ControlOptions, map: BaseMapType);
     initEvents(): void;
     onMouseEnter(): void;

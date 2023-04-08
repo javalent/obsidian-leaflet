@@ -47,7 +47,6 @@ export class Polyline extends Shape<L.Polyline> {
             this.redraw();
         }
         this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) => {
-            console.log("🚀 ~ file: polyline.ts:48 ~ evt:", evt);
             if (
                 evt.originalEvent.getModifierState(MODIFIER_KEY) &&
                 this.vertices.length > 1
@@ -69,6 +68,8 @@ export class Polyline extends Shape<L.Polyline> {
                         }`
                     );
                 }
+                //wtf??
+                //@ts-ignore
                 this.map.distanceDisplay.setText(`${total} ${this.map.unit}`);
             }
         });
