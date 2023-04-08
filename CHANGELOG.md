@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.5.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.4.0...5.5.0) (2023-04-08)
+
+
+### Features
+
+* Can now measure in segments by continuing to mod-click ([fbdf5f0](https://github.com/valentine195/obsidian-leaflet-plugin/commit/fbdf5f095722b408ce4899bca9e8a23555a57111))
+
 ## [5.4.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.2.6...5.4.0) (2023-04-07)
 
 
