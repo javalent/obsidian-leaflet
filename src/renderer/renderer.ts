@@ -589,7 +589,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                             (file.extension === "gpx" ||
                                 file.path.endsWith(".gpx.gz"))
                         )
-                            gpxSet.set(path, { path: file.path });
+                            gpxSet.set(file.path, { path: file.path });
                     });
                 }
             }
