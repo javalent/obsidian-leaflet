@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.5.2](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.5.1...5.5.2) (2023-04-11)
+
+
+### Bug Fixes
+
+* adds small dropshadow to markers (close [#363](https://github.com/valentine195/obsidian-leaflet-plugin/issues/363)) ([8badcaf](https://github.com/valentine195/obsidian-leaflet-plugin/commit/8badcaf57981198c3d544f2b769590c39190ebfd))
+
 ## [5.5.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.4.0...5.5.0) (2023-04-08)
 
 
