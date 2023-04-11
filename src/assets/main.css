@@ -657,3 +657,7 @@ input.is-invalid {
 .block-language-leaflet .leaflet-pm-toolbar .button-container {
     margin-top: unset;
 }
+
+.leaflet-marker-icon svg {
+  filter: drop-shadow(1px 3px 3px black);
+}
