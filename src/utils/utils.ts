@@ -232,7 +232,7 @@ type MarkerType =
  * so it detects that to return them all correctly.
  * 3. Next, it pulls out markers defined in the source block. This is clunky to support previous version's syntax, but works.
  */
-export function getParamsFromSource(source: string): BlockParameters {
+export async function getParamsFromSource(source: string): Promise<BlockParameters> {
     let params: BlockParameters = {};
 
     /** Pull out links */
@@ -277,7 +277,7 @@ export function getParamsFromSource(source: string): BlockParameters {
         if ((source.match(/^\bimage\b:[\s\S]*?$/gm) ?? []).length > 1) {
             layers = (source.match(/^\bimage\b:([\s\S]*?)$/gm) || []).map(
                 (p) => p.split("image: ")[1]
-            );
+                );
         }
 
         if (typeof params.image === "string") {
@@ -289,6 +289,27 @@ export function getParamsFromSource(source: string): BlockParameters {
         }
 
         params.layers = layers ?? [...image];
+
+        if (typeof params.inkarnate_id === "string") {
+            const response = await fetch(
+              `https://api2.inkarnate.com/api/publicScenes/${params.inkarnate_id}`,
+              {
+                method: "GET",
+                headers: {
+                  Accept: "application/json",
+                },
+              }
+            );
+                if (response.ok)
+                {
+                    let result = await response.json();
+                    params.layers = [result["preview"]];
+                }
+                else 
+                {
+                    console.log(`Inkarnate map fetch failed! Status: ${response.status}`);
+                }
+          }
 
         params.image = params.layers[0];
 
