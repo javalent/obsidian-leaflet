@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.5.3](https://github.com/javalent/obsidian-leaflet/compare/5.5.2...5.5.3) (2023-04-20)
+
+
+### Bug Fixes
+
+* fix-version ([bf3801e](https://github.com/javalent/obsidian-leaflet/commit/bf3801e2901690c34504c97c721b231da28ae5af))
+* setup for npm release ([f00409a](https://github.com/javalent/obsidian-leaflet/commit/f00409ad2d812aadf66ed37ca5f9487d7d11e498))
+
 ## [3.5.5](https://github.com/javalent/obsidian-leaflet/compare/v3.5.4...3.5.5) (2023-04-20)
 
 
