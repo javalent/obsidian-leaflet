@@ -48,7 +48,7 @@ import {
     Icon,
     Marker,
     BaseMapType
-} from "./@types";
+} from "../types";
 
 import { LeafletRenderer } from "./renderer/renderer";
 import { markerDivIcon } from "./map/divicon";

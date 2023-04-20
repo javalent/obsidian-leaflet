@@ -3,7 +3,7 @@ import {
     BlockParameters,
     LeafletMapOptions,
     ObsidianAppData
-} from "src/@types";
+} from "../types";
 
 export const OBSIDIAN_LEAFLET_POPOVER_SOURCE = "obsidian-leaflet";
 

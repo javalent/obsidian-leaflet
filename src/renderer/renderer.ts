@@ -19,9 +19,9 @@ import type {
     LeafletMapOptions,
     SavedMarkerProperties,
     SavedOverlayData
-} from "../@types";
+} from "../../types";
 import type ObsidianLeaflet from "src/main";
-import type { BaseMapType, ImageLayerData } from "../@types/map";
+import type { BaseMapType, ImageLayerData } from "../../types/map";
 
 import Watcher from "../utils/watcher";
 import { RealMap, ImageMap } from "../map/map";

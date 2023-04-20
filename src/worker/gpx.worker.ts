@@ -1,4 +1,4 @@
-import { GPX_OPTIONS, GPX_Data, Coordinate } from "src/@types/gpx";
+import { GPX_OPTIONS, GPX_Data, Coordinate } from "../types/gpx";
 import { DOMParser } from "xmldom";
 
 const ctx: Worker = self as any;

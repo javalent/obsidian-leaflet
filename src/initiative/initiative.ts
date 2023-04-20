@@ -4,7 +4,7 @@ import {
     ImageLayerData,
     MarkerDivIconOptions,
     
-} from "src/@types";
+} from "../types";
 import { FontAwesomeControl } from "src/controls/controls";
 import t from "src/l10n/locale";
 import { Marker } from "src/layer";

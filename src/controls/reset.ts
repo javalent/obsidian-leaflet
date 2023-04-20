@@ -1,5 +1,5 @@
 import { Map } from "leaflet";
-import { BaseMapType } from "src/@types";
+import { BaseMapType } from "../types";
 import t from "src/l10n/locale";
 import { FontAwesomeControl, FontAwesomeControlOptions } from "./controls";
 

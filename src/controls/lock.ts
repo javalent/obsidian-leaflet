@@ -1,4 +1,4 @@
-import { BaseMapType } from "src/@types";
+import { BaseMapType } from "../types";
 import { FontAwesomeControl, FontAwesomeControlOptions } from "./controls";
 
 export class LockControl extends FontAwesomeControl {

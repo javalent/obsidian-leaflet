@@ -1,5 +1,5 @@
 import t from "src/l10n/locale";
-import { BaseMapType } from "src/@types";
+import { BaseMapType } from "../types";
 import { DrawControl } from "./controls";
 import { FontAwesomeControl, FontAwesomeControlOptions } from "src/controls/controls";
 import { LayerGroup, Polyline } from "leaflet";

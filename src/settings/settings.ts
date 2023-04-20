@@ -28,7 +28,7 @@ import type {
     Icon,
     SavedMarkerProperties,
     TooltipDisplay,
-} from "src/@types";
+} from "../types";
 import { FolderSuggestionModal } from "src/modals/path";
 import type ObsidianLeaflet from "src/main";
 import t from "src/l10n/locale";

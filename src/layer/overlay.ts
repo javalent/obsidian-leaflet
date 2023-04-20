@@ -1,7 +1,7 @@
 import convert from "convert";
 import { Notice } from "obsidian";
 
-import { BaseMapType, SavedOverlayData } from "src/@types";
+import { BaseMapType, SavedOverlayData } from "../types";
 import t from "src/l10n/locale";
 import { popup } from "src/map/popup";
 import { formatLatLng, formatNumber } from "src/utils";

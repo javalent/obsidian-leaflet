@@ -5,7 +5,7 @@ import type {
     Marker,
     TooltipDisplay,
     BaseMapType
-} from "src/@types";
+} from "../types";
 
 import { PathSuggestionModal } from "./path";
 import { CommandSuggestionModal } from "./command";

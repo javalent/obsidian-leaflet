@@ -1,4 +1,4 @@
-import type { MarkerIcon, SavedOverlayData } from "src/@types";
+import type { MarkerIcon, SavedOverlayData } from "../types";
 import {
     Component,
     Events,

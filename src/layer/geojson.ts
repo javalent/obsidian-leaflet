@@ -1,4 +1,4 @@
-import type { BaseMapType } from "src/@types";
+import type { BaseMapType } from "../types";
 import type geojson from "geojson";
 
 import { Marker } from "./marker";

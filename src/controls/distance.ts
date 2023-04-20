@@ -1,4 +1,4 @@
-import { BaseMapType, Popup } from "src/@types";
+import { BaseMapType, Popup } from "../types";
 import { popup } from "src/map/popup";
 import { LAT_LONG_DECIMALS } from "src/utils";
 

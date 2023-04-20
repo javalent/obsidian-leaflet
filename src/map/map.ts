@@ -16,7 +16,7 @@ import {
     ImageLayerData,
     SavedMapData,
     DistanceDisplay
-} from "src/@types";
+} from "../../types";
 
 import { GPX, Marker, GeoJSON, Overlay } from "src/layer";
 
@@ -985,7 +985,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                                 let newRadius = convert(
                                     Number(overlay.data.radius)
                                 )
-                                    .from(overlay.data.unit ?? "m")
+                                    .from((overlay.data.unit as Length) ?? "m")
                                     .to(this.type == "image" ? this.unit : "m");
 
                                 if (this.type == "image") {

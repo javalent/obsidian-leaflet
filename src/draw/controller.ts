@@ -1,4 +1,4 @@
-import { BaseMapType } from "src/@types";
+import { BaseMapType } from "../types";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { Polygon } from "./polygon";
 import { Polyline, PolylineProperties } from "./polyline";

@@ -1,4 +1,4 @@
-import { BaseMapType } from "src/@types";
+import { BaseMapType } from "../types";
 import { GPX } from "src/layer";
 import { FontAwesomeControl, FontAwesomeControlOptions } from "./controls";
 import { LeafletSymbol } from "src/utils/leaflet-import";

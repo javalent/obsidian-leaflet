@@ -8,7 +8,7 @@ import {
 } from "obsidian";
 import Color from "color";
 
-import { BaseMapType, BlockParameters } from "src/@types";
+import { BaseMapType, BlockParameters } from "../types";
 import { LAT_LONG_DECIMALS } from "./constants";
 import { DESCRIPTION_ICON } from ".";
 import t from "src/l10n/locale";

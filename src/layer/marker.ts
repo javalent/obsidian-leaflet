@@ -7,7 +7,7 @@ import type {
     MarkerProperties,
     SavedMarkerProperties,
     BaseMapType
-} from "src/@types";
+} from "../types";
 import { MarkerContextModal } from "src/modals";
 import { divIconMarker, markerDivIcon } from "src/map";
 import { Layer } from "../layer/layer";
