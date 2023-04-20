@@ -1,0 +1,4 @@
+**/*
+!types/**/*
+!index.ts
+!tsconfig.json
