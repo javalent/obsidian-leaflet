@@ -1376,17 +1376,16 @@ export class LeafletRenderer extends MarkdownRenderChild {
         }
 
         let err: boolean = false;
+        const convertedLatitude = Number(`${latitude}`?.split("%").shift());
+        const convertedLongitude = Number(`${longitude}`?.split("%").shift());
         try {
-            coords = [
-                Number(`${latitude}`?.split("%").shift()),
-                Number(`${longitude}`?.split("%").shift())
-            ];
+            coords = [convertedLatitude, convertedLongitude];
         } catch (e) {
             err = true;
         }
 
         if (
-            (latitude || longitude) &&
+            (!isNaN(convertedLatitude) || !isNaN(convertedLongitude)) &&
             (err || isNaN(coords[0]) || isNaN(coords[1]))
         ) {
             new Notice(
@@ -1396,17 +1395,17 @@ export class LeafletRenderer extends MarkdownRenderChild {
             );
         }
         if (map.type != "real") {
-            if (!latitude || isNaN(coords[0])) {
+            if (!isNaN(convertedLatitude) || isNaN(coords[0])) {
                 coords[0] = 50;
             }
-            if (!longitude || isNaN(coords[1])) {
+            if (!isNaN(convertedLongitude) || isNaN(coords[1])) {
                 coords[1] = 50;
             }
         } else {
-            if (!latitude || isNaN(coords[0])) {
+            if (!isNaN(convertedLatitude) || isNaN(coords[0])) {
                 coords[0] = this.plugin.data.lat;
             }
-            if (!longitude || isNaN(coords[1])) {
+            if (!isNaN(convertedLongitude) || isNaN(coords[1])) {
                 coords[1] = this.plugin.data.long;
             }
         }
