@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.5.4](https://github.com/javalent/obsidian-leaflet/compare/5.5.3...5.5.4) (2023-04-21)
+
+
+### Bug Fixes
+
+* markers should respect layers when reset now (close [#308](https://github.com/javalent/obsidian-leaflet/issues/308)) ([fcf974a](https://github.com/javalent/obsidian-leaflet/commit/fcf974aef7b6042a3b9cf3bbd3b1386116c40328))
+
 ## [5.5.3](https://github.com/javalent/obsidian-leaflet/compare/5.5.2...5.5.3) (2023-04-20)
 
 
