@@ -7,7 +7,7 @@ import type {
     MarkerProperties,
     SavedMarkerProperties,
     BaseMapType
-} from "../types";
+} from "../../types";
 import { MarkerContextModal } from "src/modals";
 import { divIconMarker, markerDivIcon } from "src/map";
 import { Layer } from "../layer/layer";
@@ -207,7 +207,10 @@ export class Marker extends Layer<DivIconMarker> {
         const marker = this.map.plugin.getIconForType(type);
         if (!marker) {
             new Notice(
-                t("Leaflet: Could not create icon for %1 - does this type exist in settings?", type)
+                t(
+                    "Leaflet: Could not create icon for %1 - does this type exist in settings?",
+                    type
+                )
             );
             return;
         }
@@ -287,13 +290,15 @@ export class Marker extends Layer<DivIconMarker> {
                     );
                 });
                 menu.addItem((item) => {
-                    item.setTitle(t("Convert to Code Block")).onClick(async () => {
-                        this.mutable = false;
+                    item.setTitle(t("Convert to Code Block")).onClick(
+                        async () => {
+                            this.mutable = false;
 
-                        this.map.trigger("create-immutable-layer", this);
+                            this.map.trigger("create-immutable-layer", this);
 
-                        this.map.trigger("should-save");
-                    });
+                            this.map.trigger("should-save");
+                        }
+                    );
                 });
                 menu.addItem((item) => {
                     item.setTitle(t("Delete Marker")).onClick(() => {

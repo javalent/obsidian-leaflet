@@ -1,4 +1,4 @@
-import { BaseMapType, LayerGroup, Popup } from "../types";
+import { BaseMapType, LayerGroup, Popup } from "../../types";
 
 export abstract class Layer<T extends L.Layer> {
     map: BaseMapType;
@@ -35,22 +35,16 @@ export abstract class Layer<T extends L.Layer> {
         if (this.map.isLayerRendered(this.layer)) {
             cb();
         } else if (this.layer) {
-            this.map.on(
-                `layer-ready-for-features`,
-                (layer: LayerGroup<L.TileLayer | L.ImageOverlay>) => {
-                    if (layer === this.mapLayer) {
-                        cb();
-                    }
-                }
-            );
-        } else {
-            this.map.on(
-                "first-layer-ready",
-                (layer: LayerGroup<L.TileLayer | L.ImageOverlay>) => {
-                    this.layer = layer.id;
+            this.map.on(`layer-ready-for-features`, (layer) => {
+                if (this.layer === layer) {
                     cb();
                 }
-            );
+            });
+        } else {
+            this.map.on("first-layer-ready", (layer) => {
+                this.layer = layer;
+                cb();
+            });
         }
     }
 

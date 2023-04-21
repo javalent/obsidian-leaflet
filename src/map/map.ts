@@ -1453,7 +1453,7 @@ export class RealMap extends BaseMap {
 
         this.trigger(
             `layer-ready-for-features`,
-            this.mapLayers[this.mapLayers.length - 1]
+            this.mapLayers[this.mapLayers.length - 1].id
         );
 
         return tileLayer;
@@ -1543,7 +1543,7 @@ export class RealMap extends BaseMap {
             );
             this.trigger("rendered");
         });
-        this.trigger("first-layer-ready", this.mapLayers[0]);
+        this.trigger("first-layer-ready", this.mapLayers[0].id);
 
         if (layers.length > 1) {
             this.log("Building additional layers in the background.");
@@ -1657,10 +1657,10 @@ export class ImageMap extends BaseMap {
         const newLayer = this._buildMapLayer(layer);
 
         this.mapLayers.push(newLayer);
-        this.trigger(`layer-ready-for-features`, newLayer);
+        this.trigger(`layer-ready-for-features`, newLayer.id);
         if (this.mapLayers.length === 1) {
             this.currentLayer = this.mapLayers[0].layer;
-            this.trigger("first-layer-ready", this.currentGroup);
+            this.trigger("first-layer-ready", this.currentGroup.id);
             if (this.options.recenter) {
                 this.leafletInstance.setMaxBounds(this.bounds);
             }

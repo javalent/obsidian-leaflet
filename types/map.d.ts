@@ -299,12 +299,9 @@ declare abstract class BaseMap /* <
     on(name: "removed", callback: () => void): EventRef;
     on(
         name: "layer-ready-for-features",
-        callback: (layer: LayerGroup<L.TileLayer | L.ImageOverlay>) => void
+        callback: (layer: string) => void
     ): EventRef;
-    on(
-        name: "first-layer-ready",
-        callback: (layer: LayerGroup<L.TileLayer | L.ImageOverlay>) => void
-    ): EventRef;
+    on(name: "first-layer-ready", callback: (layer: string) => void): EventRef;
     on(
         name: "create-immutable-layer",
         callback: (layer: Marker | Overlay) => Promise<void>
