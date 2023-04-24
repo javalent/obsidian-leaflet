@@ -87,7 +87,30 @@ jobs:
                   asset_path: ./styles.css
                   asset_name: styles.css
                   asset_content_type: text/css
-
+    notify-obsidian:
+        runs-on: ubuntu-latest
+        needs: upload-build
+        steps:
+            - name: Webhook
+              uses: javalent/workflows/actions/discord-embed@main
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  name: Obsidian Leaflet
+                  repo: obsidian-leaflet
+                  webhook-urls: ${{ secrets.OBSIDIAN_WEBHOOK }}
+#    notify-ttrpg:
+#        runs-on: ubuntu-latest
+#        needs: upload-build
+#        steps:
+#           - name: Webhook
+#             uses: javalent/workflows/actions/discord-embed@main
+#             env:
+#                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+#             with:
+#                 name: Obsidian Leaflet
+#                 repo: obsidian-leaflet
+#                 webhook-urls: ${{ secrets.TTRPG_WEBHOOK }}
     publish:
         needs: release-please
         if: ${{ needs.release-please.outputs.release_created }}
