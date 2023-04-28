@@ -1351,7 +1351,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
     }> {
         let latitude = lat;
         let longitude = long;
-        let coords: [number, number] = [undefined, undefined];
+        const coords: [number, number] = [undefined, undefined];
         let zoomDistance, file;
         if (typeof coordinates == "string" && coordinates.length) {
             file = this.plugin.app.metadataCache.getFirstLinkpathDest(
@@ -1375,39 +1375,32 @@ export class LeafletRenderer extends MarkdownRenderChild {
             map.log(`Using supplied coordinates [${latitude}, ${longitude}]`);
         }
 
-        let err: boolean = false;
-        const convertedLatitude = Number(`${latitude}`?.split("%").shift());
-        const convertedLongitude = Number(`${longitude}`?.split("%").shift());
-        try {
-            coords = [convertedLatitude, convertedLongitude];
-        } catch (e) {
-            err = true;
-        }
+        let convertedLatitude: number;
+        let convertedLongitude: number;
 
-        if (
-            (!isNaN(convertedLatitude) || !isNaN(convertedLongitude)) &&
-            (err || isNaN(coords[0]) || isNaN(coords[1]))
-        ) {
-            new Notice(
-                t(
-                    "There was an error with the provided latitude and longitude. Using defaults."
-                )
-            );
+        try {
+            convertedLatitude = Number(`${latitude}`?.split("%", 1)[0]);
+        } catch (error) {
+            new Notice(t("There was an error with the provided latitude. Using default."));
         }
-        if (map.type != "real") {
-            if (!isNaN(convertedLatitude) || isNaN(coords[0])) {
-                coords[0] = 50;
-            }
-            if (!isNaN(convertedLongitude) || isNaN(coords[1])) {
-                coords[1] = 50;
-            }
+        if (!isNaN(convertedLatitude)) {
+            coords[0] = convertedLatitude;
+        } else if (map.type === "real") {
+            coords[0] = this.plugin.data.lat;
         } else {
-            if (!isNaN(convertedLatitude) || isNaN(coords[0])) {
-                coords[0] = this.plugin.data.lat;
-            }
-            if (!isNaN(convertedLongitude) || isNaN(coords[1])) {
-                coords[1] = this.plugin.data.long;
-            }
+            coords[0] = 50;
+        }
+        try {
+            convertedLongitude = Number(`${longitude}`?.split("%", 1)[0]);
+        } catch (error) {
+            new Notice(t("There was an error with the provided longitude. Using default."));
+        }
+        if (!isNaN(convertedLongitude)) {
+            coords[1] = convertedLongitude;
+        } else if (map.type === "real") {
+            coords[1] = this.plugin.data.long;
+        } else {
+            coords[1] = 50;
         }
 
         return { coords, zoomDistance, file };

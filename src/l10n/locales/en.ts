@@ -13,8 +13,10 @@ export default {
     "Could not parse GeoJSON file": "Could not parse GeoJSON file",
     "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`.":
         "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`.",
-    "There was an error with the provided latitude and longitude. Using defaults.":
-        "There was an error with the provided latitude and longitude. Using defaults.",
+    "There was an error with the provided latitude. Using defaults.":
+        "There was an error with the provided latitude. Using defaults.",
+    "There was an error with the provided longitude. Using defaults.":
+        "There was an error with the provided longitude. Using defaults.",
 
     //loader.ts
     "There was an issue getting the image dimensions.":
