@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.5.6](https://github.com/javalent/obsidian-leaflet/compare/5.5.5...5.5.6) (2023-04-28)
+
+
+### Bug Fixes
+
+* expand local links for obsidian's hover-preview (closes [#361](https://github.com/javalent/obsidian-leaflet/issues/361)) ([#375](https://github.com/javalent/obsidian-leaflet/issues/375)) ([c145fdd](https://github.com/javalent/obsidian-leaflet/commit/c145fdd464346e7084e276ae03f0b378172245d5))
+
 ## [5.5.5](https://github.com/javalent/obsidian-leaflet/compare/5.5.4...5.5.5) (2023-04-25)
 
 
