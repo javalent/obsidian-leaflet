@@ -484,7 +484,9 @@ export class Marker extends Layer<DivIconMarker> {
                 );
             }
         }
-        this._link = x;
+        this._link = x.startsWith("#")
+            ? this.map.options.context + x
+            : x;
         if (this.target) this.target.text = x;
         if (this.popup && this.displayed && this.tooltip === "always")
             this.popup.open(this.target.display);
