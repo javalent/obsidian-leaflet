@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.5.7](https://github.com/javalent/obsidian-leaflet/compare/5.5.6...5.5.7) (2023-04-29)
+
+
+### Bug Fixes
+
+* latidude and longitude can be set (closes [#373](https://github.com/javalent/obsidian-leaflet/issues/373)) ([#374](https://github.com/javalent/obsidian-leaflet/issues/374)) ([d92df41](https://github.com/javalent/obsidian-leaflet/commit/d92df4181998be02556571108febb397e58b253e))
+
 ## [5.5.6](https://github.com/javalent/obsidian-leaflet/compare/5.5.5...5.5.6) (2023-04-28)
 
 
