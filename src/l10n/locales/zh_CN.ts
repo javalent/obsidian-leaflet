@@ -14,9 +14,9 @@ export default {
     "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`.":
         "无法解析覆盖半径. 请确保格式为 `<长度> <单位>`.",
     "There was an error with the provided latitude. Using defaults.":
-        "提供的纬度和经度有误. 使用默认值.",
+        "提供的纬度有误. 使用默认值.",
     "There was an error with the provided longitude. Using defaults.":
-        "提供的纬度和经度有误. 使用默认值.",
+        "提供的经度有误. 使用默认值.",
 
     //loader.ts
     "There was an issue getting the image dimensions.":
@@ -215,6 +215,10 @@ export default {
     "Overlay Color": "覆盖颜色",
     "Delete Overlay": "删除覆盖",
 
+    //modals/geojson.ts
+    "File Name": "文件名",
+    "Enter a file name.": "输入文件名。",
+
     //map/view.ts
     "Leaflet Map": "Leaflet 地图",
 
@@ -293,5 +297,6 @@ export default {
     Text: "文本",
     Color: "颜色",
     "Fill Color": "填充颜色",
-    "Move Shapes": "移动形状"
+    "Move Shapes": "移动形状",
+    "Export Drawing to GeoJSON": "导出绘制的GeoJSON",
 };
