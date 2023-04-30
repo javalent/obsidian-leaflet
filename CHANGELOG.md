@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.5.8](https://github.com/javalent/obsidian-leaflet/compare/5.5.7...5.5.8) (2023-04-30)
+
+
+### Bug Fixes
+
+* update Chinese translation (thank you @Wanxp) ([d0e19c6](https://github.com/javalent/obsidian-leaflet/commit/d0e19c615ad0e9fbba83f41269a4dcd9b0f14251))
+
 ## [5.5.7](https://github.com/javalent/obsidian-leaflet/compare/5.5.6...5.5.7) (2023-04-29)
 
 
