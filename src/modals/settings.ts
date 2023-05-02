@@ -44,18 +44,14 @@ export class CreateMarkerModal extends Modal {
         containerEl.empty();
 
         let createNewMarker = containerEl.createDiv();
-        createNewMarker.addClass("additional-markers-container");
-        //new Setting(createNewMarker).setHeading().setName("Create New Marker");
 
         let iconDisplayAndSettings = createNewMarker.createDiv();
         iconDisplayAndSettings.addClass("marker-creation-modal");
         let iconSettings = iconDisplayAndSettings.createDiv();
-        let iconDisplay = iconDisplayAndSettings.createDiv();
+        let iconDisplay = iconDisplayAndSettings.createDiv("icon-display");
 
         let typeTextInput: TextComponent;
-        let markerName = new Setting(
-            this.tempMarker.isImage ? createNewMarker : iconSettings
-        )
+        let markerName = new Setting(iconSettings)
             .setName(t("Marker Name"))
             .addText((text) => {
                 typeTextInput = text
@@ -90,9 +86,7 @@ export class CreateMarkerModal extends Modal {
             });
 
         let iconTextInput: TextComponent;
-        let iconName = new Setting(
-            this.tempMarker.isImage ? createNewMarker : iconSettings
-        )
+        let iconName = new Setting(iconSettings)
             .setName(t("Icon Name"))
             .setDesc(t("Font Awesome icon name (e.g. map-marker)."))
             .addText((text) => {
@@ -155,7 +149,7 @@ export class CreateMarkerModal extends Modal {
                 accept: "image/*"
             }
         });
-        new Setting(this.tempMarker.isImage ? createNewMarker : iconSettings)
+        new Setting(iconSettings)
             .setName(t("Use Image for Icon"))
             .addButton((b) => {
                 b.setButtonText(t("Upload Image")).setTooltip(
@@ -471,7 +465,7 @@ export class CreateMarkerModal extends Modal {
                     .getContext("2d")
                     .drawImage(image, 0, 0, image.width, image.height);
             }
-            add.infoEl.appendChild(this.canvas);
+            iconDisplay.appendChild(this.canvas);
         }
 
         add.addButton((button: ButtonComponent): ButtonComponent => {

@@ -8,9 +8,10 @@
 }
 
 .obsidian-leaflet-settings .coffee {
-    width: 60%;
+    border-top: 1px solid var(--background-modifier-border);
+    width: 100%;
     color: var(--text-faint);
-    margin: 1rem auto;
+    padding: 1rem;
     text-align: center;
 }
 .obsidian-leaflet-settings .coffee img {
@@ -22,7 +23,6 @@
 }
 
 .additional-markers-container {
-    border-bottom: 1px solid var(--background-modifier-border);
     border-top: 1px solid var(--background-modifier-border);
     padding: 18px 0 0 0;
 }
@@ -64,6 +64,7 @@
 }
 
 .marker-creation-modal {
+    padding-top: 18px;
     display: grid;
     grid-template-columns: 75% 1fr;
     grid-template-rows: 1fr;
@@ -72,6 +73,15 @@
 
 .marker-creation-modal .setting-item {
     border-top: none;
+}
+
+.icon-display {
+    margin-block: 1em auto;
+    line-height: 0;
+}
+
+.icon-display canvas {
+    width: 100%;
 }
 
 .markers {
