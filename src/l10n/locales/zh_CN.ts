@@ -13,9 +13,9 @@ export default {
     "Could not parse GeoJSON file": "无法解析 GeoJSON 文件",
     "Could not parse overlay radius. Please make sure it is in the format `<length> <unit>`.":
         "无法解析覆盖半径. 请确保格式为 `<长度> <单位>`.",
-    "There was an error with the provided latitude. Using defaults.":
+    "There was an error with the provided latitude. Using default.":
         "提供的纬度有误. 使用默认值.",
-    "There was an error with the provided longitude. Using defaults.":
+    "There was an error with the provided longitude. Using default.":
         "提供的经度有误. 使用默认值.",
 
     //loader.ts
