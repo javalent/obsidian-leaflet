@@ -25,8 +25,8 @@ export class CreateMarkerModal extends Modal {
     marker: Icon;
     tempMarker: Icon;
     plugin: ObsidianLeaflet;
-    canvas: HTMLCanvasElement;
     saved: boolean = false;
+    canvas: HTMLCanvasElement;
     constructor(app: App, plugin: ObsidianLeaflet, marker: Icon) {
         super(app);
         this.marker = marker;
@@ -172,30 +172,31 @@ export class CreateMarkerModal extends Modal {
             reader.onloadend = (evt) => {
                 var image = new Image();
                 image.onload = () => {
-                    // Resize the image
-                    const canvas = (this.canvas = createEl("canvas")),
-                        max_size = 24;
+                    this.canvas = iconDisplay.createEl("canvas");
+                    this.canvas.style.width = "100%";
+                    this.canvas.style.height = "100%";
+                    this.canvas.width = this.canvas.offsetWidth;
+                    this.canvas.height = this.canvas.offsetHeight;
                     let width = image.width,
                         height = image.height;
-                    if (width > height) {
-                        if (width > max_size) {
-                            height *= max_size / width;
-                            width = max_size;
+                    if (width < height) {
+                        if (width > this.canvas.width) {
+                            height *= this.canvas.width / width;
+                            width = this.canvas.width;
                         }
                     } else {
-                        if (height > max_size) {
-                            width *= max_size / height;
-                            height = max_size;
+                        if (height > this.canvas.height) {
+                            width *= this.canvas.height / height;
+                            height = this.canvas.height;
                         }
                     }
-                    canvas.width = width;
-                    canvas.height = height;
-                    canvas
+                    this.canvas
                         .getContext("2d")
                         .drawImage(image, 0, 0, width, height);
 
                     this.tempMarker.isImage = true;
-                    this.tempMarker.imageUrl = canvas.toDataURL("image/png");
+                    this.tempMarker.imageUrl =
+                        this.canvas.toDataURL("image/png");
 
                     this.display();
                 };
@@ -457,16 +458,33 @@ export class CreateMarkerModal extends Modal {
 
         if (this.tempMarker.isImage) {
             if (!this.canvas) {
-                this.canvas = createEl("canvas");
+                this.canvas = iconDisplay.createEl("canvas");
                 let image = new Image();
                 image.src = this.tempMarker.imageUrl;
-                this.canvas.width = image.width;
-                this.canvas.height = image.height;
+                this.canvas.style.width = "100%";
+                this.canvas.style.height = "100%";
+                this.canvas.width = this.canvas.offsetWidth;
+                this.canvas.height = this.canvas.offsetHeight;
+
+                let width = image.width,
+                    height = image.height;
+                if (width < height) {
+                    if (width > this.canvas.width) {
+                        height *= this.canvas.width / width;
+                        width = this.canvas.width;
+                    }
+                } else {
+                    if (height > this.canvas.height) {
+                        width *= this.canvas.height / height;
+                        height = this.canvas.height;
+                    }
+                }
                 this.canvas
                     .getContext("2d")
-                    .drawImage(image, 0, 0, image.width, image.height);
+                    .drawImage(image, 0, 0, width - 4, height - 4);
+            } else {
+                iconDisplay.appendChild(this.canvas);
             }
-            iconDisplay.appendChild(this.canvas);
         }
 
         add.addButton((button: ButtonComponent): ButtonComponent => {

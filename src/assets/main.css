@@ -76,8 +76,7 @@
 }
 
 .marker-creation-modal .icon-display {
-    margin-block: 1em auto;
-    line-height: 0;
+    padding: 1rem;
 }
 
 .marker-creation-modal .icon-display canvas {
