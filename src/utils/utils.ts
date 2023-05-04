@@ -120,7 +120,7 @@ export const setValidationError = function (
             mDiv = createDiv({ cls: "invalid-feedback" });
         }
         mDiv.innerText = message;
-        mDiv.insertAfter(textInput.inputEl);
+        textInput.inputEl.parentNode.appendChild(mDiv);
     }
 };
 export const removeValidationError = function (textInput: TextComponent) {
