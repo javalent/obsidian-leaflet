@@ -566,10 +566,6 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
             added = 0;
 
-            console.log(
-                "🚀 ~ file: map.ts:595 ~ this.geojsonData:",
-                this.geojsonData
-            );
             this.geojsonData.forEach(({ data, alias, note }) => {
                 try {
                     const geo = new GeoJSON(
