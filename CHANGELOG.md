@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.6.0](https://github.com/javalent/obsidian-leaflet/compare/5.5.8...5.6.0) (2023-05-04)
+
+
+### Features
+
+* Enable marker opacity (close [#334](https://github.com/javalent/obsidian-leaflet/issues/334)) ([59f26dc](https://github.com/javalent/obsidian-leaflet/commit/59f26dc7c6ab236fae50a942239f60589b8a50b7))
+
+
+### Bug Fixes
+
+* clean up settings ([#381](https://github.com/javalent/obsidian-leaflet/issues/381)) ([4df1590](https://github.com/javalent/obsidian-leaflet/commit/4df15901d65916101ecb7aa2e96d2e825d8657f9))
+* default to infinite recursion for geojson (close [#366](https://github.com/javalent/obsidian-leaflet/issues/366)) ([ad2b37a](https://github.com/javalent/obsidian-leaflet/commit/ad2b37a49af93531aaccd7ef99c6dbe0dcc2a95a))
+* display geojson causing error in notice ([174b80d](https://github.com/javalent/obsidian-leaflet/commit/174b80d6311e257fd1e468ebc5223f0c9672b3ac))
+* fixes longitude i10n message ([97adff3](https://github.com/javalent/obsidian-leaflet/commit/97adff3007a4e75ae0efa67923d61ab05eae94cd))
+
 ## [5.5.8](https://github.com/javalent/obsidian-leaflet/compare/5.5.7...5.5.8) (2023-04-30)
 
 
