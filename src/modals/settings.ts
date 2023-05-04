@@ -386,17 +386,28 @@ export class CreateMarkerModal extends Modal {
             });
             colorInputNode.oninput = (evt) => {
                 this.tempMarker.color = (evt.target as HTMLInputElement).value;
-
-                iconDisplay.children[0].setAttribute(
-                    "style",
-                    `color: ${this.tempMarker.color}`
-                );
+                if (iconDisplay.children.length)
+                    (
+                        iconDisplay.children[0] as HTMLElement
+                    ).style.color = `${this.tempMarker.color}`;
             };
             colorInputNode.onchange = async (evt) => {
                 this.tempMarker.color = (evt.target as HTMLInputElement).value;
 
                 this.display();
             };
+            colorInput.addSlider((s) =>
+                s
+                    .setLimits(0, 1, 0.01)
+                    .setValue(1)
+                    .onChange((v) => {
+                        this.tempMarker.alpha = v;
+                        if (iconDisplay.children.length)
+                            (
+                                iconDisplay.children[0] as HTMLElement
+                            ).style.opacity = `${this.tempMarker.alpha}`;
+                    })
+            );
         }
 
         new Setting(createNewMarker)
@@ -537,6 +548,7 @@ export class CreateMarkerModal extends Modal {
                 this.marker.type = this.tempMarker.type;
                 this.marker.iconName = this.tempMarker.iconName;
                 this.marker.color = this.tempMarker.color;
+                this.marker.alpha = this.tempMarker.alpha ?? 1;
                 this.marker.layer = this.tempMarker.layer;
                 this.marker.transform = this.tempMarker.transform;
                 this.marker.isImage = this.tempMarker.isImage;

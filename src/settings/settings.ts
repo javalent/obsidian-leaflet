@@ -19,19 +19,15 @@ import {
     setValidationError,
     getMarkerIcon,
     DEFAULT_TILE_SERVER,
-    DEFAULT_ATTRIBUTION, DEFAULT_TILE_SUBDOMAINS
+    DEFAULT_ATTRIBUTION,
+    DEFAULT_TILE_SUBDOMAINS
 } from "src/utils";
 import { IconSuggestionModal } from "src/modals";
 
-import type {
-    MapMarkerData,
-    Icon,
-    SavedMarkerProperties,
-    TooltipDisplay,
-} from "../types";
 import { FolderSuggestionModal } from "src/modals/path";
 import type ObsidianLeaflet from "src/main";
 import t from "src/l10n/locale";
+import { TooltipDisplay, SavedMarkerProperties, MapMarkerData } from "types";
 
 export class ObsidianLeafletSettingTab extends PluginSettingTab {
     plugin: ObsidianLeaflet;
@@ -292,12 +288,12 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
         let markers = additionalMarkers.createDiv({
             cls: "additional-markers"
         });
-        this.data.markerIcons.forEach((marker) => {
+        this.plugin.markerIcons.slice(1).forEach((marker) => {
             let setting = new Setting(markers)
                 .addExtraButton((b) =>
                     b.onClick(async () => {
                         const edit = await this.plugin.createNewMarkerType({
-                            original: marker
+                            original: marker.markerIcon
                         });
                         if (!edit || !edit.type || !edit.iconName) {
                             return;
@@ -328,27 +324,15 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                     })
                 );
 
-            const params =
-                marker.layer && !this.data.defaultMarker.isImage
-                    ? {
-                          transform: marker.transform,
-                          mask: getIcon(this.data.defaultMarker.iconName)
-                      }
-                    : {};
-            let iconNode = getMarkerIcon(marker, params).node;
-
             let markerIconDiv = createDiv({
-                cls: "marker-icon-display",
-                attr: {
-                    style: `color: ${marker.color};`
-                }
+                cls: "marker-icon-display"
             });
-            markerIconDiv.appendChild(iconNode);
+            markerIconDiv.innerHTML = marker.html;
             let name = setting.nameEl.createDiv("marker-type-display");
             name.appendChild(markerIconDiv);
             name.appendText(marker.type);
-            if (marker.tags && marker.tags.length) {
-                setting.setDesc(marker.tags.join(", "));
+            if (marker.markerIcon.tags && marker.markerIcon.tags.length) {
+                setting.setDesc(marker.markerIcon.tags.join(", "));
             }
         });
     }
@@ -418,7 +402,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName(t("Default Tile Server"))
             .setDesc(
-                t("It is up to you to ensure you have proper access to this tile server.")
+                t(
+                    "It is up to you to ensure you have proper access to this tile server."
+                )
             )
             .addText((t) => {
                 t.setValue(this.plugin.data.defaultTile).onChange((v) => {
@@ -440,20 +426,25 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName(t("Default Tile Server Subdomains"))
             .setDesc(
-                t("Available subdomains for this tile server concurrent requests.")
+                t(
+                    "Available subdomains for this tile server concurrent requests."
+                )
             )
             .addText((t) => {
-                t.setValue(this.plugin.data.defaultTileSubdomains).onChange((v) => {
-                    this.plugin.data.defaultTileSubdomains = v;
-                    this.plugin.saveSettings();
-                });
+                t.setValue(this.plugin.data.defaultTileSubdomains).onChange(
+                    (v) => {
+                        this.plugin.data.defaultTileSubdomains = v;
+                        this.plugin.saveSettings();
+                    }
+                );
             })
             .addExtraButton((b) =>
                 b
                     .setIcon("reset")
                     .setTooltip(t("Reset"))
                     .onClick(() => {
-                        this.plugin.data.defaultTileSubdomains = DEFAULT_TILE_SUBDOMAINS;
+                        this.plugin.data.defaultTileSubdomains =
+                            DEFAULT_TILE_SUBDOMAINS;
 
                         this.createMapSettings(containerEl);
                         this.plugin.saveSettings();
@@ -462,7 +453,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName(t("Default Tile Server Attribution"))
             .setDesc(
-                t("Please ensure your attribution meets all requirements set by the tile server.")
+                t(
+                    "Please ensure your attribution meets all requirements set by the tile server."
+                )
             )
             .addTextArea((t) => {
                 t.setValue(this.plugin.data.defaultAttribution).onChange(
@@ -487,7 +480,9 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName(t("Default Tile Server (Dark Mode)"))
             .setDesc(
-                t("It is up to you to ensure you have proper access to this tile server.")
+                t(
+                    "It is up to you to ensure you have proper access to this tile server."
+                )
             )
             .addText((t) => {
                 t.setValue(this.plugin.data.defaultTileDark).onChange((v) => {
@@ -784,7 +779,8 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                                 lastAccessed: Date.now(),
                                 markers: [],
                                 overlays: [],
-                                shapes: []
+                                shapes: [],
+                                locked: false
                             };
                             this.data.mapMarkers.push(map);
                         }
@@ -823,7 +819,8 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                 }
             } catch (e) {
                 new Notice(
-                    t("There was an error while importing %1", files[0].name));
+                    t("There was an error while importing %1", files[0].name)
+                );
                 console.error(e);
             }
 

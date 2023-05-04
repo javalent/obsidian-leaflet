@@ -10,6 +10,7 @@ export interface Icon {
     isImage?: boolean;
     imageUrl?: string;
     color?: string;
+    alpha?: number;
     layer?: boolean;
     transform?: { size: number; x: number; y: number };
     tags?: string[];
