@@ -34,6 +34,7 @@ export class CreateMarkerModal extends Modal {
 
         this.tempMarker = { ...this.marker };
         if (!this.tempMarker.tags) this.tempMarker.tags = [];
+        this.containerEl.addClass("leaflet-settings-modal");
     }
     get data() {
         return this.plugin.data;
