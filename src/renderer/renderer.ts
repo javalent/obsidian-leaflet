@@ -508,7 +508,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             );
             let arr = Array.isArray(f) ? f : [f];
             for (let path of arr) {
-                var abstractFile, depth;
+                let abstractFile, depth;
                 ({ abstractFile, path, depth } = this.filePathAndDepth(
                     path,
                     sub
@@ -902,12 +902,12 @@ export class LeafletRenderer extends MarkdownRenderChild {
             ) {
                 let files = new Set(markerFile);
 
-                var sub = this.sourcePath.substring(
+                const sub = this.sourcePath.substring(
                     0,
                     this.sourcePath.lastIndexOf("/")
                 );
                 for (let path of markerFolder) {
-                    var abstractFile, depth;
+                    let abstractFile, depth;
                     ({ abstractFile, path, depth } = this.filePathAndDepth(
                         path,
                         sub
@@ -1318,10 +1318,9 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
     private filePathAndDepth(path: string, sub: string) {
         if (path[0] == ".") {
-            var rest = path.substring(1);
-            path = sub + rest;
+            path = sub + path.substring(1);
         }
-        var depth = 2;
+        let depth = path.endsWith("/") ? 2 : Infinity;
         while (path.endsWith("/")) {
             path = path.substring(0, path.length - 1);
             ++depth;
@@ -1381,7 +1380,11 @@ export class LeafletRenderer extends MarkdownRenderChild {
         try {
             convertedLatitude = Number(`${latitude}`?.split("%", 1)[0]);
         } catch (error) {
-            new Notice(t("There was an error with the provided latitude. Using default."));
+            new Notice(
+                t(
+                    "There was an error with the provided latitude. Using default."
+                )
+            );
         }
         if (!isNaN(convertedLatitude)) {
             coords[0] = convertedLatitude;
@@ -1393,7 +1396,11 @@ export class LeafletRenderer extends MarkdownRenderChild {
         try {
             convertedLongitude = Number(`${longitude}`?.split("%", 1)[0]);
         } catch (error) {
-            new Notice(t("There was an error with the provided longitude. Using default."));
+            new Notice(
+                t(
+                    "There was an error with the provided longitude. Using default."
+                )
+            );
         }
         if (!isNaN(convertedLongitude)) {
             coords[1] = convertedLongitude;
