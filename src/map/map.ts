@@ -566,6 +566,10 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
             added = 0;
 
+            console.log(
+                "🚀 ~ file: map.ts:595 ~ this.geojsonData:",
+                this.geojsonData
+            );
             this.geojsonData.forEach(({ data, alias, note }) => {
                 try {
                     const geo = new GeoJSON(
@@ -587,7 +591,8 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                     console.error(e);
                     new Notice(
                         t("There was an error adding GeoJSON to map") +
-                            ` ${this.id}`
+                            ` ${this.id}.` +
+                            `\n\n${alias}`
                     );
                     return;
                 }
