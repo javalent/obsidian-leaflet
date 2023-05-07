@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.6.1](https://github.com/javalent/obsidian-leaflet/compare/5.6.0...5.6.1) (2023-05-07)
+
+
+### Bug Fixes
+
+* revert to webpack build to avoid collision with Map View (close [#384](https://github.com/javalent/obsidian-leaflet/issues/384)) ([8154392](https://github.com/javalent/obsidian-leaflet/commit/81543929c65b5c099fe9198784223cb6cdc426fa))
+
 ## [5.6.0](https://github.com/javalent/obsidian-leaflet/compare/5.5.8...5.6.0) (2023-05-04)
 
 
