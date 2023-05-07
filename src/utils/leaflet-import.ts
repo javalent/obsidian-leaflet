@@ -1,6 +1,4 @@
 import { MAP_OVERLAY_STROKE_OPACITY, MAP_OVERLAY_STROKE_WIDTH } from ".";
-import { HotlinePlugin } from "./hotline";
-import { FullscreenPlugin } from "./fullscreen/fullscreen";
 import type * as Leaflet from "leaflet";
 
 declare global {
@@ -21,7 +19,8 @@ window[LeafletSymbol].Circle.mergeOptions({
     weight: MAP_OVERLAY_STROKE_WIDTH,
     opacity: MAP_OVERLAY_STROKE_OPACITY
 });
-HotlinePlugin(window[LeafletSymbol]);
-FullscreenPlugin(window[LeafletSymbol]);
+
+require("leaflet-fullscreen");
+require("leaflet-hotline");
 
 window.L = WindowL;
