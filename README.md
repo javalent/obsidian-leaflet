@@ -58,7 +58,7 @@ darkMode: true
 | [marker](#markers)                      | Create immutable markers on the map                                                                         |                                            |
 | [commandMarker](#defined-in-code-block) | Create immutable markers that execute commands                                                              |                                            |
 | [markerFile](#marker-file)              | Create immutable marker from a note's frontmatter                                                           |                                            |
-| [markerFolder](#marker-folders)         | Create immutable markers from _all_ of the notes in a given folder                                          |                                            |
+| [markerFolder](#marker-folders)         | Create immutable markers from _all_ of the notes in a given (relative or absolute to the Vault-Root)folder                                          |                                            |
 | [markerTag\*](#marker-tags)             | Create immutable markers from _all_ of the notes with the given tags.                                       |                                            |
 | [filterTag\*](#filter-tag)              | Filter what files are used to create markers. Only markers that match the tags will be used.                |                                            |
 | [linksTo\*](#links)                     | Create immutable markers from _all_ of the notes linking **TO** a note                                      |                                            |
@@ -70,9 +70,9 @@ darkMode: true
 | [bounds](#bounds)                       | Set image map bounds to specified coordinates instead of default                                            |                                            |
 | [coordinates](#initial-coordinates)     | Read location data from a note and use it as initial coordinates                                            |                                            |
 | [zoomTag](#initial-zoom-level)          | Read distance-to-zoom data from a note and use it as default initial zoom                                   |                                            |
-| [geojson](#geojson)                     | Load GeoJSON files onto maps.                                                                               |                                            |
+| [geojson](#geojson)                     | Load multiple  GeoJSON files folders in Json or YAML Syntax onto maps. Use relative Paths to the current doc by starting it with a `.` (dot).                                                                               |                                            |
 | [geojsonColor](#styles-and-color)       | Change the default color of the GeoJSON features.                                                           | #3388ff                                    |
-| geojsonFolder                           | Parse a folder for `.geojson` or `.json` files to load to the map.                                          |                                            |
+| geojsonFolder                           | Parse multiple folders in Json or YAML Syntax for `.geojson` or `.json` files to load to the map. Start relative Paths with `.` (Dot). Expand to Subfolders by appending  as one Slash per Folder-Level (to avoid long loads)                                        |                                            |
 | [gpx](#gpx)                             | Load GPX files onto maps.                                                                                   |                                            |
 | [gpxMarkers](#gpx-markers)              | Set default start, stop and waypoint markers                                                                |                                            |
 | gpxColor                                | Control default GPX color                                                                                   | #3388ff                                    |
@@ -643,7 +643,7 @@ Marker folders may be defined in the code block using the following syntax:
 
 `markerFolder: Direct/Path/To/Folder`
 
-This will search through _all_ of the notes in the specified folder, even in sub folders.
+This will by default only include notes directly in the specified folder. This prevents overloading the application. To include notes from subfolders, append one '/' (Slash) to the path for each sub-folder-level to include.
 
 #### Marker Tags
 
