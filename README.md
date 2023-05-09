@@ -76,7 +76,7 @@ darkMode: true
 | [zoomTag](#initial-zoom-level)          | Read distance-to-zoom data from a note and use it as default initial zoom                                   |                                            |
 | [geojson](#geojson)                     | Load multiple  GeoJSON files folders in Json or YAML Syntax onto maps. Use relative Paths to the current doc by starting it with a `.` (dot).                                                                               |                                            |
 | [geojsonColor](#styles-and-color)       | Change the default color of the GeoJSON features.                                                           | #3388ff                                    |
-| geojsonFolder                           | Parse multiple folders in Json or YAML Syntax for `.geojson` or `.json` files to load to the map. Start relative Paths with `.` (Dot). Expand to Subfolders by appending  as one Slash per Folder-Level (to avoid long loads)                                        |                                            |
+| geojsonFolder                           | Parse multiple folders in Json or YAML Syntax for `.geojson` or `.json` files to load to the map. Start relative Paths with `.` (Dot). Limit the number of Subfolders to search in by appending one Slash per Folder-Level (to avoid long loads)                                        |                                            |
 | [gpx](#gpx)                             | Load GPX files onto maps.                                                                                   |                                            |
 | [gpxMarkers](#gpx-markers)              | Set default start, stop and waypoint markers                                                                |                                            |
 | gpxColor                                | Control default GPX color                                                                                   | #3388ff                                    |
@@ -668,7 +668,9 @@ Marker folders may be defined in the code block using the following syntax:
 
 `markerFolder: Direct/Path/To/Folder`
 
-This will by default only include notes directly in the specified folder. This prevents overloading the application. To include notes from subfolders, append one '/' (Slash) to the path for each sub-folder-level to include.
+This will by default include notes in all subfolders. 
+
+To limit the number of subfolders, append one '/' (Slash) to the path for each sub-folder-level to include.
 
 #### Marker Tags
 
