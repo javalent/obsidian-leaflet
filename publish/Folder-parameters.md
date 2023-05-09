@@ -1,4 +1,3 @@
-
 # Folder-parameters in leaflet
 
 ## `geojsonFolder`
@@ -11,10 +10,9 @@ Both Folder Paths can start with a
 - '/' (Slash) based on the Vault Directory or
 - './' relative to the current *.md Document 
 
-By default only Files directly in the Folder are added. 
-This prevents loading too many files, which can bring the application to a halt. 
+By default Files from all Subfolders are added. 
 
-To include Files from Subfolders, append one '/' (Slash) for each Folder-Level. 
+To limit the Number of Subfolders, append one or more '/' (Slashes) to the path, one for each Folder-Level to include. 
 
 ## Code Block Example
 ````yaml
