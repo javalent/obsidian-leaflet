@@ -62,7 +62,7 @@ darkMode: true
 | [marker](#markers)                      | Create immutable markers on the map                                                                         |                                            |
 | [commandMarker](#defined-in-code-block) | Create immutable markers that execute commands                                                              |                                            |
 | [markerFile](#marker-file)              | Create immutable marker from a note's frontmatter                                                           |                                            |
-| [markerFolder](#marker-folders)         | Create immutable markers from _all_ of the notes in a given (relative or absolute to the Vault-Root)folder  |                                            |
+| [markerFolder](#marker-folders)         | Create immutable markers from _all_ of the notes in the given Paths (relative or absolute to the Vault-Root). Limit Depth by appending one '/' per Folder-Level  |                                            |
 | [markerTag\*](#marker-tags)             | Create immutable markers from _all_ of the notes with the given tags.                                       |                                            |
 | [filterTag\*](#filter-tag)              | Filter what files are used to create markers. Only markers that match the tags will be used.                |                                            |
 | [linksTo\*](#links)                     | Create immutable markers from _all_ of the notes linking **TO** a note                                      |                                            |
@@ -74,9 +74,9 @@ darkMode: true
 | [bounds](#bounds)                       | Set image map bounds to specified coordinates instead of default                                            |                                            |
 | [coordinates](#initial-coordinates)     | Read location data from a note and use it as initial coordinates                                            |                                            |
 | [zoomTag](#initial-zoom-level)          | Read distance-to-zoom data from a note and use it as default initial zoom                                   |                                            |
-| [geojson](#geojson)                     | Load multiple *.GeoJSON files (Json or YAML Syntax) onto maps. Use relative Paths to the current doc by starting it with a `.` (dot). |                                            |
+| [geojson](#geojson)                     | Load multiple *.GeoJSON file-Paths in Json or YAML Syntax into this map. Relative Paths to the current doc start with `.` (dot). |                                            |
 | [geojsonColor](#styles-and-color)       | Change the default color of the GeoJSON features.                                                           | #3388ff                                    |
-| geojsonFolder                           | Search in multiple folders (Json or YAML Syntax) for `*.geojson` or `*.json` files to load to the map. Start relative Paths with `.` (Dot). Limit the number of Subfolders by appending one Slash per Folder-Level |      |
+| geojsonFolder                           | Search in multiple folders (Json or YAML Syntax) for `*.geojson` or `*.json` files to load into this map. Relative Paths start with `.` (Dot). Limit Subfolder Depth by appending one Slash per Folder-Level |      |
 | [gpx](#gpx)                             | Load GPX files onto maps.                                                                                   |                                            |
 | [gpxMarkers](#gpx-markers)              | Set default start, stop and waypoint markers                                                                |                                            |
 | gpxColor                                | Control default GPX color                                                                                   | #3388ff                                    |
