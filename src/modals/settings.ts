@@ -7,7 +7,7 @@ import {
     TextComponent
 } from "obsidian";
 import t from "src/l10n/locale";
-import { Icon } from "../@types";
+import { Icon } from "../../types";
 import type ObsidianLeaflet from "src/main";
 import {
     findIconDefinition,
@@ -25,8 +25,8 @@ export class CreateMarkerModal extends Modal {
     marker: Icon;
     tempMarker: Icon;
     plugin: ObsidianLeaflet;
-    canvas: HTMLCanvasElement;
     saved: boolean = false;
+    canvas: HTMLCanvasElement;
     constructor(app: App, plugin: ObsidianLeaflet, marker: Icon) {
         super(app);
         this.marker = marker;
@@ -34,6 +34,7 @@ export class CreateMarkerModal extends Modal {
 
         this.tempMarker = { ...this.marker };
         if (!this.tempMarker.tags) this.tempMarker.tags = [];
+        this.containerEl.addClass("leaflet-settings-modal");
     }
     get data() {
         return this.plugin.data;
@@ -44,18 +45,14 @@ export class CreateMarkerModal extends Modal {
         containerEl.empty();
 
         let createNewMarker = containerEl.createDiv();
-        createNewMarker.addClass("additional-markers-container");
-        //new Setting(createNewMarker).setHeading().setName("Create New Marker");
 
         let iconDisplayAndSettings = createNewMarker.createDiv();
         iconDisplayAndSettings.addClass("marker-creation-modal");
         let iconSettings = iconDisplayAndSettings.createDiv();
-        let iconDisplay = iconDisplayAndSettings.createDiv();
+        let iconDisplay = iconDisplayAndSettings.createDiv("icon-display");
 
         let typeTextInput: TextComponent;
-        let markerName = new Setting(
-            this.tempMarker.isImage ? createNewMarker : iconSettings
-        )
+        let markerName = new Setting(iconSettings)
             .setName(t("Marker Name"))
             .addText((text) => {
                 typeTextInput = text
@@ -90,9 +87,7 @@ export class CreateMarkerModal extends Modal {
             });
 
         let iconTextInput: TextComponent;
-        let iconName = new Setting(
-            this.tempMarker.isImage ? createNewMarker : iconSettings
-        )
+        let iconName = new Setting(iconSettings)
             .setName(t("Icon Name"))
             .setDesc(t("Font Awesome icon name (e.g. map-marker)."))
             .addText((text) => {
@@ -155,7 +150,7 @@ export class CreateMarkerModal extends Modal {
                 accept: "image/*"
             }
         });
-        new Setting(this.tempMarker.isImage ? createNewMarker : iconSettings)
+        new Setting(iconSettings)
             .setName(t("Use Image for Icon"))
             .addButton((b) => {
                 b.setButtonText(t("Upload Image")).setTooltip(
@@ -177,30 +172,31 @@ export class CreateMarkerModal extends Modal {
             reader.onloadend = (evt) => {
                 var image = new Image();
                 image.onload = () => {
-                    // Resize the image
-                    const canvas = (this.canvas = createEl("canvas")),
-                        max_size = 24;
+                    this.canvas = iconDisplay.createEl("canvas");
+                    this.canvas.style.width = "100%";
+                    this.canvas.style.height = "100%";
+                    this.canvas.width = this.canvas.offsetWidth;
+                    this.canvas.height = this.canvas.offsetHeight;
                     let width = image.width,
                         height = image.height;
-                    if (width > height) {
-                        if (width > max_size) {
-                            height *= max_size / width;
-                            width = max_size;
+                    if (width < height) {
+                        if (width > this.canvas.width) {
+                            height *= this.canvas.width / width;
+                            width = this.canvas.width;
                         }
                     } else {
-                        if (height > max_size) {
-                            width *= max_size / height;
-                            height = max_size;
+                        if (height > this.canvas.height) {
+                            width *= this.canvas.height / height;
+                            height = this.canvas.height;
                         }
                     }
-                    canvas.width = width;
-                    canvas.height = height;
-                    canvas
+                    this.canvas
                         .getContext("2d")
                         .drawImage(image, 0, 0, width, height);
 
                     this.tempMarker.isImage = true;
-                    this.tempMarker.imageUrl = canvas.toDataURL("image/png");
+                    this.tempMarker.imageUrl =
+                        this.canvas.toDataURL("image/png");
 
                     this.display();
                 };
@@ -390,17 +386,28 @@ export class CreateMarkerModal extends Modal {
             });
             colorInputNode.oninput = (evt) => {
                 this.tempMarker.color = (evt.target as HTMLInputElement).value;
-
-                iconDisplay.children[0].setAttribute(
-                    "style",
-                    `color: ${this.tempMarker.color}`
-                );
+                if (iconDisplay.children.length)
+                    (
+                        iconDisplay.children[0] as HTMLElement
+                    ).style.color = `${this.tempMarker.color}`;
             };
             colorInputNode.onchange = async (evt) => {
                 this.tempMarker.color = (evt.target as HTMLInputElement).value;
 
                 this.display();
             };
+            colorInput.addSlider((s) =>
+                s
+                    .setLimits(0, 1, 0.01)
+                    .setValue(1)
+                    .onChange((v) => {
+                        this.tempMarker.alpha = v;
+                        if (iconDisplay.children.length)
+                            (
+                                iconDisplay.children[0] as HTMLElement
+                            ).style.opacity = `${this.tempMarker.alpha}`;
+                    })
+            );
         }
 
         new Setting(createNewMarker)
@@ -462,16 +469,33 @@ export class CreateMarkerModal extends Modal {
 
         if (this.tempMarker.isImage) {
             if (!this.canvas) {
-                this.canvas = createEl("canvas");
+                this.canvas = iconDisplay.createEl("canvas");
                 let image = new Image();
                 image.src = this.tempMarker.imageUrl;
-                this.canvas.width = image.width;
-                this.canvas.height = image.height;
+                this.canvas.style.width = "100%";
+                this.canvas.style.height = "100%";
+                this.canvas.width = this.canvas.offsetWidth;
+                this.canvas.height = this.canvas.offsetHeight;
+
+                let width = image.width,
+                    height = image.height;
+                if (width < height) {
+                    if (width > this.canvas.width) {
+                        height *= this.canvas.width / width;
+                        width = this.canvas.width;
+                    }
+                } else {
+                    if (height > this.canvas.height) {
+                        width *= this.canvas.height / height;
+                        height = this.canvas.height;
+                    }
+                }
                 this.canvas
                     .getContext("2d")
-                    .drawImage(image, 0, 0, image.width, image.height);
+                    .drawImage(image, 0, 0, width - 4, height - 4);
+            } else {
+                iconDisplay.appendChild(this.canvas);
             }
-            add.infoEl.appendChild(this.canvas);
         }
 
         add.addButton((button: ButtonComponent): ButtonComponent => {
@@ -524,6 +548,7 @@ export class CreateMarkerModal extends Modal {
                 this.marker.type = this.tempMarker.type;
                 this.marker.iconName = this.tempMarker.iconName;
                 this.marker.color = this.tempMarker.color;
+                this.marker.alpha = this.tempMarker.alpha ?? 1;
                 this.marker.layer = this.tempMarker.layer;
                 this.marker.transform = this.tempMarker.transform;
                 this.marker.isImage = this.tempMarker.isImage;
@@ -566,8 +591,8 @@ export class CreateMarkerModal extends Modal {
         let tag: string;
         const tagSetting = new Setting(containerEl)
             .setHeading()
-            .setName("Associate Tags")
-            .setDesc("Markers created from this tag using ")
+            .setName(t("Associate Tags"))
+            .setDesc(t("Markers created from this tag using "))
             .addText((t) => {
                 t.setPlaceholder("Add Tag");
                 t.onChange((v) => (tag = v));
@@ -589,7 +614,7 @@ export class CreateMarkerModal extends Modal {
             });
         tagSetting.descEl.createEl("code", { text: "markerTag" });
         tagSetting.descEl.createSpan({
-            text: " will use this marker icon by default."
+            text: t(" will use this marker icon by default.")
         });
 
         const tagContainer = containerEl.createDiv("additional-markers");

@@ -7,7 +7,7 @@ import type {
     MarkerProperties,
     SavedMarkerProperties,
     BaseMapType
-} from "src/@types";
+} from "../../types";
 import { MarkerContextModal } from "src/modals";
 import { divIconMarker, markerDivIcon } from "src/map";
 import { Layer } from "../layer/layer";
@@ -207,7 +207,10 @@ export class Marker extends Layer<DivIconMarker> {
         const marker = this.map.plugin.getIconForType(type);
         if (!marker) {
             new Notice(
-                `Leaflet: Could not create icon for ${type} - does this type exist in settings?`
+                t(
+                    "Leaflet: Could not create icon for %1 - does this type exist in settings?",
+                    type
+                )
             );
             return;
         }
@@ -282,21 +285,23 @@ export class Marker extends Layer<DivIconMarker> {
                 menu.setNoIcon();
 
                 menu.addItem((item) => {
-                    item.setTitle("Edit Marker").onClick(() =>
+                    item.setTitle(t("Edit Marker")).onClick(() =>
                         this.editMarker()
                     );
                 });
                 menu.addItem((item) => {
-                    item.setTitle("Convert to Code Block").onClick(async () => {
-                        this.mutable = false;
+                    item.setTitle(t("Convert to Code Block")).onClick(
+                        async () => {
+                            this.mutable = false;
 
-                        this.map.trigger("create-immutable-layer", this);
+                            this.map.trigger("create-immutable-layer", this);
 
-                        this.map.trigger("should-save");
-                    });
+                            this.map.trigger("should-save");
+                        }
+                    );
                 });
                 menu.addItem((item) => {
-                    item.setTitle("Delete Marker").onClick(() => {
+                    item.setTitle(t("Delete Marker")).onClick(() => {
                         this.map.removeMarker(this);
                     });
                 });
@@ -479,7 +484,9 @@ export class Marker extends Layer<DivIconMarker> {
                 );
             }
         }
-        this._link = x;
+        this._link = x.startsWith("#")
+            ? this.map.options.context + x
+            : x;
         if (this.target) this.target.text = x;
         if (this.popup && this.displayed && this.tooltip === "always")
             this.popup.open(this.target.display);

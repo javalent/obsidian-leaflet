@@ -16,3 +16,6 @@ rollup.config-dev.js
 webpack.dev.js
 
 .env
+main.js
+styles.css
+main.css

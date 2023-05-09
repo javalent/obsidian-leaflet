@@ -16,7 +16,7 @@ import {
     ImageLayerData,
     SavedMapData,
     DistanceDisplay
-} from "src/@types";
+} from "../../types";
 
 import { GPX, Marker, GeoJSON, Overlay } from "src/layer";
 
@@ -26,13 +26,15 @@ import {
     copyToClipboard,
     DEFAULT_ATTRIBUTION,
     DEFAULT_MAP_OPTIONS,
+    DEFAULT_TILE_SUBDOMAINS,
     DISTANCE_DECIMALS,
     formatLatLng,
     formatNumber,
     getId,
     icon,
     log,
-    MODIFIER_KEY
+    MODIFIER_KEY,
+    TILE_SUBDOMAINS_SPILT
 } from "src/utils";
 
 import { popup } from "./popup";
@@ -299,9 +301,9 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         );
     }
 
-    private distanceEvent: L.LatLng = undefined;
-    private distanceLine: L.Polyline;
-    previousDistanceLine: L.Polyline;
+    private distanceLines: L.Polyline[] = [];
+    private distanceTooltips: Popup[] = [];
+    previousDistanceLines: L.Polyline[] = [];
     featureLayer: L.FeatureGroup;
     geojsonLayer: L.FeatureGroup;
     gpxLayer: L.FeatureGroup;
@@ -585,7 +587,8 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                     console.error(e);
                     new Notice(
                         t("There was an error adding GeoJSON to map") +
-                            ` ${this.id}`
+                            ` ${this.id}.` +
+                            `\n\n${alias}`
                     );
                     return;
                 }
@@ -775,6 +778,25 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         if (!popup) return;
         this.leafletInstance.closePopup(popup);
     }
+    distanceAlongPolylines(polylines: L.Polyline[]): string {
+        if (polylines.length == 1) {
+            const latlngs = polylines[0].getLatLngs() as L.LatLng[];
+            return this.distance(latlngs[0], latlngs[1]);
+        }
+        let total = 0;
+        for (const line of polylines) {
+            const latlngs = line.getLatLngs() as L.LatLng[];
+            total += this.leafletInstance.distance(latlngs[0], latlngs[1]);
+        }
+        let display = `${formatNumber(total * this.scale, DISTANCE_DECIMALS)}`;
+        if (this.options.distanceMultiplier !== 1) {
+            display += ` (${formatNumber(
+                total * this.scale * this.options.distanceMultiplier,
+                DISTANCE_DECIMALS
+            )})`;
+        }
+        return display + ` ${this.unit}`;
+    }
     distance(latlng1: L.LatLng, latlng2: L.LatLng): string {
         const dist = this.leafletInstance.distance(latlng1, latlng2);
         let display = `${formatNumber(dist * this.scale, DISTANCE_DECIMALS)}`;
@@ -835,80 +857,74 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 !evt.originalEvent.getModifierState("Alt")) ||
                 evt.originalEvent.getModifierState("Control"))
         ) {
-            if (this.distanceEvent == undefined) {
+            if (!this.distanceLines.length) {
                 return;
             }
-        }
-        if (this.distanceEvent != undefined) {
-            this.previousDistanceLine = this.distanceLine;
             this.stopDrawingContext();
-        } else {
-            this.log(`Distance measurement context starting.`);
-            this.distanceEvent = evt.latlng;
-
-            this.startDrawingContext();
-
-            this.distanceLine = L.polyline([this.distanceEvent, evt.latlng]);
-
-            this.distanceLine.addTo(this.leafletInstance);
-
-            const distanceTooltip = popup(this, this.distanceLine, {
-                permanent: true
-            });
-            const latlngs = this.distanceLine.getLatLngs() as L.LatLng[];
-            const display = this.distance(latlngs[0], latlngs[1]);
-            distanceTooltip.open(display);
-
-            this.leafletInstance.on(
-                "mousemove",
-                (mvEvt: L.LeafletMouseEvent) => {
-                    const latlng = mvEvt.latlng;
-                    const delta = [
-                        Math.abs(latlng.lat - this.distanceEvent.lat),
-                        Math.abs(latlng.lng - this.distanceEvent.lng)
-                    ];
-
-                    if (mvEvt.originalEvent.getModifierState("Shift")) {
-                        if (delta[0] > delta[1]) {
-                            latlng.lng = this.distanceEvent.lng;
-                        } else {
-                            latlng.lat = this.distanceEvent.lat;
-                        }
-                    }
-
-                    if (
-                        !this.markers.find((m) => m.isBeingHovered) ||
-                        mvEvt.originalEvent.getModifierState(MODIFIER_KEY)
-                    ) {
-                        this.distanceLine.setLatLngs([
-                            this.distanceEvent,
-                            latlng
-                        ]);
-                    } else {
-                        this.distanceLine.setLatLngs([
-                            this.distanceEvent,
-                            this.markers.find((m) => m.isBeingHovered).loc
-                        ]);
-                    }
-
-                    /** Get New Distance */
-                    const latlngs =
-                        this.distanceLine.getLatLngs() as L.LatLng[];
-                    const display = this.distance(latlngs[0], latlngs[1]);
-
-                    distanceTooltip.open(display);
-
-                    this.distanceDisplay.setText(display);
-                    this.distanceLine.redraw();
-                }
-            );
-
-            this.leafletInstance.on("mouseout", () => {
-                if (Platform.isMobile) return;
-                this.stopDrawingContext();
-                this.distanceEvent = undefined;
-            });
+            return;
         }
+        this.log(`Distance measurement context starting.`);
+        const distanceEvent = evt.latlng;
+
+        if (!this.isDrawing) this.startDrawingContext();
+
+        this.distanceLines.push(L.polyline([distanceEvent, evt.latlng]));
+        this.distanceLines.last().addTo(this.leafletInstance);
+
+        this.distanceTooltips.push(
+            popup(this, this.distanceLines.last(), {
+                permanent: true
+            })
+        );
+        const display = this.distanceAlongPolylines([
+            this.distanceLines.last()
+        ]);
+        this.distanceTooltips.last().open(display);
+
+        this.leafletInstance.on("mousemove", (mvEvt: L.LeafletMouseEvent) => {
+            const latlng = mvEvt.latlng;
+            const delta = [
+                Math.abs(latlng.lat - distanceEvent.lat),
+                Math.abs(latlng.lng - distanceEvent.lng)
+            ];
+
+            if (mvEvt.originalEvent.getModifierState("Shift")) {
+                if (delta[0] > delta[1]) {
+                    latlng.lng = distanceEvent.lng;
+                } else {
+                    latlng.lat = distanceEvent.lat;
+                }
+            }
+
+            if (
+                !this.markers.find((m) => m.isBeingHovered) ||
+                mvEvt.originalEvent.getModifierState(MODIFIER_KEY)
+            ) {
+                this.distanceLines.last().setLatLngs([distanceEvent, latlng]);
+            } else {
+                this.distanceLines
+                    .last()
+                    .setLatLngs([
+                        distanceEvent,
+                        this.markers.find((m) => m.isBeingHovered).loc
+                    ]);
+            }
+
+            /** Get New Distance */
+            const display = this.distanceAlongPolylines(this.distanceLines);
+            const segment = this.distanceAlongPolylines([
+                this.distanceLines.last()
+            ]);
+            this.distanceTooltips.last().open(`${display} (${segment})`);
+
+            this.distanceDisplay.setText(display);
+            this.distanceLines.last().redraw();
+        });
+
+        this.leafletInstance.on("mouseout", () => {
+            if (Platform.isMobile) return;
+            this.stopDrawingContext();
+        });
     }
 
     handleMapContext(evt: L.LeafletMouseEvent, overlay?: Overlay) {
@@ -941,11 +957,11 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             }
 
             const openOverlayContext = (overlay: Overlay) => {
-                const menu = new Menu(this.plugin.app);
+                const menu = new Menu();
 
                 menu.setNoIcon();
                 menu.addItem((item) => {
-                    item.setTitle("Edit Overlay").onClick(() => {
+                    item.setTitle(t("Edit Overlay")).onClick(() => {
                         const modal = new OverlayContextModal(overlay, this);
                         modal.onClose = async () => {
                             if (modal.deleted) {
@@ -970,7 +986,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                                 let newRadius = convert(
                                     Number(overlay.data.radius)
                                 )
-                                    .from(overlay.data.unit ?? "m")
+                                    .from((overlay.data.unit as Length) ?? "m")
                                     .to(this.type == "image" ? this.unit : "m");
 
                                 if (this.type == "image") {
@@ -995,16 +1011,18 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                     });
                 });
                 menu.addItem((item) => {
-                    item.setTitle("Convert to Code Block").onClick(async () => {
-                        overlay.mutable = false;
+                    item.setTitle(t("Convert to Code Block")).onClick(
+                        async () => {
+                            overlay.mutable = false;
 
-                        this.trigger("create-immutable-layer", overlay);
+                            this.trigger("create-immutable-layer", overlay);
 
-                        this.trigger("should-save");
-                    });
+                            this.trigger("should-save");
+                        }
+                    );
                 });
                 menu.addItem((item) => {
-                    item.setTitle("Delete Overlay").onClick(() => {
+                    item.setTitle(t("Delete Overlay")).onClick(() => {
                         this.log("Overlay deleted in context menu. Removing.");
                         overlay.remove();
                         this.overlays = this.overlays.filter(
@@ -1020,11 +1038,11 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             if (under.length == 1) {
                 openOverlayContext(under[0]);
             } else {
-                let contextMenu = new Menu(this.plugin.app);
+                let contextMenu = new Menu();
 
                 contextMenu.setNoIcon();
                 contextMenu.addItem((item) => {
-                    item.setTitle("Create Marker");
+                    item.setTitle(t("Create Marker"));
                     item.onClick(() => {
                         contextMenu.hide();
                         this.handleMapContext(evt);
@@ -1073,7 +1091,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             return;
         }
 
-        let contextMenu = new Menu(this.plugin.app);
+        let contextMenu = new Menu();
 
         contextMenu.setNoIcon();
 
@@ -1100,7 +1118,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         contextMenu.showAtMouseEvent(evt.originalEvent);
     }
     handleMapContextMobile(evt: L.LeafletMouseEvent, overlay?: Overlay) {
-        let contextMenu = new Menu(this.plugin.app);
+        let contextMenu = new Menu();
 
         contextMenu.setNoIcon();
         contextMenu.addItem((item) => {
@@ -1271,20 +1289,14 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.leafletInstance.off("mousemove");
         this.leafletInstance.off("mouseout");
 
-        if (this.distanceEvent) {
-            this.distanceEvent = undefined;
-
-            this.distanceLine.unbindTooltip();
-            this.distanceLine.remove();
-            this.distanceLine = null;
-
-            /** Get Last Distance */
-            if (this.previousDistanceLine) {
-                const latlngs =
-                    this.previousDistanceLine.getLatLngs() as L.LatLng[];
-                const display = this.distance(latlngs[0], latlngs[1]);
-                this.distanceDisplay.setText(display);
+        this.previousDistanceLines = [];
+        if (this.distanceLines.length) {
+            for (const line of this.distanceLines) {
+                line.unbindTooltip();
+                line.remove();
+                this.previousDistanceLines.push(line);
             }
+            this.distanceLines = [];
         }
         if (this.tempCircle) {
             this.tempCircle.remove();
@@ -1376,18 +1388,36 @@ export class RealMap extends BaseMap {
         this.initialCoords = coords;
     }
 
-    async buildLayer(layer: { data: string; id: string; alias?: string }) {
+    async buildLayer(layer: {
+        data: string;
+        id: string;
+        alias?: string;
+        subdomains?: string[];
+    }) {
         if (layer.data.contains("openstreetmap")) {
             new Notice(
-                "OpenStreetMap has restricted the use of its tile server in Obsidian. Your map may break at any time. Please switch to a different tile server."
+                t(
+                    "OpenStreetMap has restricted the use of its tile server in Obsidian. Your map may break at any time. Please switch to a different tile server."
+                )
             );
         }
+        const subdomainsValue = layer.subdomains
+            ? layer.subdomains
+            : this.plugin.data.defaultTileSubdomains
+            ? this.plugin.data.defaultTileSubdomains
+                  .split(TILE_SUBDOMAINS_SPILT)
+                  .filter((s) => s)
+                  .map((s) => s.trim())
+            : DEFAULT_TILE_SUBDOMAINS;
         const tileLayer = L.tileLayer(layer.data, {
             ...(layer.data.contains("stamen-tiles")
                 ? {
                       attribution: DEFAULT_ATTRIBUTION
                   }
-                : { attribution: this.plugin.data.defaultAttribution }),
+                : {
+                      attribution: this.plugin.data.defaultAttribution,
+                      subdomains: subdomainsValue
+                  }),
             className: this.options.darkMode ? "dark-mode" : ""
         });
 
@@ -1424,7 +1454,7 @@ export class RealMap extends BaseMap {
 
         this.trigger(
             `layer-ready-for-features`,
-            this.mapLayers[this.mapLayers.length - 1]
+            this.mapLayers[this.mapLayers.length - 1].id
         );
 
         return tileLayer;
@@ -1469,23 +1499,34 @@ export class RealMap extends BaseMap {
             id: string;
             data: string;
             alias?: string;
+            subdomains?: string[];
         }[] = [];
         for (let tileLayer of this.options.tileLayer) {
             const [id, alias] = tileLayer.split("|");
             if (!id) {
                 new Notice(
-                    `There was an issue parsing the tile layer: ${tileLayer}`
+                    t(
+                        "There was an issue parsing the tile layer: %1",
+                        tileLayer
+                    )
                 );
                 continue;
             }
 
-            layers.push({ id, data: id, alias });
+            layers.push({
+                id,
+                data: id,
+                alias,
+                subdomains: this.options.tileSubdomains
+            });
         }
 
         if (this.options.osmLayer || !layers.length) {
             if (!this.options.osmLayer) {
                 new Notice(
-                    "OpenStreetMap cannot be turned off without specifying additional tile servers."
+                    t(
+                        "OpenStreetMap cannot be turned off without specifying additional tile servers."
+                    )
                 );
             }
             layers.unshift(osmLayer);
@@ -1503,7 +1544,7 @@ export class RealMap extends BaseMap {
             );
             this.trigger("rendered");
         });
-        this.trigger("first-layer-ready", this.mapLayers[0]);
+        this.trigger("first-layer-ready", this.mapLayers[0].id);
 
         if (layers.length > 1) {
             this.log("Building additional layers in the background.");
@@ -1617,10 +1658,10 @@ export class ImageMap extends BaseMap {
         const newLayer = this._buildMapLayer(layer);
 
         this.mapLayers.push(newLayer);
-        this.trigger(`layer-ready-for-features`, newLayer);
+        this.trigger(`layer-ready-for-features`, newLayer.id);
         if (this.mapLayers.length === 1) {
             this.currentLayer = this.mapLayers[0].layer;
-            this.trigger("first-layer-ready", this.currentGroup);
+            this.trigger("first-layer-ready", this.currentGroup.id);
             if (this.options.recenter) {
                 this.leafletInstance.setMaxBounds(this.bounds);
             }

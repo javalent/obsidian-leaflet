@@ -1,4 +1,4 @@
-import type { BaseMapType, LeafletOverlay, TooltipDisplay } from "src/@types";
+import type { BaseMapType, LeafletOverlay, TooltipDisplay } from "../types";
 import { Marker, Overlay } from "src/layer";
 import { Layer } from "src/layer/layer";
 import { BASE_POPUP_OPTIONS } from "src/utils";

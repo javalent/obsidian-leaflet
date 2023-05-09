@@ -1,4 +1,4 @@
-import { BaseMapType } from "src/@types";
+import { BaseMapType } from "../types";
 import {
     FontAwesomeControl,
     FontAwesomeControlOptions
@@ -8,6 +8,7 @@ import t from "src/l10n/locale";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { BaseDrawControl } from "./base";
 import { ColorControl } from "./color";
+import { GeoJSONControl } from "./geojson";
 import { PolygonControl } from "./polygon";
 import { PolylineControl } from "./polyline";
 import { RectangleControl } from "./rectangle";
@@ -28,6 +29,7 @@ export class DrawControl extends FontAwesomeControl {
     color = new ColorControl(this);
     drag = new DragControl(this);
     delete = new DeleteControl(this);
+    geoJson = new GeoJSONControl(this);
     done = new DoneControl(this);
 
     /* free: FreeControl; */
@@ -87,6 +89,7 @@ export class DrawControl extends FontAwesomeControl {
         this.section.appendChild(this.drag.controlEl);
 
         this.section.appendChild(this.delete.controlEl);
+        this.section.appendChild(this.geoJson.controlEl);
         this.section.appendChild(this.done.controlEl);
     }
     private expand() {

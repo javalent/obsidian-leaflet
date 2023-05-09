@@ -48,7 +48,7 @@ import {
     Icon,
     Marker,
     BaseMapType
-} from "./@types";
+} from "../types";
 
 import { LeafletRenderer } from "./renderer/renderer";
 import { markerDivIcon } from "./map/divicon";
@@ -623,14 +623,17 @@ export default class ObsidianLeaflet extends Plugin {
         node.style.color = icon.color
             ? icon.color
             : this.data.defaultMarker.color;
-
+        node.style.opacity = `${
+            icon.alpha ?? this.data.defaultMarker.alpha ?? 1
+        }`;
         return {
             type: icon.type,
             html: node.outerHTML,
             icon: markerDivIcon({
                 html: node.outerHTML,
                 className: `leaflet-div-icon`
-            })
+            }),
+            markerIcon: icon
         };
     }
     public generateMarkerMarkup(
@@ -642,7 +645,8 @@ export default class ObsidianLeaflet extends Plugin {
         const defaultHtml = getMarkerIcon(this.data.defaultMarker, {
             classes: ["full-width-height"],
             styles: {
-                color: this.data.defaultMarker.color
+                color: this.data.defaultMarker.color,
+                opacity: `${this.data.defaultMarker.alpha ?? 1}`
             },
             maskId: `leaflet-mask-${getId()}`
         }).html;
@@ -652,7 +656,8 @@ export default class ObsidianLeaflet extends Plugin {
             icon: markerDivIcon({
                 html: defaultHtml,
                 className: `leaflet-div-icon`
-            })
+            }),
+            markerIcon: this.data.defaultMarker
         });
 
         return ret;
@@ -686,6 +691,7 @@ export default class ObsidianLeaflet extends Plugin {
                     options?.layer ?? this.data.layerMarkers
                         ? this.data.defaultMarker.color
                         : this.data.color,
+                alpha: 1,
                 layer: options?.layer ?? this.data.layerMarkers,
                 transform: this.data.defaultMarker.transform,
                 isImage: false,

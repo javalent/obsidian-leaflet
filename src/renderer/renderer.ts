@@ -19,9 +19,9 @@ import type {
     LeafletMapOptions,
     SavedMarkerProperties,
     SavedOverlayData
-} from "../@types";
+} from "../../types";
 import type ObsidianLeaflet from "src/main";
-import type { BaseMapType, ImageLayerData } from "../@types/map";
+import type { BaseMapType, ImageLayerData } from "../../types/map";
 
 import Watcher from "../utils/watcher";
 import { RealMap, ImageMap } from "../map/map";
@@ -35,7 +35,8 @@ import {
     parseLink,
     getHeight,
     getHex,
-    VIEW_TYPE
+    VIEW_TYPE,
+    TILE_SUBDOMAINS_SPILT
 } from "../utils";
 import convert from "convert";
 import t from "../l10n/locale";
@@ -68,8 +69,9 @@ type ImmutableOverlay = [
     desc: string,
     id: string
 ];
+
 export class LeafletRenderer extends MarkdownRenderChild {
-    watchers: Set<Watcher> = new Set();
+    watchers: WeakMap<TFile, Watcher> = new WeakMap();
     loader: Loader = new Loader(this.plugin.app);
     resize: ResizeObserver;
     map: BaseMapType;
@@ -126,6 +128,15 @@ export class LeafletRenderer extends MarkdownRenderChild {
         if (this.params.tileOverlay && this.params.tileOverlay.length) {
             tileOverlay = [this.params.tileOverlay].flat();
         }
+        let tileSubdomains: string[] = [];
+
+        if (this.params.tileSubdomains && this.params.tileSubdomains.length) {
+            tileSubdomains = [this.params.tileSubdomains]
+                .flat()
+                .map((s) => s.split(TILE_SUBDOMAINS_SPILT))
+                .flat();
+        }
+
         this.options = {
             bounds: this.params.bounds,
             context: this.sourcePath,
@@ -155,6 +166,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             noScrollZoom: this.params.noScrollZoom,
             tileLayer,
             tileOverlay,
+            tileSubdomains: tileSubdomains,
             type: this.params.image != "real" ? "image" : "real",
             unit: this.params.unit ?? this.plugin.defaultUnit,
             verbose: this.params.verbose,
@@ -300,7 +312,11 @@ export class LeafletRenderer extends MarkdownRenderChild {
         );
 
         /** Register File Watcher to Update Markers/Overlays */
-        this.registerWatcher(file, new Map([["coordinates", "coordinates"]]));
+        if (file)
+            this.registerWatcher(
+                file,
+                new Map([["coordinates", "coordinates"]])
+            );
         let imageOverlayData;
         if (this.params.imageOverlay?.length) {
             imageOverlayData = await Promise.all(
@@ -437,49 +453,73 @@ export class LeafletRenderer extends MarkdownRenderChild {
         if (!(geojson instanceof Array)) {
             geojson = [geojson];
         }
-        const geoSet: Set<{ path: string; alias?: string; note?: string }> =
-            new Set(
-                geojson
-                    ?.flat(Infinity)
-                    .filter((g) => g)
-                    .map((g) => {
-                        let [path, alias = path, note] = g
-                            .replace(/(\[|\])/g, "")
-                            .split("|");
-                        if (!alias?.length) alias = path;
-                        return { path, alias, note };
-                    })
-            );
+        const geoSet: Map<
+            string,
+            { path: string; alias?: string; note?: string }
+        > = new Map(
+            geojson
+                ?.flat(Infinity)
+                .filter((g) => g)
+                .map((g) => {
+                    let [path, alias = path, note] = g
+                        .replace(/(\[|\])/g, "")
+                        .split("|");
+                    if (!alias?.length) alias = path;
+                    return [path, { path, alias, note }];
+                })
+        );
 
-        function collectGeos(abstractFile: TAbstractFile, geoSet: Set<{ path: string; alias?: string; note?: string; }>, depth: number) {
+        function collectGeos(
+            abstractFile: TAbstractFile,
+            geoSet: Map<
+                string,
+                { path: string; alias?: string; note?: string }
+            >,
+            depth: number
+        ) {
             depth = depth - 1;
             if (depth < 0 || !abstractFile) {
                 return;
             }
-            if (abstractFile instanceof TFile &&
-                ["json", "geojson"].includes(abstractFile.extension)) {
+            if (
+                abstractFile instanceof TFile &&
+                ["json", "geojson"].includes(abstractFile.extension)
+            ) {
                 let p = abstractFile.path;
-                geoSet.add({ path: p, alias: p.substring(1+p.lastIndexOf('/'),p.lastIndexOf('.')) });
-            } else
-            if (abstractFile instanceof TFolder) {
-                abstractFile.children.forEach(file => collectGeos(file, geoSet, depth));
+                geoSet.set(p, {
+                    path: p,
+                    alias: p.substring(
+                        1 + p.lastIndexOf("/"),
+                        p.lastIndexOf(".")
+                    )
+                });
+            } else if (abstractFile instanceof TFolder) {
+                abstractFile.children.forEach((file) =>
+                    collectGeos(file, geoSet, depth)
+                );
             }
         }
 
         if (this.params.geojsonFolder && this.params.geojsonFolder.length) {
             const f = this.params.geojsonFolder;
-            const sub = this.sourcePath.substring(0, this.sourcePath.lastIndexOf("/"));
-            let arr = Array.isArray(f) ? f : [ f ];
+            const sub = this.sourcePath.substring(
+                0,
+                this.sourcePath.lastIndexOf("/")
+            );
+            let arr = Array.isArray(f) ? f : [f];
             for (let path of arr) {
-                var abstractFile, depth;
-                ({ abstractFile, path, depth } = this.filePathAndDepth(path, sub));
+                let abstractFile, depth;
+                ({ abstractFile, path, depth } = this.filePathAndDepth(
+                    path,
+                    sub
+                ));
                 collectGeos(abstractFile, geoSet, depth);
             }
         }
 
         if (geoSet.size) {
             this.map.log("Loading GeoJSON files.");
-            for (let { path, alias, note } of geoSet) {
+            for (let { path, alias, note } of [...geoSet.values()]) {
                 const file = this.plugin.app.metadataCache.getFirstLinkpathDest(
                     parseLink(path),
                     this.sourcePath
@@ -503,8 +543,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
             }
         }
         geojsonData.reverse(); //deeper Elements are 'contained' in shallow Geometries and must be added last!
-        //this does NOT help though for parallel, large-scale Structures like Subway-Networks. 
-        //These must be added manually to avoid Overlay! 
+        //this does NOT help though for parallel, large-scale Structures like Subway-Networks.
+        //These must be added manually to avoid Overlay!
 
         let gpx = this.params.gpx,
             gpxData: { data: string; alias?: string }[] = [];
@@ -520,7 +560,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
             gpx = [gpx];
         }
 
-        let gpxSet: Set<{ path: string; alias?: string }> = new Set(
+        let gpxSet: Map<string, { path: string; alias?: string }> = new Map(
             gpx
                 ?.flat(Infinity)
                 .filter((g) => g)
@@ -529,7 +569,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                         .replace(/(\[|\])/g, "")
                         .split("|");
                     if (!alias?.length) alias = path;
-                    return { path, alias };
+                    return [path, { path, alias }];
                 })
         );
         if (this.params.gpxFolder && this.params.gpxFolder.length) {
@@ -541,7 +581,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                     abstractFile instanceof TFile &&
                     abstractFile.extension === "gpx"
                 )
-                    gpxSet.add({ path });
+                    gpxSet.set(path, { path });
                 if (abstractFile instanceof TFolder) {
                     Vault.recurseChildren(abstractFile, (file) => {
                         if (
@@ -549,14 +589,14 @@ export class LeafletRenderer extends MarkdownRenderChild {
                             (file.extension === "gpx" ||
                                 file.path.endsWith(".gpx.gz"))
                         )
-                            gpxSet.add({ path: file.path });
+                            gpxSet.set(file.path, { path: file.path });
                     });
                 }
             }
         }
         if (gpxSet.size) {
             this.map.log("Loading GPX files.");
-            for (let { path, alias } of gpxSet) {
+            for (let { path, alias } of [...gpxSet.values()]) {
                 const file = this.plugin.app.metadataCache.getFirstLinkpathDest(
                     parseLink(path),
                     this.sourcePath
@@ -834,19 +874,24 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 overlayColor
             } = this.params;
 
-            function collectFiles(abstractFile: TAbstractFile, geoSet: Set<string>, depth: number) {
+            function collectFiles(
+                abstractFile: TAbstractFile,
+                geoSet: Set<string>,
+                depth: number
+            ) {
                 depth = depth - 1;
                 if (depth < 0 || !abstractFile) {
                     return;
                 }
                 if (abstractFile instanceof TFile) {
                     geoSet.add(abstractFile.path);
-                } else
-                if (abstractFile instanceof TFolder) {
-                    abstractFile.children.forEach(file => collectFiles(file, geoSet, depth));
+                } else if (abstractFile instanceof TFolder) {
+                    abstractFile.children.forEach((file) =>
+                        collectFiles(file, geoSet, depth)
+                    );
                 }
             }
-        
+
             if (
                 markerFile.length ||
                 markerFolder.length ||
@@ -857,10 +902,16 @@ export class LeafletRenderer extends MarkdownRenderChild {
             ) {
                 let files = new Set(markerFile);
 
-                var sub = this.sourcePath.substring(0, this.sourcePath.lastIndexOf("/"));
+                const sub = this.sourcePath.substring(
+                    0,
+                    this.sourcePath.lastIndexOf("/")
+                );
                 for (let path of markerFolder) {
-                    var abstractFile, depth;
-                    ({ abstractFile, path, depth } = this.filePathAndDepth(path, sub));
+                    let abstractFile, depth;
+                    ({ abstractFile, path, depth } = this.filePathAndDepth(
+                        path,
+                        sub
+                    ));
                     collectFiles(abstractFile, files, depth);
                 }
                 //get cache
@@ -1013,7 +1064,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
                         file.extension !== "md"
                     )
                         continue;
-                    const cache = this.app.metadataCache.getFileCache(file) ?? {};
+                    const cache =
+                        this.app.metadataCache.getFileCache(file) ?? {};
                     const { frontmatter } = cache;
 
                     const tags: Set<string> =
@@ -1265,12 +1317,11 @@ export class LeafletRenderer extends MarkdownRenderChild {
     }
 
     private filePathAndDepth(path: string, sub: string) {
-        if (path[0] == '.') {
-            var rest = path.substring(1);
-            path = sub + rest;
+        if (path[0] == ".") {
+            path = sub + path.substring(1);
         }
-        var depth = 2;
-        while (path.endsWith('/')) {
+        let depth = path.endsWith("/") ? 2 : Infinity;
+        while (path.endsWith("/")) {
             path = path.substring(0, path.length - 1);
             ++depth;
         }
@@ -1279,9 +1330,10 @@ export class LeafletRenderer extends MarkdownRenderChild {
     }
 
     registerWatcher(file: TFile, fileIds: Map<string, string>) {
+        if (file == undefined) return;
         const watcher = new Watcher(this, file, fileIds);
-        this.watchers.add(watcher);
-        watcher.on("remove", () => this.watchers.delete(watcher));
+        this.watchers.set(file, watcher);
+        watcher.on("remove", () => this.watchers.delete(file));
     }
 
     //TODO: Move to renderer
@@ -1298,7 +1350,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
     }> {
         let latitude = lat;
         let longitude = long;
-        let coords: [number, number] = [undefined, undefined];
+        const coords: [number, number] = [undefined, undefined];
         let zoomDistance, file;
         if (typeof coordinates == "string" && coordinates.length) {
             file = this.plugin.app.metadataCache.getFirstLinkpathDest(
@@ -1322,40 +1374,40 @@ export class LeafletRenderer extends MarkdownRenderChild {
             map.log(`Using supplied coordinates [${latitude}, ${longitude}]`);
         }
 
-        let err: boolean = false;
-        try {
-            coords = [
-                Number(`${latitude}`?.split("%").shift()),
-                Number(`${longitude}`?.split("%").shift())
-            ];
-        } catch (e) {
-            err = true;
-        }
+        let convertedLatitude: number;
+        let convertedLongitude: number;
 
-        if (
-            (latitude || longitude) &&
-            (err || isNaN(coords[0]) || isNaN(coords[1]))
-        ) {
+        try {
+            convertedLatitude = Number(`${latitude}`?.split("%", 1)[0]);
+        } catch (error) {
             new Notice(
                 t(
-                    "There was an error with the provided latitude and longitude. Using defaults."
+                    "There was an error with the provided latitude. Using default."
                 )
             );
         }
-        if (map.type != "real") {
-            if (!latitude || isNaN(coords[0])) {
-                coords[0] = 50;
-            }
-            if (!longitude || isNaN(coords[1])) {
-                coords[1] = 50;
-            }
+        if (!isNaN(convertedLatitude)) {
+            coords[0] = convertedLatitude;
+        } else if (map.type === "real") {
+            coords[0] = this.plugin.data.lat;
         } else {
-            if (!latitude || isNaN(coords[0])) {
-                coords[0] = this.plugin.data.lat;
-            }
-            if (!longitude || isNaN(coords[1])) {
-                coords[1] = this.plugin.data.long;
-            }
+            coords[0] = 50;
+        }
+        try {
+            convertedLongitude = Number(`${longitude}`?.split("%", 1)[0]);
+        } catch (error) {
+            new Notice(
+                t(
+                    "There was an error with the provided longitude. Using default."
+                )
+            );
+        }
+        if (!isNaN(convertedLongitude)) {
+            coords[1] = convertedLongitude;
+        } else if (map.type === "real") {
+            coords[1] = this.plugin.data.long;
+        } else {
+            coords[1] = 50;
         }
 
         return { coords, zoomDistance, file };

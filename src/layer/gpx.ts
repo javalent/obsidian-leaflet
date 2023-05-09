@@ -1,4 +1,4 @@
-import type { BaseMapType } from "src/@types";
+import type { BaseMapType } from "../types";
 import { Layer } from "../layer/layer";
 
 import { LeafletSymbol } from "src/utils/leaflet-import";
@@ -7,13 +7,13 @@ import { gpx as gpxtoGeoJSON } from "@tmcw/togeojson";
 import gpxWorker from "../worker/gpx.worker";
 import type { HotlineOptions } from "leaflet";
 import { popup } from "src/map/popup";
-import { GPXPoint } from "src/@types/layers";
+import { GPXPoint } from "../types/layers";
 
 import { GeoJSON } from "./geojson";
 import { formatLatLng, formatNumber, getIcon, icon } from "src/utils";
 import t from "src/l10n/locale";
 
-import { GPX_Data } from "src/@types/gpx";
+import { GPX_Data } from "../types/gpx";
 import { Position } from "geojson";
 import convert from "convert";
 

@@ -2,6 +2,117 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.6.1](https://github.com/javalent/obsidian-leaflet/compare/5.6.0...5.6.1) (2023-05-07)
+
+
+### Bug Fixes
+
+* revert to webpack build to avoid collision with Map View (close [#384](https://github.com/javalent/obsidian-leaflet/issues/384)) ([8154392](https://github.com/javalent/obsidian-leaflet/commit/81543929c65b5c099fe9198784223cb6cdc426fa))
+
+## [5.6.0](https://github.com/javalent/obsidian-leaflet/compare/5.5.8...5.6.0) (2023-05-04)
+
+
+### Features
+
+* Enable marker opacity (close [#334](https://github.com/javalent/obsidian-leaflet/issues/334)) ([59f26dc](https://github.com/javalent/obsidian-leaflet/commit/59f26dc7c6ab236fae50a942239f60589b8a50b7))
+
+
+### Bug Fixes
+
+* clean up settings ([#381](https://github.com/javalent/obsidian-leaflet/issues/381)) ([4df1590](https://github.com/javalent/obsidian-leaflet/commit/4df15901d65916101ecb7aa2e96d2e825d8657f9))
+* default to infinite recursion for geojson (close [#366](https://github.com/javalent/obsidian-leaflet/issues/366)) ([ad2b37a](https://github.com/javalent/obsidian-leaflet/commit/ad2b37a49af93531aaccd7ef99c6dbe0dcc2a95a))
+* display geojson causing error in notice ([174b80d](https://github.com/javalent/obsidian-leaflet/commit/174b80d6311e257fd1e468ebc5223f0c9672b3ac))
+* fixes longitude i10n message ([97adff3](https://github.com/javalent/obsidian-leaflet/commit/97adff3007a4e75ae0efa67923d61ab05eae94cd))
+
+## [5.5.8](https://github.com/javalent/obsidian-leaflet/compare/5.5.7...5.5.8) (2023-04-30)
+
+
+### Bug Fixes
+
+* update Chinese translation (thank you @Wanxp) ([d0e19c6](https://github.com/javalent/obsidian-leaflet/commit/d0e19c615ad0e9fbba83f41269a4dcd9b0f14251))
+
+## [5.5.7](https://github.com/javalent/obsidian-leaflet/compare/5.5.6...5.5.7) (2023-04-29)
+
+
+### Bug Fixes
+
+* latidude and longitude can be set (closes [#373](https://github.com/javalent/obsidian-leaflet/issues/373)) ([#374](https://github.com/javalent/obsidian-leaflet/issues/374)) ([d92df41](https://github.com/javalent/obsidian-leaflet/commit/d92df4181998be02556571108febb397e58b253e))
+
+## [5.5.6](https://github.com/javalent/obsidian-leaflet/compare/5.5.5...5.5.6) (2023-04-28)
+
+
+### Bug Fixes
+
+* expand local links for obsidian's hover-preview (closes [#361](https://github.com/javalent/obsidian-leaflet/issues/361)) ([#375](https://github.com/javalent/obsidian-leaflet/issues/375)) ([c145fdd](https://github.com/javalent/obsidian-leaflet/commit/c145fdd464346e7084e276ae03f0b378172245d5))
+
+## [5.5.5](https://github.com/javalent/obsidian-leaflet/compare/5.5.4...5.5.5) (2023-04-25)
+
+
+### Bug Fixes
+
+* latitude and longitude can be 0 (close [#362](https://github.com/javalent/obsidian-leaflet/issues/362)) ([deff0a8](https://github.com/javalent/obsidian-leaflet/commit/deff0a810ca5416e885feace4b0bebc62eeb5128))
+
+## [5.5.4](https://github.com/javalent/obsidian-leaflet/compare/5.5.3...5.5.4) (2023-04-21)
+
+
+### Bug Fixes
+
+* markers should respect layers when reset now (close [#308](https://github.com/javalent/obsidian-leaflet/issues/308)) ([fcf974a](https://github.com/javalent/obsidian-leaflet/commit/fcf974aef7b6042a3b9cf3bbd3b1386116c40328))
+
+## [5.5.3](https://github.com/javalent/obsidian-leaflet/compare/5.5.2...5.5.3) (2023-04-20)
+
+
+### Bug Fixes
+
+* fix-version ([bf3801e](https://github.com/javalent/obsidian-leaflet/commit/bf3801e2901690c34504c97c721b231da28ae5af))
+* setup for npm release ([f00409a](https://github.com/javalent/obsidian-leaflet/commit/f00409ad2d812aadf66ed37ca5f9487d7d11e498))
+
+## [3.5.5](https://github.com/javalent/obsidian-leaflet/compare/v3.5.4...3.5.5) (2023-04-20)
+
+
+### Bug Fixes
+
+* setup for npm release ([f00409a](https://github.com/javalent/obsidian-leaflet/commit/f00409ad2d812aadf66ed37ca5f9487d7d11e498))
+
+### [5.5.2](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.5.1...5.5.2) (2023-04-11)
+
+
+### Bug Fixes
+
+* adds small dropshadow to markers (close [#363](https://github.com/valentine195/obsidian-leaflet-plugin/issues/363)) ([8badcaf](https://github.com/valentine195/obsidian-leaflet-plugin/commit/8badcaf57981198c3d544f2b769590c39190ebfd))
+
+## [5.5.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.4.0...5.5.0) (2023-04-08)
+
+
+### Features
+
+* Can now measure in segments by continuing to mod-click ([fbdf5f0](https://github.com/valentine195/obsidian-leaflet-plugin/commit/fbdf5f095722b408ce4899bca9e8a23555a57111))
+
+## [5.4.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.2.6...5.4.0) (2023-04-07)
+
+
+### Features
+
+* can alt-click to measure polylines from drawing ([6bc541f](https://github.com/valentine195/obsidian-leaflet-plugin/commit/6bc541f859c46f4ce52be8a4df602f935ef94e1c))
+
+
+### Bug Fixes
+
+* fixes incorrect use of Set ([b3f5c47](https://github.com/valentine195/obsidian-leaflet-plugin/commit/b3f5c47473e3c4f3c25be85f5b0de7f12b2a2506))
+
+## [5.3.0](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.2.6...5.3.0) (2023-04-06)
+
+### New Features
+* Adds support for Chinese internalization (@Wanxp) [#358](https://github.com/valentine195/obsidian-leaflet-plugin/pull/358)
+* Adds ability to save drawings as GeoJSON (close #337) (@preslavnpetrov) [#360](https://github.com/valentine195/obsidian-leaflet-plugin/pull/360)
+* Improves GeoJSON file resolving (@SpocWeb) [#350](https://github.com/valentine195/obsidian-leaflet-plugin/pull/350)
+
+### Bug Fixes
+
+* fixes incorrect use of Set ([b3f5c47](https://github.com/valentine195/obsidian-leaflet-plugin/commit/b3f5c47473e3c4f3c25be85f5b0de7f12b2a2506))
+
+### [5.2.7](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.2.6...5.2.7) (2023-03-29)
+
 ### [5.2.6](https://github.com/valentine195/obsidian-leaflet-plugin/compare/5.2.5...5.2.6) (2023-02-28)
 
 

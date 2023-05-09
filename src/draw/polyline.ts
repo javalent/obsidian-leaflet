@@ -1,13 +1,15 @@
 import { FontAwesomeControl } from "src/controls/controls";
 import t from "src/l10n/locale";
 import { Marker } from "src/layer";
-import { getId } from "src/utils";
+import { MODIFIER_KEY, getId } from "src/utils";
 import { LeafletSymbol } from "src/utils/leaflet-import";
 import { BaseDrawControl } from "./base";
 import { DrawingController } from "./controller";
 import { DrawControl } from "./controls";
 import { Shape, ShapeProperties } from "./shape";
 import { Vertex, VertexProperties } from "./vertex";
+import { popup } from "src/map";
+import { Notice } from "obsidian";
 
 const L = window[LeafletSymbol];
 
@@ -44,6 +46,33 @@ export class Polyline extends Shape<L.Polyline> {
             if (this.reversed) this.reverseArrows();
             this.redraw();
         }
+        this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) => {
+            if (
+                evt.originalEvent.getModifierState(MODIFIER_KEY) &&
+                this.vertices.length > 1
+            ) {
+                const notice = [];
+                let total = 0;
+                for (let i = 1; i < this.vertices.length; i++) {
+                    let dist = this.map.distance(
+                        this.vertices[i - 1].latlng,
+                        this.vertices[i].latlng
+                    );
+                    notice.push(dist);
+                    total += Number(dist.replace(/[^\d\.]/g, ""));
+                }
+                if (notice.length) {
+                    new Notice(
+                        `${notice.join("\n")}\n\nTotal: ${total} ${
+                            this.map.unit
+                        }`
+                    );
+                }
+                //wtf??
+                //@ts-ignore
+                this.map.distanceDisplay.setText(`${total} ${this.map.unit}`);
+            }
+        });
     }
     triangleEl = L.SVG.create("marker");
     pathEl = L.SVG.create("path");

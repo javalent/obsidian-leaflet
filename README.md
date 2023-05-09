@@ -8,6 +8,9 @@ Adds interactable mapping functionality to Obsidian.md, using [Leaflet.js](https
 
 Proof of concept currently. May not work as expected. Currently only tested on Windows & Mac.
 
+
+Read this in other languages: [简体中文](./README_zh_CN.md).
+
 ## Working with the plugin & example
 
 A map can be created with a `leaflet` code block. For example:
@@ -38,10 +41,11 @@ darkMode: true
 > In all cases, either Obsidian's Wikilinks (`[[Link]]`) _or_ standard markdown links (`[Link](./path/to/file)`) may be provided.
 
 | Option                                  | Description                                                                                                 | Default                                    |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+|-----------------------------------------|-------------------------------------------------------------------------------------------------------------------------|--------------------------------------------|
 | [id](#map-ids)                          | Unique identifier (can be anything). **Required.**                                                          |                                            |
 | [image](#image-maps)                    | Direct URL/file path to an image file to be used as the map layer.                                          | OpenStreetMap map                          |
 | [tileServer](#real-world-maps)          | Add additional tile servers as different layers                                                             |                                            |
+| [tileSubdomains](#tile-subdomains)      | Add Available subdomains for additional tile servers  concurrent requests. Spilt by ',', etc. 'a,b,c' | a,b,c                                      |
 | [tileOverlay](#real-world-maps)         | Add additional tile servers an overlay over the base map.                                                   |                                            |
 | [osmLayer](#real-world-maps)            | Turn off the OpenStreetMap layer (only usable if additional Tile Servers have been provided)                |                                            |
 | [lat](#initial-coordinates)             | Default latitude to display when rendering.                                                                 | 50% (image) / 39.983334 (open street map)  |
@@ -207,6 +211,27 @@ Tile overlays can be set to default on by appending `|on` to the end:
 ```md
 tileServer: https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png|Dark|on
 ```
+
+### Tile Subdomains
+
+Add Available subdomains for additional tile servers  concurrent requests. Spilt by ',', etc. 'a,b,c'.
+
+`tileSubdomains: <domain1>,<domain2>,<domain3>`
+
+For example:
+----
+```leaflet
+osmLayer: false
+tileServer: https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}
+tileSubdomains: 1,2,3
+```
+---
+
+So that map will load map data from below urls:
+https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}
+https://webrd02.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}
+https://webrd03.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}
+
 
 ## Image Maps
 

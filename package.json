@@ -1,19 +1,13 @@
 {
-    "name": "obsidian-leaflet-plugin",
-    "version": "5.2.6",
+    "name": "obsidian-leaflet",
+    "version": "5.6.1",
     "description": "Leaflet integration for Obsidian.md",
     "main": "main.js",
     "scripts": {
         "dev": "node ./esbuild.config.mjs",
-        "build": "node ./esbuild.config.mjs production",
-        "dev-wp": "set NODE_OPTIONS=--openssl-legacy-provider && webpack --config webpack.dev.js -w",
-        "build-wp": "webpack",
-        "analyze": "webpack --profile --json > stats.json && webpack-bundle-analyzer ./stats.json",
-        "release": "standard-version"
-    },
-    "standard-version": {
-        "t": "",
-        "releaseCommitMessageFormat": "Obsidian Leaflet Release: v{{currentTag}}"
+        "build": "webpack",
+        "dev-es": "node ./esbuild.config.mjs",
+        "build-es": "node ./esbuild.config.mjs production"
     },
     "keywords": [],
     "author": "",
@@ -52,7 +46,7 @@
         "mime": "^2.5.2",
         "mini-css-extract-plugin": "^2.1.0",
         "monkey-around": "^2.3.0",
-        "obsidian": "^1.1.1",
+        "obsidian": "^1.2.8",
         "papaparse": "^5.3.0",
         "standard-version": "^9.3.2",
         "string-replace-loader": "^3.0.3",

@@ -5,7 +5,7 @@ import type {
     Marker,
     TooltipDisplay,
     BaseMapType
-} from "src/@types";
+} from "../types";
 
 import { PathSuggestionModal } from "./path";
 import { CommandSuggestionModal } from "./command";
@@ -330,8 +330,8 @@ export class OverlayContextModal extends Modal {
         new Setting(this.contentEl)
             .setName(t("Display Tooltip"))
             .addDropdown((drop) => {
-                drop.addOption("hover", "Hover");
-                drop.addOption("never", "Never");
+                drop.addOption("hover", t("Hover"));
+                drop.addOption("never", t("Never"));
                 drop.setValue(this.tempOverlay.tooltip ?? "hover").onChange(
                     (value: TooltipDisplay) => {
                         this.tempOverlay.tooltip = value;

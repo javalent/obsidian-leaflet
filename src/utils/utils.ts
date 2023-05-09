@@ -8,7 +8,7 @@ import {
 } from "obsidian";
 import Color from "color";
 
-import { BaseMapType, BlockParameters } from "src/@types";
+import { BaseMapType, BlockParameters } from "../types";
 import { LAT_LONG_DECIMALS } from "./constants";
 import { DESCRIPTION_ICON } from ".";
 import t from "src/l10n/locale";
@@ -120,7 +120,7 @@ export const setValidationError = function (
             mDiv = createDiv({ cls: "invalid-feedback" });
         }
         mDiv.innerText = message;
-        mDiv.insertAfter(textInput.inputEl);
+        textInput.inputEl.parentNode.appendChild(mDiv);
     }
 };
 export const removeValidationError = function (textInput: TextComponent) {

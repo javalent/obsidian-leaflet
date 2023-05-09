@@ -1,5 +1,5 @@
 import { ItemView, MarkdownRenderChild, Menu, WorkspaceLeaf } from "obsidian";
-import { BaseMapType,  } from "src/@types";
+import { BaseMapType,  } from "../types";
 import t from "src/l10n/locale";
 import { EditParametersModal } from "src/modals/mapview";
 import { LeafletRenderer } from "src/renderer/renderer";
