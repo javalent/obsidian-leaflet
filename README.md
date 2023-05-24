@@ -40,56 +40,56 @@ darkMode: true
 >
 > In all cases, either Obsidian's Wikilinks (`[[Link]]`) _or_ standard markdown links (`[Link](./path/to/file)`) may be provided.
 
-| Option                                  | Description                                                                                                             | Default                                    |
+| Option                                  | Description                                                                                                 | Default                                    |
 |-----------------------------------------|-------------------------------------------------------------------------------------------------------------------------|--------------------------------------------|
-| [id](#map-ids)                          | Unique identifier (can be anything). **Required.**                                                                      |                                            |
-| [image](#image-maps)                    | Direct URL/file path to an image file to be used as the map layer.                                                      | OpenStreetMap map                          |
-| [tileServer](#real-world-maps)          | Add additional tile servers as different layers                                                                         |                                            |
+| [id](#map-ids)                          | Unique identifier (can be anything). **Required.**                                                          |                                            |
+| [image](#image-maps)                    | Direct URL/file path to an image file to be used as the map layer.                                          | OpenStreetMap map                          |
+| [tileServer](#real-world-maps)          | Add additional tile servers as different layers                                                             |                                            |
 | [tileSubdomains](#tile-subdomains)      | Add Available subdomains for additional tile servers  concurrent requests. Spilt by ',', etc. 'a,b,c' | a,b,c                                      |
-| [tileOverlay](#real-world-maps)         | Add additional tile servers an overlay over the base map.                                                               |                                            |
-| [osmLayer](#real-world-maps)            | Turn off the OpenStreetMap layer (only usable if additional Tile Servers have been provided)                            |                                            |
-| [lat](#initial-coordinates)             | Default latitude to display when rendering.                                                                             | 50% (image) / 39.983334 (open street map)  |
-| [long](#initial-coordinates)            | Default longitude to display when rendering.                                                                            | 50% (image) / -82.983330 (open street map) |
-| height                                  | Height of the map element. Can be provided in pixels or percentage of note height.                                      | 500px                                      |
-| width                                   | Width of the map element. Can be provided in pixels or percentage of note width.                                        | 100%                                       |
-| [minZoom](#initial-zoom-level)          | Minimum allowable zoom level of the map.                                                                                | 1                                          |
-| [maxZoom](#initial-zoom-level)          | Maximum allowable zoom level of the map.                                                                                | 10                                         |
-| [defaultZoom](#initial-zoom-level)      | Map will load zoomed to this level.                                                                                     | 5                                          |
-| [zoomDelta](#initial-zoom-level)        | Zoom level will change by this amount when zooming.                                                                     | 1                                          |
-| zoomFeatures                            | The map will automatically fit all [GeoJSON](#geojson) and [GPX](#gpx) features                                         |                                            |
-| [unit](#unit-and-scale)                 | Unit to display distances in                                                                                            | meters                                     |
-| [scale](#unit-and-scale)                | Scale factor for image map distance calculation.                                                                        | 1                                          |
-| [marker](#markers)                      | Create immutable markers on the map                                                                                     |                                            |
-| [commandMarker](#defined-in-code-block) | Create immutable markers that execute commands                                                                          |                                            |
-| [markerFile](#marker-file)              | Create immutable marker from a note's frontmatter                                                                       |                                            |
-| [markerFolder](#marker-folders)         | Create immutable markers from _all_ of the notes in a given folder                                                      |                                            |
-| [markerTag\*](#marker-tags)             | Create immutable markers from _all_ of the notes with the given tags.                                                   |                                            |
-| [filterTag\*](#filter-tag)              | Filter what files are used to create markers. Only markers that match the tags will be used.                            |                                            |
-| [linksTo\*](#links)                     | Create immutable markers from _all_ of the notes linking **TO** a note                                                  |                                            |
-| [linksFrom\*](#links)                   | Create immutable markers from _all_ of the notes linking **FROM** a note                                                |                                            |
-| [darkMode](#dark-mode)                  | Invert map colors                                                                                                       | false                                      |
-| [overlay](#overlays)                    | Add a circle overlay to the map                                                                                         |                                            |
-| [overlayTag](#overlay-tag)              | Define a YAML tag to search for in specified marker notes                                                               |                                            |
-| [overlayColor](#overlay-color)          | Change default overlay color                                                                                            | blue                                       |
-| [bounds](#bounds)                       | Set image map bounds to specified coordinates instead of default                                                        |                                            |
-| [coordinates](#initial-coordinates)     | Read location data from a note and use it as initial coordinates                                                        |                                            |
-| [zoomTag](#initial-zoom-level)          | Read distance-to-zoom data from a note and use it as default initial zoom                                               |                                            |
-| [geojson](#geojson)                     | Load GeoJSON files onto maps.                                                                                           |                                            |
-| [geojsonColor](#styles-and-color)       | Change the default color of the GeoJSON features.                                                                       | #3388ff                                    |
-| geojsonFolder                           | Parse a folder for `.geojson` or `.json` files to load to the map.                                                      |                                            |
-| [gpx](#gpx)                             | Load GPX files onto maps.                                                                                               |                                            |
-| [gpxMarkers](#gpx-markers)              | Set default start, stop and waypoint markers                                                                            |                                            |
-| gpxColor                                | Control default GPX color                                                                                               | #3388ff                                    |
-| gpxFolder                               | Parse a folder for `.gpx` files to load to the map.                                                                     |                                            |
-| [imageOverlay](#image-overlays)         | Add an image overlay to the map.                                                                                        |                                            |
-| [draw](#enable-draw-mode-by-default)    | Enable the draw controller on the map.                                                                                  | true                                       |
-| drawColor                               | Default color that new shapes will be drawn with                                                                        | #3388ff                                    |
-| showAllMarkers                          | Map will open showing all markers.                                                                                      | false                                      |
-| preserveAspect                          | If the note pane the map is in is resized, the map will resize itself to maintain its initial aspect ratio.             | false                                      |
-| noUI                                    | No controls will be added to the map.                                                                                   | false                                      |
-| lock                                    | Control whether the map will start locked or unlocked                                                                   | false                                      |
-| recenter                                | Forces map to stay re-center itself after panning.                                                                      | false                                      |
-| noScrollZoom                            | Turns off scrollwheel zooming.                                                                                          | false                                      |
+| [tileOverlay](#real-world-maps)         | Add additional tile servers an overlay over the base map.                                                   |                                            |
+| [osmLayer](#real-world-maps)            | Turn off the OpenStreetMap layer (only usable if additional Tile Servers have been provided)                |                                            |
+| [lat](#initial-coordinates)             | Default latitude to display when rendering.                                                                 | 50% (image) / 39.983334 (open street map)  |
+| [long](#initial-coordinates)            | Default longitude to display when rendering.                                                                | 50% (image) / -82.983330 (open street map) |
+| height                                  | Height of the map element. Can be provided in pixels or percentage of note height.                          | 500px                                      |
+| width                                   | Width of the map element. Can be provided in pixels or percentage of note width.                            | 100%                                       |
+| [minZoom](#initial-zoom-level)          | Minimum allowable zoom level of the map.                                                                    | 1                                          |
+| [maxZoom](#initial-zoom-level)          | Maximum allowable zoom level of the map.                                                                    | 10                                         |
+| [defaultZoom](#initial-zoom-level)      | Map will load zoomed to this level.                                                                         | 5                                          |
+| [zoomDelta](#initial-zoom-level)        | Zoom level will change by this amount when zooming.                                                         | 1                                          |
+| zoomFeatures                            | The map will automatically fit all [GeoJSON](#geojson) and [GPX](#gpx) features                             |                                            |
+| [unit](#unit-and-scale)                 | Unit to display distances in                                                                                | meters                                     |
+| [scale](#unit-and-scale)                | Scale factor for image map distance calculation.                                                            | 1                                          |
+| [marker](#markers)                      | Create immutable markers on the map                                                                         |                                            |
+| [commandMarker](#defined-in-code-block) | Create immutable markers that execute commands                                                              |                                            |
+| [markerFile](#marker-file)              | Create immutable marker from a note's frontmatter                                                           |                                            |
+| [markerFolder](#marker-folders)         | Create immutable markers from _all_ of the notes in the given Paths (relative or absolute to the Vault-Root). Limit Depth by appending one '/' per Folder-Level  |                                            |
+| [markerTag\*](#marker-tags)             | Create immutable markers from _all_ of the notes with the given tags.                                       |                                            |
+| [filterTag\*](#filter-tag)              | Filter what files are used to create markers. Only markers that match the tags will be used.                |                                            |
+| [linksTo\*](#links)                     | Create immutable markers from _all_ of the notes linking **TO** a note                                      |                                            |
+| [linksFrom\*](#links)                   | Create immutable markers from _all_ of the notes linking **FROM** a note                                    |                                            |
+| [darkMode](#dark-mode)                  | Invert map colors                                                                                           | false                                      |
+| [overlay](#overlays)                    | Add a circle overlay to the map                                                                             |                                            |
+| [overlayTag](#overlay-tag)              | Define a YAML tag to search for in specified marker notes                                                   |                                            |
+| [overlayColor](#overlay-color)          | Change default overlay color                                                                                | blue                                       |
+| [bounds](#bounds)                       | Set image map bounds to specified coordinates instead of default                                            |                                            |
+| [coordinates](#initial-coordinates)     | Read location data from a note and use it as initial coordinates                                            |                                            |
+| [zoomTag](#initial-zoom-level)          | Read distance-to-zoom data from a note and use it as default initial zoom                                   |                                            |
+| [geojson](#geojson)                     | Load multiple *.GeoJSON file-Paths in Json or YAML Syntax into this map. Relative Paths to the current doc start with `.` (dot). |                                            |
+| [geojsonColor](#styles-and-color)       | Change the default color of the GeoJSON features.                                                           | #3388ff                                    |
+| geojsonFolder                           | Search in multiple folders (Json or YAML Syntax) for `*.geojson` or `*.json` files to load into this map. Relative Paths start with `.` (Dot). Limit Subfolder Depth by appending one Slash per Folder-Level |      |
+| [gpx](#gpx)                             | Load GPX files onto maps.                                                                                   |                                            |
+| [gpxMarkers](#gpx-markers)              | Set default start, stop and waypoint markers                                                                |                                            |
+| gpxColor                                | Control default GPX color                                                                                   | #3388ff                                    |
+| gpxFolder                               | Parse a folder for `.gpx` files to load to the map.                                                         |                                            |
+| [imageOverlay](#image-overlays)         | Add an image overlay to the map.                                                                            |                                            |
+| [draw](#enable-draw-mode-by-default)    | Enable the draw controller on the map.                                                                      | true                                       |
+| drawColor                               | Default color that new shapes will be drawn with                                                            | #3388ff                                    |
+| showAllMarkers                          | Map will open showing all markers.                                                                          | false                                      |
+| preserveAspect                          | If the note pane the map is in is resized, the map will resize itself to maintain its initial aspect ratio. | false                                      |
+| noUI                                    | No controls will be added to the map.                                                                       | false                                      |
+| lock                                    | Control whether the map will start locked or unlocked                                                       | false                                      |
+| recenter                                | Forces map to stay re-center itself after panning.                                                          | false                                      |
+| noScrollZoom                            | Turns off scrollwheel zooming.                                                                              | false                                      |
 
 > \*: Requires the [DataView plugin](https://github.com/blacksmithgu/obsidian-dataview).
 
@@ -668,7 +668,9 @@ Marker folders may be defined in the code block using the following syntax:
 
 `markerFolder: Direct/Path/To/Folder`
 
-This will search through _all_ of the notes in the specified folder, even in sub folders.
+This will by default include notes from all subfolders. 
+
+To limit the number of subfolders, append one '/' (Slash) to the path for each sub-folder-level to include.
 
 #### Marker Tags
 
