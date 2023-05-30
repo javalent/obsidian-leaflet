@@ -1,6 +1,6 @@
 # Obsidian Leaflet
 
-> **Plugin Status**: Maintenance Mode. New Feature Requests will not be implemented at this time.
+> **Plugin Status**: Maintenance Mode. Feature Requests will not be implemented at this time.
 
 ---
 
