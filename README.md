@@ -1,5 +1,9 @@
 # Obsidian Leaflet
 
+> **Plugin Status**: Maintenance Mode. New Feature Requests will not be implemented at this time.
+
+---
+
 Adds interactable mapping functionality to Obsidian.md, using [Leaflet.js](https://leafletjs.com/)
 
 <img src="https://raw.githubusercontent.com/valentine195/obsidian-leaflet-plugin/master/images/7d595a3db9bf0eff9f2a2150819d2bd6956ddcd8.gif">
