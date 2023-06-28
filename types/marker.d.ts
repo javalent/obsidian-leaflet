@@ -1,6 +1,6 @@
 import { Icon, TooltipDisplay } from ".";
 import { MarkerDivIcon } from "./map";
-import type { Marker as MarkerDefinition } from "../layer/marker";
+import type { Marker as MarkerDefinition } from "../src/layer/marker";
 
 export type Marker = MarkerDefinition;
 export interface MarkerIcon {
