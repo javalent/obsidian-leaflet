@@ -196,6 +196,7 @@ declare abstract class BaseMap /* <
     leafletInstance: L.Map;
     mapLayers: LayerGroup<L.TileLayer | L.ImageOverlay>[];
 
+    localMarkerTypes: MarkerIcon[];
     markers: Marker[];
     get markerIcons(): Map<string, MarkerIcon>;
     get markerTypes(): string[];

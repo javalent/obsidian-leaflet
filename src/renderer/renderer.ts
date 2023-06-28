@@ -284,6 +284,8 @@ export class LeafletRenderer extends MarkdownRenderChild {
             this.loader.loadImage(this.map.id, [this.options.layers[0]]);
         }
 
+        this.map.localMarkerTypes = await this.plugin.getLocalFileMarkers(this.file);
+
         this.map.on("removed", () => this.resize.disconnect());
         this.map.on(
             "should-save",

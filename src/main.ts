@@ -636,6 +636,7 @@ export default class ObsidianLeaflet extends Plugin {
             markerIcon: icon
         };
     }
+
     public generateMarkerMarkup(
         markers: Icon[] = this.data.markerIcons
     ): MarkerIcon[] {
@@ -661,6 +662,22 @@ export default class ObsidianLeaflet extends Plugin {
         });
 
         return ret;
+    }
+
+    public async getLocalFileMarkers(file: TFile, markerFileName = "markers.json"): Promise<MarkerIcon[]> {
+        const markerFilePath = `${file.parent.path}/${markerFileName}`;
+        const markerFile = this.app.vault.getAbstractFileByPath(markerFilePath);
+        const markers: MarkerIcon[] = [];
+        if (markerFile instanceof TFile) {
+            const markerJson = await this.app.vault.read(markerFile);
+            try {
+                const icons = JSON.parse(markerJson);
+                markers.push(...icons.map((i: Icon) => this.parseIcon(i)))
+            } catch {
+                console.error(`Badly formatted marker file ${markerFilePath}`);
+            }
+        }
+        return markers;
     }
 
     public getIconForTag(tags: Set<string>) {
