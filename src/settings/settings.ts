@@ -317,7 +317,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                 .addExtraButton((b) =>
                     b.setIcon("trash").onClick(async () => {
                         this.data.markerIcons = this.data.markerIcons.filter(
-                            (m) => m != marker
+                            (m) => m !== marker.markerIcon
                         );
                         await this.plugin.saveMarkerTypes();
                         this.display();
