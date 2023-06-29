@@ -323,7 +323,7 @@ On real-world maps, only `unit: ` is required. It will attempt to scale the meas
 
 New markers can be added to the map by right clicking.
 
-If any additional marker types have been created in the settings, a list will appear to choose from.
+If any additional marker types have been created in plugin settings or a `markers.json` file in the same directory, a list will appear to choose from.
 
 Once a marker has been created, it can be dragged to a different location.
 
@@ -871,6 +871,10 @@ Adding a new marker displays a new window, where the new marker parameters can b
 | Associated Tags | Immutable markers will use this marker type if the file has this tag _and `mapmarker` is not set_.   |
 
 If layer icon is on, the icon be moved around the base icon by clicking and dragging, to customize where the icon is layered. If <kbd>Shift</kbd> is held while moving the icon, it will snap to the midlines.
+
+#### Creating local marker types
+
+New markers can also be defined in a `markers.json` file. These marker types will be available to any notes in the same directory as the json file. The json file should contain an array of Icon objects, See the [Icon interface](https://github.com/javalent/obsidian-leaflet/blob/1fa4c237deceff1def883872fdad3822f9bff560/types/saved.d.ts#L7) for details.
 
 #### Using an Image as a Marker Icon
 
