@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.7.0](https://github.com/javalent/obsidian-leaflet/compare/5.6.1...5.7.0) (2023-06-29)
+
+
+### Features
+
+* Define custom marker types in json files ([#400](https://github.com/javalent/obsidian-leaflet/issues/400)) ([b9305f5](https://github.com/javalent/obsidian-leaflet/commit/b9305f50529e862df1359a46641bf8b0280c5b49))
+
+
+### Bug Fixes
+
+* restore removal of custom marker types ([#401](https://github.com/javalent/obsidian-leaflet/issues/401)) ([73e1f4b](https://github.com/javalent/obsidian-leaflet/commit/73e1f4b46f796d679ed7a5efcf06c3916ba7f879))
+
 ## [5.6.1](https://github.com/javalent/obsidian-leaflet/compare/5.6.0...5.6.1) (2023-05-07)
 
 
