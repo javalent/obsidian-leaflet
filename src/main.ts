@@ -332,8 +332,8 @@ export default class ObsidianLeaflet extends Plugin {
             params,
             source
         );
-        const map = renderer.map;
-
+        
+        const map = await renderer.getMap();
         this.registerMapEvents(map);
 
         ctx.addChild(renderer);

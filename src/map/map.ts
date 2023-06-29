@@ -87,7 +87,6 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
     CRS: L.CRS;
     distanceDisplay: DistanceDisplay;
-    localMarkerTypes: MarkerIcon[] = [];
 
     private escapeScope: Scope;
 
@@ -322,7 +321,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     mapLayers: LayerGroup<L.TileLayer | L.ImageOverlay>[] = [];
     get markerIcons(): Map<string, MarkerIcon> {
         return new Map(
-            [...this.plugin.markerIcons, ...this.localMarkerTypes].map((markerIcon) => [
+            [...this.plugin.markerIcons, ...this.options.localMarkerTypes ?? []].map((markerIcon) => [
                 markerIcon.type,
                 markerIcon
             ])
