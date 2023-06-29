@@ -68,6 +68,8 @@ export interface LeafletMapOptions {
     geojsonColor?: string;
     gpxColor?: string;
 
+    localMarkerTypes?: MarkerIcon[];
+
     hasAdditional?: boolean;
     height?: string;
     width?: string;

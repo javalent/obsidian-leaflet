@@ -75,6 +75,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
     loader: Loader = new Loader(this.plugin.app);
     resize: ResizeObserver;
     map: BaseMapType;
+    private mapBuilt: Promise<void>;
     verbose: boolean;
     parentEl: HTMLElement;
     options: LeafletMapOptions;
@@ -194,8 +195,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 this.map.leafletInstance.invalidateSize();
             }
         });
-
-        this.buildMap();
+        this.mapBuilt = this.buildMap();
 
         this.resize.observe(this.containerEl);
     }
@@ -254,7 +254,17 @@ export class LeafletRenderer extends MarkdownRenderChild {
         this.map.leafletInstance.invalidateSize();
     }
 
-    async buildMap() {
+    /**
+     * Use this to get the map instance instead of renderer.map when it might not be defined yet
+     */
+    async getMap(): Promise<BaseMapType> {
+        await this.mapBuilt;
+        return this.map;
+    }
+
+    async buildMap(): Promise<void> {
+        this.options.localMarkerTypes = await this.plugin.getLocalFileMarkers(this.file);
+
         if (this.options.type === "real") {
             this.map = new RealMap(this, this.options);
         } else {
@@ -339,6 +349,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
     }
 
     async onload() {
+        await this.mapBuilt;
         this.map.log("MarkdownRenderChild loaded. Appending map.");
         this.containerEl.appendChild(this.map.contentEl);
 

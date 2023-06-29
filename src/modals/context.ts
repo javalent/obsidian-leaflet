@@ -5,7 +5,7 @@ import type {
     Marker,
     TooltipDisplay,
     BaseMapType
-} from "../types";
+} from "../../types";
 
 import { PathSuggestionModal } from "./path";
 import { CommandSuggestionModal } from "./command";
@@ -60,9 +60,7 @@ export class MarkerContextModal extends Modal {
                     let newMarker =
                         value == "default"
                             ? this.map.data.defaultMarker
-                            : this.map.data.markerIcons.find(
-                                  (m) => m.type == value
-                              );
+                            : this.map.markerIcons.get(value);
                     this.tempMarker.type = newMarker.type;
                 });
             });

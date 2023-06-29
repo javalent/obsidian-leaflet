@@ -204,8 +204,8 @@ export class Marker extends Layer<DivIconMarker> {
     ) {
         super();
 
-        const marker = this.map.plugin.getIconForType(type);
-        if (!marker) {
+        const markerIcon = this.map.markerIcons.get(type) ?? this.map.markerIcons.get('default');
+        if (!markerIcon) {
             new Notice(
                 t(
                     "Leaflet: Could not create icon for %1 - does this type exist in settings?",
@@ -214,6 +214,7 @@ export class Marker extends Layer<DivIconMarker> {
             );
             return;
         }
+        const marker = markerIcon.markerIcon;
         const icon = markerDivIcon(this.map.plugin.parseIcon(marker));
         this.leafletInstance = divIconMarker(
             loc,
@@ -251,10 +252,8 @@ export class Marker extends Layer<DivIconMarker> {
 
         this.link = link;
 
-        const markerIcon = this.map.plugin.getIconForType(this.type);
-
-        this.minZoom = minZoom ?? markerIcon?.minZoom ?? null;
-        this.maxZoom = maxZoom ?? markerIcon?.maxZoom ?? null;
+        this.minZoom = minZoom ?? marker?.minZoom ?? null;
+        this.maxZoom = maxZoom ?? marker?.maxZoom ?? null;
 
         this.checkAndAddToMap();
 
