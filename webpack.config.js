@@ -3,18 +3,21 @@ const CopyPlugin = require("copy-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const webpack = require("webpack");
 const InjectPlugin = require("webpack-inject-plugin").default;
+const { config } = require("dotenv");
 
+config();
 const isDevMode = process.env.NODE_ENV === "development";
 
 module.exports = {
     entry: "./src/main.ts",
     output: {
-        path: path.resolve(__dirname, "."),
+        path: path.resolve(isDevMode ? process.env.OUTDIR : __dirname, "."),
         filename: "main.js",
         libraryTarget: "commonjs"
     },
     target: "node",
     mode: isDevMode ? "development" : "production",
+    watch: isDevMode,
     ...(isDevMode ? { devtool: "eval" } : {}),
     module: {
         rules: [
