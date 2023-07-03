@@ -4,7 +4,7 @@
     "description": "Leaflet integration for Obsidian.md",
     "main": "main.js",
     "scripts": {
-        "dev": "node ./esbuild.config.mjs",
+        "dev": "export NODE_ENV=development && npm run build",
         "build": "webpack",
         "dev-es": "node ./esbuild.config.mjs",
         "build-es": "node ./esbuild.config.mjs production"

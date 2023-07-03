@@ -665,6 +665,7 @@ export default class ObsidianLeaflet extends Plugin {
     }
 
     public async getLocalFileMarkers(file: TFile, markerFileName = "markers.json"): Promise<MarkerIcon[]> {
+        if (!file) return [];
         const markerFilePath = `${file.parent.path}/${markerFileName}`;
         const markerFile = this.app.vault.getAbstractFileByPath(markerFilePath);
         const markers: MarkerIcon[] = [];
