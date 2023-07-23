@@ -1,5 +1,4 @@
 # Obsidian Leaflet
-
 > **Development Status**: Maintenance Mode
 > 
 > Due to a glut of high priority Javalent plugin projects, this plugin is now entering maintenance mode for the time being. This is **not** a permanent status.
