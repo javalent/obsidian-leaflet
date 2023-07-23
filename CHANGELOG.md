@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.7.2](https://github.com/javalent/obsidian-leaflet/compare/5.7.1...5.7.2) (2023-07-23)
+
+
+### Bug Fixes
+
+* Displays GPX tracks on load ([fe79ca0](https://github.com/javalent/obsidian-leaflet/commit/fe79ca0060aec2f3fdc0d0391885c9f876cfc2ea))
+
 ## [5.7.1](https://github.com/javalent/obsidian-leaflet/compare/5.7.0...5.7.1) (2023-07-03)
 
 
