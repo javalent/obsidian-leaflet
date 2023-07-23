@@ -612,6 +612,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                         data,
                         this.gpxIcons
                     );
+                    gpxInstance.show();
                     gpxInstance.leafletInstance.addTo(this.gpxLayer);
                     this.layerControl.addOverlay(
                         gpxInstance.leafletInstance,
