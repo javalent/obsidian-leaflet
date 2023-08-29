@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.7.3](https://github.com/javalent/obsidian-leaflet/compare/5.7.2...5.7.3) (2023-08-29)
+
+
+### Bug Fixes
+
+* invalidate map size to prevent incorrect starting positions in some situations ([a9ac194](https://github.com/javalent/obsidian-leaflet/commit/a9ac1949d7aad283050afab339253d0e141f7fba))
+
 ## [5.7.2](https://github.com/javalent/obsidian-leaflet/compare/5.7.1...5.7.2) (2023-07-23)
 
 
