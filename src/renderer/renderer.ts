@@ -352,6 +352,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
         await this.mapBuilt;
         this.map.log("MarkdownRenderChild loaded. Appending map.");
         this.containerEl.appendChild(this.map.contentEl);
+        this.map.leafletInstance.invalidateSize();
 
         if (!this.parentEl.contains(this.containerEl)) {
             this.map.log(
