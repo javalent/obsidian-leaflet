@@ -352,6 +352,9 @@ export class LeafletRenderer extends MarkdownRenderChild {
         await this.mapBuilt;
         this.map.log("MarkdownRenderChild loaded. Appending map.");
         this.containerEl.appendChild(this.map.contentEl);
+        // added because bound's get somehow messed up in the render process and only normalize when calling this.
+        // haven't found the cause of the issue, but that seems to work around it. see issue #412
+        this.map.leafletInstance.invalidateSize();
 
         if (!this.parentEl.contains(this.containerEl)) {
             this.map.log(
