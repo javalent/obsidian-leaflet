@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.8.0](https://github.com/javalent/obsidian-leaflet/compare/5.7.3...5.8.0) (2023-10-08)
+
+
+### Features
+
+* can now specify layer for code block markers ([ebcec59](https://github.com/javalent/obsidian-leaflet/commit/ebcec59d4b57e259c91d21f254ad1866406cc26c))
+
 ## [5.7.3](https://github.com/javalent/obsidian-leaflet/compare/5.7.2...5.7.3) (2023-08-29)
 
 
