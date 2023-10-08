@@ -263,7 +263,9 @@ export class LeafletRenderer extends MarkdownRenderChild {
     }
 
     async buildMap(): Promise<void> {
-        this.options.localMarkerTypes = await this.plugin.getLocalFileMarkers(this.file);
+        this.options.localMarkerTypes = await this.plugin.getLocalFileMarkers(
+            this.file
+        );
 
         if (this.options.type === "real") {
             this.map = new RealMap(this, this.options);
@@ -697,14 +699,14 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 maxZoom
             ]) => {
                 return {
-                    type: type,
+                    type,
                     loc: [Number(lat), Number(long)],
                     percent: undefined,
                     link: link?.trim(),
-                    id: id,
-                    layer: layer,
+                    id,
+                    layer,
                     mutable: false,
-                    command: command,
+                    command,
                     description: desc,
                     minZoom,
                     maxZoom,
@@ -756,7 +758,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 continue;
             }
 
-            let [type, lat, long, link, description, minZoom, maxZoom] =
+            let [type, lat, long, link, description, minZoom, maxZoom, layer] =
                 data[0];
 
             if (!type || !type.length || type === "undefined") {
@@ -771,12 +773,20 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 continue;
             }
             let min, max;
-            if (isNaN(Number(minZoom))) {
+            if (
+                minZoom == null ||
+                minZoom.length == 0 ||
+                isNaN(Number(minZoom))
+            ) {
                 min = undefined;
             } else {
                 min = Number(minZoom);
             }
-            if (isNaN(Number(maxZoom))) {
+            if (
+                maxZoom == null ||
+                maxZoom.length == 0 ||
+                isNaN(Number(maxZoom))
+            ) {
                 max = undefined;
             } else {
                 max = Number(maxZoom);
@@ -796,7 +806,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
                 Number(lat),
                 Number(long),
                 link,
-                null,
+                layer,
                 false,
                 null,
                 description,
