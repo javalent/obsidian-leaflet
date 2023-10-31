@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.0.0](https://github.com/javalent/obsidian-leaflet/compare/5.8.0...6.0.0) (2023-10-31)
+
+
+### ⚠ BREAKING CHANGES
+
+* Switched map tile provider (close #424)
+
+### Features
+
+* Switched map tile provider (close [#424](https://github.com/javalent/obsidian-leaflet/issues/424)) ([c80da47](https://github.com/javalent/obsidian-leaflet/commit/c80da47a82c0486072a3d3ecce6078856394ae43))
+
 ## [5.8.0](https://github.com/javalent/obsidian-leaflet/compare/5.7.3...5.8.0) (2023-10-08)
 
 
