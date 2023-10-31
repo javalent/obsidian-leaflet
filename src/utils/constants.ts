@@ -1,22 +1,17 @@
 import { Platform } from "obsidian";
-import {
-    BlockParameters,
-    LeafletMapOptions,
-    ObsidianAppData
-} from "../types";
+import { BlockParameters, LeafletMapOptions, ObsidianAppData } from "../types";
 
 export const OBSIDIAN_LEAFLET_POPOVER_SOURCE = "obsidian-leaflet";
 
 export const VIEW_TYPE = "obsidian-leaflet-map-view";
 
 export const DEFAULT_TILE_SERVER =
-    "https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.png";
-export const DEFAULT_TILE_SUBDOMAINS =
-    "a,b,c";
-export const TILE_SUBDOMAINS_SPILT = ',';
+    "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png";
+export const DEFAULT_TILE_SUBDOMAINS = "a,b,c,d";
+export const TILE_SUBDOMAINS_SPILT = ",";
 
 export const DEFAULT_ATTRIBUTION =
-    'Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://www.openstreetmap.org/copyright">ODbL</a>.';
+    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
 export const OVERLAY_TAG_REGEX = /^(\d+(?:\.\d+)?)\s?(\w*)/;
 

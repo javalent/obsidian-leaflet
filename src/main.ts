@@ -39,7 +39,8 @@ import {
     UNIT_SYSTEM,
     DEFAULT_TILE_SERVER,
     getId,
-    OBSIDIAN_LEAFLET_POPOVER_SOURCE
+    OBSIDIAN_LEAFLET_POPOVER_SOURCE,
+    DEFAULT_ATTRIBUTION
 } from "./utils";
 import {
     MapInterface,
@@ -332,7 +333,7 @@ export default class ObsidianLeaflet extends Plugin {
             params,
             source
         );
-        
+
         const map = await renderer.getMap();
         this.registerMapEvents(map);
 
@@ -392,8 +393,42 @@ export default class ObsidianLeaflet extends Plugin {
         if (
             this.data.version?.major != null &&
             this.data.version?.major < 5 &&
-            (this.data.defaultTile.contains("openstreetmap") ||
-                this.data.defaultTileDark.contains("openstreetmap"))
+            (this.data.defaultTile.contains("stamen-tiles") ||
+                this.data.defaultTileDark.contains("stamen-tiles"))
+        ) {
+            new Notice(
+                createFragment((e) => {
+                    e.createSpan({
+                        text: "Obsidian Leaflet: Stamen has removed its map tile servers."
+                    });
+                    e.createEl("br");
+                    e.createEl("br");
+                    e.createSpan({
+                        text: "Going forward, the default tile server will be "
+                    });
+                    e.createEl("a", {
+                        href: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+                        text: "CartoDB"
+                    });
+                    e.createSpan({ text: "." });
+                }),
+                0
+            );
+            if (this.data.defaultTile.contains("stamen-tiles")) {
+                this.data.defaultTile = DEFAULT_TILE_SERVER;
+            }
+            if (this.data.defaultTileDark.contains("stamen-tiles")) {
+                this.data.defaultTileDark = DEFAULT_TILE_SERVER;
+            }
+            if (this.data.defaultAttribution.contains("Stamen Design")) {
+                this.data.defaultAttribution = DEFAULT_ATTRIBUTION;
+            }
+        }
+        if (
+            this.data.version?.major != null &&
+            this.data.version?.major < 6 &&
+            (this.data.defaultTile.contains("stamen") ||
+                this.data.defaultTileDark.contains("stamen"))
         ) {
             new Notice(
                 createFragment((e) => {
@@ -664,7 +699,10 @@ export default class ObsidianLeaflet extends Plugin {
         return ret;
     }
 
-    public async getLocalFileMarkers(file: TFile, markerFileName = "markers.json"): Promise<MarkerIcon[]> {
+    public async getLocalFileMarkers(
+        file: TFile,
+        markerFileName = "markers.json"
+    ): Promise<MarkerIcon[]> {
         if (!file) return [];
         const markerFilePath = `${file.parent.path}/${markerFileName}`;
         const markerFile = this.app.vault.getAbstractFileByPath(markerFilePath);
@@ -673,7 +711,7 @@ export default class ObsidianLeaflet extends Plugin {
             const markerJson = await this.app.vault.read(markerFile);
             try {
                 const icons = JSON.parse(markerJson);
-                markers.push(...icons.map((i: Icon) => this.parseIcon(i)))
+                markers.push(...icons.map((i: Icon) => this.parseIcon(i)));
             } catch {
                 console.error(`Badly formatted marker file ${markerFilePath}`);
             }
