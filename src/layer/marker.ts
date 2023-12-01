@@ -204,7 +204,9 @@ export class Marker extends Layer<DivIconMarker> {
     ) {
         super();
 
-        const markerIcon = this.map.markerIcons.get(type) ?? this.map.markerIcons.get('default');
+        const markerIcon =
+            this.map.markerIcons.get(type) ??
+            this.map.markerIcons.get("default");
         if (!markerIcon) {
             new Notice(
                 t(
@@ -410,6 +412,17 @@ export class Marker extends Layer<DivIconMarker> {
                 this.leafletInstance.options.keyboard = !this.map.options.lock;
             });
         });
+
+        this.map.leafletInstance.on(
+            "baselayerchange",
+            (layer: L.LayersControlEvent) => {
+                if (!(layer.layer as L.LayerGroup).hasLayer(this.group)) {
+                    this.hide();
+                } else {
+                    this.show();
+                }
+            }
+        );
     }
     editMarker() {
         let markerSettingsModal = new MarkerContextModal(this, this.map);
@@ -483,9 +496,7 @@ export class Marker extends Layer<DivIconMarker> {
                 );
             }
         }
-        this._link = x.startsWith("#")
-            ? this.map.options.context + x
-            : x;
+        this._link = x.startsWith("#") ? this.map.options.context + x : x;
         if (this.target) this.target.text = x;
         if (this.popup && this.displayed && this.tooltip === "always")
             this.popup.open(this.target.display);
