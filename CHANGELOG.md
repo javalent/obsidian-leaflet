@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.0.1](https://github.com/javalent/obsidian-leaflet/compare/6.0.0...6.0.1) (2023-12-01)
+
+
+### Bug Fixes
+
+* Marker tooltips should hide when a layer is changed ([19d5765](https://github.com/javalent/obsidian-leaflet/commit/19d5765073cbfd022f178b64c4a995c69b0a3272))
+
 ## [6.0.0](https://github.com/javalent/obsidian-leaflet/compare/5.8.0...6.0.0) (2023-10-31)
 
 
