@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.0.2](https://github.com/javalent/obsidian-leaflet/compare/6.0.1...6.0.2) (2024-01-26)
+
+
+### Bug Fixes
+
+* Update plugin name per Obsidian developer guidelines ([56bdbfc](https://github.com/javalent/obsidian-leaflet/commit/56bdbfcc02010aec809c2f70ee5ee56a072e2491))
+
 ## [6.0.1](https://github.com/javalent/obsidian-leaflet/compare/6.0.0...6.0.1) (2023-12-01)
 
 
