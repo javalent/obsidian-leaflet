@@ -173,23 +173,18 @@ export class CreateMarkerModal extends Modal {
                 var image = new Image();
                 image.onload = () => {
                     this.canvas = iconDisplay.createEl("canvas");
-                    this.canvas.style.width = "100%";
-                    this.canvas.style.height = "100%";
-                    this.canvas.width = this.canvas.offsetWidth;
-                    this.canvas.height = this.canvas.offsetHeight;
+                    const max_size = 24;
                     let width = image.width,
                         height = image.height;
-                    if (width < height) {
-                        if (width > this.canvas.width) {
-                            height *= this.canvas.width / width;
-                            width = this.canvas.width;
-                        }
-                    } else {
-                        if (height > this.canvas.height) {
-                            width *= this.canvas.height / height;
-                            height = this.canvas.height;
-                        }
+                    if (width > height && width > max_size) {
+                        height *= max_size / width;
+                        width = max_size;
+                    } else if (height > width && height > max_size) {
+                        width *= max_size / height;
+                        height = max_size;
                     }
+                    this.canvas.width = width;
+                    this.canvas.height = height;
                     this.canvas
                         .getContext("2d")
                         .drawImage(image, 0, 0, width, height);
