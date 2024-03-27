@@ -175,10 +175,10 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                         max_size = 24;
                     let width = image.width,
                         height = image.height;
-                    if (width > height && width > max_size) {
+                    if (width >= height && width > max_size) {
                         height *= max_size / width;
                         width = max_size;
-                    } else if (height > width && height > max_size) {
+                    } else if (height >= width && height > max_size) {
                         width *= max_size / height;
                         height = max_size;
                     }
