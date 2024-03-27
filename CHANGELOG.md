@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.0.4](https://github.com/javalent/obsidian-leaflet/compare/6.0.3...6.0.4) (2024-03-27)
+
+
+### Bug Fixes
+
+* Fixes another instance where image markers might not resize properly ([f75836a](https://github.com/javalent/obsidian-leaflet/commit/f75836ac66185c7e2794009b51911a9e831caf46))
+
 ## [6.0.3](https://github.com/javalent/obsidian-leaflet/compare/6.0.2...6.0.3) (2024-03-27)
 
 
