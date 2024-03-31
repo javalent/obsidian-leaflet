@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.0.5](https://github.com/javalent/obsidian-leaflet/compare/6.0.4...6.0.5) (2024-03-31)
+
+
+### Bug Fixes
+
+* Inspect document body for theme instead of vault config (close [#440](https://github.com/javalent/obsidian-leaflet/issues/440)) ([fa1a3f4](https://github.com/javalent/obsidian-leaflet/commit/fa1a3f42ebee556ca1427ec637f1522a09bba0e2))
+
 ## [6.0.4](https://github.com/javalent/obsidian-leaflet/compare/6.0.3...6.0.4) (2024-03-27)
 
 
