@@ -321,10 +321,10 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     mapLayers: LayerGroup<L.TileLayer | L.ImageOverlay>[] = [];
     get markerIcons(): Map<string, MarkerIcon> {
         return new Map(
-            [...this.plugin.markerIcons, ...(this.options.localMarkerTypes ?? [])].map((markerIcon) => [
-                markerIcon.type,
-                markerIcon
-            ])
+            [
+                ...this.plugin.markerIcons,
+                ...(this.options.localMarkerTypes ?? [])
+            ].map((markerIcon) => [markerIcon.type, markerIcon])
         );
     }
     get markerTypes() {
@@ -1481,10 +1481,9 @@ export class RealMap extends BaseMap {
 
         this.log("Building initial map layer.");
 
-        const tileServer =
-            this.plugin.app.vault.config.theme == "moonstone"
-                ? this.plugin.data.defaultTile
-                : this.plugin.data.defaultTileDark;
+        const tileServer = document.body.hasClass("theme-light")
+            ? this.plugin.data.defaultTile
+            : this.plugin.data.defaultTileDark;
 
         let osmLayer = {
             id: "real",
