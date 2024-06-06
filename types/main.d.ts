@@ -78,5 +78,16 @@ export interface BlockParameters {
     recenter?: boolean;
     noScrollZoom?: boolean;
     lock?: boolean;
+
+    disableCreateMarkerOnRightClick?: boolean;
+
+    disableMapViewControl?: boolean;
+    disableResetZoomControl?: boolean;
+    disableFilterControl?: boolean;
+    disableGpxControl?: boolean;
+    disableLockControl?: boolean;
+    disableLayerControl?: boolean;
+    disableSaveMapControl?: boolean;
+    disableDistanceDisplay?: boolean;
 }
 

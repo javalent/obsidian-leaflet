@@ -115,6 +115,17 @@ export interface LeafletMapOptions {
     zoomDelta?: number;
     zoomFeatures?: boolean;
     zoomMarkers?: boolean;
+
+    disableCreateMarkerOnRightClick?: boolean;
+
+    disableMapViewControl?: boolean;
+    disableResetZoomControl?: boolean;
+    disableFilterControl?: boolean;
+    disableGpxControl?: boolean;
+    disableLockControl?: boolean;
+    disableLayerControl?: boolean;
+    disableSaveMapControl?: boolean;
+    disableDistanceDisplay?: boolean;
 }
 
 declare class Popup {

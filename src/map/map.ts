@@ -538,10 +538,15 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     addLayerControl() {
         if (this.layerControlAdded) return;
         this.layerControlAdded = true;
-        this.filterControl?.remove();
-        this.layerControl.addTo(this.leafletInstance);
-        this.filterControl?.addTo(this.leafletInstance);
+        if(!this.options.disableFilterControl) {
+            this.filterControl?.remove();
+            this.filterControl?.addTo(this.leafletInstance);
+        }
+        if(!this.options.disableLayerControl) {
+            this.layerControl.addTo(this.leafletInstance);
+        }
     }
+
     onFirstLayerReady(callback: (...args: any[]) => any) {
         if (this.mapLayers.length) {
             callback();
@@ -577,10 +582,12 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                     );
 
                     geo.leafletInstance.addTo(this.geojsonLayer);
-                    this.layerControl.addOverlay(
-                        geo.leafletInstance,
-                        alias && alias.length ? alias : `GeoJSON ${added + 1}`
-                    );
+                    if(!this.options.disableLayerControl) {
+                        this.layerControl.addOverlay(
+                            geo.leafletInstance,
+                            alias && alias.length ? alias : `GeoJSON ${added + 1}`
+                        );
+                    }
 
                     added++;
                 } catch (e) {
@@ -614,10 +621,12 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                     );
                     gpxInstance.show();
                     gpxInstance.leafletInstance.addTo(this.gpxLayer);
-                    this.layerControl.addOverlay(
-                        gpxInstance.leafletInstance,
-                        alias ?? `GPX ${added + 1}`
-                    );
+                    if(!this.options.disableLayerControl) {
+                        this.layerControl.addOverlay(
+                            gpxInstance.leafletInstance,
+                            alias ?? `GPX ${added + 1}`
+                        );
+                    }
                     added++;
                 } catch (e) {
                     console.error(e);
@@ -629,10 +638,12 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 }
             }
 
-            this.gpxControl = gpxControl(
-                { position: "bottomleft" },
-                this
-            ).addTo(this.leafletInstance);
+            if(!this.options.disableGpxControl) {
+                this.gpxControl = gpxControl(
+                    { position: "bottomleft" },
+                    this
+                ).addTo(this.leafletInstance);
+            }
         }
 
         if (this.geojsonData.length || this.gpxData.length) {
@@ -663,7 +674,9 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                         pane: "image-overlay"
                     });
 
-                    this.layerControl.addOverlay(image, overlay.alias);
+                    if(!this.options.disableLayerControl) {
+                        this.layerControl.addOverlay(image, overlay.alias);
+                    }
                 }
             });
         }
@@ -679,10 +692,12 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                     if (on && on == "on") {
                         layer.addTo(this.tileOverlayLayer);
                     }
-                    this.layerControl.addOverlay(
-                        layer,
-                        name && name.length ? name : `Layer ${index}`
-                    );
+                    if(!this.options.disableLayerControl) {
+                        this.layerControl.addOverlay(
+                            layer,
+                            name && name.length ? name : `Layer ${index}`
+                        );
+                    }
                 }
             });
         }
@@ -721,32 +736,42 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 });
             }
         }
-        this.filterControl = filterMarkerControl(
-            { position: "topright" },
-            this
-        ).addTo(this.leafletInstance);
-        this.lockControl = lockControl({ position: "topright" }, this).addTo(
-            this.leafletInstance
-        );
-        zoomControl({ position: "topleft" }, this).addTo(this.leafletInstance);
-        resetZoomControl({ position: "topleft" }, this).addTo(
-            this.leafletInstance
-        );
-        this.distanceDisplay = distanceDisplay(
-            {
-                position: "bottomleft"
-            },
-            this
-        ).addTo(this.leafletInstance);
+        if(!this.options.disableFilterControl) {
+            this.filterControl = filterMarkerControl(
+                { position: "topright" },
+                this
+            ).addTo(this.leafletInstance);
+        }
+        if(!this.options.disableLockControl) {
+            this.lockControl = lockControl({ position: "topright" }, this).addTo(
+                this.leafletInstance
+            );
+        }
+        if(!this.options.disableMapViewControl) {
+            zoomControl({ position: "topleft" }, this).addTo(this.leafletInstance);
+        }
+        if(!this.options.disableResetZoomControl) {
+            resetZoomControl({ position: "topleft" }, this).addTo(
+                this.leafletInstance
+            );
+        }
+        if(!this.options.disableDistanceDisplay) {
+            this.distanceDisplay = distanceDisplay(
+                {
+                    position: "bottomleft"
+                },
+                this
+            ).addTo(this.leafletInstance);
+        }
 
-        if (this.options.isMapView) {
+        if (this.options.isMapView && !this.options.disableMapViewControl) {
             mapViewControl(
                 {
                     position: "bottomright"
                 },
                 this
             ).addTo(this.leafletInstance);
-        } else if (!this.options.isInitiativeView) {
+        } else if (!this.options.isInitiativeView && !this.options.disableSaveMapControl) {
             saveMapParametersControl(
                 {
                     position: "bottomright"
@@ -765,7 +790,9 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     updateLockState(state: boolean): void {
         this.options.lock = state;
 
-        this.lockControl.setState(this.options.lock);
+        if(!this.options.disableLockControl) {
+            this.lockControl.setState(this.options.lock);
+        }
         this.trigger("lock");
     }
 
@@ -918,7 +945,9 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             ]);
             this.distanceTooltips.last().open(`${display} (${segment})`);
 
-            this.distanceDisplay.setText(display);
+            if(!this.options.disableDistanceDisplay) {
+                this.distanceDisplay.setText(display);
+            }
             this.distanceLines.last().redraw();
         });
 
@@ -1080,44 +1109,47 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
 
             return;
         }
-        if (this.markerIcons.size <= 1) {
-            this.log(
-                `No additional marker types defined. Adding default marker.`
-            );
-            this.createMarker(
-                this.defaultIcon.type,
-                [evt.latlng.lat, evt.latlng.lng],
-                undefined
-            );
-            return;
-        }
-
-        let contextMenu = new Menu();
-
-        contextMenu.setNoIcon();
-
-        this.log(`Opening marker context menu.`);
-
-        this.markerIcons.forEach((marker: MarkerIcon) => {
-            if (!marker.type || !marker.html) return;
-            contextMenu.addItem((item) => {
-                item.setTitle(
-                    marker.type == "default" ? "Default" : marker.type
+        if(!this.options.disableCreateMarkerOnRightClick) {
+            if (this.markerIcons.size <= 1) {
+                this.log(
+                    `No additional marker types defined. Adding default marker.`
                 );
-                item.onClick(async () => {
-                    this.log(`${marker.type} selected. Creating marker.`);
-                    this.createMarker(
-                        marker.type,
-                        [evt.latlng.lat, evt.latlng.lng],
-                        undefined
+                this.createMarker(
+                    this.defaultIcon.type,
+                    [evt.latlng.lat, evt.latlng.lng],
+                    undefined
+                );
+                return;
+            }
+    
+            let contextMenu = new Menu();
+    
+            contextMenu.setNoIcon();
+    
+            this.log(`Opening marker context menu.`);
+    
+            this.markerIcons.forEach((marker: MarkerIcon) => {
+                if (!marker.type || !marker.html) return;
+                contextMenu.addItem((item) => {
+                    item.setTitle(
+                        marker.type == "default" ? "Default" : marker.type
                     );
-                    this.trigger("should-save");
+                    item.onClick(async () => {
+                        this.log(`${marker.type} selected. Creating marker.`);
+                        this.createMarker(
+                            marker.type,
+                            [evt.latlng.lat, evt.latlng.lng],
+                            undefined
+                        );
+                        this.trigger("should-save");
+                    });
                 });
             });
-        });
-
-        contextMenu.showAtMouseEvent(evt.originalEvent);
+    
+            contextMenu.showAtMouseEvent(evt.originalEvent);
+        }
     }
+    
     handleMapContextMobile(evt: L.LeafletMouseEvent, overlay?: Overlay) {
         let contextMenu = new Menu();
 
