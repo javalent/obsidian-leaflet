@@ -245,7 +245,7 @@ class GPXControl extends FontAwesomeControl {
             if (!heatLines) {
             }
             data.createDiv("data-item").createSpan({
-                text: `${t("Heart Rate")}: ${this.target.hr.avg}`
+                text: `${t("Heart rate")}: ${this.target.hr.avg}`
             });
             const li = ul.createDiv("input-item");
             const input = li.createEl("input", {
@@ -259,7 +259,7 @@ class GPXControl extends FontAwesomeControl {
             });
             li.createEl("label", {
                 attr: { for: "leaflet-gpx-control-hr" },
-                text: t("Heart Rate")
+                text: t("Heart rate")
             });
 
             input.onclick = (evt) => {

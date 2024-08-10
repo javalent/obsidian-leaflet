@@ -1,7 +1,7 @@
 export default {
     //main.ts
     "Loading Obsidian Leaflet v%1": "Loading Obsidian Leaflet v%1", //version number
-    "Open Leaflet Map": "Open Leaflet Map",
+    "Open Leaflet map": "Open Leaflet map",
     "Unloading Obsidian Leaflet": "Unloading Obsidian Leaflet",
     "Obsidian Leaflet maps must have an ID.":
         "Obsidian Leaflet maps must have an ID.",
@@ -74,54 +74,54 @@ export default {
     "nautical miles": "nautical miles",
 
     //settings.ts
-    "Obsidian Leaflet Settings": "Obsidian Leaflet Settings",
-    "Default Map Marker": "Default Map Marker",
+    "Leaflet settings": "Leaflet settings",
+    "Default map marker": "Default map marker",
     "This marker is always available.": "This marker is always available.",
-    "Icon Name": "Icon Name",
+    "Icon name": "Icon name",
     "A default marker must be defined.": "A default marker must be defined",
     "The selected icon does not exist in Font Awesome Free.":
         "The selected icon does not exist in Font Awesome Free.",
-    "Upload Image": "Upload Image",
-    "Marker Color": "Marker Color",
-    "Layer Base Marker": "Layer Base Marker",
+    "Upload image": "Upload image",
+    "Marker color": "Marker color",
+    "Layer base marker": "Layer base marker",
     "Use as base layer for additional markers by default.":
         "Use as base layer for additional markers by default.",
-    "Additional Map Markers": "Additional Map Markers",
-    "Add Additional": "Add Additional",
+    "Additional map markers": "Additional map markers",
+    "Add additional": "Add additional",
     "These markers will be available in the right-click menu on the map.":
         "These markers will be available in the right-click menu on the map.",
-    "Default Latitude": "Default Latitude",
+    "Default latitude": "Default latitude",
     "Real-world maps will open to this latitude if not specified.":
         "Real-world maps will open to this latitude if not specified.",
     "Latitude must be a number.": "Latitude must be a number.",
-    "Default Longitude": "Default Longitude",
+    "Default longitude": "Default longitude",
     "Real-world maps will open to this longitude if not specified.":
         "Real-world maps will open to this longitude if not specified.",
     "Longitude must be a number.": "Longitude must be a number.",
-    "Reset to Default": "Reset to Default",
+    "Reset to default": "Reset to default",
     "Please back up your data before changing this setting.":
         "Please back up your data before changing this setting.",
     "Current directory": "Current directory",
-    "Default Config Directory": "Default Config Directory",
-    "Default Marker Tooltip Behavior": "Default Marker Tooltip Behavior",
+    "Default config directory": "Default config directory",
+    "Default marker tooltip behavior": "Default marker tooltip behavior",
     "New markers will be created to this setting by default. Can be overridden per-marker.":
         "New markers will be created to this setting by default. Can be overridden per-marker.",
     Always: "Always",
     Hover: "Hover",
     Never: "Never",
-    "Display Note Preview": "Display Note Preview",
+    "Display note preview": "Display note preview",
     "Markers linked to notes will show a note preview when hovered.":
         "Markers linked to notes will show a note preview when hovered.",
-    "Display Overlay Tooltips": "Display Overlay Tooltips",
+    "Display overlay tooltips": "Display overlay tooltips",
     "Overlay tooltips will display when hovered.":
         "Overlay tooltips will display when hovered.",
-    "Copy Coordinates on Shift-Click": "Copy Coordinates on Shift-Click",
+    "Copy coordinates on shift-click": "Copy coordinates on shift-click",
     "Map coordinates will be copied to the clipboard when shift-clicking.":
         "Map coordinates will be copied to the clipboard when shift-clicking.",
     "This setting is experimental and could cause marker data issues. Use at your own risk.":
         "This setting is experimental and could cause marker data issues. Use at your own risk.",
-    "Import Marker CSV File": "Import Marker CSV File",
-    "Choose File": "Choose File",
+    "Import marker CSV file": "Import marker CSV file",
+    "Choose file": "Choose file",
     "Upload CSV File": "Upload CSV File",
     "Map not specified for line %1": "Map not specified for line %1", //line number in csv
     "Could not parse latitude for line %1":
@@ -131,23 +131,23 @@ export default {
     "Marker file successfully imported.": "Marker file successfully imported.",
     "There was an error while importing %1":
         "There was an error while importing %1", //csv file name
-    "Export Marker Data": "Export Marker Data",
+    "Export marker data": "Export marker data",
     "Export all marker data to a CSV file.":
         "Export all marker data to a CSV file.",
     Export: "Export",
-    "Enable Draw Mode by Default": "Enable Draw Mode by Default",
+    "Enable draw mode by default": "Enable draw mode by default",
     "The draw control will be added to maps by default. Can be overridden with the draw map block parameter.":
         "The draw control will be added to maps by default. Can be overridden with the draw map block parameter.",
-    "Default Units": "Default Units",
+    "Default units": "Default units",
     "Select the default system of units for the map.":
         "Select the default system of units for the map.",
-    "Default Tile Server": "Default Tile Server",
+    "Default tile server": "Default tile server",
     "It is up to you to ensure you have proper access to this tile server.":
         "It is up to you to ensure you have proper access to this tile server.",
-    "Default Tile Server Attribution": "Default Tile Server Attribution",
+    "Default tile server attribution": "Default tile server attribution",
     "Please ensure your attribution meets all requirements set by the tile server.":
         "Please ensure your attribution meets all requirements set by the tile server.",
-    "Default Tile Server (Dark Mode)": "Default Tile Server (Dark Mode)",
+    "Default tile server (dark mode)": "Default tile server (dark mode)",
 
     Imperial: "Imperial",
     Metric: "Metric",
@@ -156,18 +156,18 @@ export default {
     "Only display when zooming in below this zoom.":
         "Only display when zooming in below this zoom.",
     "Reset": "Reset",
-    "Default Tile Server Subdomains": "Default Tile Server Subdomains",
+    "Default tile server subdomains": "Default tile server subdomains",
     "Available subdomains for this tile server concurrent requests.":
         "Available subdomains for this tile server concurrent requests. Spilt by ',', etc. 'a,b,c'",
 
     //modals/settings.ts
-    "Marker Name": "Marker Name",
+    "Marker name": "Marker name",
     "Marker name already exists.": "Marker name already exists.",
     "Marker name cannot be empty.": "Marker name cannot be empty.",
     "Font Awesome icon name (e.g. map-marker).":
         "Font Awesome icon name (e.g. map-marker).",
-    "Use Image for Icon": "Use Image for Icon",
-    "Layer Icon": "Layer Icon",
+    "Use image for icon": "Use image for icon",
+    "Layer icon": "Layer icon",
     "The icon will be layered on the base icon.":
         "The icon will be layered on the base icon.",
     "Override default icon color.": "Override default icon color.",
@@ -190,44 +190,44 @@ export default {
         "There was an error parsing the JSON.",
 
     //modals/context.ts
-    "Execute Command": "Execute Command",
+    "Execute command": "Execute command",
     "The marker will execute an Obsidian command on click":
         "The marker will execute an Obsidian command on click",
-    "Command to Execute": "Command to Execute",
-    "Name of Obsidian Command to execute":
-        "Name of Obsidian Command to execute",
+    "Command to execute": "Command to execute",
+    "Name of Obsidian command to execute":
+        "Name of Obsidian command to execute",
     Command: "Command",
-    "Note to Open": "Note to Open",
+    "Note to open": "Note to open",
     "Path of note to open": "Path of note to open",
     Path: "Path",
-    "Marker Type": "Marker Type",
+    "Marker type": "Marker type",
     Default: "Default",
-    "Display Tooltip": "Display Tooltip",
-    "Min Zoom": "Min Zoom",
+    "Display tooltip": "Display tooltip",
+    "Min zoom": "Min zoom",
     "Only display when zooming in below this zoom. Current map minimum":
         "Only display when zooming in below this zoom. Current map minimum",
     "Minimum zoom must be a number.": "Minimum zoom must be a number.",
-    "Max Zoom": "Max Zoom",
+    "Max zoom": "Max zoom",
     "Only display when zooming out above this zoom. Current map maximum":
         "Only display when zooming out above this zoom. Current map maximum",
     "Maximum zoom must be a number.": "Maximum zoom must be a number.",
-    "Associate Tags": "Associate Tags",
+    "Associate tags": "Associate tags",
     "Markers created from this tag using ": "Markers created from this tag using ",
     " will use this marker icon by default.": " will use this marker icon by default.",
-    "Delete Marker": "Delete Marker",
-    "Overlay Radius": "Overlay Radius",
+    "Delete marker": "Delete marker",
+    "Overlay radius": "Overlay radius",
     "Circle radius in": "Circle radius in",
     "Radius must be greater than 0.": "Radius must be greater than 0.",
-    "Overlay Description": "Overlay Description",
-    "Overlay Color": "Overlay Color",
-    "Delete Overlay": "Delete Overlay",
+    "Overlay description": "Overlay description",
+    "Overlay color": "Overlay color",
+    "Delete overlay": "Delete overlay",
 
     //modals/geojson.ts
-    "File Name": "File Name",
+    "File name": "File name",
     "Enter a file name.": "Enter a file name.",
 
     //map/view.ts
-    "Leaflet Map": "Leaflet Map",
+    "Leaflet map": "Leaflet map",
 
     //map/map.ts
     'Marker type "%1" does not exist, using default.':
@@ -238,8 +238,8 @@ export default {
         "There was an error adding GeoJSON to map",
     "There was an error adding GPX to map":
         "There was an error adding GPX to map",
-    "Edit Overlay": "Edit Overlay",
-    "Create Marker": "Create Marker",
+    "Edit overlay": "Edit overlay",
+    "Create marker": "Create marker",
     "OpenStreetMap has restricted the use of its tile server in Obsidian. Your map may break at any time. Please switch to a different tile server.":
         "OpenStreetMap has restricted the use of its tile server in Obsidian. Your map may break at any time. Please switch to a different tile server.",
     "There was an issue parsing the tile layer: %1":
@@ -252,8 +252,8 @@ export default {
         "This marker cannot be edited because it was defined in the code block.",
     "This overlay cannot be edited because it was defined in the code block.":
         "This overlay cannot be edited because it was defined in the code block.",
-    "Edit Marker": "Edit Marker",
-    "Convert to Code Block": "Convert to Code Block",
+    "Edit marker": "Edit marker",
+    "Convert to code block": "Convert to code block",
     "Leaflet: Could not create icon for %1 - does this type exist in settings?":
         "Leaflet: Could not create icon for %1 - does this type exist in settings?",
 
@@ -265,19 +265,19 @@ export default {
     Speed: "Speed",
     Pace: "Pace",
     Temperature: "Temperature",
-    "Heart Rate": "Heart Rate",
+    "Heart rate": "Heart rate",
     Cadence: "Cadence",
     spm: "spm",
 
     //controls/zoom.ts
-    "Show All Markers": "Show All Markers",
+    "Show all markers": "Show all markers",
 
     //controls/reset.ts
-    "Reset View": "Reset View",
+    "Reset view": "Reset view",
 
     //controls/mapview.ts
-    "Edit View Parameters": "Edit View Parameters",
-    "Save Parameters to View": "Save Parameters to View",
+    "Edit view parameters": "Edit view parameters",
+    "Save parameters to view": "Save parameters to view",
 
     //controls/gpx.ts
     "Zoom to %1 GPX Track%2": "Zoom to %1 GPX Track%2", //number of tracks, plural
@@ -288,14 +288,14 @@ export default {
     //controls/filter.ts
     All: "All",
     None: "None",
-    "Filter Markers": "Filter Markers",
+    "Filter markers": "Filter markers",
 
     //control/edit.ts
-    "Bulk Edit Markers": "Bulk Edit Markers",
-    "Delete All": "Delete All",
+    "Bulk edit markers": "Bulk edit markers",
+    "Delete all": "Delete all",
     marker: "marker",
     markers: "markers",
-    "Add New": "Add New",
+    "Add new": "Add new",
     "There was an issue with the provided latitude.":
         "There was an issue with the provided latitude.",
     "There was an issue with the provided longitude.":
@@ -305,12 +305,12 @@ export default {
     Polygon: "Polygon",
     Polyline: "Polyline",
     Rectangle: "Rectangle",
-    "Free Draw": "Free Draw",
-    "Delete Shapes": "Delete Shapes",
+    "Free sraw": "Free draw",
+    "Delete shapes": "Delete shapes",
     Done: "Done",
     Text: "Text",
     Color: "Color",
-    "Fill Color": "Fill Color",
-    "Move Shapes": "Move Shapes",
-    "Export Drawing to GeoJSON": "Export Drawing to GeoJSON",
+    "Fill color": "Fill color",
+    "Move shapes": "Move shapes",
+    "Export drawing to GeoJSON": "Export drawing to GeoJSON",
 };

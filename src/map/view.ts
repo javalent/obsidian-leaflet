@@ -56,7 +56,7 @@ export class LeafletMapView extends ItemView {
     }
 
     getDisplayText() {
-        return t("Leaflet Map");
+        return t("Leaflet map");
     }
     getViewType() {
         return VIEW_TYPE;
@@ -72,7 +72,7 @@ export class LeafletMapView extends ItemView {
     onMoreOptionsMenu(menu: Menu): void {
         menu.addItem((item) => {
             item.setIcon("pencil")
-                .setTitle("Edit Map Parameters")
+                .setTitle("Edit map parameters")
                 .onClick(() => {
                     const modal = new EditParametersModal(this.plugin);
                     modal.onClose = () => {};

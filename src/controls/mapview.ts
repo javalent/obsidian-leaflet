@@ -21,7 +21,7 @@ export function mapViewControl(opts: L.ControlOptions, map: BaseMapType) {
         ...opts,
         icon: "edit",
         cls: "leaflet-control-edit-parameters",
-        tooltip: t("Edit View Parameters")
+        tooltip: t("Edit view parameters")
     };
     return new MapViewControl(options, map);
 }
@@ -46,7 +46,7 @@ export function saveMapParametersControl(
         ...opts,
         icon: "save",
         cls: "leaflet-control-save-param",
-        tooltip: t("Save Parameters to View")
+        tooltip: t("Save parameters to view")
     };
     return new SaveMapParametersControl(options, map);
 }

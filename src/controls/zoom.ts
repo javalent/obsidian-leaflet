@@ -34,7 +34,7 @@ export function zoomControl(opts: L.ControlOptions, map: BaseMapType) {
         ...opts,
         icon: "map-marked-alt",
         cls: "leaflet-control-zoom-markers",
-        tooltip: t("Show All Markers")
+        tooltip: t("Show all markers")
     };
     return new ZoomControl(options, map);
 }
