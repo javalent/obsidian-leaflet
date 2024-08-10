@@ -17,7 +17,7 @@ export class GeoJSONModal extends Modal {
     contentEl.createEl("h1", { text: t("Enter a file name.") });
 
     new Setting(contentEl)
-      .setName(t("File Name"))
+      .setName(t("File name"))
       .addText((text) => {
         text.onChange(value => this.result = value);
       });

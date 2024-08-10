@@ -67,7 +67,7 @@ export class MarkerContextModal extends Modal {
         if (this.tempMarker.command) {
             new Setting(this.contentEl)
                 .setName(t("Command to execute"))
-                .setDesc(t("Name of Obsidian Ccmmand to execute"))
+                .setDesc(t("Name of Obsidian command to execute"))
                 .addText((text) => {
                     let commands = this.app.commands.listCommands();
 
