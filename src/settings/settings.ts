@@ -574,6 +574,7 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                         this.plugin.saveSettings();
                     })
             );
+        new Setting(containerEl).setName('Markers').setHeading();
     }
     createDefaultMarkerSettings(defaultMarker: HTMLDivElement) {
         let defaultSetting = new Setting(defaultMarker)
