@@ -220,7 +220,7 @@ export function filterMarkerControl(opts: L.ControlOptions, map: BaseMapType) {
         ...opts,
         icon: "filter",
         cls: "leaflet-control-expandable",
-        tooltip: t("Filter Markers")
+        tooltip: t("Filter markers")
     };
     return new FilterMarkers(options, map);
 }
