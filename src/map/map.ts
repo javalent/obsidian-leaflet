@@ -664,6 +664,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                     });
 
                     this.layerControl.addOverlay(image, overlay.alias);
+                    this.data.imageLayerDefaultOn && this.leafletInstance.addLayer(image);
                 }
             });
         }

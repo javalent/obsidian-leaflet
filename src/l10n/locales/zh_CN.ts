@@ -111,6 +111,7 @@ export default {
     Hover: "悬停",
     Never: "从不",
     "Display Note Preview": "显示笔记预览",
+    "Default Image Layer On": "默认图像层打开",
     "Markers linked to notes will show a note preview when hovered.":
         "当鼠标悬停在已经关联笔记的标记上时，会显示关联笔记的预览界面",
     "Display Overlay Tooltips": "显示叠加层提示",
