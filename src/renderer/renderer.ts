@@ -43,6 +43,7 @@ import t from "../l10n/locale";
 import { LeafletMapView } from "src/map/view";
 import { Marker, Overlay } from "src/layer";
 import { promisify } from "util";
+import {parseFrontmatterLocation} from "../utils/frontmatter";
 
 declare module "leaflet" {
     interface Map {
@@ -1105,40 +1106,12 @@ export class LeafletRenderer extends MarkdownRenderChild {
 
                     const id = getId();
 
-                    if (frontmatter.location) {
-                        let locations = frontmatter.location;
-                        if (
-                            locations.length &&
-                            !(locations[0] instanceof Array)
-                        ) {
-                            locations = [locations];
-                        }
+                    let parsedLocations = frontmatter.location ? parseFrontmatterLocation(frontmatter.location, file.basename) : null;
+
+                    if (parsedLocations != null) {
+                        let locations = parsedLocations;
                         for (const location of locations) {
-                            let err = false,
-                                [lat, long] = location;
-
-                            try {
-                                lat =
-                                    typeof lat === "number"
-                                        ? lat
-                                        : Number(lat?.split("%").shift());
-                                long =
-                                    typeof long === "number"
-                                        ? long
-                                        : Number(long?.split("%").shift());
-                            } catch (e) {
-                                err = true;
-                            }
-
-                            if (err || isNaN(lat) || isNaN(long)) {
-                                new Notice(
-                                    t(
-                                        "Could not parse location in %1",
-                                        file.basename
-                                    )
-                                );
-                                continue;
-                            }
+                            let [lat, long] = location;
 
                             let min, max;
                             if (frontmatter.mapzoom) {
@@ -1267,17 +1240,10 @@ export class LeafletRenderer extends MarkdownRenderChild {
                             continue;
                         }
 
-                        let location = frontmatter.location;
-                        if (!location) continue;
-                        if (
-                            location instanceof Array &&
-                            !(location[0] instanceof Array)
-                        ) {
-                            location = [location];
-                        }
+                        if (!parsedLocations) continue;
                         overlaysToReturn.push([
                             overlayColor,
-                            location[0],
+                            parsedLocations[0],
                             frontmatter[overlayTag],
                             `${file.basename}: ${overlayTag}`,
                             id
