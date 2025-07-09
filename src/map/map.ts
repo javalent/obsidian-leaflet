@@ -214,6 +214,12 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
         this.leafletInstance.on("click", (evt: L.LeafletMouseEvent) =>
             this.handleMapClick(evt)
         );
+        this.on('rendered', () => {
+            if (this.options.zoomMarkers) {
+                this.log(`Zooming to markers.`);
+                this.zoomAllMarkers();
+            }
+        })
 
         this.on("first-layer-ready", () => {
             this.addFeatures();
@@ -250,12 +256,6 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             this.featureLayer.addTo(this.currentGroup.group);
             this.currentGroup.group.addTo(this.leafletInstance);
             this.tileOverlayLayer.addTo(this.leafletInstance);
-
-            if (this.options.zoomMarkers) {
-                this.log(`Zooming to markers.`);
-
-                this.zoomAllMarkers();
-            }
         });
 
         this.leafletInstance.on(
