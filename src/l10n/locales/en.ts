@@ -110,6 +110,7 @@ export default {
     Hover: "Hover",
     Never: "Never",
     "Display Note Preview": "Display Note Preview",
+    "Default Image Layer On": "Default Image Layer On",
     "Markers linked to notes will show a note preview when hovered.":
         "Markers linked to notes will show a note preview when hovered.",
     "Display Overlay Tooltips": "Display Overlay Tooltips",

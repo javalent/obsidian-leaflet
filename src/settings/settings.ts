@@ -627,6 +627,22 @@ export class ObsidianLeafletSettingTab extends PluginSettingTab {
                 })
             );
         new Setting(containerEl)
+            .setName(t("Default Image Layers On"))
+            .setDesc(
+                t(
+                    "All image layers will default to visible instead of hidden"
+                )
+            )
+            .addToggle((toggle) =>
+                toggle.setValue(this.data.imageLayerDefaultOn).onChange(async (v) => {
+                    this.data.imageLayerDefaultOn = v;
+
+                    await this.plugin.saveSettings();
+
+                    this.display();
+                })
+            );
+        new Setting(containerEl)
             .setName(t("Display Overlay Tooltips"))
             .setDesc(t("Overlay tooltips will display when hovered."))
             .addToggle((toggle) =>

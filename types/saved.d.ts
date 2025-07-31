@@ -37,6 +37,7 @@ export interface ObsidianAppData {
     lat: number;
     long: number;
     notePreview: boolean;
+    imageLayerDefaultOn: boolean;
     layerMarkers: boolean;
     previousVersion: string;
     version: {
