@@ -614,9 +614,10 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                     );
                     gpxInstance.show();
                     gpxInstance.leafletInstance.addTo(this.gpxLayer);
+                    const trackname = gpxInstance.geojson.features[0].title ?? "GPX";
                     this.layerControl.addOverlay(
                         gpxInstance.leafletInstance,
-                        alias ?? `GPX ${added + 1}`
+                        alias ?? `${trackname} ${added + 1}`
                     );
                     added++;
                 } catch (e) {
