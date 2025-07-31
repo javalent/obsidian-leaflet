@@ -98,6 +98,15 @@ darkMode: true
 | lock                                    | Control whether the map will start locked or unlocked                                                       | false                                      |
 | recenter                                | Forces map to stay re-center itself after panning.                                                          | false                                      |
 | noScrollZoom                            | Turns off scrollwheel zooming.                                                                              | false                                      |
+| disableCreateMarkerOnRightClick                            | Disable creation of markers when right clicking on the map                                                                             | false                                      |
+| disableMapViewControl                            | Disables display of the map view control (Show all markers)                                                                              | false                                      |
+| disableResetZoomControl                            | Disables display of the reset zoom control                                                                              | false                                      |
+| disableFilterControl                            | Disables display of the filter control                                                                              | false                                      |
+| disableGpxControl                            | Disables display of the gpx control (Zoom to GPX track)                                                                             | false                                      |
+| disableLockControl                            | Disables display of the lock control                                                                              | false                                      |
+| disableLayerControl                            | Disables display of the layer control                                                                              | false                                      |
+| disableSaveMapControl                            | Disables display of the save map control                                                                              | false                                      |
+| disableDistanceDisplay                            | Disables display of the distance widget                                                                              | false                                      |
 
 > \*: Requires the [DataView plugin](https://github.com/blacksmithgu/obsidian-dataview).
 

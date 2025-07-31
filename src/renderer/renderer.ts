@@ -173,7 +173,16 @@ export class LeafletRenderer extends MarkdownRenderChild {
             verbose: this.params.verbose,
             zoomDelta: +this.params.zoomDelta,
             zoomFeatures: this.params.zoomFeatures,
-            zoomMarkers: this.params.showAllMarkers
+            zoomMarkers: this.params.showAllMarkers,
+            disableCreateMarkerOnRightClick: this.params.disableCreateMarkerOnRightClick,
+            disableMapViewControl: this.params.disableMapViewControl,
+            disableResetZoomControl: this.params.disableResetZoomControl,
+            disableFilterControl: this.params.disableFilterControl,
+            disableGpxControl: this.params.disableGpxControl,
+            disableLockControl: this.params.disableLockControl,
+            disableLayerControl: this.params.disableLayerControl,
+            disableSaveMapControl: this.params.disableSaveMapControl,
+            disableDistanceDisplay: this.params.disableDistanceDisplay
         };
 
         this.preserveAspect = this.params.preserveAspect ?? false;
