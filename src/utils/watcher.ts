@@ -16,6 +16,7 @@ import { LeafletSymbol } from "src/utils/leaflet-import";
 import { LeafletRenderer } from "src/renderer/renderer";
 import t from "src/l10n/locale";
 import { Marker, Overlay } from "src/layer";
+import {parseFrontmatterLocation} from "./frontmatter";
 const L = window[LeafletSymbol];
 
 export class Watcher extends Component {
@@ -65,23 +66,10 @@ export class Watcher extends Component {
         this.type = this.parseMarkerType(this.frontmatter);
 
         if ("location" in this.frontmatter) {
-            let locations = this.frontmatter.location;
-            if (
-                locations instanceof Array &&
-                !(locations[0] instanceof Array)
-            ) {
-                locations = [locations];
-            }
+            let locations = parseFrontmatterLocation(this.frontmatter.location, this.file.basename);
             this.ids.set("location", getId());
             for (let index in locations) {
                 const location = locations[index];
-                if (
-                    !(
-                        location.length == 2 &&
-                        location.every((v: any) => typeof v == "number")
-                    )
-                )
-                    continue;
                 this.markers.push(
                     new Marker(this.renderer.map, {
                         id: this.ids.get("location"),
@@ -231,21 +219,14 @@ export default class OldWatcher extends Events {
         let overlays = [];
         const markers = this.map.getMarkersById(this.fileIds.get("marker"));
 
+        const parsedLocations = this.frontmatter.location ? parseFrontmatterLocation(this.frontmatter.location, this.file.basename) : null;
+
         if (
             markers &&
-            this.frontmatter.location &&
-            this.frontmatter.location instanceof Array
+            parsedLocations != null
         ) {
             try {
-                let locations = this.frontmatter.location;
-                if (
-                    locations &&
-                    locations instanceof Array &&
-                    !(locations[0] instanceof Array)
-                ) {
-                    locations = [locations];
-                }
-
+                let locations = parsedLocations;
                 for (let index in locations) {
                     const location = locations[index];
                     const marker = markers[index];
@@ -370,14 +351,7 @@ export default class OldWatcher extends Events {
                         return id != this.fileIds.get("overlayTag");
                     }
                 );
-                let locations = this.frontmatter.location ?? [0, 0];
-                if (
-                    locations &&
-                    locations instanceof Array &&
-                    !(locations[0] instanceof Array)
-                ) {
-                    locations = [locations];
-                }
+                let locations = parsedLocations;
                 overlays.push([
                     this.map.options.overlayColor ?? "blue",
                     locations[0],
