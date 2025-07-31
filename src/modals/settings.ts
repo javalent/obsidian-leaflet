@@ -53,10 +53,10 @@ export class CreateMarkerModal extends Modal {
 
         let typeTextInput: TextComponent;
         let markerName = new Setting(iconSettings)
-            .setName(t("Marker Name"))
+            .setName(t("Marker name"))
             .addText((text) => {
                 typeTextInput = text
-                    .setPlaceholder(t("Marker Name"))
+                    .setPlaceholder(t("Marker name"))
                     .setValue(this.tempMarker.type);
                 typeTextInput.onChange((new_value) => {
                     if (
@@ -88,10 +88,10 @@ export class CreateMarkerModal extends Modal {
 
         let iconTextInput: TextComponent;
         let iconName = new Setting(iconSettings)
-            .setName(t("Icon Name"))
+            .setName(t("Icon name"))
             .setDesc(t("Font Awesome icon name (e.g. map-marker)."))
             .addText((text) => {
-                text.setPlaceholder(t("Icon Name")).setValue(
+                text.setPlaceholder(t("Icon name")).setValue(
                     !this.tempMarker.isImage ? this.tempMarker.iconName : ""
                 );
 
@@ -151,10 +151,10 @@ export class CreateMarkerModal extends Modal {
             }
         });
         new Setting(iconSettings)
-            .setName(t("Use Image for Icon"))
+            .setName(t("Use image for icon"))
             .addButton((b) => {
-                b.setButtonText(t("Upload Image")).setTooltip(
-                    t("Upload Image")
+                b.setButtonText(t("Upload image")).setTooltip(
+                    t("Upload image")
                 );
                 b.buttonEl.addClass("leaflet-file-upload");
                 b.buttonEl.appendChild(input);
@@ -362,7 +362,7 @@ export class CreateMarkerModal extends Modal {
             }
 
             new Setting(createNewMarker)
-                .setName(t("Layer Icon"))
+                .setName(t("Layer icon"))
                 .setDesc(t("The icon will be layered on the base icon."))
                 .addToggle((toggle) => {
                     toggle.setValue(this.tempMarker.layer).onChange((v) => {
@@ -371,7 +371,7 @@ export class CreateMarkerModal extends Modal {
                     });
                 });
             let colorInput = new Setting(createNewMarker)
-                .setName(t("Marker Color"))
+                .setName(t("Marker color"))
                 .setDesc(t("Override default icon color."));
             let colorInputNode = colorInput.controlEl.createEl("input", {
                 attr: {
@@ -406,7 +406,7 @@ export class CreateMarkerModal extends Modal {
         }
 
         new Setting(createNewMarker)
-            .setName(t("Min Zoom"))
+            .setName(t("Min zoom"))
             .setDesc(t("Only display when zooming in below this zoom."))
             .addText((text) => {
                 let warned = false;
@@ -431,7 +431,7 @@ export class CreateMarkerModal extends Modal {
                 });
             });
         new Setting(createNewMarker)
-            .setName(t("Max Zoom"))
+            .setName(t("Max zoom"))
             .setDesc(t("Only display when zooming out above this zoom."))
             .addText((text) => {
                 let warned = false;
@@ -586,7 +586,7 @@ export class CreateMarkerModal extends Modal {
         let tag: string;
         const tagSetting = new Setting(containerEl)
             .setHeading()
-            .setName(t("Associate Tags"))
+            .setName(t("Associate tags"))
             .setDesc(t("Markers created from this tag using "))
             .addText((t) => {
                 t.setPlaceholder("Add Tag");

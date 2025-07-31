@@ -46,7 +46,7 @@ export class MarkerContextModal extends Modal {
         this.contentEl.empty();
 
         new Setting(this.contentEl)
-            .setName(t("Marker Type"))
+            .setName(t("Marker type"))
             .addDropdown((drop) => {
                 drop.addOption("default", t("Default"));
                 this.map.markerIcons.forEach((marker) => {
@@ -66,8 +66,8 @@ export class MarkerContextModal extends Modal {
             });
         if (this.tempMarker.command) {
             new Setting(this.contentEl)
-                .setName(t("Command to Execute"))
-                .setDesc(t("Name of Obsidian Command to execute"))
+                .setName(t("Command to execute"))
+                .setDesc(t("Name of Obsidian command to execute"))
                 .addText((text) => {
                     let commands = this.app.commands.listCommands();
 
@@ -95,7 +95,7 @@ export class MarkerContextModal extends Modal {
                 });
         } else {
             new Setting(this.contentEl)
-                .setName(t("Note to Open"))
+                .setName(t("Note to open"))
                 .setDesc(t("Path of note to open"))
                 .addText((text) => {
                     let files = this.app.vault.getFiles();
@@ -131,7 +131,7 @@ export class MarkerContextModal extends Modal {
             );
         if (this.advanced) {
             new Setting(this.contentEl)
-                .setName(t("Execute Command"))
+                .setName(t("Execute command"))
                 .setDesc(
                     t("The marker will execute an Obsidian command on click")
                 )
@@ -145,7 +145,7 @@ export class MarkerContextModal extends Modal {
                     );
                 });
             new Setting(this.contentEl)
-                .setName(t("Display Tooltip"))
+                .setName(t("Display tooltip"))
                 .addDropdown((drop) => {
                     drop.addOption("hover", t("Hover"));
                     drop.addOption("always", t("Always"));
@@ -158,7 +158,7 @@ export class MarkerContextModal extends Modal {
                 });
 
             new Setting(this.contentEl)
-                .setName(t("Min Zoom"))
+                .setName(t("Min zoom"))
                 .setDesc(
                     t(
                         "Only display when zooming in below this zoom. Current map minimum"
@@ -189,7 +189,7 @@ export class MarkerContextModal extends Modal {
                     });
                 });
             new Setting(this.contentEl)
-                .setName(t("Max Zoom"))
+                .setName(t("Max zoom"))
                 .setDesc(
                     t(
                         "Only display when zooming out above this zoom. Current map maximum"
@@ -224,7 +224,7 @@ export class MarkerContextModal extends Modal {
         new Setting(this.contentEl).addButton((b) => {
             b.setIcon("trash")
                 .setWarning()
-                .setTooltip(t("Delete Marker"))
+                .setTooltip(t("Delete marker"))
                 .onClick(() => {
                     this.deleted = true;
                     this.close();
@@ -258,7 +258,7 @@ export class OverlayContextModal extends Modal {
             radius = radius * this.map.scale;
         }
         new Setting(this.contentEl)
-            .setName(t("Overlay Radius"))
+            .setName(t("Overlay radius"))
             .setDesc(
                 `${t("Circle radius in")} ${
                     UNIT_NAME_ALIASES[this.tempOverlay.unit] ?? t("meters")
@@ -294,14 +294,14 @@ export class OverlayContextModal extends Modal {
             });
 
         const desc = new Setting(this.contentEl)
-            .setName(t("Overlay Description"))
+            .setName(t("Overlay description"))
             .addText((t) => {
                 t.setValue(this.tempOverlay.desc).onChange((v) => {
                     this.tempOverlay.desc = v;
                 });
             });
 
-        const color = new Setting(this.contentEl).setName(t("Overlay Color"));
+        const color = new Setting(this.contentEl).setName(t("Overlay color"));
         /** convert color to hex */
         let colorOfOverlay = this.tempOverlay.color;
         if (!/#\w{3,6}/.test(colorOfOverlay)) {
@@ -326,7 +326,7 @@ export class OverlayContextModal extends Modal {
         };
 
         new Setting(this.contentEl)
-            .setName(t("Display Tooltip"))
+            .setName(t("Display tooltip"))
             .addDropdown((drop) => {
                 drop.addOption("hover", t("Hover"));
                 drop.addOption("never", t("Never"));
@@ -340,7 +340,7 @@ export class OverlayContextModal extends Modal {
         new Setting(this.contentEl).addButton((b) => {
             b.setIcon("trash")
                 .setWarning()
-                .setTooltip(t("Delete Overlay"))
+                .setTooltip(t("Delete overlay"))
                 .onClick(() => {
                     this.deleted = true;
 
