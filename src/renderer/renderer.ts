@@ -1344,7 +1344,7 @@ export class LeafletRenderer extends MarkdownRenderChild {
         if (path[0] == ".") {
             path = sub + path.substring(1);
         }
-        let depth = path.endsWith("/") ? 2 : Infinity;
+        let depth = path.endsWith("/") ? 1 : Infinity;
         while (path.endsWith("/")) {
             path = path.substring(0, path.length - 1);
             ++depth;
