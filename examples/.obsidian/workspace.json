@@ -1,0 +1,231 @@
+{
+  "main": {
+    "id": "f9f842e0e88e6da5",
+    "type": "split",
+    "children": [
+      {
+        "id": "f52411e601b5c020",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "69d5fc21bf55e2bf",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "01 Basic Maps/Simple Image Map.md",
+                "mode": "source",
+                "source": true
+              },
+              "icon": "lucide-file",
+              "title": "Simple Image Map"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "8945a2ba2b5bd7bd",
+    "type": "split",
+    "children": [
+      {
+        "id": "9540974b7b927c24",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "b35d13bf2997abc7",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "bfd9041a04b9896a",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "1b41ab380b2df95a",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "c30b274b657b3f6f",
+    "type": "split",
+    "children": [
+      {
+        "id": "cf27f35ea5088eef",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "9f672dc51d86df9e",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "01-Basic-Maps/Multi-Layer-Image-Map.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for Multi-Layer-Image-Map"
+            }
+          },
+          {
+            "id": "df6831c7ee96c19c",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Welcome.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from Welcome"
+            }
+          },
+          {
+            "id": "c3fcedb5565b0a48",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "66292cc226a2606f",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "40190acd21e08cd3",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Welcome.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of Welcome"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "obsidian-leaflet-plugin:Open Leaflet Map": false,
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "69d5fc21bf55e2bf",
+  "lastOpenFiles": [
+    "Welcome.md",
+    "01 Basic Maps/Multi-Layer Image Map.md",
+    "01 Basic Maps/Image Map with Bounds.md",
+    "01 Basic Maps/Simple Image Map.md",
+    "01 Basic Maps/Real World Map.md",
+    "Multi-Layer Image Map.md",
+    "10 Unit Scale/Units and Distance.md",
+    "09 Advanced Features/Aspect Ratio.md",
+    "09 Advanced Features/Dark Mode.md",
+    "09 Advanced Features/Draw Mode.md",
+    "09 Advanced Features/Lock Mode.md",
+    "09 Advanced Features/No UI Mode.md",
+    "09 Advanced Features/Tile Servers.md",
+    "09 Advanced Features/Zoom Controls.md",
+    "08 External Files/GPX Example.md",
+    "08 External Files/GeoJSON Example.md",
+    "07 Overlays/Code Block Overlays.md",
+    "07 Overlays/Overlays from Frontmatter.md",
+    "06 Code Block Markers/Immutable Markers YAML.md",
+    "05 Links Examples/LinksFrom Example.md",
+    "05 Links Examples/LinksTo Example.md",
+    "04 MarkerTag Examples/MarkerTag Single.md",
+    "03 MarkerFolder Examples/MarkerFolder Two Levels.md",
+    "03 MarkerFolder Examples/MarkerFolder Direct Only.md",
+    "03 MarkerFolder Examples/MarkerFolder All Subfolders.md",
+    "02 Markers Frontmatter/Map Using Frontmatter.md",
+    "07 Overlays/Markers",
+    "06 Code Block Markers/markers.json",
+    "05 Links Examples/Linked Notes",
+    "05 Links Examples/Example Notes",
+    "04 MarkerTag Examples/markers.json",
+    "03 MarkerFolder Examples/markers.json",
+    "02 Markers Frontmatter/markers.json",
+    "attachments/overlay image.svg",
+    "attachments/map image.png",
+    "attachments/map image political.png",
+    "attachments/example track.gpx",
+    "04 MarkerTag Examples/Tagged Notes",
+    "03 MarkerFolder Examples/People/Team Leaders/Managers",
+    "attachments/overlay-image.svg",
+    "attachments/map-image-political.png"
+  ]
+}

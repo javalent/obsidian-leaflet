@@ -1,0 +1,34 @@
+[
+  {
+    "type": "person",
+    "iconName": "user",
+    "color": "#4A90E2",
+      "alpha": 1,
+      "layer": true,
+      "transform": {
+        "size": 6,
+        "x": 0,
+        "y": -2
+      },
+      "isImage": false,
+      "tags": [],
+      "minZoom": null,
+      "maxZoom": null
+  },
+  {
+    "type": "event",
+    "iconName": "calendar",
+    "color": "#F5A623",
+      "alpha": 1,
+      "layer": true,
+      "transform": {
+        "size": 6,
+        "x": 0,
+        "y": -2
+      },
+      "isImage": false,
+      "tags": [],
+      "minZoom": null,
+      "maxZoom": null
+  }
+]
