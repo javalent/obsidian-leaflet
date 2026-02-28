@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Obsidian Leaflet Example" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Sample Running Track</name>
+    <desc>A 5K running route with elevation data</desc>
+    <time>2024-01-15T10:30:00Z</time>
+  </metadata>
+  
+  <wpt lat="40.7128" lon="-74.0060">
+    <name>Start Point</name>
+    <desc>Beginning of the route</desc>
+    <ele>10</ele>
+  </wpt>
+  
+  <wpt lat="40.7180" lon="-74.0080">
+    <name>Water Station</name>
+    <desc>First water station at 1 mile</desc>
+    <ele>12</ele>
+  </wpt>
+  
+  <wpt lat="40.7220" lon="-74.0050">
+    <name>Marker Point</name>
+    <desc>Turnaround point at 2.5 miles</desc>
+    <ele>15</ele>
+  </wpt>
+  
+  <trk>
+    <name>5K Running Route</name>
+    <desc>A sample 5K route with multiple waypoints</desc>
+    <trkseg>
+      <trkpt lat="40.7128" lon="-74.0060">
+        <ele>10</ele>
+        <time>2024-01-15T10:30:00Z</time>
+        <speed>2.5</speed>
+      </trkpt>
+      <trkpt lat="40.7145" lon="-74.0070">
+        <ele>11</ele>
+        <time>2024-01-15T10:32:00Z</time>
+        <speed>2.6</speed>
+      </trkpt>
+      <trkpt lat="40.7160" lon="-74.0080">
+        <ele>12</ele>
+        <time>2024-01-15T10:34:00Z</time>
+        <speed>2.7</speed>
+      </trkpt>
+      <trkpt lat="40.7180" lon="-74.0090">
+        <ele>13</ele>
+        <time>2024-01-15T10:36:00Z</time>
+        <speed>2.8</speed>
+      </trkpt>
+      <trkpt lat="40.7200" lon="-74.0070">
+        <ele>14</ele>
+        <time>2024-01-15T10:38:00Z</time>
+        <speed>2.9</speed>
+      </trkpt>
+      <trkpt lat="40.7220" lon="-74.0050">
+        <ele>15</ele>
+        <time>2024-01-15T10:40:00Z</time>
+        <speed>3.0</speed>
+      </trkpt>
+      <trkpt lat="40.7210" lon="-74.0030">
+        <ele>14</ele>
+        <time>2024-01-15T10:42:00Z</time>
+        <speed>2.9</speed>
+      </trkpt>
+      <trkpt lat="40.7190" lon="-74.0015">
+        <ele>13</ele>
+        <time>2024-01-15T10:44:00Z</time>
+        <speed>2.8</speed>
+      </trkpt>
+      <trkpt lat="40.7160" lon="-74.0025">
+        <ele>12</ele>
+        <time>2024-01-15T10:46:00Z</time>
+        <speed>2.7</speed>
+      </trkpt>
+      <trkpt lat="40.7140" lon="-74.0040">
+        <ele>11</ele>
+        <time>2024-01-15T10:48:00Z</time>
+        <speed>2.6</speed>
+      </trkpt>
+      <trkpt lat="40.7128" lon="-74.0060">
+        <ele>10</ele>
+        <time>2024-01-15T10:50:00Z</time>
+        <speed>2.5</speed>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

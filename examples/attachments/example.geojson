@@ -1,0 +1,72 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "New York City",
+        "description": "The largest city in the US",
+        "marker-size": "large",
+        "marker-color": "#FF0000"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-74.0060, 40.7128]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "San Francisco",
+        "description": "City by the Bay",
+        "marker-size": "large",
+        "marker-color": "#0000FF"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.4194, 37.7749]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Route from NYC to SF",
+        "description": "A sample route",
+        "stroke": "#00AA00",
+        "stroke-width": 2,
+        "stroke-opacity": 0.7
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-74.0060, 40.7128],
+          [-100.0, 39.0],
+          [-122.4194, 37.7749]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Service Area - Chicago",
+        "description": "50 mile service area",
+        "fill": "#FFFF00",
+        "fill-opacity": 0.3,
+        "stroke": "#FFAA00",
+        "stroke-width": 2
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-88.2, 41.9],
+            [-87.9, 41.9],
+            [-87.9, 41.7],
+            [-88.2, 41.7],
+            [-88.2, 41.9]
+          ]
+        ]
+      }
+    }
+  ]
+}
