@@ -48,7 +48,6 @@ export class MarkerContextModal extends Modal {
         new Setting(this.contentEl)
             .setName(t("Marker Type"))
             .addDropdown((drop) => {
-                drop.addOption("default", t("Default"));
                 this.map.markerIcons.forEach((marker) => {
                     drop.addOption(
                         marker.type,
