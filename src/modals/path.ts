@@ -74,6 +74,20 @@ export class PathSuggestionModal extends SuggestionModal<
             return (<BlockCache>item).id;
         }
     }
+    private getLinkText(item: TFile | HeadingCache | BlockCache): string | null {
+        if (item instanceof TFile) {
+            return this.app.metadataCache.fileToLinktext(item, "", true);
+        }
+        if (!this.file) return null;
+        const linkText = this.app.metadataCache.fileToLinktext(this.file, "", true);
+        if (Object.prototype.hasOwnProperty.call(item, "heading")) {
+            return linkText + "#" + (<HeadingCache>item).heading;
+        }
+        if (Object.prototype.hasOwnProperty.call(item, "id")) {
+            return linkText + "^" + (<BlockCache>item).id;
+        }
+        return null;
+    }
     onChooseItem(item: TFile | HeadingCache | BlockCache) {
         if (item instanceof TFile) {
             this.text.setValue(item.basename);
