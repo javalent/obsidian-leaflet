@@ -89,19 +89,14 @@ export class PathSuggestionModal extends SuggestionModal<
         return null;
     }
     onChooseItem(item: TFile | HeadingCache | BlockCache) {
-        if (item instanceof TFile) {
-            this.text.setValue(item.basename);
+        const link = this.getLinkText(item);
+        if (!link) return;
+
+        if(item instanceof TFile) {
             this.file = item;
             this.cache = this.app.metadataCache.getFileCache(this.file);
-        } else if (Object.prototype.hasOwnProperty.call(item, "heading")) {
-            this.text.setValue(
-                this.file.basename + "#" + (<HeadingCache>item).heading
-            );
-        } else if (Object.prototype.hasOwnProperty.call(item, "id")) {
-            this.text.setValue(
-                this.file.basename + "^" + (<BlockCache>item).id
-            );
         }
+        this.text.setValue(link);
     }
     selectSuggestion({ item }: FuzzyMatch<TFile | BlockCache | HeadingCache>) {
         let link: string;
