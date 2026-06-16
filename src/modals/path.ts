@@ -74,30 +74,32 @@ export class PathSuggestionModal extends SuggestionModal<
             return (<BlockCache>item).id;
         }
     }
-    onChooseItem(item: TFile | HeadingCache | BlockCache) {
+    private getLinkText(item: TFile | HeadingCache | BlockCache): string | null {
         if (item instanceof TFile) {
-            this.text.setValue(item.basename);
+            return this.app.metadataCache.fileToLinktext(item, "", true);
+        }
+        if (!this.file) return null;
+        const linkText = this.app.metadataCache.fileToLinktext(this.file, "", true);
+        if (Object.prototype.hasOwnProperty.call(item, "heading")) {
+            return linkText + "#" + (<HeadingCache>item).heading;
+        }
+        if (Object.prototype.hasOwnProperty.call(item, "id")) {
+            return linkText + "^" + (<BlockCache>item).id;
+        }
+        return null;
+    }
+    onChooseItem(item: TFile | HeadingCache | BlockCache) {
+        const link = this.getLinkText(item);
+        if (!link) return;
+
+        if(item instanceof TFile) {
             this.file = item;
             this.cache = this.app.metadataCache.getFileCache(this.file);
-        } else if (Object.prototype.hasOwnProperty.call(item, "heading")) {
-            this.text.setValue(
-                this.file.basename + "#" + (<HeadingCache>item).heading
-            );
-        } else if (Object.prototype.hasOwnProperty.call(item, "id")) {
-            this.text.setValue(
-                this.file.basename + "^" + (<BlockCache>item).id
-            );
         }
+        this.text.setValue(link);
     }
     selectSuggestion({ item }: FuzzyMatch<TFile | BlockCache | HeadingCache>) {
-        let link: string;
-        if (item instanceof TFile) {
-            link = item.basename;
-        } else if (Object.prototype.hasOwnProperty.call(item, "heading")) {
-            link = this.file.basename + "#" + (<HeadingCache>item).heading;
-        } else if (Object.prototype.hasOwnProperty.call(item, "id")) {
-            link = this.file.basename + "^" + (<BlockCache>item).id;
-        }
+        const link = this.getLinkText(item);
 
         this.text.setValue(link);
         this.onClose();
