@@ -186,6 +186,15 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 ? { fullscreenControl: true }
                 : {})
         });
+
+        if (!this.options.noUI && L.control?.scale) {
+            L.control.scale({
+                position: "bottomleft",
+                metric: true,
+                imperial: false
+            }).addTo(this.leafletInstance);
+        }
+
         this.leafletInstance.createPane("base-layer");
         this.leafletInstance.createPane("geojson");
         this.leafletInstance.createPane("gpx");
