@@ -296,6 +296,7 @@ declare abstract class BaseMap /* <
 
     updateLockState(state: boolean): void;
 
+    zoomAllFeatures(): void;
     zoomAllMarkers(): void;
 
     on(name: "removed", callback: () => void): EventRef;

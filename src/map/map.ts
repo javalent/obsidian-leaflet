@@ -215,6 +215,14 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             this.handleMapClick(evt)
         );
         this.on('rendered', () => {
+            if (
+                this.options.zoomFeatures &&
+                (this.geojsonData.length || this.gpxData.length) &&
+                !this.zoomDistance
+            ) {
+                this.log(`Zooming to features.`);
+                this.zoomAllFeatures();
+            }
             if (this.options.zoomMarkers) {
                 this.log(`Zooming to markers.`);
                 this.zoomAllMarkers();
@@ -229,21 +237,6 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             );
             this.setInitialCoords(this.renderOptions.coords);
             this.leafletInstance.panTo(this.initialCoords);
-
-            if (
-                (this.geojsonData.length || this.gpxData.length) &&
-                this.options.zoomFeatures
-            ) {
-                this.log(`Zooming to features.`);
-                this.leafletInstance.fitBounds(this.featureLayer.getBounds());
-                const { lat, lng } = this.featureLayer.getBounds().getCenter();
-
-                this.log(`Features center: [${lat}, ${lng}]`);
-                this.setInitialCoords([lat, lng]);
-                this.zoom.default = this.leafletInstance.getBoundsZoom(
-                    this.featureLayer.getBounds()
-                );
-            }
 
             if (this.renderOptions.zoomDistance) {
                 this.zoomDistance = this.renderOptions.zoomDistance;
@@ -633,20 +626,6 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
                 { position: "bottomleft" },
                 this
             ).addTo(this.leafletInstance);
-        }
-
-        if (this.geojsonData.length || this.gpxData.length) {
-            if (this.options.zoomFeatures) {
-                this.log(`Zooming to features.`);
-                this.leafletInstance.fitBounds(this.featureLayer.getBounds());
-                const { lat, lng } = this.featureLayer.getBounds().getCenter();
-
-                this.log(`Features center: [${lat}, ${lng}]`);
-                this.setInitialCoords([lat, lng]);
-                this.zoom.default = this.leafletInstance.getBoundsZoom(
-                    this.featureLayer.getBounds()
-                );
-            }
         }
 
         /** Add Image Overlays to Map */
@@ -1218,15 +1197,7 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
             this.setZoomByDistance(this.zoomDistance);
         }
         if (this.options.zoomFeatures) {
-            this.log(`Zooming to features.`);
-            this.leafletInstance.fitBounds(this.featureLayer.getBounds());
-            const { lat, lng } = this.featureLayer.getBounds().getCenter();
-
-            this.log(`Features center: [${lat}, ${lng}]`);
-            this.setInitialCoords([lat, lng]);
-            this.zoom.default = this.leafletInstance.getBoundsZoom(
-                this.featureLayer.getBounds()
-            );
+            this.zoomAllFeatures();
         }
         if (this.options.zoomMarkers) {
             this.log(`Zooming to markers.`);
@@ -1241,6 +1212,18 @@ export abstract class BaseMap extends Events implements BaseMapDefinition {
     }
     abstract setInitialCoords(coords: [number, number]): void;
 
+    zoomAllFeatures() {
+        if (!this.featureLayer) return;
+        const bounds = this.featureLayer.getBounds();
+        if (!bounds || !bounds.isValid()) return;
+        this.log(`Zooming to features.`);
+        this.leafletInstance.fitBounds(bounds);
+        const { lat, lng } = bounds.getCenter();
+
+        this.log(`Features center: [${lat}, ${lng}]`);
+        this.setInitialCoords([lat, lng]);
+        this.zoom.default = this.leafletInstance.getBoundsZoom(bounds);
+    }
     zoomAllMarkers() {
         const group = L.featureGroup(
             this.displayed.map(({ leafletInstance }) => leafletInstance)
